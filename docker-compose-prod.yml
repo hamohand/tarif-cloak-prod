@@ -194,18 +194,17 @@ services:
   # FRONTEND - APPLICATION ANGULAR
   # ===============================================================
   frontend:
+    container_name: "${PROJECT_NAME:-app}-frontend"
     build:
       context: ./frontend
-      dockerfile: Dockerfile
       args:
-        # Variables passées au build-time
+        # Indique au Dockerfile d'utiliser la conf de prod
+        NGINX_CONF: nginx-prod.conf
+        # Variables Keycloak passées au build-time
         KEYCLOAK_REALM: "${KEYCLOAK_REALM}"
         KEYCLOAK_FRONTEND_CLIENT: "${KEYCLOAK_FRONTEND_CLIENT}"
         KEYCLOAK_INTERNAL_URL: "${KEYCLOAK_INTERNAL_URL}"
         API_URL: "/api"
-    container_name: "${PROJECT_NAME:-app}-frontend"
-    ports:
-      - "${FRONT_HOST_PORT:-4200}:80"
     depends_on:
       - backend
     restart: unless-stopped

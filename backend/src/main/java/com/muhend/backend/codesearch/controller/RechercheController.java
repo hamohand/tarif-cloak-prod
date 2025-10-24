@@ -17,14 +17,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ *
+ */
 @RestController
 @Data
 // --- IMPORTANT --- *******************************************************************
 // On supprime "/api" du mapping, car Traefik le gère déjà.
 // Spring ne verra que le chemin "/recherche".
 // ***********************************************************************************
-@RequestMapping("/api/recherche")
-//@RequestMapping("/recherche") // pour Traefik
+//@RequestMapping("/api/recherche")
+@RequestMapping("/recherche") // pour Traefik
 
 public class RechercheController {
     private final AiService aiService;
