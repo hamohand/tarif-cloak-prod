@@ -6,7 +6,7 @@
 # ===============================================================
 
 # Utilisation des champs d'extension (x-*) pour une meilleure organisation
-x-traefik-host-rule: &traefik-host-rule "Host(`${FRONTEND_DOMAIN}`) || Host(`${WWW_FRONTEND_DOMAIN}`)"
+x-traefik-host-rule: &traefik-host-rule "Host(`hscode.enclume-numerique.com`) || Host(`www.hscode.enclume-numerique.com`)"
 
 # Labels Traefik spécifiques pour le service frontend
 x-traefik-frontend-labels: &traefik-frontend-labels
@@ -32,12 +32,12 @@ x-traefik-backend-labels: &traefik-backend-labels
   # --- Middleware pour supprimer le préfixe /api ---
   "traefik.http.middlewares.${PROJECT_NAME}-api-stripprefix.stripprefix.prefixes": "/api"
   # --- Routeur HTTPS pour le backend ---
-  "traefik.http.routers.${PROJECT_NAME}-${BACKEND_SERVICE_NAME}-secure.rule": "(Host(`${FRONTEND_DOMAIN}`) || Host(`${WWW_FRONTEND_DOMAIN}`)) && PathPrefix(`/api`)"
+  "traefik.http.routers.${PROJECT_NAME}-${BACKEND_SERVICE_NAME}-secure.rule": "(Host(`hscode.enclume-numerique.com`) || Host(`www.hscode.enclume-numerique.com`)) && PathPrefix(`/api`)"
   "traefik.http.routers.${PROJECT_NAME}-${BACKEND_SERVICE_NAME}-secure.entrypoints": "websecure"
   "traefik.http.routers.${PROJECT_NAME}-${BACKEND_SERVICE_NAME}-secure.tls.certresolver": "le"
   "traefik.http.routers.${PROJECT_NAME}-${BACKEND_SERVICE_NAME}-secure.middlewares": "api-stripprefix"
   # --- Routeur HTTP pour la redirection vers HTTPS ---
-  "traefik.http.routers.${PROJECT_NAME}-${BACKEND_SERVICE_NAME}-http.rule": "(Host(`${FRONTEND_DOMAIN}`) || Host(`${WWW_FRONTEND_DOMAIN}`)) && PathPrefix(`/api`)"
+  "traefik.http.routers.${PROJECT_NAME}-${BACKEND_SERVICE_NAME}-http.rule": "(Host(`hscode.enclume-numerique.com`) || Host(`www.hscode.enclume-numerique.com`)) && PathPrefix(`/api`)"
   "traefik.http.routers.${PROJECT_NAME}-${BACKEND_SERVICE_NAME}-http.entrypoints": "web"
   "traefik.http.routers.${PROJECT_NAME}-${BACKEND_SERVICE_NAME}-http.middlewares": "https-redirect@docker"
   # --- Service pointant vers le conteneur backend ---
