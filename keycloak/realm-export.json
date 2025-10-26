@@ -1,5 +1,5 @@
 {
-  "realm": "hscode",
+  "realm": "hscode-realm",
   "displayName": "",
   "displayNameHtml": "",
   "notBefore": 0,
@@ -656,7 +656,7 @@
       "enabled": true,
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
-      "secret": "backend-secret-keycloak-251017",
+      "secret": "backend-secret-modification-avec-keycloak-conseillee",
       "redirectUris": [
         "/*"
       ],

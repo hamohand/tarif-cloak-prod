@@ -7,7 +7,6 @@ export const authConfig: AuthConfig = {
   redirectUri: environment.keycloak.redirectUri,
   // CLIENT
   clientId: environment.keycloak.clientId,
-  // dummyClientSecret: 'vvq7olFsaJs1PzwY610iIarJKaDUuSiv', // Le secret de ton client
   responseType: 'code',
   scope: 'openid profile email',
   showDebugInformation: !environment.production,
