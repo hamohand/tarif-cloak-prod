@@ -31,8 +31,7 @@ Thumbs.db
 # ========================
 # Environment and secret files
 # ========================
-*.env
-../tci/tarif-essais250912/demo/.env
+
 
 # ========================
 # Temporary files

@@ -62,6 +62,7 @@ x-common-bd-keycloak-vars: &common-bd-keycloak-vars
 
 
 services:
+
   # ===============================================================
   # BASE DE DONNÉES POSTGRESQL POUR L'APPLICATION
   # ===============================================================
@@ -205,6 +206,9 @@ services:
         KEYCLOAK_FRONTEND_CLIENT: "${KEYCLOAK_FRONTEND_CLIENT}"
         KEYCLOAK_INTERNAL_URL: "${KEYCLOAK_INTERNAL_URL}"
         API_URL: "/api"
+    environment:
+      FRONTEND_DOMAIN: ${FRONTEND_DOMAIN}
+      WWW_FRONTEND_DOMAIN: ${WWW_FRONTEND_DOMAIN}
     depends_on:
       - backend
     restart: unless-stopped
