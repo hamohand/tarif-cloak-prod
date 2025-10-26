@@ -70,8 +70,8 @@ services:
     container_name: "${PROJECT_NAME:-app}-app-db"
     environment:
       <<: *common-app-bd-vars
-    ports:
-      - "${DB_HOST_PORT:-5432}:5432"
+#    ports:
+#      - "${DB_HOST_PORT:-5432}:5432"
     volumes:
       - app-database-data:/var/lib/postgresql/data
       - ./sql/sql:/docker-entrypoint-initdb.d
@@ -82,7 +82,7 @@ services:
       retries: 10
     restart: unless-stopped
     networks:
-      - docker-network
+      - default
 
   # ===============================================================
   # BASE DE DONNÉES POSTGRESQL POUR KEYCLOAK
@@ -92,8 +92,8 @@ services:
     container_name: "${PROJECT_NAME:-app}-keycloak-db"
     environment:
       <<: *common-bd-keycloak-vars
-    ports:
-      - "${KEYCLOAK_DB_PORT:-5433}:5432"  # Port différent pour éviter les conflits
+#    ports:
+#      - "${KEYCLOAK_DB_PORT:-5433}:5432"  # Port différent pour éviter les conflits
     volumes:
       - keycloak-database-data:/var/lib/postgresql/data
     healthcheck:
@@ -103,7 +103,7 @@ services:
       retries: 10
     restart: unless-stopped
     networks:
-      - docker-network
+      - default
 
   # ===============================================================
   # KEYCLOAK - AUTHENTIFICATION ET AUTORISATION
@@ -144,7 +144,7 @@ services:
       retries: 5
       start_period: 60s
     networks:
-      - docker-network
+      - default
 
   # ===============================================================
   # BACKEND - API SPRING BOOT
@@ -159,8 +159,8 @@ services:
         condition: service_healthy
       keycloak:
         condition: service_started
-    ports:
-      - "${BACKEND_INTERNAL_PORT:-8081}:8081"
+#    ports:
+#      - "${BACKEND_INTERNAL_PORT:-8081}:8081"
     environment:
       # Configuration Spring Boot
       BACKEND_INTERNAL_PORT: "${BACKEND_INTERNAL_PORT:-8081}"
