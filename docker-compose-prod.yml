@@ -206,17 +206,30 @@ services:
         KEYCLOAK_FRONTEND_CLIENT: "${KEYCLOAK_FRONTEND_CLIENT}"
         KEYCLOAK_INTERNAL_URL: "${KEYCLOAK_INTERNAL_URL}"
         API_URL: "/api"
+
     environment:
-      FRONTEND_DOMAIN: ${FRONTEND_DOMAIN}
-      WWW_FRONTEND_DOMAIN: ${WWW_FRONTEND_DOMAIN}
+      FRONTEND_DOMAIN: "${FRONTEND_DOMAIN}"
+      WWW_FRONTEND_DOMAIN: "${WWW_FRONTEND_DOMAIN}"
+      PROJECT_NAME: "${PROJECT_NAME}"
+      FRONTEND_SERVICE_NAME: "${FRONTEND_SERVICE_NAME}"
+    labels:
+        traefik.enable: "true"
+        traefik.docker.network: "webproxy"
+        traefik.http.routers.${PROJECT_NAME}-${FRONTEND_SERVICE_NAME}-secure.rule: "Host(`${FRONTEND_DOMAIN}`) || Host(`${WWW_FRONTEND_DOMAIN}`)"
+        traefik.http.routers.${PROJECT_NAME}-${FRONTEND_SERVICE_NAME}-secure.entrypoints: "websecure"
+        traefik.http.routers.${PROJECT_NAME}-${FRONTEND_SERVICE_NAME}-secure.tls.certresolver: "le"
+        traefik.http.routers.${PROJECT_NAME}-${FRONTEND_SERVICE_NAME}-http.rule: "Host(`${FRONTEND_DOMAIN}`) || Host(`${WWW_FRONTEND_DOMAIN}`)"
+        traefik.http.routers.${PROJECT_NAME}-${FRONTEND_SERVICE_NAME}-http.entrypoints: "web"
+        traefik.http.routers.${PROJECT_NAME}-${FRONTEND_SERVICE_NAME}-http.middlewares: "https-redirect@docker"
+
     depends_on:
       - backend
     restart: unless-stopped
     networks:
       - default
       - webproxy
-    labels:
-      <<: *traefik-frontend-labels
+#    labels:
+#      <<: *traefik-frontend-labels
 
 # ===============================================================
 # VOLUMES PERSISTANTS
