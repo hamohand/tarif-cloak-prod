@@ -65,14 +65,6 @@ public class AuthController {
                     "details", e.getMessage(),
                     "cause", e.getCause() != null ? e.getCause().getMessage() : "Unknown"
                 ));
-        } catch (Exception e) {
-            logger.error("✗ Unexpected error during user registration", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of(
-                    "error", "Une erreur inattendue est survenue",
-                    "details", e.getMessage(),
-                    "type", e.getClass().getSimpleName()
-                ));
         }
     }
 }
