@@ -89,7 +89,7 @@ ollama:
 spring:
   config:
     activate:
-      on-profile: ${SPRING_PROFILES_ACTIVE}
+      on-profile: dev
 
   jpa:
     hibernate:

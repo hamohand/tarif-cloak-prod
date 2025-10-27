@@ -47,8 +47,8 @@ x-traefik-backend-labels: &traefik-backend-labels
 
 # Ancres YAML pour factoriser les variables communes
 x-common-app-bd-vars: &common-app-bd-vars
-  POSTGRES_DB: "${POSTGRES_DB:-app-db}"
-  POSTGRES_USER: "${POSTGRES_USER:-db}"
+  POSTGRES_DB: "${POSTGRES_DB}"
+  POSTGRES_USER: "${POSTGRES_USER}"
   POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
 
 x-common-bd-keycloak-vars: &common-bd-keycloak-vars
@@ -170,9 +170,7 @@ services:
       SPRING_PROFILES_ACTIVE: "${SPRING_PROFILES_ACTIVE:-prod}"
       # Configuration Database APPLICATION
       DB_SERVICE_NAME: "app-db"                    # ← Nom du service de base de données
-      POSTGRES_DB: "${POSTGRES_DB}"               # ← Nom de la base
-      POSTGRES_USER: "${POSTGRES_USER}"           # ← Utilisateur
-      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"   # ← Mot de passe
+      <<: *common-app-bd-vars
       # Configuration Keycloak
       KEYCLOAK_REALM: "${KEYCLOAK_REALM}"
       KEYCLOAK_BACKEND_CLIENT: "${KEYCLOAK_BACKEND_CLIENT}"
