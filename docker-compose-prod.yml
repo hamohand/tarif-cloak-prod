@@ -77,7 +77,6 @@ services:
     volumes:
       - app-database-data:/var/lib/postgresql/data
       - ./sql/sql:/docker-entrypoint-initdb.d
-      - ./sql/users:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD", "pg_isready", "-h", "localhost", "-U", "${POSTGRES_USER}", "-d", "${POSTGRES_DB}"]
       interval: 10s
