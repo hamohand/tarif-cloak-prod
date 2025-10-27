@@ -6,6 +6,7 @@
 # ===============================================================
 
 # Utilisation des champs d'extension (x-*) pour une meilleure organisation
+#x-traefik-host-rule: &traefik-host-rule "Host(`${FRONTEND_DOMAIN}`) || Host(`${WWW_FRONTEND_DOMAIN}`)"
 x-traefik-host-rule: &traefik-host-rule "Host(`hscode.enclume-numerique.com`) || Host(`www.hscode.enclume-numerique.com`)"
 
 # Labels Traefik spécifiques pour le service frontend
@@ -32,12 +33,12 @@ x-traefik-backend-labels: &traefik-backend-labels
   # --- Middleware pour supprimer le préfixe /api ---
   "traefik.http.middlewares.${PROJECT_NAME}-api-stripprefix.stripprefix.prefixes": "/api"
   # --- Routeur HTTPS pour le backend ---
-  "traefik.http.routers.${PROJECT_NAME}-${BACKEND_SERVICE_NAME}-secure.rule": "(Host(`hscode.enclume-numerique.com`) || Host(`www.hscode.enclume-numerique.com`)) && PathPrefix(`/api`)"
+  "traefik.http.routers.${PROJECT_NAME}-${BACKEND_SERVICE_NAME}-secure.rule": "(Host(`${FRONTEND_DOMAIN}`) || Host(`${WWW_FRONTEND_DOMAIN}`)) && PathPrefix(`/api`)"
   "traefik.http.routers.${PROJECT_NAME}-${BACKEND_SERVICE_NAME}-secure.entrypoints": "websecure"
   "traefik.http.routers.${PROJECT_NAME}-${BACKEND_SERVICE_NAME}-secure.tls.certresolver": "le"
   "traefik.http.routers.${PROJECT_NAME}-${BACKEND_SERVICE_NAME}-secure.middlewares": "api-stripprefix"
   # --- Routeur HTTP pour la redirection vers HTTPS ---
-  "traefik.http.routers.${PROJECT_NAME}-${BACKEND_SERVICE_NAME}-http.rule": "(Host(`hscode.enclume-numerique.com`) || Host(`www.hscode.enclume-numerique.com`)) && PathPrefix(`/api`)"
+  "traefik.http.routers.${PROJECT_NAME}-${BACKEND_SERVICE_NAME}-http.rule": "(Host(`${FRONTEND_DOMAIN}`) || Host(`${WWW_FRONTEND_DOMAIN}`)) && PathPrefix(`/api`)"
   "traefik.http.routers.${PROJECT_NAME}-${BACKEND_SERVICE_NAME}-http.entrypoints": "web"
   "traefik.http.routers.${PROJECT_NAME}-${BACKEND_SERVICE_NAME}-http.middlewares": "https-redirect@docker"
   # --- Service pointant vers le conteneur backend ---
@@ -177,19 +178,34 @@ services:
       KEYCLOAK_BACKEND_CLIENT_SECRET: "${KEYCLOAK_BACKEND_CLIENT_SECRET}"
       KEYCLOAK_INTERNAL_URL: "${KEYCLOAK_INTERNAL_URL:-http://keycloak:8080}"
       KEYCLOAK_EXTERNAL_URL: "${KEYCLOAK_EXTERNAL_URL:-http://localhost:8080}"
-
       # Ajouter l'URL pour que le backend puisse atteindre Ollama sur la machine hôte
       OLLAMA_BASE_URL: "http://host.docker.internal:11434"
       # Configuration OpenAI et autres services IA
       OPENAI_API_KEY: "${OPENAI_API_KEY}"
       ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY}"
       OLLAMA_API_KEY: "${OLLAMA_API_KEY}"
+      # Pour Traefik
+      FRONTEND_DOMAIN: "${FRONTEND_DOMAIN}"
+      WWW_FRONTEND_DOMAIN: "${WWW_FRONTEND_DOMAIN}"
+      PROJECT_NAME: "${PROJECT_NAME}"
+      FRONTEND_SERVICE_NAME: "${FRONTEND_SERVICE_NAME}"
+    labels:
+      <<: *traefik-backend-labels
+      # --- Routeur HTTPS pour le backend ---
+#      traefik.http.routers.${PROJECT_NAME}-${BACKEND_SERVICE_NAME}-secure.rule: "(Host(`${FRONTEND_DOMAIN}`) || Host(`${WWW_FRONTEND_DOMAIN}`)) && PathPrefix(`/api`)"
+#      traefik.http.routers.${PROJECT_NAME}-${BACKEND_SERVICE_NAME}-secure.entrypoints: "websecure"
+#      traefik.http.routers.${PROJECT_NAME}-${BACKEND_SERVICE_NAME}-secure.tls.certresolver: "le"
+#      traefik.http.routers.${PROJECT_NAME}-${BACKEND_SERVICE_NAME}-secure.middlewares: "api-stripprefix"
+#      # --- Routeur HTTP pour la redirection vers HTTPS ---
+#      traefik.http.routers.${PROJECT_NAME}-${BACKEND_SERVICE_NAME}-http.rule: "(Host(`${FRONTEND_DOMAIN}`) || Host(`${WWW_FRONTEND_DOMAIN}`)) && PathPrefix(`/api`)"
+#      traefik.http.routers.${PROJECT_NAME}-${BACKEND_SERVICE_NAME}-http.entrypoints: "web"
+#      traefik.http.routers.${PROJECT_NAME}-${BACKEND_SERVICE_NAME}-http.middlewares: "https-redirect@docker"
+#      # --- Service pointant vers le conteneur backend ---
+#      traefik.http.services.${PROJECT_NAME}-${BACKEND_SERVICE_NAME}.loadbalancer.server.port: "${BACKEND_INTERNAL_PORT:-8081}"
     restart: unless-stopped
     networks:
       - default
       - webproxy
-    labels:
-      <<: *traefik-backend-labels
 
   # ===============================================================
   # FRONTEND - APPLICATION ANGULAR
@@ -212,24 +228,24 @@ services:
       WWW_FRONTEND_DOMAIN: "${WWW_FRONTEND_DOMAIN}"
       PROJECT_NAME: "${PROJECT_NAME}"
       FRONTEND_SERVICE_NAME: "${FRONTEND_SERVICE_NAME}"
+      FRONTEND_INTERNAL_PORT: "${FRONTEND_INTERNAL_PORT:-80}"
     labels:
-        traefik.enable: "true"
-        traefik.docker.network: "webproxy"
-        traefik.http.routers.${PROJECT_NAME}-${FRONTEND_SERVICE_NAME}-secure.rule: "Host(`${FRONTEND_DOMAIN}`) || Host(`${WWW_FRONTEND_DOMAIN}`)"
-        traefik.http.routers.${PROJECT_NAME}-${FRONTEND_SERVICE_NAME}-secure.entrypoints: "websecure"
-        traefik.http.routers.${PROJECT_NAME}-${FRONTEND_SERVICE_NAME}-secure.tls.certresolver: "le"
-        traefik.http.routers.${PROJECT_NAME}-${FRONTEND_SERVICE_NAME}-http.rule: "Host(`${FRONTEND_DOMAIN}`) || Host(`${WWW_FRONTEND_DOMAIN}`)"
-        traefik.http.routers.${PROJECT_NAME}-${FRONTEND_SERVICE_NAME}-http.entrypoints: "web"
-        traefik.http.routers.${PROJECT_NAME}-${FRONTEND_SERVICE_NAME}-http.middlewares: "https-redirect@docker"
-
+      <<: *traefik-frontend-labels
+#      traefik.enable: "true"
+#      traefik.docker.network: "webproxy"
+#      traefik.http.routers.${PROJECT_NAME}-${FRONTEND_SERVICE_NAME}-secure.rule: "Host(`${FRONTEND_DOMAIN}`) || Host(`${WWW_FRONTEND_DOMAIN}`)"
+#      traefik.http.routers.${PROJECT_NAME}-${FRONTEND_SERVICE_NAME}-secure.entrypoints: "websecure"
+#      traefik.http.routers.${PROJECT_NAME}-${FRONTEND_SERVICE_NAME}-secure.tls.certresolver: "le"
+#      traefik.http.routers.${PROJECT_NAME}-${FRONTEND_SERVICE_NAME}-http.rule: "Host(`${FRONTEND_DOMAIN}`) || Host(`${WWW_FRONTEND_DOMAIN}`)"
+#      traefik.http.routers.${PROJECT_NAME}-${FRONTEND_SERVICE_NAME}-http.entrypoints: "web"
+#      traefik.http.routers.${PROJECT_NAME}-${FRONTEND_SERVICE_NAME}-http.middlewares: "https-redirect@docker"
+#      traefik.http.services.${PROJECT_NAME}-${FRONTEND_SERVICE_NAME}.loadbalancer.server.port: "${FRONTEND_INTERNAL_PORT:-80}"
     depends_on:
       - backend
     restart: unless-stopped
     networks:
       - default
       - webproxy
-#    labels:
-#      <<: *traefik-frontend-labels
 
 # ===============================================================
 # VOLUMES PERSISTANTS

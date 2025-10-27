@@ -16,8 +16,8 @@ spring:
     password: ${POSTGRES_PASSWORD}
   jpa:
     hibernate:
-    #  ddl-auto: update  #Devloppemment
-      ddl-auto: validate  #En production , utilisez 'validate' ou Flyway/Liquibase
+      ddl-auto: update  #Devloppemment (?)
+#      ddl-auto: validate  #En production (?), utilisez 'validate' ou Flyway/Liquibase
     show-sql: false
 
   # ===================================================
