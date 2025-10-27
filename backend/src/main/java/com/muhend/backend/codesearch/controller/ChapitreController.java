@@ -18,8 +18,9 @@ import java.util.Optional;
 // Spring ne verra que le chemin "/positions6dz".
 // Modifier @RequestMapping("/api/positions6dz")
 // ***********************************************************************************
-@RequestMapping("/api/chapitres")
-@CrossOrigin(origins = "http://localhost:4300") // Allow requests from any origin (for development)
+// @RequestMapping("/api/chapitres") // dev
+@RequestMapping("/chapitres")  // prod
+//@CrossOrigin(origins = "http://localhost:4300") // Allow requests from any origin (for development)
 public class ChapitreController {
 
     private final ChapitreRepository chapitreRepository;

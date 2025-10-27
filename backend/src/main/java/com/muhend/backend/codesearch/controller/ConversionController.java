@@ -14,7 +14,8 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.InputStream;
 
 @RestController
-@RequestMapping("/api/conversion")
+//@RequestMapping("/api/conversion") // dev
+@RequestMapping("/conversion")// prod
 public class ConversionController {
 
     @PostMapping(

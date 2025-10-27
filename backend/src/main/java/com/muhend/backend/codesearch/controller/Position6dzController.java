@@ -15,7 +15,8 @@ import java.util.Optional;
 // Spring ne verra que le chemin "/positions6dz".
 // Modifier @RequestMapping("/api/positions6dz")
 // ***********************************************************************************
-@RequestMapping("api/positions6dz")
+//@RequestMapping("api/positions6dz")
+@RequestMapping("/positions6dz")// prod
 public class Position6dzController {
 
     private final Position6DzRepository position6dzRepository;

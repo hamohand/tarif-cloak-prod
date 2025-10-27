@@ -12,7 +12,8 @@ import org.springframework.web.bind.annotation.RestController;
 // Spring ne verra que le chemin "/chapitres".
 // Modifier @RequestMapping("/api/chapitres")
 // ***********************************************************************************
-@RequestMapping("/api/sections")
+//@RequestMapping("/api/sections")
+@RequestMapping("/sections")// prod
 public class SectionController {
     private final SectionService sectionService;
     public SectionController(SectionService sectionService) {
