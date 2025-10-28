@@ -124,9 +124,24 @@ services:
       KEYCLOAK_ADMIN_PASSWORD: "${KEYCLOAK_ADMIN_PASSWORD:-admin}"
       # Configuration Réseau pour un reverse proxy
       KC_PROXY: "edge"
-      KC_HOSTNAME: "${KEYCLOAK_HOSTNAME:-localhost}"
+#      KC_HOSTNAME: "${KEYCLOAK_HOSTNAME:-localhost}"
+      KC_HOSTNAME: "auth.hscode.enclume-numerique.com"
       KC_HTTP_ENABLED: true
       KC_HEALTH_ENABLED: true
+    labels:
+      # Labels pour exposer Keycloak via Traefik
+      - "traefik.enable=true"
+      - "traefik.docker.network=webproxy"
+      # --- Routeur HTTPS pour Keycloak ---
+      - "traefik.http.routers.${PROJECT_NAME}-keycloak-secure.rule=Host(`auth.hscode.enclume-numerique.com`)"
+      - "traefik.http.routers.${PROJECT_NAME}-keycloak-secure.entrypoints=websecure"
+      - "traefik.http.routers.${PROJECT_NAME}-keycloak-secure.tls.certresolver=le"
+      # --- Routeur HTTP pour la redirection vers HTTPS ---
+      - "traefik.http.routers.${PROJECT_NAME}-keycloak-http.rule=Host(`auth.hscode.enclume-numerique.com`)"
+      - "traefik.http.routers.${PROJECT_NAME}-keycloak-http.entrypoints=web"
+      - "traefik.http.routers.${PROJECT_NAME}-keycloak-http.middlewares=https-redirect@docker"
+      # --- Service pointant vers le conteneur Keycloak sur le port 8080 ---
+      - "traefik.http.services.${PROJECT_NAME}-keycloak.loadbalancer.server.port=8080"
     # Le port n'est plus exposé directement, le reverse proxy s'en chargera
     # ports:
     #   - "${SECURITE_INTERNAL_PORT:-8080}:8080"
@@ -147,6 +162,8 @@ services:
       start_period: 60s
     networks:
       - default
+      # Connecter Keycloak au réseau de Traefik
+      - webproxy
 
   # ===============================================================
   # BACKEND - API SPRING BOOT
