@@ -213,7 +213,8 @@ services:
     build:
       context: ./frontend
       args:
-        # Indique au Dockerfile d'utiliser la conf de prod
+        # Indique au Dockerfile d'utiliser KEYCLOAK_EXTERNAL_URL et la conf de prod
+        KEYCLOAK_EXTERNAL_URL: ${KEYCLOAK_EXTERNAL_URL}
         NGINX_CONF: nginx-prod.conf
         # Variables Keycloak passées au build-time
         KEYCLOAK_REALM: "${KEYCLOAK_REALM}"
