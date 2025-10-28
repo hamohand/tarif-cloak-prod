@@ -63,8 +63,8 @@ public class SecurityConfig {
         // --- IMPORTANT ---
         // Remplacez par le domaine exact de votre frontend
         configuration.setAllowedOrigins(List.of(
-            "https://tarif.enclume-numerique.com",
-            "https://www.tarif.enclume-numerique.com",
+            "https://hscode.enclume-numerique.com",
+            "https://www.hscode.enclume-numerique.com",
             "http://localhost:4200"));
 
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
