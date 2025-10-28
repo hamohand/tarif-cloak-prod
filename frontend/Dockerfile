@@ -14,11 +14,6 @@ ARG KEYCLOAK_EXTERNAL_URL
 # La rendre disponible comme variable d'environnement pour le script generate-env.js
 ENV KEYCLOAK_EXTERNAL_URL=${KEYCLOAK_EXTERNAL_URL}
 
-# ===================================================================
-# ÉTAPE DE DÉBOGAGE : Exécuter le script SEUL pour voir sa sortie
-# ===================================================================
-RUN node ./generate-env.js
-
 # Construire l'application en mode production
 # Le script generate-env.js va maintenant utiliser la bonne URL
 # Le résultat sera dans /app/dist/frontend (ou un nom similaire)
