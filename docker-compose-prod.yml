@@ -9,10 +9,22 @@
 #x-traefik-host-rule: &traefik-host-rule "Host(`${FRONTEND_DOMAIN}`) || Host(`${WWW_FRONTEND_DOMAIN}`)"
 x-traefik-host-rule: &traefik-host-rule "Host(`hscode.enclume-numerique.com`) || Host(`www.hscode.enclume-numerique.com`)"
 
-# Labels Traefik spécifiques pour le service frontend : effacé
+# Labels Traefik spécifiques pour le service frontend
+x-traefik-frontend-labels: &traefik-frontend-labels
+  traefik.enable: "true"
+  traefik.docker.network: "webproxy"
+  # --- Routeur HTTPS pour le frontend ---
+  "traefik.http.routers.hscode-frontend-secure.rule": *traefik-host-rule
+  "traefik.http.routers.hscode-frontend-secure.entrypoints": "websecure"
+  "traefik.http.routers.hscode-frontend-secure.tls.certresolver": "le"
+  # --- Routeur HTTP pour la redirection vers HTTPS ---
+  "traefik.http.routers.hscode-frontend-http.rule": *traefik-host-rule
+  "traefik.http.routers.hscode-frontend-http.entrypoints": "web"
+  "traefik.http.routers.hscode-frontend-http.middlewares": "https-redirect"
+  # --- Service pointant vers le conteneur frontend ---
+  "traefik.http.services.hscode-frontend.loadbalancer.server.port": "80"
 
 ########### BACKEND #############
-
 # Labels Traefik spécifiques pour le service backend (exposé sur /api)
 x-traefik-backend-labels: &traefik-backend-labels
   traefik.enable: "true"
@@ -226,24 +238,8 @@ services:
       FRONTEND_SERVICE_NAME: "${FRONTEND_SERVICE_NAME}"
       FRONTEND_INTERNAL_PORT: "${FRONTEND_INTERNAL_PORT:-80}"
     labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=webproxy"
-      # --- Service Traefik pointant vers le conteneur frontend sur le port 80 ---
-      - "traefik.http.services.hscode-frontend.loadbalancer.server.port=80"
-
-      # --- Routeur HTTPS pour le frontend ---
-      - "traefik.http.routers.hscode-frontend-secure.rule=Host(`hscode.enclume-numerique.com`) || Host(`www.hscode.enclume-numerique.com`)"
-      - "traefik.http.routers.hscode-frontend-secure.entrypoints=websecure"
-      - "traefik.http.routers.hscode-frontend-secure.tls.certresolver=le"
-      # --- LIAISON EXPLICITE ---
-      - "traefik.http.routers.hscode-frontend-secure.service=hscode-frontend"
-
-      # --- Routeur HTTP pour la redirection vers HTTPS ---
-      - "traefik.http.routers.hscode-frontend-http.rule=Host(`hscode.enclume-numerique.com`) || Host(`www.hscode.enclume-numerique.com`)"
-      - "traefik.http.routers.hscode-frontend-http.entrypoints=web"
-      - "traefik.http.routers.hscode-frontend-http.middlewares=https-redirect"
-      # --- LIAISON EXPLICITE ---
-      - "traefik.http.routers.hscode-frontend-http.service=hscode-frontend"
+      *traefik-frontend-labels
+#      - "traefik.http.routers.hscode-frontend-http.service=hscode-frontend"
     depends_on:
       - backend
     restart: unless-stopped
