@@ -9,20 +9,7 @@
 #x-traefik-host-rule: &traefik-host-rule "Host(`${FRONTEND_DOMAIN}`) || Host(`${WWW_FRONTEND_DOMAIN}`)"
 x-traefik-host-rule: &traefik-host-rule "Host(`hscode.enclume-numerique.com`) || Host(`www.hscode.enclume-numerique.com`)"
 
-# Labels Traefik spécifiques pour le service frontend
-x-traefik-frontend-labels: &traefik-frontend-labels
-  traefik.enable: "true"
-  traefik.docker.network: "webproxy"
-  # --- Routeur HTTPS pour le frontend ---
-  "traefik.http.routers.${PROJECT_NAME}-${FRONTEND_SERVICE_NAME}-secure.rule": *traefik-host-rule
-  "traefik.http.routers.${PROJECT_NAME}-${FRONTEND_SERVICE_NAME}-secure.entrypoints": "websecure"
-  "traefik.http.routers.${PROJECT_NAME}-${FRONTEND_SERVICE_NAME}-secure.tls.certresolver": "le"
-  # --- Routeur HTTP pour la redirection vers HTTPS ---
-  "traefik.http.routers.${PROJECT_NAME}-${FRONTEND_SERVICE_NAME}-http.rule": *traefik-host-rule
-  "traefik.http.routers.${PROJECT_NAME}-${FRONTEND_SERVICE_NAME}-http.entrypoints": "web"
-  "traefik.http.routers.${PROJECT_NAME}-${FRONTEND_SERVICE_NAME}-http.middlewares": "https-redirect@docker"
-  # --- Service pointant vers le conteneur frontend ---
-  "traefik.http.services.${PROJECT_NAME}-${FRONTEND_SERVICE_NAME}.loadbalancer.server.port": "${FRONTEND_INTERNAL_PORT:-80}"
+# Labels Traefik spécifiques pour le service frontend : effacé
 
 ########### BACKEND #############
 
