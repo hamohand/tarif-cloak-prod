@@ -793,7 +793,7 @@
       ],
       "webOrigins": [
           "https://hscode.enclume-numerique.com",
-          "https://www.hscode.enclume-numerique.com",
+          "https://www.hscode.enclume-numerique.com"
       ],
       "notBefore": 0,
       "bearerOnly": false,
