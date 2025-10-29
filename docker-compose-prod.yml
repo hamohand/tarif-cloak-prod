@@ -230,7 +230,6 @@ services:
         KEYCLOAK_FRONTEND_CLIENT: "${KEYCLOAK_FRONTEND_CLIENT}"
         KEYCLOAK_INTERNAL_URL: "${KEYCLOAK_INTERNAL_URL}"
         API_URL: "/api"
-
     environment:
       FRONTEND_DOMAIN: "${FRONTEND_DOMAIN}"
       WWW_FRONTEND_DOMAIN: "${WWW_FRONTEND_DOMAIN}"
@@ -238,7 +237,7 @@ services:
       FRONTEND_SERVICE_NAME: "${FRONTEND_SERVICE_NAME}"
       FRONTEND_INTERNAL_PORT: "${FRONTEND_INTERNAL_PORT:-80}"
     labels:
-      *traefik-frontend-labels
+      <<: *traefik-frontend-labels
 #      - "traefik.http.routers.hscode-frontend-http.service=hscode-frontend"
     depends_on:
       - backend

@@ -15,6 +15,7 @@ services:
        - "--certificatesresolvers.le.acme.storage=/letsencrypt/acme.json"
        - "--certificatesresolvers.le.acme.tlschallenge=true"
      labels:
+       - "traefik.enable=true"
        # --- DEFINITION GLOBALE DU MIDDLEWARE DE REDIRECTION
        # Crée un middleware nommé 'https-redirect' : Traefik est disponible pour tous les conteneurs
        # qui est un schéma de redirection de http vers https.
