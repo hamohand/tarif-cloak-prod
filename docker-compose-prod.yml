@@ -37,13 +37,16 @@ x-traefik-backend-labels: &traefik-backend-labels
   "traefik.http.routers.hscode-backend-secure.entrypoints": "websecure"
   "traefik.http.routers.hscode-backend-secure.tls.certresolver": "le"
   "traefik.http.routers.hscode-backend-secure.middlewares": "hscode-api-stripprefix"
+  "traefik.http.routers.hscode-backend-secure.service": "hscode-backend"
   # --- Routeur HTTP pour la redirection vers HTTPS ---
   "traefik.http.routers.hscode-backend-http.rule": "(Host(`hscode.enclume-numerique.com`) || Host(`www.hscode.enclume-numerique.com`)) && PathPrefix(`/api`)"
   "traefik.http.routers.hscode-backend-http.entrypoints": "web"
   "traefik.http.routers.hscode-backend-http.middlewares": "https-redirect" # Utilise le middleware global
+  "traefik.http.routers.hscode-backend-http.service": "hscode-backend"
   # --- Service pointant vers le conteneur backend ---
   "traefik.http.services.hscode-backend.loadbalancer.server.port": "8081"
 
+# /////////////////////////////////////
 # Ancres YAML pour factoriser les variables communes
 x-common-app-bd-vars: &common-app-bd-vars
   POSTGRES_DB: "${POSTGRES_DB}"
@@ -135,10 +138,12 @@ services:
       - "traefik.http.routers.hscode-keycloak-secure.rule=Host(`auth.hscode.enclume-numerique.com`)"
       - "traefik.http.routers.hscode-keycloak-secure.entrypoints=websecure"
       - "traefik.http.routers.hscode-keycloak-secure.tls.certresolver=le"
+      - "traefik.http.routers.hscode-keycloak-secure.service=hscode-keycloak"
       # --- Routeur HTTP pour la redirection vers HTTPS ---
       - "traefik.http.routers.hscode-keycloak-http.rule=Host(`auth.hscode.enclume-numerique.com`)"
       - "traefik.http.routers.hscode-keycloak-http.entrypoints=web"
       - "traefik.http.routers.hscode-keycloak-http.middlewares=https-redirect" # Utilise le middleware global
+      - "traefik.http.routers.hscode-keycloak-secure.service=hscode-keycloak"
       # --- Service pointant vers le conteneur Keycloak sur le port 8080 ---
       - "traefik.http.services.hscode-keycloak.loadbalancer.server.port=8080"
     # Le port n'est plus exposé directement, le reverse proxy s'en chargera

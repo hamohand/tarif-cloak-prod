@@ -3,7 +3,13 @@ services:
      image: traefik:v3.0
      container_name: traefik
      command:
-       # ... vos commandes existantes ...
+     # --- Activation de l'API et du Dashboard (NON SÉCURISÉ) ---
+       - "--api.insecure=true"
+       # --- Configuration du fournisseur Docker ---
+       - "--providers.docker=true"
+       - "--providers.docker.exposedbydefault=false"
+       # --- Configuration des points d'entrée (ports d'écoute) ---
+       - "--entrypoints.web.address=:80"
        - "--entrypoints.websecure.address=:443"
        - "--certificatesresolvers.le.acme.email=hamohand@gmail.com"
        - "--certificatesresolvers.le.acme.storage=/letsencrypt/acme.json"
