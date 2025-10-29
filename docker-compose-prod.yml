@@ -236,16 +236,22 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=webproxy"
+      # --- Service Traefik pointant vers le conteneur frontend sur le port 80 ---
+      - "traefik.http.services.hscode-frontend.loadbalancer.server.port=80"
+
       # --- Routeur HTTPS pour le frontend ---
       - "traefik.http.routers.hscode-frontend-secure.rule=Host(`hscode.enclume-numerique.com`) || Host(`www.hscode.enclume-numerique.com`)"
       - "traefik.http.routers.hscode-frontend-secure.entrypoints=websecure"
       - "traefik.http.routers.hscode-frontend-secure.tls.certresolver=le"
+      # --- LIAISON EXPLICITE ---
+      - "traefik.http.routers.hscode-frontend-secure.service=hscode-frontend"
+
       # --- Routeur HTTP pour la redirection vers HTTPS ---
       - "traefik.http.routers.hscode-frontend-http.rule=Host(`hscode.enclume-numerique.com`) || Host(`www.hscode.enclume-numerique.com`)"
       - "traefik.http.routers.hscode-frontend-http.entrypoints=web"
-      - "traefik.http.routers.hscode-frontend-http.middlewares=https-redirect" # Utilise le middleware global
-      # --- Service pointant vers le conteneur frontend ---
-      - "traefik.http.services.hscode-frontend.loadbalancer.server.port=80"
+      - "traefik.http.routers.hscode-frontend-http.middlewares=https-redirect"
+      # --- LIAISON EXPLICITE ---
+      - "traefik.http.routers.hscode-frontend-http.service=hscode-frontend"
     depends_on:
       - backend
     restart: unless-stopped
