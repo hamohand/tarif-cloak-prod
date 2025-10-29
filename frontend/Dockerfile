@@ -30,6 +30,10 @@ ARG NGINX_CONF=nginx-dev.conf
 # Assurez-vous que 'dist/frontend' correspond au chemin de sortie de votre build
 COPY --from=build /app/dist/frontend/browser /usr/share/nginx/html
 
+# --- CORRECTION DES PERMISSIONS ---
+# S'assurer que l'utilisateur nginx peut lire les fichiers du site
+RUN chmod -R 755 /usr/share/nginx/html
+
 # Copier notre configuration de proxy Nginx personnalisée
 COPY ${NGINX_CONF} /etc/nginx/conf.d/default.conf
 
