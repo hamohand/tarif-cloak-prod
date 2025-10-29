@@ -1,0 +1,38 @@
+services:
+   traefik:
+     image: traefik:v3.0
+     container_name: traefik
+     command:
+       # ... vos commandes existantes ...
+       - "--entrypoints.websecure.address=:443"
+       - "--certificatesresolvers.le.acme.email=hamohand@gmail.com"
+       - "--certificatesresolvers.le.acme.storage=/letsencrypt/acme.json"
+       - "--certificatesresolvers.le.acme.tlschallenge=true"
+     labels:
+       # --- DEFINITION GLOBALE DU MIDDLEWARE DE REDIRECTION
+       # Crée un middleware nommé 'https-redirect' : Traefik est disponible pour tous les conteneurs
+       # qui est un schéma de redirection de http vers https.
+       - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
+       - "traefik.http.middlewares.https-redirect.redirectscheme.permanent=true"
+
+     ports:
+       - "80:80"
+       - "443:443"
+       - "8080:8080"
+     volumes:
+       - /var/run/docker.sock:/var/run/docker.sock:ro
+       # --- AJOUT POUR LE SSL ---
+       # On crée un volume pour que Traefik puisse sauvegarder les certificats obtenus
+       - traefik-letsencrypt:/letsencrypt
+
+     networks:
+       - webproxy
+
+networks:
+  webproxy:
+    external: true
+
+ # --- AJOUT POUR LE SSL ---
+ # On déclare le volume pour le stockage des certificats
+volumes:
+  traefik-letsencrypt:
