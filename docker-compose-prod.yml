@@ -143,7 +143,7 @@ services:
       - "traefik.http.routers.hscode-keycloak-http.rule=Host(`auth.hscode.enclume-numerique.com`)"
       - "traefik.http.routers.hscode-keycloak-http.entrypoints=web"
       - "traefik.http.routers.hscode-keycloak-http.middlewares=https-redirect" # Utilise le middleware global
-      - "traefik.http.routers.hscode-keycloak-secure.service=hscode-keycloak"
+      - "traefik.http.routers.hscode-keycloak-http.service=hscode-keycloak"
       # --- Service pointant vers le conteneur Keycloak sur le port 8080 ---
       - "traefik.http.services.hscode-keycloak.loadbalancer.server.port=8080"
     # Le port n'est plus exposé directement, le reverse proxy s'en chargera
