@@ -1,38 +1,39 @@
 services:
-   traefik:
-     image: traefik:v3.0
-     container_name: traefik
-     command:
-     # --- Activation de l'API et du Dashboard (NON SÉCURISÉ) ---
-       - "--api.insecure=true"
-       # --- Configuration du fournisseur Docker ---
-       - "--providers.docker=true"
-       - "--providers.docker.exposedbydefault=false"
-       # --- Configuration des points d'entrée (ports d'écoute) ---
-       - "--entrypoints.web.address=:80"
-       - "--entrypoints.websecure.address=:443"
-       - "--certificatesresolvers.le.acme.email=hamohand@gmail.com"
-       - "--certificatesresolvers.le.acme.storage=/letsencrypt/acme.json"
-       - "--certificatesresolvers.le.acme.tlschallenge=true"
-     labels:
+  traefik:
+    # CHANGEMENT DE VERSION - C'EST LE POINT LE PLUS IMPORTANT
+    image: traefik:v2.10
+    container_name: traefik
+    command:
+      - "--log.level=DEBUG"
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      # --- Points d'entrée ---
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      # --- Configuration ACME comme dans leur exemple ---
+      - "--certificatesresolvers.myresolver.acme.email=hamohand@gmail.com"
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+      # On retourne au TLS Challenge, comme ils le recommandent
+      - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
+    labels:
        - "traefik.enable=true"
        # --- DEFINITION GLOBALE DU MIDDLEWARE DE REDIRECTION
        # Crée un middleware nommé 'https-redirect' : Traefik est disponible pour tous les conteneurs
        # qui est un schéma de redirection de http vers https.
        - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
        - "traefik.http.middlewares.https-redirect.redirectscheme.permanent=true"
+    ports:
+     - "80:80"
+     - "443:443"
+     - "8080:8080"
+    volumes:
+     - /var/run/docker.sock:/var/run/docker.sock:ro
+     # --- AJOUT POUR LE SSL ---
+     # On crée un volume pour que Traefik puisse sauvegarder les certificats obtenus
+     - traefik-letsencrypt:/letsencrypt
 
-     ports:
-       - "80:80"
-       - "443:443"
-       - "8080:8080"
-     volumes:
-       - /var/run/docker.sock:/var/run/docker.sock:ro
-       # --- AJOUT POUR LE SSL ---
-       # On crée un volume pour que Traefik puisse sauvegarder les certificats obtenus
-       - traefik-letsencrypt:/letsencrypt
-
-     networks:
+    networks:
        - webproxy
 
 networks:
