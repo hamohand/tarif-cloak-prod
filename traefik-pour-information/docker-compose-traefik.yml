@@ -14,7 +14,6 @@ services:
       # --- Configuration ACME comme dans leur exemple ---
       - "--certificatesresolvers.myresolver.acme.email=hamohand@gmail.com"
       - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
-      # On retourne au TLS Challenge, comme ils le recommandent
       - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
     labels:
        - "traefik.enable=true"
