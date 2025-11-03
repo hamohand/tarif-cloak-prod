@@ -134,24 +134,20 @@ services:
       #Labels pour exposer Keycloak via Traefik
       - "traefik.enable=true"
       - "traefik.docker.network=webproxy"
-      # --- NOUVELLE RÈGLE DE ROUTAGE POUR KEYCLOAK ---
-      - "traefik.http.routers.hscode-keycloak-secure.rule=Host(`hscode.enclume-numerique.com`) && PathPrefix(`/auth`)"
+
+      # --- Routeur HTTPS pour Keycloak ---
+      - "traefik.http.routers.hscode-keycloak-secure.rule=Host(`auth.hscode.enclume-numerique.com`)"
       - "traefik.http.routers.hscode-keycloak-secure.entrypoints=websecure"
       - "traefik.http.routers.hscode-keycloak-secure.tls.certresolver=myresolver"
       - "traefik.http.routers.hscode-keycloak-secure.service=hscode-keycloak"
 
-      # --- MIDDLEWARE POUR SUPPRIMER LE PRÉFIXE /auth ---
-      - "traefik.http.middlewares.keycloak-stripprefix.stripprefix.prefixes=/auth"
-      # On applique ce middleware au routeur
-      - "traefik.http.routers.hscode-keycloak-secure.middlewares=keycloak-stripprefix"
-
-      # --- Pas besoin de routeur HTTP, la redirection globale suffit ---
+      # --- Routeur HTTP pour la redirection globale (pas besoin de middleware ici) ---
+      - "traefik.http.routers.hscode-keycloak-http.rule=Host(`auth.hscode.enclume-numerique.com`)"
+      - "traefik.http.routers.hscode-keycloak-http.entrypoints=web"
+      - "traefik.http.routers.hscode-keycloak-http.middlewares=https-redirect"
 
       # --- Service pointant vers le conteneur Keycloak sur le port 8080 ---
       - "traefik.http.services.hscode-keycloak.loadbalancer.server.port=8080"
-    # Le port n'est plus exposé directement, le reverse proxy s'en chargera
-    # ports:
-    #   - "${SECURITE_INTERNAL_PORT:-8080}:8080"
     volumes:
       - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
     command:
