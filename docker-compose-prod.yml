@@ -127,7 +127,7 @@ services:
       KEYCLOAK_ADMIN_PASSWORD: "${KEYCLOAK_ADMIN_PASSWORD:-admin}"
       # Configuration Réseau pour un reverse proxy
       KC_PROXY: "edge"
-      KC_HOSTNAME: "hscode.enclume-numerique.com"
+      KC_HOSTNAME: ${KC_HOSTNAME:-"auth.hscode.enclume-numerique.com"}
       KC_HTTP_ENABLED: true
       KC_HEALTH_ENABLED: true
     labels:
