@@ -7,8 +7,7 @@
 
 # Utilisation des champs d'extension (x-*) pour une meilleure organisation
 #x-traefik-host-rule: &traefik-host-rule "Host(`${FRONTEND_DOMAIN}`) || Host(`${WWW_FRONTEND_DOMAIN}`)"
-#x-traefik-host-rule: &traefik-host-rule "Host(`hscode.enclume-numerique.com`) || Host(`www.hscode.enclume-numerique.com`)"
-x-traefik-host-rule: &traefik-host-rule "Host(`hscode.enclume-numerique.com`)"
+x-traefik-host-rule: &traefik-host-rule "Host(`hscode.enclume-numerique.com`) || Host(`www.hscode.enclume-numerique.com`)"
 
 # Labels Traefik spécifiques pour le service frontend
 x-traefik-frontend-labels: &traefik-frontend-labels
@@ -163,7 +162,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 60s
+      start_period: 120s
     networks:
       - default
       # Connecter Keycloak au réseau de Traefik

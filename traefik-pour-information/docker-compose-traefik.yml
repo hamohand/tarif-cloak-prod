@@ -14,8 +14,6 @@ services:
        - "--certificatesresolvers.myresolver.acme.email=hamohand@gmail.com"
        - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
        - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
-       - # --- LIGNE CRUCIALE : On pointe vers le serveur de test ---
-#       - "--certificatesresolvers.myresolver.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory"
      labels:
        - "traefik.enable=true"
        - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
