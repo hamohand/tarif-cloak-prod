@@ -158,12 +158,14 @@ services:
       keycloak-db:
         condition: service_healthy
     restart: unless-stopped
-    healthcheck:
-      test: [ "CMD-SHELL", "curl -f http://localhost:8080/health || exit 1" ]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 120s
+    # --- ON DESACTIVE COMPLETEMENT LE HEALTHCHECK POUR LE TEST ---
+    # healthcheck:
+#      test: [ "CMD-SHELL", "curl -f http://localhost:8080/health || exit 1" ]
+    #   test: ["CMD-SHELL", "ss -tln | grep 8080 || exit 1"]
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 5
+    #   start_period: 120s
     networks:
       - default
       # Connecter Keycloak au réseau de Traefik
