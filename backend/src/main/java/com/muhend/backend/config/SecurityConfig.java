@@ -3,6 +3,7 @@ package com.muhend.backend.config;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -28,6 +29,8 @@ public class SecurityConfig {
             // 1. Désactiver CSRF car nous utilisons une API sans état avec des tokens JWT.
             .csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(authorize -> authorize
+                // 0. Autoriser les requêtes OPTIONS (preflight CORS) avant tout
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 // 2. CORRECTION : Autoriser l'accès public au contrôleur d'authentification et à la documentation Swagger.
                 .requestMatchers("/api/auth/register").permitAll()
                 .requestMatchers("/api/auth/login").permitAll()
@@ -61,15 +64,17 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         // --- IMPORTANT ---
-        // Remplacez par le domaine exact de votre frontend
-        configuration.setAllowedOrigins(List.of(
+        // Utiliser setAllowedOriginPatterns au lieu de setAllowedOrigins quand allowCredentials est true
+        configuration.setAllowedOriginPatterns(List.of(
             "https://hscode.enclume-numerique.com",
             "https://www.hscode.enclume-numerique.com",
             "http://localhost:4200"));
 
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
+        // Important : exposer les headers de réponse pour que le frontend puisse les lire
+        configuration.setExposedHeaders(List.of("Authorization", "Content-Type"));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
