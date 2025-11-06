@@ -6,8 +6,7 @@
 # ===============================================================
 
 # Utilisation des champs d'extension (x-*) pour une meilleure organisation
-#x-traefik-host-rule: &traefik-host-rule "Host(`${FRONTEND_DOMAIN}`) || Host(`${WWW_FRONTEND_DOMAIN}`)"
-x-traefik-host-rule: &traefik-host-rule "Host(`hscode.enclume-numerique.com`) || Host(`www.hscode.enclume-numerique.com`)"
+x-traefik-host-rule: &traefik-host-rule "Host(`${FRONTEND_DOMAIN}`) || Host(`${WWW_FRONTEND_DOMAIN}`)"
 
 # Labels Traefik spécifiques pour le service frontend
 x-traefik-frontend-labels: &traefik-frontend-labels
@@ -16,7 +15,7 @@ x-traefik-frontend-labels: &traefik-frontend-labels
   # --- Routeur HTTPS pour le frontend ---
   "traefik.http.routers.hscode-frontend-secure.rule": *traefik-host-rule
   "traefik.http.routers.hscode-frontend-secure.entrypoints": "websecure"
-  "traefik.http.routers.hscode-frontend-secure.tls.certresolver": "myresolver"
+  "traefik.http.routers.hscode-frontend-secure.tls.certresolver": "${TRAEFIK_CERT_RESOLVER:-myresolver}"
     # --- LIAISON EXPLICITE ---
   "traefik.http.routers.hscode-frontend-secure.service": "hscode-frontend"
   # --- Routeur HTTP pour la redirection vers HTTPS ---
@@ -24,7 +23,7 @@ x-traefik-frontend-labels: &traefik-frontend-labels
   "traefik.http.routers.hscode-frontend-http.entrypoints": "web"
   "traefik.http.routers.hscode-frontend-http.middlewares": "https-redirect"
   # --- Service pointant vers le conteneur frontend ---
-  "traefik.http.services.hscode-frontend.loadbalancer.server.port": "80"
+  "traefik.http.services.hscode-frontend.loadbalancer.server.port": "${FRONTEND_INTERNAL_PORT:-80}"
 
 ########### BACKEND #############
 # Labels Traefik spécifiques pour le service backend (exposé sur /api)
@@ -34,18 +33,18 @@ x-traefik-backend-labels: &traefik-backend-labels
   # --- Définition du middleware pour ce service ---
   "traefik.http.middlewares.hscode-api-stripprefix.stripprefix.prefixes": "/api"
   # --- Routeur HTTPS pour le backend ---
-  "traefik.http.routers.hscode-backend-secure.rule": "(Host(`hscode.enclume-numerique.com`) || Host(`www.hscode.enclume-numerique.com`)) && PathPrefix(`/api`)"
+  "traefik.http.routers.hscode-backend-secure.rule": "(Host(`${FRONTEND_DOMAIN}`) || Host(`${WWW_FRONTEND_DOMAIN}`)) && PathPrefix(`/api`)"
   "traefik.http.routers.hscode-backend-secure.entrypoints": "websecure"
-  "traefik.http.routers.hscode-backend-secure.tls.certresolver": "myresolver"
+  "traefik.http.routers.hscode-backend-secure.tls.certresolver": "${TRAEFIK_CERT_RESOLVER:-myresolver}"
   "traefik.http.routers.hscode-backend-secure.middlewares": "hscode-api-stripprefix"
   "traefik.http.routers.hscode-backend-secure.service": "hscode-backend"
   # --- Routeur HTTP pour la redirection vers HTTPS ---
-  "traefik.http.routers.hscode-backend-http.rule": "(Host(`hscode.enclume-numerique.com`) || Host(`www.hscode.enclume-numerique.com`)) && PathPrefix(`/api`)"
+  "traefik.http.routers.hscode-backend-http.rule": "(Host(`${FRONTEND_DOMAIN}`) || Host(`${WWW_FRONTEND_DOMAIN}`)) && PathPrefix(`/api`)"
   "traefik.http.routers.hscode-backend-http.entrypoints": "web"
   "traefik.http.routers.hscode-backend-http.middlewares": "https-redirect" # Utilise le middleware global
   "traefik.http.routers.hscode-backend-http.service": "hscode-backend"
   # --- Service pointant vers le conteneur backend ---
-  "traefik.http.services.hscode-backend.loadbalancer.server.port": "8081"
+  "traefik.http.services.hscode-backend.loadbalancer.server.port": "${BACKEND_INTERNAL_PORT:-8081}"
 
 # /////////////////////////////////////
 # Ancres YAML pour factoriser les variables communes
@@ -127,7 +126,7 @@ services:
       KEYCLOAK_ADMIN_PASSWORD: "${KEYCLOAK_ADMIN_PASSWORD:-admin}"
       # Configuration Réseau pour un reverse proxy
       KC_PROXY: "edge"
-      KC_HOSTNAME: "${KC_HOSTNAME:-auth.hscode.enclume-numerique.com}"
+      KC_HOSTNAME: "${KC_HOSTNAME:-${KEYCLOAK_DOMAIN}}"
       KC_HTTP_ENABLED: "true"
       KC_HEALTH_ENABLED: "true"
     labels:
@@ -136,18 +135,18 @@ services:
       - "traefik.docker.network=webproxy"
 
       # --- Routeur HTTPS pour Keycloak ---
-      - "traefik.http.routers.hscode-keycloak-secure.rule=Host(`auth.hscode.enclume-numerique.com`)"
+      - "traefik.http.routers.hscode-keycloak-secure.rule=Host(`${KEYCLOAK_DOMAIN}`)"
       - "traefik.http.routers.hscode-keycloak-secure.entrypoints=websecure"
-      - "traefik.http.routers.hscode-keycloak-secure.tls.certresolver=myresolver"
+      - "traefik.http.routers.hscode-keycloak-secure.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-myresolver}"
       - "traefik.http.routers.hscode-keycloak-secure.service=hscode-keycloak"
 
       # --- Routeur HTTP pour la redirection globale (pas besoin de middleware ici) ---
-      - "traefik.http.routers.hscode-keycloak-http.rule=Host(`auth.hscode.enclume-numerique.com`)"
+      - "traefik.http.routers.hscode-keycloak-http.rule=Host(`${KEYCLOAK_DOMAIN}`)"
       - "traefik.http.routers.hscode-keycloak-http.entrypoints=web"
       - "traefik.http.routers.hscode-keycloak-http.middlewares=https-redirect"
 
       # --- Service pointant vers le conteneur Keycloak sur le port 8080 ---
-      - "traefik.http.services.hscode-keycloak.loadbalancer.server.port=8080"
+      - "traefik.http.services.hscode-keycloak.loadbalancer.server.port=${KEYCLOAK_INTERNAL_PORT:-8080}"
     volumes:
       - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
     command:
@@ -199,7 +198,7 @@ services:
       KEYCLOAK_INTERNAL_URL: "${KEYCLOAK_INTERNAL_URL:-http://keycloak:8080}"
       KEYCLOAK_EXTERNAL_URL: "${KEYCLOAK_EXTERNAL_URL:-http://localhost:8080}"
       # Ajouter l'URL pour que le backend puisse atteindre Ollama sur la machine hôte
-      OLLAMA_BASE_URL: "http://host.docker.internal:11434"
+      OLLAMA_BASE_URL: "${OLLAMA_BASE_URL:-http://host.docker.internal:11434}"
       # Configuration OpenAI et autres services IA
       OPENAI_API_KEY: "${OPENAI_API_KEY}"
       ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY}"

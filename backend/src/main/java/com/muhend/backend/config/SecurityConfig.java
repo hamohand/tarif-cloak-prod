@@ -1,6 +1,7 @@
 package com.muhend.backend.config;
 
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.annotation.Order;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,6 +22,9 @@ import java.util.List;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+
+    @Value("${cors.allowed-origins:https://hscode.enclume-numerique.com,https://www.hscode.enclume-numerique.com,http://localhost:4200}")
+    private String allowedOrigins;
 
     // SecurityFilterChain pour les endpoints publics (sans authentification OAuth2)
     // Doit être vérifiée en premier (ordre 1)
@@ -76,10 +80,10 @@ public class SecurityConfig {
 
         // --- IMPORTANT ---
         // Utiliser setAllowedOriginPatterns au lieu de setAllowedOrigins quand allowCredentials est true
-        configuration.setAllowedOriginPatterns(List.of(
-            "https://hscode.enclume-numerique.com",
-            "https://www.hscode.enclume-numerique.com",
-            "http://localhost:4200"));
+        // Les origines CORS sont configurées via la variable d'environnement cors.allowed-origins
+        // Format: "origin1,origin2,origin3" (séparées par des virgules)
+        List<String> origins = Arrays.asList(allowedOrigins.split("\\s*,\\s*"));
+        configuration.setAllowedOriginPatterns(origins);
 
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(List.of("*"));
