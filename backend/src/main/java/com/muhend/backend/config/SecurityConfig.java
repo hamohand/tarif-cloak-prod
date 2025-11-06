@@ -30,11 +30,12 @@ public class SecurityConfig {
 
     // SecurityFilterChain pour les endpoints publics (sans authentification OAuth2)
     // Doit être vérifiée en premier (ordre 1)
+    // NOTE: Traefik enlève le préfixe /api avec stripprefix, donc les URIs arrivent sans /api
     @Bean
     @Order(1)
     public SecurityFilterChain publicSecurityFilterChain(HttpSecurity http) throws Exception {
         http
-            .securityMatcher("/api/auth/**", "/api/public/**", "/swagger-ui/**", "/v3/api-docs/**")
+            .securityMatcher("/auth/**", "/public/**", "/swagger-ui/**", "/v3/api-docs/**")
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(AbstractHttpConfigurer::disable)
             .addFilterBefore(new OncePerRequestFilter() {
