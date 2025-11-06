@@ -118,7 +118,7 @@ services:
     environment:
       # Configuration Base de données
       KC_DB: postgres
-      KC_DB_URL: "jdbc:postgresql://${DB_KEYCLOAK_SERVICE_NAME:-keycloak-db}:5432/${KEYCLOAK_DB}"
+      KC_DB_URL: "jdbc:postgresql://${DB_KEYCLOAK_SERVICE_NAME:-keycloak-db}:${POSTGRES_PORT:-5432}/${KEYCLOAK_DB}"
       KC_DB_USERNAME: "${KEYCLOAK_DB_USER:-keycloak}"
       KC_DB_PASSWORD: "${KEYCLOAK_DB_PASSWORD}"
       # Credentials Admin

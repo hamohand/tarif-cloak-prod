@@ -11,7 +11,7 @@ spring:
   application:
     name: backend
   datasource:
-    url: jdbc:postgresql://${DB_SERVICE_NAME:app-db}:5432/${POSTGRES_DB}?characterEncoding=UTF-8
+    url: jdbc:postgresql://${DB_SERVICE_NAME:app-db}:${POSTGRES_PORT:-5432}/${POSTGRES_DB}?characterEncoding=UTF-8
     username: ${POSTGRES_USER}
     password: ${POSTGRES_PASSWORD}
   jpa:
@@ -31,16 +31,16 @@ spring:
           issuer-uri: ${KEYCLOAK_EXTERNAL_URL}/realms/${KEYCLOAK_REALM}
           # Pour la CONNEXION : Doit utiliser une URL interne pour que le backend puisse joindre Keycloak.
           jwk-set-uri: ${KEYCLOAK_INTERNAL_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/certs
-          connection-timeout: 10000 # Timeout en millisecondes pour les requêtes de validation de jeton
-          read-timeout: 10000 # Timeout en millisecondes pour les requêtes de validation de jeton
+          connection-timeout: ${KEYCLOAK_CONNECTION_TIMEOUT:-10000} # Timeout en millisecondes pour les requêtes de validation de jeton
+          read-timeout: ${KEYCLOAK_READ_TIMEOUT:-10000} # Timeout en millisecondes pour les requêtes de validation de jeton
 
 # Configuration des retries, pour gérer les indisponibilités temporaires de ses dépendances. C'est une approche moderne et très robuste, souvent préférée dans les architectures microservices.
 resilience4j:
   retry:
     instances:
       keycloak:
-        max-attempts: 5
-        wait-duration: 10s
+        max-attempts: ${KEYCLOAK_RETRY_MAX_ATTEMPTS:-5}
+        wait-duration: ${KEYCLOAK_RETRY_WAIT_DURATION:-10s}
 
 # ===================================================
 # CONFIGURATION KEYCLOAK ADMIN CLIENT

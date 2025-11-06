@@ -10,6 +10,7 @@ import { routes } from './app.routes';
 import {provideHttpClient, withInterceptors} from '@angular/common/http';
 import {OAuthModule} from 'angular-oauth2-oidc';
 import {authInterceptor} from './core/config/auth.interceptor';
+import { environment } from './environments/environment';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -18,7 +19,10 @@ export const appConfig: ApplicationConfig = {
     importProvidersFrom(
       OAuthModule.forRoot({
         resourceServer: {
-          allowedUrls: ['http://localhost:8081/api', '/api'],
+          // Utiliser environment.apiUrl pour la prod, et ajouter localhost pour le dev
+          allowedUrls: environment.production 
+            ? [environment.apiUrl] 
+            : ['http://localhost:8081/api', environment.apiUrl],
           sendAccessToken: true
         }
       })
