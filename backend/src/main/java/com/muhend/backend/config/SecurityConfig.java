@@ -1,8 +1,5 @@
 package com.muhend.backend.config;
 
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.core.annotation.Order;
 import org.springframework.context.annotation.Bean;
@@ -14,13 +11,10 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.web.filter.OncePerRequestFilter;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -38,16 +32,6 @@ public class SecurityConfig {
             .securityMatcher("/auth/**", "/public/**", "/swagger-ui/**", "/v3/api-docs/**")
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(AbstractHttpConfigurer::disable)
-            .addFilterBefore(new OncePerRequestFilter() {
-                @Override
-                protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-                    System.out.println("=== PUBLIC FILTER CHAIN ===");
-                    System.out.println("Request URI: " + request.getRequestURI());
-                    System.out.println("Request Method: " + request.getMethod());
-                    System.out.println("Authorization header: " + request.getHeader("Authorization"));
-                    filterChain.doFilter(request, response);
-                }
-            }, UsernamePasswordAuthenticationFilter.class)
             .authorizeHttpRequests(authorize -> authorize
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .anyRequest().permitAll()
@@ -64,16 +48,6 @@ public class SecurityConfig {
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(AbstractHttpConfigurer::disable)
-            .addFilterBefore(new OncePerRequestFilter() {
-                @Override
-                protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-                    System.out.println("=== PROTECTED FILTER CHAIN ===");
-                    System.out.println("Request URI: " + request.getRequestURI());
-                    System.out.println("Request Method: " + request.getMethod());
-                    System.out.println("Authorization header: " + request.getHeader("Authorization"));
-                    filterChain.doFilter(request, response);
-                }
-            }, UsernamePasswordAuthenticationFilter.class)
             .authorizeHttpRequests(authorize -> authorize
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .anyRequest().authenticated()
@@ -82,9 +56,6 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .exceptionHandling(exception -> exception
                 .authenticationEntryPoint((request, response, authException) -> {
-                    System.out.println("=== AUTHENTICATION ENTRY POINT ===");
-                    System.out.println("Request URI: " + request.getRequestURI());
-                    System.out.println("AuthException: " + authException.getMessage());
                     response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                     response.setContentType("application/json");
                     response.getWriter().write("{\"error\": \"Non autorisé\", \"message\": \"" + authException.getMessage() + "\"}");
