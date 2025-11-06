@@ -4,9 +4,11 @@ import { OAuthService } from 'angular-oauth2-oidc';
 import {catchError} from 'rxjs/operators';
 import {throwError} from 'rxjs';
 import {Router} from '@angular/router';
+import { AuthService } from '../../services/auth.service';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const oauthService = inject(OAuthService);
+  const authService = inject(AuthService);
   const router = inject(Router);
   const token = oauthService.getAccessToken();
 
@@ -27,8 +29,8 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
         // Si erreur 401 (Unauthorized), déconnecter l'utilisateur
         if (error.status === 401) {
           console.warn('Token expiré ou invalide. Déconnexion automatique.');
-          oauthService.logOut();
-          router.navigate(['/']);
+          // Utiliser AuthService.logout() pour mettre à jour l'état d'authentification
+          authService.logout();
         }
         return throwError(() => error);
       })
@@ -40,6 +42,11 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
       console.error('Erreur HTTP sans token:', error);
+      // Gérer aussi les erreurs 401 pour les requêtes sans token (token expiré)
+      if (error.status === 401) {
+        console.warn('Token expiré ou invalide. Déconnexion automatique.');
+        authService.logout();
+      }
       return throwError(() => error);
     })
   );
