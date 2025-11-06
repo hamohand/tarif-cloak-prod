@@ -7,7 +7,7 @@
 
 # Utilisation des champs d'extension (x-*) pour une meilleure organisation
 #x-traefik-host-rule: &traefik-host-rule "Host(`${FRONTEND_DOMAIN}`) || Host(`${WWW_FRONTEND_DOMAIN}`)"
-x-traefik-host-rule: &traefik-host-rule "Host(`hscode.enclume-numerique.com`)"
+x-traefik-host-rule: &traefik-host-rule "Host(`hscode.enclume-numerique.com`) || Host(`www.hscode.enclume-numerique.com`)"
 
 # Labels Traefik spécifiques pour le service frontend
 x-traefik-frontend-labels: &traefik-frontend-labels
@@ -34,13 +34,13 @@ x-traefik-backend-labels: &traefik-backend-labels
   # --- Définition du middleware pour ce service ---
   "traefik.http.middlewares.hscode-api-stripprefix.stripprefix.prefixes": "/api"
   # --- Routeur HTTPS pour le backend ---
-  "traefik.http.routers.hscode-backend-secure.rule": "Host(`hscode.enclume-numerique.com`) && PathPrefix(`/api`)"
+  "traefik.http.routers.hscode-backend-secure.rule": "(Host(`hscode.enclume-numerique.com`) || Host(`www.hscode.enclume-numerique.com`)) && PathPrefix(`/api`)"
   "traefik.http.routers.hscode-backend-secure.entrypoints": "websecure"
   "traefik.http.routers.hscode-backend-secure.tls.certresolver": "myresolver"
   "traefik.http.routers.hscode-backend-secure.middlewares": "hscode-api-stripprefix"
   "traefik.http.routers.hscode-backend-secure.service": "hscode-backend"
   # --- Routeur HTTP pour la redirection vers HTTPS ---
-  "traefik.http.routers.hscode-backend-http.rule": "Host(`hscode.enclume-numerique.com`) && PathPrefix(`/api`)"
+  "traefik.http.routers.hscode-backend-http.rule": "(Host(`hscode.enclume-numerique.com`) || Host(`www.hscode.enclume-numerique.com`)) && PathPrefix(`/api`)"
   "traefik.http.routers.hscode-backend-http.entrypoints": "web"
   "traefik.http.routers.hscode-backend-http.middlewares": "https-redirect" # Utilise le middleware global
   "traefik.http.routers.hscode-backend-http.service": "hscode-backend"
