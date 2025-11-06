@@ -1,6 +1,7 @@
 package com.muhend.backend.config;
 
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.core.annotation.Order;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -21,41 +22,50 @@ import java.util.List;
 @EnableWebSecurity
 public class SecurityConfig {
 
+    // SecurityFilterChain pour les endpoints publics (sans authentification OAuth2)
+    // Doit être vérifiée en premier (ordre 1)
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    @Order(1)
+    public SecurityFilterChain publicSecurityFilterChain(HttpSecurity http) throws Exception {
         http
-            // 1. La configuration CORS est conservée et reste active.
+            .securityMatcher("/api/auth/**", "/api/public/**", "/swagger-ui/**", "/v3/api-docs/**")
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            // 1. Désactiver CSRF car nous utilisons une API sans état avec des tokens JWT.
             .csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(authorize -> authorize
-                // 0. Autoriser les requêtes OPTIONS (preflight CORS) avant tout
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                // 2. CORRECTION : Autoriser l'accès public au contrôleur d'authentification et à la documentation Swagger.
-                .requestMatchers("/api/auth/register").permitAll()
-                .requestMatchers("/api/auth/login").permitAll()
-                .requestMatchers("/api/auth/**", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                .requestMatchers("/api/public/**").permitAll()
-                // 3. Sécuriser toutes les autres requêtes.
+                .anyRequest().permitAll()
+            )
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+        return http.build();
+    }
+
+    // SecurityFilterChain pour les endpoints protégés (avec authentification OAuth2)
+    // Vérifiée en second (ordre 2)
+    @Bean
+    @Order(2)
+    public SecurityFilterChain protectedSecurityFilterChain(HttpSecurity http) throws Exception {
+        http
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .csrf(AbstractHttpConfigurer::disable)
+            .authorizeHttpRequests(authorize -> authorize
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .anyRequest().authenticated()
             )
-            // 4. Configurer le serveur pour valider les tokens JWT.
             .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
-            // 5. S'assurer que les sessions ne sont pas utilisées.
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .exceptionHandling(exception -> exception
                 .authenticationEntryPoint((request, response, authException) -> {
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                response.setContentType("application/json");
-                response.getWriter().write("{\"error\": \"Non autorisé\", \"message\": \"" + authException.getMessage() + "\"}");
-            })
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    response.setContentType("application/json");
+                    response.getWriter().write("{\"error\": \"Non autorisé\", \"message\": \"" + authException.getMessage() + "\"}");
+                })
                 .accessDeniedHandler((request, response, accessDeniedException) -> {
                     response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                     response.setContentType("application/json");
                     response.setCharacterEncoding("UTF-8");
                     response.getWriter().write("{\"error\": \"Accès refusé\", \"message\": \"Vous n'avez pas les permissions nécessaires\"}");
                 })
-        );
+            );
         return http.build();
     }
 
