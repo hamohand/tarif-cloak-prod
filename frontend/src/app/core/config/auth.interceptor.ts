@@ -4,7 +4,7 @@ import { OAuthService } from 'angular-oauth2-oidc';
 import {catchError} from 'rxjs/operators';
 import {throwError} from 'rxjs';
 import {Router} from '@angular/router';
-import { AuthService } from '../../services/auth.service';
+import { AuthService } from '../services/auth.service';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const oauthService = inject(OAuthService);
