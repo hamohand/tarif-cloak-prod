@@ -200,6 +200,7 @@ services:
       SPRING_PROFILES_ACTIVE: "${SPRING_PROFILES_ACTIVE:-prod}"
       # Configuration Database APPLICATION
       DB_SERVICE_NAME: "app-db"                    # ← Nom du service de base de données
+      POSTGRES_PORT: "${POSTGRES_PORT}"             # ← Port PostgreSQL (par défaut: 5432 géré par Spring)
       <<: *common-app-bd-vars
       # Configuration Keycloak
       KEYCLOAK_REALM: "${KEYCLOAK_REALM}"
