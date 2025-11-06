@@ -9,10 +9,17 @@ RUN npm install
 # Copier le reste du code source
 COPY . .
 
-# Accepter l'URL publique de Keycloak comme argument de build
+# Accepter les variables de configuration comme arguments de build
 ARG KEYCLOAK_EXTERNAL_URL
-# La rendre disponible comme variable d'environnement pour le script generate-env.js
+ARG KEYCLOAK_REALM
+ARG KEYCLOAK_FRONTEND_CLIENT
+ARG API_URL
+
+# Les rendre disponibles comme variables d'environnement pour le script generate-env.js
 ENV KEYCLOAK_EXTERNAL_URL=${KEYCLOAK_EXTERNAL_URL}
+ENV KEYCLOAK_REALM=${KEYCLOAK_REALM}
+ENV KEYCLOAK_FRONTEND_CLIENT=${KEYCLOAK_FRONTEND_CLIENT}
+ENV API_URL=${API_URL}
 
 # Construire l'application en mode production
 # Le résultat sera dans /app/dist/frontend... (ou un nom similaire)

@@ -233,15 +233,12 @@ services:
     build:
       context: ./frontend
       args:
-        # Indique au Dockerfile d'utiliser KEYCLOAK_EXTERNAL_URL et la conf de prod
-        ##KEYCLOAK_EXTERNAL_URL: "https://auth.hscode.enclume-numerique.com/auth"
+        # Variables de configuration passées au build-time
         KEYCLOAK_EXTERNAL_URL: "${KEYCLOAK_EXTERNAL_URL}"
-        NGINX_CONF: nginx-prod.conf
-        # Variables Keycloak passées au build-time
         KEYCLOAK_REALM: "${KEYCLOAK_REALM}"
         KEYCLOAK_FRONTEND_CLIENT: "${KEYCLOAK_FRONTEND_CLIENT}"
-        KEYCLOAK_INTERNAL_URL: "${KEYCLOAK_INTERNAL_URL}"
-        API_URL: "/api"
+        API_URL: "${API_URL:-/api}"
+        NGINX_CONF: nginx-prod.conf
     environment:
       FRONTEND_DOMAIN: "${FRONTEND_DOMAIN}"
       WWW_FRONTEND_DOMAIN: "${WWW_FRONTEND_DOMAIN}"
