@@ -134,10 +134,20 @@ services:
       - "traefik.enable=true"
       - "traefik.docker.network=webproxy"
 
+      # --- Middleware CORS pour Keycloak ---
+      # Note: Les variables d'environnement doivent être interpolées par Docker Compose
+      - "traefik.http.middlewares.keycloak-cors.headers.accessControlAllowMethods=GET,POST,PUT,DELETE,OPTIONS,PATCH"
+      - "traefik.http.middlewares.keycloak-cors.headers.accessControlAllowOriginList=https://${FRONTEND_DOMAIN},https://${WWW_FRONTEND_DOMAIN}"
+      - "traefik.http.middlewares.keycloak-cors.headers.accessControlAllowHeaders=*"
+      - "traefik.http.middlewares.keycloak-cors.headers.accessControlAllowCredentials=true"
+      - "traefik.http.middlewares.keycloak-cors.headers.accessControlMaxAge=3600"
+      - "traefik.http.middlewares.keycloak-cors.headers.addVaryHeader=true"
+
       # --- Routeur HTTPS pour Keycloak ---
       - "traefik.http.routers.hscode-keycloak-secure.rule=Host(`${KEYCLOAK_DOMAIN}`)"
       - "traefik.http.routers.hscode-keycloak-secure.entrypoints=websecure"
       - "traefik.http.routers.hscode-keycloak-secure.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-myresolver}"
+      - "traefik.http.routers.hscode-keycloak-secure.middlewares=keycloak-cors"
       - "traefik.http.routers.hscode-keycloak-secure.service=hscode-keycloak"
 
       # --- Routeur HTTP pour la redirection globale (pas besoin de middleware ici) ---
