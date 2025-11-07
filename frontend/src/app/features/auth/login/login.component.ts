@@ -1,7 +1,8 @@
 // features/auth/login/login.component.ts
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { AuthService } from '../../../core/services/auth.service';
 import { RouterLink } from '@angular/router';
+import { OAuthService } from 'angular-oauth2-oidc';
 
 @Component({
   selector: 'app-login',
@@ -13,8 +14,19 @@ import { RouterLink } from '@angular/router';
         <h2>Connexion</h2>
         <p>Connectez-vous pour accéder à votre espace</p>
 
-        <button (click)="login()" class="login-button">
-          Se connecter avec Keycloak
+        @if (errorMessage) {
+          <div class="error-message">{{ errorMessage }}</div>
+        }
+
+        <button 
+          (click)="login()" 
+          class="login-button"
+          [disabled]="isLoading || !isReady">
+          @if (isLoading) {
+            Chargement...
+          } @else {
+            Se connecter avec Keycloak
+          }
         </button>
 
         <div class="login-footer">
@@ -63,8 +75,23 @@ import { RouterLink } from '@angular/router';
       transition: background-color 0.3s;
     }
 
-    .login-button:hover {
+    .login-button:hover:not(:disabled) {
       background-color: #2980b9;
+    }
+
+    .login-button:disabled {
+      background-color: #95a5a6;
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
+    .error-message {
+      background-color: #fee;
+      color: #c33;
+      padding: 1rem;
+      border-radius: 6px;
+      margin-bottom: 1rem;
+      border: 1px solid #fcc;
     }
 
     .login-footer {
@@ -81,10 +108,52 @@ import { RouterLink } from '@angular/router';
     }
   `]
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
   private authService = inject(AuthService);
+  private oauthService = inject(OAuthService);
+  
+  isLoading = false;
+  isReady = false;
+  errorMessage = '';
+
+  ngOnInit() {
+    // Vérifier si le document de découverte est chargé
+    this.checkReady();
+  }
+
+  private async checkReady() {
+    try {
+      // Vérifier si le document de découverte est déjà chargé
+      if (this.oauthService.discoveryDocumentLoaded) {
+        this.isReady = true;
+        return;
+      }
+
+      // Attendre que le document de découverte soit chargé
+      this.isLoading = true;
+      await this.oauthService.loadDiscoveryDocument();
+      this.isReady = true;
+      this.isLoading = false;
+    } catch (error: any) {
+      console.error('Erreur lors du chargement du document de découverte:', error);
+      this.errorMessage = 'Impossible de se connecter à Keycloak. Veuillez réessayer plus tard.';
+      this.isLoading = false;
+      this.isReady = false;
+    }
+  }
 
   login() {
-    this.authService.login();
+    if (!this.isReady || this.isLoading) {
+      console.warn('Le document de découverte n\'est pas encore chargé');
+      return;
+    }
+
+    try {
+      this.errorMessage = '';
+      this.authService.login();
+    } catch (error: any) {
+      console.error('Erreur lors de la connexion:', error);
+      this.errorMessage = 'Une erreur est survenue lors de la connexion. Veuillez réessayer.';
+    }
   }
 }
