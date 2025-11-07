@@ -11,12 +11,23 @@ export class AuthService {
   private oauthService = inject(OAuthService);
   private router = inject(Router);
   private isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
+  private configured = false;
 
   constructor() {
-    this.configure();
+    // Utiliser setTimeout pour s'assurer que l'injecteur Angular est prêt
+    // Cela évite l'erreur NG0200 lors du callback OAuth
+    setTimeout(() => {
+      this.configure();
+    }, 0);
   }
 
   private configure() {
+    if (this.configured) {
+      console.log('AuthService déjà configuré, ignore...');
+      return;
+    }
+    
+    this.configured = true;
     this.oauthService.configure(authConfig);
     
     // Vérifier si on revient d'un callback OAuth (code dans l'URL)
@@ -42,57 +53,51 @@ export class AuthService {
       return;
     }
     
-    // Charger d'abord le document de découverte
-    this.oauthService.loadDiscoveryDocument()
+    // Utiliser loadDiscoveryDocumentAndTryLogin qui gère automatiquement le callback
+    // Cette méthode charge le document ET traite le callback si présent
+    this.oauthService.loadDiscoveryDocumentAndTryLogin()
       .then(() => {
-        console.log('Document de découverte chargé avec succès');
+        console.log('Document de découverte chargé et tentative de connexion effectuée');
+        const isAuthenticated = this.oauthService.hasValidAccessToken();
+        const token = this.oauthService.getAccessToken();
+        console.log('Authentifié:', isAuthenticated);
+        console.log('Token disponible:', !!token);
         
-        // Si on a un code dans l'URL, c'est un callback OAuth - le traiter explicitement
-        if (hasCode) {
-          console.log('Traitement du callback OAuth...');
-          return this.oauthService.tryLoginCodeFlow()
-            .then(() => {
-              console.log('Callback OAuth traité');
-              const isAuthenticated = this.oauthService.hasValidAccessToken();
-              const token = this.oauthService.getAccessToken();
-              console.log('Authentifié après callback:', isAuthenticated);
-              console.log('Token disponible:', !!token);
-              
-              if (isAuthenticated) {
-                const userInfo = this.oauthService.getIdentityClaims();
-                console.log('Informations utilisateur:', userInfo);
-                // Nettoyer l'URL des paramètres OAuth
-                window.history.replaceState({}, document.title, window.location.pathname);
-              }
-              
-              this.isAuthenticatedSubject.next(isAuthenticated);
-            })
-            .catch((error) => {
-              console.error('Erreur lors du traitement du callback OAuth:', error);
-              this.isAuthenticatedSubject.next(false);
-            });
-        } else {
-          // Pas de callback, essayer une reconnexion automatique
-          console.log('Pas de callback OAuth, tentative de reconnexion automatique...');
-          return this.oauthService.tryLogin()
-            .then(() => {
-              const isAuthenticated = this.oauthService.hasValidAccessToken();
-              console.log('Reconnexion automatique. Authentifié:', isAuthenticated);
-              this.isAuthenticatedSubject.next(isAuthenticated);
-            })
-            .catch((error) => {
-              // La reconnexion automatique échoue normalement si pas de session active
-              console.log('Reconnexion automatique échouée (normal si pas de session active):', error.message);
-              this.isAuthenticatedSubject.next(false);
-            });
+        if (isAuthenticated) {
+          const userInfo = this.oauthService.getIdentityClaims();
+          console.log('Informations utilisateur:', userInfo);
+          // Nettoyer l'URL des paramètres OAuth
+          if (hasCode || hasState) {
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }
         }
+        
+        this.isAuthenticatedSubject.next(isAuthenticated);
       })
       .catch((error) => {
-        console.error('Erreur lors du chargement du document de découverte:', error);
+        console.error('Erreur lors de loadDiscoveryDocumentAndTryLogin:', error);
         console.error('Message d\'erreur:', error.message);
-        console.error('Stack:', error.stack);
-        this.cleanupTokens();
-        this.isAuthenticatedSubject.next(false);
+        
+        // Si c'est une erreur NG0200 (injecteur non prêt), réessayer après un court délai
+        if (error.message && error.message.includes('NG0200')) {
+          console.log('Erreur NG0200 détectée, réessai après 100ms...');
+          setTimeout(() => {
+            this.configured = false;
+            this.configure();
+          }, 100);
+          return;
+        }
+        
+        // Si le chargement du document de découverte échoue, c'est un problème critique
+        if (error.message && (error.message.includes('discovery') || error.message.includes('Failed to load'))) {
+          console.error('Erreur critique : Impossible de charger le document de découverte Keycloak:', error);
+          this.cleanupTokens();
+          this.isAuthenticatedSubject.next(false);
+        } else {
+          // Si c'est juste la tentative de connexion automatique qui échoue, ce n'est pas grave
+          console.log('Reconnexion automatique échouée (normal si pas de session active):', error.message);
+          this.isAuthenticatedSubject.next(false);
+        }
       });
 
     // Rafraîchir le statut d'authentification
