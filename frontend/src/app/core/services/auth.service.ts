@@ -19,41 +19,53 @@ export class AuthService {
   private configure() {
     this.oauthService.configure(authConfig);
     
-    // Charger le document de découverte d'abord
-    this.oauthService.loadDiscoveryDocument()
+    // Utiliser loadDiscoveryDocumentAndTryLogin qui gère automatiquement le callback OAuth
+    // Cette méthode charge le document de découverte ET traite le callback si on revient de Keycloak
+    this.oauthService.loadDiscoveryDocumentAndTryLogin()
       .then(() => {
-        console.log('Document de découverte chargé avec succès');
-        // Une fois le document chargé, essayer de se connecter automatiquement si un token existe
-        return this.oauthService.tryLogin();
-      })
-      .then(() => {
-        // Vérifier si la connexion automatique a réussi
-        this.isAuthenticatedSubject.next(this.oauthService.hasValidAccessToken());
+        // Vérifier si la connexion a réussi (soit automatique, soit via callback)
+        const isAuthenticated = this.oauthService.hasValidAccessToken();
+        console.log('Document de découverte chargé et tentative de connexion effectuée. Authentifié:', isAuthenticated);
+        this.isAuthenticatedSubject.next(isAuthenticated);
       })
       .catch((error) => {
         // Si le chargement du document de découverte échoue, c'est un problème critique
-        if (error.message && error.message.includes('discovery')) {
+        if (error.message && (error.message.includes('discovery') || error.message.includes('Failed to load'))) {
           console.error('Erreur critique : Impossible de charger le document de découverte Keycloak:', error);
           // Nettoyer les tokens en cache au cas où
           this.cleanupTokens();
           this.isAuthenticatedSubject.next(false);
         } else {
           // Si c'est juste la tentative de connexion automatique qui échoue, ce n'est pas grave
-          // (utilisateur supprimé, token invalide, etc.)
-          console.warn('Échec de la reconnexion automatique (normal si pas de session active), nettoyage des tokens:', error);
-          this.cleanupTokens();
+          // (utilisateur supprimé, token invalide, pas de callback OAuth, etc.)
+          // Ne pas nettoyer les tokens ici car cela peut interrompre un callback OAuth en cours
+          console.warn('Échec de la reconnexion automatique (normal si pas de session active):', error);
           this.isAuthenticatedSubject.next(false);
         }
       });
 
     // Rafraîchir le statut d'authentification
     this.oauthService.events.subscribe((event: any) => {
+      console.log('Événement OAuth:', event.type);
+      
       // Si une erreur de token est détectée, nettoyer automatiquement
       if (event.type === 'token_error' || event.type === 'token_refresh_error') {
         console.warn('Erreur de token détectée, nettoyage automatique');
         this.cleanupTokens();
         this.isAuthenticatedSubject.next(false);
-      } else {
+      } 
+      // Si la connexion réussit (token reçu)
+      else if (event.type === 'token_received' || event.type === 'discovery_document_loaded') {
+        console.log('Token reçu ou document de découverte chargé');
+        this.isAuthenticatedSubject.next(this.oauthService.hasValidAccessToken());
+      }
+      // Si la session est validée
+      else if (event.type === 'session_changed' || event.type === 'session_unchanged') {
+        console.log('Session changée ou inchangée');
+        this.isAuthenticatedSubject.next(this.oauthService.hasValidAccessToken());
+      }
+      // Mettre à jour le statut d'authentification pour tous les autres événements
+      else {
         this.isAuthenticatedSubject.next(this.oauthService.hasValidAccessToken());
       }
     });
