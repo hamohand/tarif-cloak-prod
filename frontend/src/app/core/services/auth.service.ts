@@ -19,16 +19,36 @@ export class AuthService {
   private configure() {
     this.oauthService.configure(authConfig);
     
+    // Vérifier si on revient d'un callback OAuth (code dans l'URL)
+    const url = window.location.href;
+    const hasCode = url.includes('code=') || url.includes('state=');
+    console.log('URL actuelle:', url);
+    console.log('Callback OAuth détecté:', hasCode);
+    
     // Utiliser loadDiscoveryDocumentAndTryLogin qui gère automatiquement le callback OAuth
     // Cette méthode charge le document de découverte ET traite le callback si on revient de Keycloak
     this.oauthService.loadDiscoveryDocumentAndTryLogin()
       .then(() => {
         // Vérifier si la connexion a réussi (soit automatique, soit via callback)
         const isAuthenticated = this.oauthService.hasValidAccessToken();
-        console.log('Document de découverte chargé et tentative de connexion effectuée. Authentifié:', isAuthenticated);
+        const token = this.oauthService.getAccessToken();
+        console.log('Document de découverte chargé et tentative de connexion effectuée.');
+        console.log('Authentifié:', isAuthenticated);
+        console.log('Token disponible:', !!token);
+        console.log('Token:', token ? token.substring(0, 20) + '...' : 'null');
+        
+        if (isAuthenticated) {
+          const userInfo = this.oauthService.getIdentityClaims();
+          console.log('Informations utilisateur:', userInfo);
+        }
+        
         this.isAuthenticatedSubject.next(isAuthenticated);
       })
       .catch((error) => {
+        console.error('Erreur lors de loadDiscoveryDocumentAndTryLogin:', error);
+        console.error('Message d\'erreur:', error.message);
+        console.error('Stack:', error.stack);
+        
         // Si le chargement du document de découverte échoue, c'est un problème critique
         if (error.message && (error.message.includes('discovery') || error.message.includes('Failed to load'))) {
           console.error('Erreur critique : Impossible de charger le document de découverte Keycloak:', error);
@@ -89,7 +109,18 @@ export class AuthService {
   }
 
   public login(): void {
-    this.oauthService.initLoginFlow();
+    console.log('Démarrage du flux de connexion...');
+    console.log('Redirect URI configurée:', authConfig.redirectUri);
+    console.log('Issuer configuré:', authConfig.issuer);
+    console.log('Client ID configuré:', authConfig.clientId);
+    
+    try {
+      this.oauthService.initLoginFlow();
+      console.log('Flux de connexion initié avec succès');
+    } catch (error) {
+      console.error('Erreur lors de l\'initiation du flux de connexion:', error);
+      throw error;
+    }
   }
 
   public logout(): void {
