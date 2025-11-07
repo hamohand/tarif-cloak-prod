@@ -6,25 +6,32 @@ import org.springframework.core.annotation.Order;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
-import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
     @Value("${cors.allowed-origins:https://hscode.enclume-numerique.com,https://www.hscode.enclume-numerique.com,http://localhost:4200}")
     private String allowedOrigins;
+    
+    @Value("${keycloak.admin.client-id:backend-client}")
+    private String clientId;
 
     // SecurityFilterChain pour les endpoints publics (sans authentification OAuth2)
     // Doit être vérifiée en premier (ordre 1)
@@ -54,9 +61,14 @@ public class SecurityConfig {
             .csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(authorize -> authorize
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                // Endpoint de recherche accessible aux utilisateurs avec le rôle USER ou ADMIN
+                .requestMatchers("/recherche/**").hasAnyRole("USER", "ADMIN")
+                // Tous les autres endpoints nécessitent une authentification
                 .anyRequest().authenticated()
             )
-            .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
+            .oauth2ResourceServer(oauth2 -> oauth2
+                .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter()))
+            )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .exceptionHandling(exception -> exception
                 .authenticationEntryPoint((request, response, authException) -> {
@@ -94,5 +106,51 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
+    }
+    
+    /**
+     * Configure le convertisseur JWT pour extraire les rôles Keycloak
+     * Les rôles peuvent être dans :
+     * - realm_access.roles (rôles au niveau du realm)
+     * - resource_access.{client-id}.roles (rôles au niveau du client)
+     */
+    @Bean
+    public JwtAuthenticationConverter jwtAuthenticationConverter() {
+        JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
+        converter.setJwtGrantedAuthoritiesConverter(jwt -> {
+            Collection<GrantedAuthority> authorities = new ArrayList<>();
+            
+            // Extraire les rôles du realm
+            Map<String, Object> realmAccess = jwt.getClaimAsMap("realm_access");
+            if (realmAccess != null) {
+                @SuppressWarnings("unchecked")
+                List<String> realmRoles = (List<String>) realmAccess.get("roles");
+                if (realmRoles != null) {
+                    authorities.addAll(realmRoles.stream()
+                        .map(role -> new SimpleGrantedAuthority("ROLE_" + role.toUpperCase()))
+                        .collect(Collectors.toList()));
+                }
+            }
+            
+            // Extraire les rôles du client
+            Map<String, Object> resourceAccess = jwt.getClaimAsMap("resource_access");
+            if (resourceAccess != null) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> clientAccess = (Map<String, Object>) resourceAccess.get(clientId);
+                if (clientAccess != null) {
+                    @SuppressWarnings("unchecked")
+                    List<String> clientRoles = (List<String>) clientAccess.get("roles");
+                    if (clientRoles != null) {
+                        authorities.addAll(clientRoles.stream()
+                            .map(role -> new SimpleGrantedAuthority("ROLE_" + role.toUpperCase()))
+                            .collect(Collectors.toList()));
+                    }
+                }
+            }
+            
+            return authorities;
+        });
+        
+        return converter;
     }
 }
