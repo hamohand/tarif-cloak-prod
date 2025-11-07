@@ -18,37 +18,62 @@ export class AuthService {
 
   private configure() {
     this.oauthService.configure(authConfig);
-    this.oauthService.loadDiscoveryDocumentAndTryLogin().then(() => {
-      this.isAuthenticatedSubject.next(this.oauthService.hasValidAccessToken());
-    }).catch((error) => {
-      // Si la tentative de connexion automatique échoue (utilisateur supprimé, token invalide, etc.)
-      // Nettoyer les tokens en cache et forcer une nouvelle authentification
-      console.warn('Échec de la reconnexion automatique, nettoyage des tokens:', error);
-      this.oauthService.logOut();
-      // Nettoyer aussi manuellement les clés OAuth restantes
-      const oauthKeys = Object.keys(localStorage).filter(key => 
-        key.startsWith('oauth') || key.startsWith('angular-oauth2-oidc')
-      );
-      oauthKeys.forEach(key => localStorage.removeItem(key));
-      this.isAuthenticatedSubject.next(false);
-    });
+    
+    // Charger le document de découverte d'abord
+    this.oauthService.loadDiscoveryDocument()
+      .then(() => {
+        console.log('Document de découverte chargé avec succès');
+        // Une fois le document chargé, essayer de se connecter automatiquement si un token existe
+        return this.oauthService.tryLogin();
+      })
+      .then(() => {
+        // Vérifier si la connexion automatique a réussi
+        this.isAuthenticatedSubject.next(this.oauthService.hasValidAccessToken());
+      })
+      .catch((error) => {
+        // Si le chargement du document de découverte échoue, c'est un problème critique
+        if (error.message && error.message.includes('discovery')) {
+          console.error('Erreur critique : Impossible de charger le document de découverte Keycloak:', error);
+          // Nettoyer les tokens en cache au cas où
+          this.cleanupTokens();
+          this.isAuthenticatedSubject.next(false);
+        } else {
+          // Si c'est juste la tentative de connexion automatique qui échoue, ce n'est pas grave
+          // (utilisateur supprimé, token invalide, etc.)
+          console.warn('Échec de la reconnexion automatique (normal si pas de session active), nettoyage des tokens:', error);
+          this.cleanupTokens();
+          this.isAuthenticatedSubject.next(false);
+        }
+      });
 
     // Rafraîchir le statut d'authentification
     this.oauthService.events.subscribe((event: any) => {
       // Si une erreur de token est détectée, nettoyer automatiquement
       if (event.type === 'token_error' || event.type === 'token_refresh_error') {
         console.warn('Erreur de token détectée, nettoyage automatique');
-        this.oauthService.logOut();
-        // Nettoyer aussi manuellement les clés OAuth restantes
-        const oauthKeys = Object.keys(localStorage).filter(key => 
-          key.startsWith('oauth') || key.startsWith('angular-oauth2-oidc')
-        );
-        oauthKeys.forEach(key => localStorage.removeItem(key));
+        this.cleanupTokens();
         this.isAuthenticatedSubject.next(false);
       } else {
         this.isAuthenticatedSubject.next(this.oauthService.hasValidAccessToken());
       }
     });
+  }
+
+  private cleanupTokens() {
+    try {
+      this.oauthService.logOut();
+    } catch (error) {
+      // Ignorer les erreurs de logout
+    }
+    // Nettoyer aussi manuellement les clés OAuth restantes
+    const oauthKeys = Object.keys(localStorage).filter(key => 
+      key.startsWith('oauth') || key.startsWith('angular-oauth2-oidc')
+    );
+    oauthKeys.forEach(key => localStorage.removeItem(key));
+    const oauthSessionKeys = Object.keys(sessionStorage).filter(key => 
+      key.startsWith('oauth') || key.startsWith('angular-oauth2-oidc')
+    );
+    oauthSessionKeys.forEach(key => sessionStorage.removeItem(key));
   }
 
   public login(): void {
