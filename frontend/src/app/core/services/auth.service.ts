@@ -49,6 +49,9 @@ export class AuthService {
     this.oauthService.loadDiscoveryDocumentAndTryLogin()
       .then(() => {
         const isAuthenticated = this.oauthService.hasValidAccessToken();
+
+        console.log('Authentifié:', isAuthenticated);
+        console.log('Token disponible:', !!this.oauthService.getAccessToken());
         
         if (isAuthenticated) {
           // Nettoyer l'URL des paramètres OAuth
