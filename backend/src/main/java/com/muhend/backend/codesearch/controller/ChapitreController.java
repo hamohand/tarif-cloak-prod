@@ -20,7 +20,6 @@ import java.util.Optional;
 // ***********************************************************************************
 // @RequestMapping("/api/chapitres") // dev
 @RequestMapping("/chapitres")  // prod
-//@CrossOrigin(origins = "http://localhost:4300") // Allow requests from any origin (for development)
 public class ChapitreController {
 
     private final ChapitreRepository chapitreRepository;

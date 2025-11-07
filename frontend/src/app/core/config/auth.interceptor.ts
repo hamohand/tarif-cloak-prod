@@ -12,6 +12,9 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const router = inject(Router);
   const token = oauthService.getAccessToken();
 
+  console.log('Requête interceptée:', req.url);
+  console.log('Token disponible:', !!token);
+
   // Ne pas ajouter le token pour les requêtes vers Keycloak
   if (token && !req.url.includes('/realms/')) {
     const cloned = req.clone({
