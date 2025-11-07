@@ -21,47 +21,78 @@ export class AuthService {
     
     // Vérifier si on revient d'un callback OAuth (code dans l'URL)
     const url = window.location.href;
-    const hasCode = url.includes('code=') || url.includes('state=');
-    console.log('URL actuelle:', url);
-    console.log('Callback OAuth détecté:', hasCode);
+    const urlParams = new URLSearchParams(window.location.search);
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const hasCode = urlParams.has('code') || hashParams.has('code');
+    const hasState = urlParams.has('state') || hashParams.has('state');
+    const hasError = urlParams.has('error') || hashParams.has('error');
     
-    // Utiliser loadDiscoveryDocumentAndTryLogin qui gère automatiquement le callback OAuth
-    // Cette méthode charge le document de découverte ET traite le callback si on revient de Keycloak
-    this.oauthService.loadDiscoveryDocumentAndTryLogin()
+    console.log('URL actuelle:', url);
+    console.log('Query params:', window.location.search);
+    console.log('Hash params:', window.location.hash);
+    console.log('Callback OAuth détecté (code):', hasCode);
+    console.log('Callback OAuth détecté (state):', hasState);
+    console.log('Erreur OAuth détectée:', hasError);
+    
+    if (hasError) {
+      const error = urlParams.get('error') || hashParams.get('error');
+      const errorDescription = urlParams.get('error_description') || hashParams.get('error_description');
+      console.error('Erreur OAuth:', error, errorDescription);
+      this.isAuthenticatedSubject.next(false);
+      return;
+    }
+    
+    // Charger d'abord le document de découverte
+    this.oauthService.loadDiscoveryDocument()
       .then(() => {
-        // Vérifier si la connexion a réussi (soit automatique, soit via callback)
-        const isAuthenticated = this.oauthService.hasValidAccessToken();
-        const token = this.oauthService.getAccessToken();
-        console.log('Document de découverte chargé et tentative de connexion effectuée.');
-        console.log('Authentifié:', isAuthenticated);
-        console.log('Token disponible:', !!token);
-        console.log('Token:', token ? token.substring(0, 20) + '...' : 'null');
+        console.log('Document de découverte chargé avec succès');
         
-        if (isAuthenticated) {
-          const userInfo = this.oauthService.getIdentityClaims();
-          console.log('Informations utilisateur:', userInfo);
+        // Si on a un code dans l'URL, c'est un callback OAuth - le traiter explicitement
+        if (hasCode) {
+          console.log('Traitement du callback OAuth...');
+          return this.oauthService.tryLoginCodeFlow()
+            .then(() => {
+              console.log('Callback OAuth traité');
+              const isAuthenticated = this.oauthService.hasValidAccessToken();
+              const token = this.oauthService.getAccessToken();
+              console.log('Authentifié après callback:', isAuthenticated);
+              console.log('Token disponible:', !!token);
+              
+              if (isAuthenticated) {
+                const userInfo = this.oauthService.getIdentityClaims();
+                console.log('Informations utilisateur:', userInfo);
+                // Nettoyer l'URL des paramètres OAuth
+                window.history.replaceState({}, document.title, window.location.pathname);
+              }
+              
+              this.isAuthenticatedSubject.next(isAuthenticated);
+            })
+            .catch((error) => {
+              console.error('Erreur lors du traitement du callback OAuth:', error);
+              this.isAuthenticatedSubject.next(false);
+            });
+        } else {
+          // Pas de callback, essayer une reconnexion automatique
+          console.log('Pas de callback OAuth, tentative de reconnexion automatique...');
+          return this.oauthService.tryLogin()
+            .then(() => {
+              const isAuthenticated = this.oauthService.hasValidAccessToken();
+              console.log('Reconnexion automatique. Authentifié:', isAuthenticated);
+              this.isAuthenticatedSubject.next(isAuthenticated);
+            })
+            .catch((error) => {
+              // La reconnexion automatique échoue normalement si pas de session active
+              console.log('Reconnexion automatique échouée (normal si pas de session active):', error.message);
+              this.isAuthenticatedSubject.next(false);
+            });
         }
-        
-        this.isAuthenticatedSubject.next(isAuthenticated);
       })
       .catch((error) => {
-        console.error('Erreur lors de loadDiscoveryDocumentAndTryLogin:', error);
+        console.error('Erreur lors du chargement du document de découverte:', error);
         console.error('Message d\'erreur:', error.message);
         console.error('Stack:', error.stack);
-        
-        // Si le chargement du document de découverte échoue, c'est un problème critique
-        if (error.message && (error.message.includes('discovery') || error.message.includes('Failed to load'))) {
-          console.error('Erreur critique : Impossible de charger le document de découverte Keycloak:', error);
-          // Nettoyer les tokens en cache au cas où
-          this.cleanupTokens();
-          this.isAuthenticatedSubject.next(false);
-        } else {
-          // Si c'est juste la tentative de connexion automatique qui échoue, ce n'est pas grave
-          // (utilisateur supprimé, token invalide, pas de callback OAuth, etc.)
-          // Ne pas nettoyer les tokens ici car cela peut interrompre un callback OAuth en cours
-          console.warn('Échec de la reconnexion automatique (normal si pas de session active):', error);
-          this.isAuthenticatedSubject.next(false);
-        }
+        this.cleanupTokens();
+        this.isAuthenticatedSubject.next(false);
       });
 
     // Rafraîchir le statut d'authentification
