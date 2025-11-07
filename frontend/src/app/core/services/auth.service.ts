@@ -23,7 +23,6 @@ export class AuthService {
 
   private configure() {
     if (this.configured) {
-      console.log('AuthService déjà configuré, ignore...');
       return;
     }
     
@@ -31,19 +30,11 @@ export class AuthService {
     this.oauthService.configure(authConfig);
     
     // Vérifier si on revient d'un callback OAuth (code dans l'URL)
-    const url = window.location.href;
     const urlParams = new URLSearchParams(window.location.search);
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
     const hasCode = urlParams.has('code') || hashParams.has('code');
     const hasState = urlParams.has('state') || hashParams.has('state');
     const hasError = urlParams.has('error') || hashParams.has('error');
-    
-    console.log('URL actuelle:', url);
-    console.log('Query params:', window.location.search);
-    console.log('Hash params:', window.location.hash);
-    console.log('Callback OAuth détecté (code):', hasCode);
-    console.log('Callback OAuth détecté (state):', hasState);
-    console.log('Erreur OAuth détectée:', hasError);
     
     if (hasError) {
       const error = urlParams.get('error') || hashParams.get('error');
@@ -57,15 +48,9 @@ export class AuthService {
     // Cette méthode charge le document ET traite le callback si présent
     this.oauthService.loadDiscoveryDocumentAndTryLogin()
       .then(() => {
-        console.log('Document de découverte chargé et tentative de connexion effectuée');
         const isAuthenticated = this.oauthService.hasValidAccessToken();
-        const token = this.oauthService.getAccessToken();
-        console.log('Authentifié:', isAuthenticated);
-        console.log('Token disponible:', !!token);
         
         if (isAuthenticated) {
-          const userInfo = this.oauthService.getIdentityClaims();
-          console.log('Informations utilisateur:', userInfo);
           // Nettoyer l'URL des paramètres OAuth
           if (hasCode || hasState) {
             window.history.replaceState({}, document.title, window.location.pathname);
@@ -75,12 +60,8 @@ export class AuthService {
         this.isAuthenticatedSubject.next(isAuthenticated);
       })
       .catch((error) => {
-        console.error('Erreur lors de loadDiscoveryDocumentAndTryLogin:', error);
-        console.error('Message d\'erreur:', error.message);
-        
         // Si c'est une erreur NG0200 (injecteur non prêt), réessayer après un court délai
         if (error.message && error.message.includes('NG0200')) {
-          console.log('Erreur NG0200 détectée, réessai après 100ms...');
           setTimeout(() => {
             this.configured = false;
             this.configure();
@@ -95,29 +76,22 @@ export class AuthService {
           this.isAuthenticatedSubject.next(false);
         } else {
           // Si c'est juste la tentative de connexion automatique qui échoue, ce n'est pas grave
-          console.log('Reconnexion automatique échouée (normal si pas de session active):', error.message);
+          // (pas de log nécessaire, c'est normal si pas de session active)
           this.isAuthenticatedSubject.next(false);
         }
       });
 
     // Rafraîchir le statut d'authentification
     this.oauthService.events.subscribe((event: any) => {
-      console.log('Événement OAuth:', event.type);
-      
       // Si une erreur de token est détectée, nettoyer automatiquement
       if (event.type === 'token_error' || event.type === 'token_refresh_error') {
         console.warn('Erreur de token détectée, nettoyage automatique');
         this.cleanupTokens();
         this.isAuthenticatedSubject.next(false);
       } 
-      // Si la connexion réussit (token reçu)
-      else if (event.type === 'token_received' || event.type === 'discovery_document_loaded') {
-        console.log('Token reçu ou document de découverte chargé');
-        this.isAuthenticatedSubject.next(this.oauthService.hasValidAccessToken());
-      }
-      // Si la session est validée
-      else if (event.type === 'session_changed' || event.type === 'session_unchanged') {
-        console.log('Session changée ou inchangée');
+      // Mettre à jour le statut d'authentification pour les événements importants
+      else if (event.type === 'token_received' || event.type === 'discovery_document_loaded' || 
+               event.type === 'session_changed' || event.type === 'session_unchanged') {
         this.isAuthenticatedSubject.next(this.oauthService.hasValidAccessToken());
       }
       // Mettre à jour le statut d'authentification pour tous les autres événements
@@ -145,14 +119,8 @@ export class AuthService {
   }
 
   public login(): void {
-    console.log('Démarrage du flux de connexion...');
-    console.log('Redirect URI configurée:', authConfig.redirectUri);
-    console.log('Issuer configuré:', authConfig.issuer);
-    console.log('Client ID configuré:', authConfig.clientId);
-    
     try {
       this.oauthService.initLoginFlow();
-      console.log('Flux de connexion initié avec succès');
     } catch (error) {
       console.error('Erreur lors de l\'initiation du flux de connexion:', error);
       throw error;
