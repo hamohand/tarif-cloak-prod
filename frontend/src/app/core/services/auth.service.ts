@@ -49,11 +49,26 @@ export class AuthService {
     this.oauthService.loadDiscoveryDocumentAndTryLogin()
       .then(() => {
         const isAuthenticated = this.oauthService.hasValidAccessToken();
+        const token = this.oauthService.getAccessToken();
 
-        console.log('Authentifié:', isAuthenticated);
-        console.log('Token disponible:', !!this.oauthService.getAccessToken());
-        
-        if (isAuthenticated) {
+        if (isAuthenticated && token) {
+          // Afficher le token dans la console après connexion réussie
+          console.log('=== TOKEN JWT ===');
+          console.log('Token complet:', token);
+          console.log('Token (premiers 50 caractères):', token.substring(0, 50) + '...');
+          
+          // Décoder et afficher les informations du token (payload)
+          try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            console.log('Informations du token:', payload);
+            console.log('Rôles:', payload.realm_access?.roles || payload.resource_access?.['frontend-client']?.roles || 'Aucun rôle trouvé');
+            console.log('Utilisateur:', payload.preferred_username || payload.email || payload.sub);
+            console.log('Expiration:', new Date(payload.exp * 1000).toLocaleString());
+          } catch (e) {
+            console.warn('Impossible de décoder le token:', e);
+          }
+          console.log('================');
+          
           // Nettoyer l'URL des paramètres OAuth
           if (hasCode || hasState) {
             window.history.replaceState({}, document.title, window.location.pathname);
@@ -93,7 +108,29 @@ export class AuthService {
         this.isAuthenticatedSubject.next(false);
       } 
       // Mettre à jour le statut d'authentification pour les événements importants
-      else if (event.type === 'token_received' || event.type === 'discovery_document_loaded' || 
+      else if (event.type === 'token_received') {
+        // Afficher le token quand il est reçu
+        const token = this.oauthService.getAccessToken();
+        if (token) {
+          console.log('=== TOKEN REÇU ===');
+          console.log('Token complet:', token);
+          console.log('Token (premiers 50 caractères):', token.substring(0, 50) + '...');
+          
+          // Décoder et afficher les informations du token
+          try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            console.log('Informations du token:', payload);
+            console.log('Rôles:', payload.realm_access?.roles || payload.resource_access?.['frontend-client']?.roles || 'Aucun rôle trouvé');
+            console.log('Utilisateur:', payload.preferred_username || payload.email || payload.sub);
+            console.log('Expiration:', new Date(payload.exp * 1000).toLocaleString());
+          } catch (e) {
+            console.warn('Impossible de décoder le token:', e);
+          }
+          console.log('==================');
+        }
+        this.isAuthenticatedSubject.next(this.oauthService.hasValidAccessToken());
+      }
+      else if (event.type === 'discovery_document_loaded' || 
                event.type === 'session_changed' || event.type === 'session_unchanged') {
         this.isAuthenticatedSubject.next(this.oauthService.hasValidAccessToken());
       }
