@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { OAuthService } from 'angular-oauth2-oidc';
 import { authConfig } from '../config/auth.config';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject, Observable, interval, Subscription } from 'rxjs';
 import {Router} from '@angular/router';
 
 @Injectable({
@@ -12,6 +12,7 @@ export class AuthService {
   private router = inject(Router);
   private isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
   private configured = false;
+  private tokenCheckInterval?: Subscription;
 
   constructor() {
     // Utiliser setTimeout pour s'assurer que l'injecteur Angular est prêt
@@ -73,6 +74,9 @@ export class AuthService {
           if (hasCode || hasState) {
             window.history.replaceState({}, document.title, window.location.pathname);
           }
+          
+          // Démarrer la vérification périodique de l'expiration du token
+          this.startTokenCheck();
         }
         
         this.isAuthenticatedSubject.next(isAuthenticated);
@@ -104,11 +108,12 @@ export class AuthService {
       // Si une erreur de token est détectée, nettoyer automatiquement
       if (event.type === 'token_error' || event.type === 'token_refresh_error') {
         console.warn('Erreur de token détectée, nettoyage automatique');
+        this.stopTokenCheck();
         this.cleanupTokens();
         this.isAuthenticatedSubject.next(false);
       } 
       // Mettre à jour le statut d'authentification pour les événements importants
-      else if (event.type === 'token_received') {
+      else if (event.type === 'token_received' || event.type === 'token_refreshed') {
         // Afficher le token quand il est reçu
         const token = this.oauthService.getAccessToken();
         if (token) {
@@ -128,17 +133,110 @@ export class AuthService {
           }
           console.log('==================');
         }
+        this.startTokenCheck();
         this.isAuthenticatedSubject.next(this.oauthService.hasValidAccessToken());
       }
       else if (event.type === 'discovery_document_loaded' || 
                event.type === 'session_changed' || event.type === 'session_unchanged') {
-        this.isAuthenticatedSubject.next(this.oauthService.hasValidAccessToken());
+        const isValid = this.oauthService.hasValidAccessToken();
+        this.isAuthenticatedSubject.next(isValid);
+        if (isValid) {
+          this.startTokenCheck();
+        } else {
+          this.stopTokenCheck();
+        }
+      }
+      else if (event.type === 'logout') {
+        this.stopTokenCheck();
+        this.isAuthenticatedSubject.next(false);
       }
       // Mettre à jour le statut d'authentification pour tous les autres événements
       else {
-        this.isAuthenticatedSubject.next(this.oauthService.hasValidAccessToken());
+        const isValid = this.oauthService.hasValidAccessToken();
+        this.isAuthenticatedSubject.next(isValid);
+        if (!isValid) {
+          this.stopTokenCheck();
+        }
       }
     });
+  }
+
+  /**
+   * Démarre la vérification périodique de l'expiration du token
+   */
+  private startTokenCheck(): void {
+    // Arrêter la vérification précédente si elle existe
+    this.stopTokenCheck();
+    
+    // Vérifier l'expiration du token toutes les 30 secondes
+    this.tokenCheckInterval = interval(30000).subscribe(() => {
+      this.checkTokenExpiration();
+    });
+    
+    // Vérifier immédiatement
+    this.checkTokenExpiration();
+  }
+
+  /**
+   * Arrête la vérification périodique de l'expiration du token
+   */
+  private stopTokenCheck(): void {
+    if (this.tokenCheckInterval) {
+      this.tokenCheckInterval.unsubscribe();
+      this.tokenCheckInterval = undefined;
+    }
+  }
+
+  /**
+   * Vérifie si le token est expiré et déconnecte l'utilisateur si nécessaire
+   */
+  private checkTokenExpiration(): void {
+    const token = this.oauthService.getAccessToken();
+    
+    // Si pas de token, l'utilisateur n'est pas authentifié
+    if (!token) {
+      this.stopTokenCheck();
+      this.isAuthenticatedSubject.next(false);
+      return;
+    }
+    
+    // Vérifier l'expiration du token en décodant le payload
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const expirationTime = payload.exp * 1000; // Convertir en millisecondes
+      const currentTime = Date.now();
+      
+      // Si le token est expiré (avec une marge de 5 secondes pour éviter les problèmes de timing)
+      if (currentTime >= (expirationTime - 5000)) {
+        console.warn('Token expiré ou sur le point d\'expirer. Déconnexion automatique.');
+        this.stopTokenCheck();
+        this.cleanupTokens();
+        this.isAuthenticatedSubject.next(false);
+        this.router.navigate(['/']);
+        return;
+      }
+      
+      // Si le token est valide, s'assurer que le statut d'authentification est correct
+      if (currentTime < expirationTime) {
+        const isValid = this.oauthService.hasValidAccessToken();
+        if (!isValid) {
+          // Le token n'est pas valide selon OAuthService mais n'est pas expiré
+          // Cela peut arriver si la session Keycloak a expiré
+          console.warn('Token présent mais session Keycloak invalide. Déconnexion automatique.');
+          this.stopTokenCheck();
+          this.cleanupTokens();
+          this.isAuthenticatedSubject.next(false);
+          this.router.navigate(['/']);
+        }
+      }
+    } catch (e) {
+      // Si on ne peut pas décoder le token, il est invalide
+      console.warn('Token invalide détecté (impossible de décoder). Déconnexion automatique.');
+      this.stopTokenCheck();
+      this.cleanupTokens();
+      this.isAuthenticatedSubject.next(false);
+      this.router.navigate(['/']);
+    }
   }
 
   private cleanupTokens() {
@@ -168,6 +266,7 @@ export class AuthService {
   }
 
   public logout(): void {
+    this.stopTokenCheck();
     try {
       // Nettoyer le token localement d'abord
       this.oauthService.logOut();
@@ -200,7 +299,32 @@ export class AuthService {
   }
 
   public isAuthenticated(): Observable<boolean> {
+    // Vérifier l'expiration avant de retourner le statut
+    this.checkTokenExpiration();
     return this.isAuthenticatedSubject.asObservable();
+  }
+
+  /**
+   * Vérifie si le token est valide en vérifiant son expiration
+   */
+  public isTokenValid(): boolean {
+    if (!this.oauthService.hasValidAccessToken()) {
+      return false;
+    }
+    
+    const token = this.oauthService.getAccessToken();
+    if (!token) {
+      return false;
+    }
+    
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const expirationTime = payload.exp * 1000;
+      const currentTime = Date.now();
+      return currentTime < expirationTime;
+    } catch (e) {
+      return false;
+    }
   }
 
   public getUserInfo(): any {

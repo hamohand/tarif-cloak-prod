@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -34,6 +35,43 @@ public class AdminController {
         
         return ResponseEntity.ok(Map.of(
             "total", endpoints.size(),
+            "endpoints", endpoints
+        ));
+    }
+
+    @GetMapping("/endpoints/admin-only")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(
+        summary = "Lister les endpoints accessibles uniquement par ADMIN",
+        description = "Retourne la liste des endpoints qui nécessitent exclusivement le rôle ADMIN. Utile pour vérifier les autorisations.",
+        security = @SecurityRequirement(name = "bearerAuth")
+    )
+    public ResponseEntity<Map<String, Object>> listAdminOnlyEndpoints() {
+        List<Map<String, Object>> adminEndpoints = endpointDiscoveryService.discoverAdminOnlyEndpoints();
+        
+        return ResponseEntity.ok(Map.of(
+            "total", adminEndpoints.size(),
+            "role", "ADMIN",
+            "description", "Endpoints accessibles uniquement par les utilisateurs avec le rôle ADMIN",
+            "endpoints", adminEndpoints
+        ));
+    }
+
+    @GetMapping("/endpoints/by-role")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(
+        summary = "Lister les endpoints par rôle",
+        description = "Retourne la liste des endpoints qui nécessitent un rôle spécifique. Paramètre: ?role=ADMIN ou ?role=USER",
+        security = @SecurityRequirement(name = "bearerAuth")
+    )
+    public ResponseEntity<Map<String, Object>> listEndpointsByRole(
+            @RequestParam(defaultValue = "ADMIN") String role) {
+        List<Map<String, Object>> endpoints = endpointDiscoveryService.discoverEndpointsByRole(role);
+        
+        return ResponseEntity.ok(Map.of(
+            "total", endpoints.size(),
+            "role", role.toUpperCase(),
+            "description", "Endpoints nécessitant le rôle " + role.toUpperCase(),
             "endpoints", endpoints
         ));
     }

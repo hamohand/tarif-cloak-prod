@@ -46,6 +46,75 @@ public class EndpointDiscoveryService {
         return endpoints;
     }
 
+    /**
+     * Découvre tous les endpoints qui nécessitent un rôle spécifique
+     * @param role Le rôle à filtrer (ex: "ADMIN", "USER")
+     * @return Liste des endpoints nécessitant ce rôle
+     */
+    public List<Map<String, Object>> discoverEndpointsByRole(String role) {
+        List<Map<String, Object>> allEndpoints = discoverEndpoints();
+        List<Map<String, Object>> filteredEndpoints = new ArrayList<>();
+        
+        String roleUpper = role.toUpperCase();
+        String rolePattern = "hasRole('" + roleUpper + "')";
+        String rolePatternAlt = "hasRole(\"" + roleUpper + "\")";
+        String hasAnyRolePattern = "hasAnyRole(";
+        
+        for (Map<String, Object> endpoint : allEndpoints) {
+            String requiredRole = (String) endpoint.get("requiredRole");
+            
+            if (requiredRole != null) {
+                // Vérifier si l'endpoint nécessite exclusivement le rôle spécifié (hasRole)
+                boolean hasExactRole = requiredRole.contains(rolePattern) || 
+                                     requiredRole.contains(rolePatternAlt) ||
+                                     requiredRole.contains("ROLE_" + roleUpper);
+                
+                // Vérifier si l'endpoint accepte le rôle via hasAnyRole
+                boolean hasAnyRole = requiredRole.contains(hasAnyRolePattern) && 
+                                    requiredRole.contains(roleUpper);
+                
+                if (hasExactRole || hasAnyRole) {
+                    filteredEndpoints.add(endpoint);
+                }
+            }
+        }
+        
+        return filteredEndpoints;
+    }
+
+    /**
+     * Découvre tous les endpoints accessibles uniquement par ADMIN
+     * Exclut les endpoints qui acceptent d'autres rôles via hasAnyRole
+     * @return Liste des endpoints nécessitant exclusivement le rôle ADMIN
+     */
+    public List<Map<String, Object>> discoverAdminOnlyEndpoints() {
+        List<Map<String, Object>> allEndpoints = discoverEndpoints();
+        List<Map<String, Object>> adminOnlyEndpoints = new ArrayList<>();
+        
+        String adminPattern = "hasRole('ADMIN')";
+        String adminPatternAlt = "hasRole(\"ADMIN\")";
+        String hasAnyRolePattern = "hasAnyRole(";
+        
+        for (Map<String, Object> endpoint : allEndpoints) {
+            String requiredRole = (String) endpoint.get("requiredRole");
+            
+            if (requiredRole != null) {
+                // Vérifier si l'endpoint nécessite exclusivement ADMIN (hasRole('ADMIN'))
+                boolean hasExactAdmin = requiredRole.contains(adminPattern) || 
+                                       requiredRole.contains(adminPatternAlt);
+                
+                // Exclure les endpoints qui utilisent hasAnyRole (car ils acceptent d'autres rôles)
+                boolean usesHasAnyRole = requiredRole.contains(hasAnyRolePattern);
+                
+                if (hasExactAdmin && !usesHasAnyRole) {
+                    adminOnlyEndpoints.add(endpoint);
+                }
+            }
+        }
+        
+        return adminOnlyEndpoints;
+    }
+
     private Map<String, Object> extractEndpointInfo(Method method, String basePath, Class<?> controllerClass) {
         Map<String, Object> info = new HashMap<>();
         
@@ -131,10 +200,16 @@ public class EndpointDiscoveryService {
         // Extraire le type de retour
         info.put("returnType", method.getReturnType().getSimpleName());
         
-        // Vérifier les annotations de sécurité
-        if (method.getAnnotation(org.springframework.security.access.prepost.PreAuthorize.class) != null) {
-            org.springframework.security.access.prepost.PreAuthorize preAuthorize = 
-                method.getAnnotation(org.springframework.security.access.prepost.PreAuthorize.class);
+        // Vérifier les annotations de sécurité (d'abord au niveau de la méthode, puis au niveau de la classe)
+        org.springframework.security.access.prepost.PreAuthorize preAuthorize = 
+            method.getAnnotation(org.springframework.security.access.prepost.PreAuthorize.class);
+        
+        // Si pas d'annotation au niveau de la méthode, vérifier au niveau de la classe
+        if (preAuthorize == null) {
+            preAuthorize = controllerClass.getAnnotation(org.springframework.security.access.prepost.PreAuthorize.class);
+        }
+        
+        if (preAuthorize != null) {
             info.put("requiredRole", preAuthorize.value());
         }
         

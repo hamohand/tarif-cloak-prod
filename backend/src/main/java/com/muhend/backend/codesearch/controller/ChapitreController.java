@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -30,6 +31,7 @@ public class ChapitreController {
 
     // Get all chapitres
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")  // ← Seulement cette méthode nécessite ADMIN
     public List<Chapitre> getAllChapitres() {
         return chapitreRepository.findAll();
     }

@@ -12,11 +12,15 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const router = inject(Router);
   const token = oauthService.getAccessToken();
 
-  console.log('Requête interceptée:', req.url);
-  console.log('Token disponible:', !!token);
-
-  // Ne pas ajouter le token pour les requêtes vers Keycloak
+  // Vérifier l'expiration du token avant chaque requête
   if (token && !req.url.includes('/realms/')) {
+    // Vérifier si le token est expiré
+    if (!authService.isTokenValid()) {
+      console.warn('Token expiré détecté avant la requête. Déconnexion automatique.');
+      authService.logout();
+      return throwError(() => new Error('Token expiré'));
+    }
+    
     const cloned = req.clone({
       setHeaders: {
         Authorization: `Bearer ${token}`
@@ -26,7 +30,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
       catchError((error: HttpErrorResponse) => {
         // Si erreur 401 (Unauthorized), déconnecter l'utilisateur
         if (error.status === 401) {
-          console.warn('Token expiré ou invalide. Déconnexion automatique.');
+          console.warn('Token expiré ou invalide (401). Déconnexion automatique.');
           authService.logout();
         }
         return throwError(() => error);
@@ -38,7 +42,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     catchError((error: HttpErrorResponse) => {
       // Gérer aussi les erreurs 401 pour les requêtes sans token (token expiré)
       if (error.status === 401) {
-        console.warn('Token expiré ou invalide. Déconnexion automatique.');
+        console.warn('Token expiré ou invalide (401). Déconnexion automatique.');
         authService.logout();
       }
       return throwError(() => error);

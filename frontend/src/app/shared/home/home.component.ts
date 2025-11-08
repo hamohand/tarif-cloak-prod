@@ -1,16 +1,23 @@
 import { Component } from '@angular/core';
-import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-home',
-  standalone: true,
-  imports: [RouterLink],
+  // standalone: true,
+  // imports: [], // RouterLink commented out to prevent module errors
   template: `
     <div class="home-container">
       <h1>Bienvenue sur Enclume-Numérique</h1>
       <p>Votre solution complète</p>
-
+      
+      
       <div class="features">
+      <!-- Using <a> tags with href for navigation fallback -->
+      <a href="/recherche" class="cta-button" style="text-decoration: none; display: inline-block;">
+        Accéder à l'application Tariff-recherche
+      </a><br><br>
+      <a href="/recherche/searchListLots" class="cta-button" style="text-decoration: none; display: inline-block;">
+        Accéder à l'application Tariff-multi-recherche
+      </a>
         <div class="feature-card">
           <h3>🔐 Sécurité</h3>
           <p>Authentification sécurisée</p>
@@ -27,12 +34,7 @@ import { RouterLink } from '@angular/router';
         </div>
       </div>
 
-      <button routerLink="/recherche" class="cta-button">
-        Accéder à l'application Tariff-recherche
-      </button><br><br>
-      <button routerLink="recherche/searchListLots" class="cta-button">
-        Accéder à l'application Tariff-multi-recherche
-      </button>
+      
     </div>
   `,
   styles: [`

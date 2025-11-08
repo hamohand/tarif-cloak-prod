@@ -12,7 +12,10 @@ export const authConfig: AuthConfig = {
   showDebugInformation: !environment.production,
   strictDiscoveryDocumentValidation: false,
   requireHttps: false,
-  skipIssuerCheck: true
+  skipIssuerCheck: true,
+  // Configuration pour la gestion des tokens
+  sessionChecksEnabled: true, // Vérifier la session périodiquement
+  clearHashAfterLogin: true
 };
 
 
