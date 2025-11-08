@@ -16,8 +16,8 @@ spring:
     password: ${POSTGRES_PASSWORD}
   jpa:
     hibernate:
-#      ddl-auto: update  #Devloppemment (?)
-      ddl-auto: validate  #En production (?), utilisez 'validate' ou Flyway/Liquibase
+      ddl-auto: update  # Temporairement activé pour créer la table usage_log. Revenir à 'validate' après la création.
+#      ddl-auto: validate  #En production (?), utilisez 'validate' ou Flyway/Liquibase
     show-sql: false
 
   # ===================================================
@@ -118,7 +118,8 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: validate  # Ne pas modifier le schéma automatiquement
+      ddl-auto: update  # Temporairement activé pour créer la table usage_log. Revenir à 'validate' après la création.
+#      ddl-auto: validate  # Ne pas modifier le schéma automatiquement
     show-sql: false
 
 logging:

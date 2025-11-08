@@ -68,25 +68,40 @@ public class RechercheController {
     // Niveau de recherche 0 : sections
     @GetMapping(value = "/sections", produces = "application/json")
     public List<Position> reponseSections(@RequestParam String termeRecherche) {
-        List<Position> result = handleSearchRequest(termeRecherche, SearchLevel.SECTIONS);
-        logUsage("/recherche/sections", termeRecherche);
-        return result;
+        try {
+            List<Position> result = handleSearchRequest(termeRecherche, SearchLevel.SECTIONS);
+            return result;
+        } finally {
+            // Toujours nettoyer le ThreadLocal et logger, même en cas d'erreur
+            logUsage("/recherche/sections", termeRecherche);
+            OpenAiService.clearCurrentUsage(); // Nettoyage de sécurité
+        }
     }
 
     // Niveau de recherche 1 : chapitres
     @GetMapping(path = "/chapitres", produces = "application/json")
     public List<Position> reponseChapitres(@RequestParam String termeRecherche) {
-        List<Position> result = handleSearchRequest(termeRecherche, SearchLevel.CHAPITRES);
-        logUsage("/recherche/chapitres", termeRecherche);
-        return result;
+        try {
+            List<Position> result = handleSearchRequest(termeRecherche, SearchLevel.CHAPITRES);
+            return result;
+        } finally {
+            // Toujours nettoyer le ThreadLocal et logger, même en cas d'erreur
+            logUsage("/recherche/chapitres", termeRecherche);
+            OpenAiService.clearCurrentUsage(); // Nettoyage de sécurité
+        }
     }
 
     // Niveau de recherche 2 : positions 4
     @GetMapping(path = "/positions4", produces = "application/json")
     public List<Position> reponsePositions4(@RequestParam String termeRecherche) {
-        List<Position> result = handleSearchRequest(termeRecherche, SearchLevel.POSITIONS4);
-        logUsage("/recherche/positions4", termeRecherche);
-        return result;
+        try {
+            List<Position> result = handleSearchRequest(termeRecherche, SearchLevel.POSITIONS4);
+            return result;
+        } finally {
+            // Toujours nettoyer le ThreadLocal et logger, même en cas d'erreur
+            logUsage("/recherche/positions4", termeRecherche);
+            OpenAiService.clearCurrentUsage(); // Nettoyage de sécurité
+        }
     }
 
     // Niveau de recherche 3 : positions 6
@@ -103,32 +118,38 @@ public class RechercheController {
                 System.out.println("[CONTROLLER] ATTENTION: Résultat null, conversion en liste vide.");
                 result = new ArrayList<>();
             }
-            logUsage("/recherche/positions6", termeRecherche);
             return result;
         } catch (Exception e) {
             System.err.println("[CONTROLLER] ERREUR INATTENDUE: " + e.getMessage());
             e.printStackTrace();
+            log.error("Erreur lors de la recherche positions6", e);
             // En cas d'erreur, renvoyer une liste vide pour éviter de casser le frontend
             return new ArrayList<>();
+        } finally {
+            // Toujours nettoyer le ThreadLocal et logger, même en cas d'erreur
+            logUsage("/recherche/positions6", termeRecherche);
+            OpenAiService.clearCurrentUsage(); // Nettoyage de sécurité
         }
     }
     
     /**
      * Log l'utilisation d'une recherche.
      * Récupère les informations de coût depuis OpenAiService et enregistre le log.
+     * Cette méthode est complètement non-bloquante et ne doit jamais faire échouer la requête principale.
      */
     private void logUsage(String endpoint, String searchTerm) {
         try {
             // Récupérer l'utilisateur depuis le contexte de sécurité
             String userId = getCurrentUserId();
             if (userId == null) {
-                log.warn("Impossible de récupérer l'utilisateur pour le logging. Utilisation non enregistrée.");
+                log.debug("Impossible de récupérer l'utilisateur pour le logging. Utilisation non enregistrée.");
                 return;
             }
             
             // Récupérer les informations d'utilisation depuis OpenAiService
             UsageInfo usageInfo = OpenAiService.getCurrentUsage();
-            if (usageInfo != null) {
+            if (usageInfo != null && usageInfo.getTokens() != null && usageInfo.getTokens() > 0) {
+                // Le service logUsage est déjà non-bloquant, on peut l'appeler sans try-catch
                 usageLogService.logUsage(
                     userId,
                     endpoint,
@@ -136,14 +157,15 @@ public class RechercheController {
                     usageInfo.getTokens(),
                     usageInfo.getCostUsd()
                 );
-                // Nettoyer le ThreadLocal après utilisation
-                OpenAiService.clearCurrentUsage();
+                log.debug("Tentative d'enregistrement du log: userId={}, endpoint={}, tokens={}, cost={}", 
+                         userId, endpoint, usageInfo.getTokens(), usageInfo.getCostUsd());
             } else {
-                log.warn("Aucune information d'utilisation disponible pour l'endpoint: {}", endpoint);
+                log.debug("Aucune information d'utilisation disponible pour l'endpoint: {} (usageInfo={})", 
+                         endpoint, usageInfo != null ? "présent mais tokens=0 ou null" : "null");
             }
         } catch (Exception e) {
-            // Ne pas faire échouer la requête si le logging échoue
-            log.error("Erreur lors du logging de l'utilisation", e);
+            // Double sécurité : ne jamais faire échouer la requête si le logging échoue
+            log.warn("Erreur lors du logging de l'utilisation (non bloquant): {}", e.getMessage());
         }
     }
     

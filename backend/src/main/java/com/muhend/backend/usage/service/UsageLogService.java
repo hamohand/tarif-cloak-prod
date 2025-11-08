@@ -4,7 +4,6 @@ import com.muhend.backend.usage.model.UsageLog;
 import com.muhend.backend.usage.repository.UsageLogRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -25,13 +24,15 @@ public class UsageLogService {
     
     /**
      * Enregistre un log d'utilisation.
+     * Cette méthode est complètement non-bloquante : si la table n'existe pas ou en cas d'erreur,
+     * elle logue un warning mais ne lève jamais d'exception pour ne pas faire échouer la requête principale.
+     * 
      * @param keycloakUserId ID de l'utilisateur Keycloak
      * @param endpoint Endpoint appelé (ex: "/recherche/sections")
      * @param searchTerm Terme de recherche
      * @param tokens Nombre de tokens utilisés
      * @param costUsd Coût en USD
      */
-    @Transactional
     public void logUsage(String keycloakUserId, String endpoint, String searchTerm, 
                         Integer tokens, Double costUsd) {
         try {
@@ -46,9 +47,13 @@ public class UsageLogService {
             repository.save(usageLog);
             log.debug("Usage log enregistré pour l'utilisateur: {}, endpoint: {}, coût: {} USD", 
                      keycloakUserId, endpoint, costUsd != null ? costUsd : 0.0);
+        } catch (org.springframework.dao.DataAccessException e) {
+            // Erreur de base de données (table absente, connexion, etc.) - non bloquant
+            log.warn("Impossible d'enregistrer le log d'utilisation en base de données (table peut-être absente ou erreur DB): {}", 
+                    e.getMessage());
         } catch (Exception e) {
-            // Ne pas faire échouer la requête si le logging échoue
-            log.error("Erreur lors de l'enregistrement du log d'utilisation", e);
+            // Toute autre exception - non bloquant
+            log.warn("Erreur lors de l'enregistrement du log d'utilisation (non bloquant): {}", e.getMessage());
         }
     }
     
