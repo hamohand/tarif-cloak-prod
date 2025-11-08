@@ -89,17 +89,27 @@ public class AdminController {
         summary = "Consulter les logs d'utilisation",
         description = "Retourne la liste des logs d'utilisation des recherches. " +
                      "Paramètres optionnels: ?userId=... pour filtrer par utilisateur, " +
+                     "?organizationId=... pour filtrer par organisation, " +
                      "?startDate=... et ?endDate=... pour filtrer par période (format: yyyy-MM-dd).",
         security = @SecurityRequirement(name = "bearerAuth")
     )
     public ResponseEntity<Map<String, Object>> getUsageLogs(
             @RequestParam(required = false) String userId,
+            @RequestParam(required = false) Long organizationId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
         
         List<UsageLog> logs;
         
-        if (userId != null && startDate != null && endDate != null) {
+        if (organizationId != null && startDate != null && endDate != null) {
+            // Filtre par organisation et période
+            LocalDateTime start = startDate.atStartOfDay();
+            LocalDateTime end = endDate.atTime(LocalTime.MAX);
+            logs = usageLogService.getUsageLogsByOrganizationAndDateRange(organizationId, start, end);
+        } else if (organizationId != null) {
+            // Filtre par organisation uniquement
+            logs = usageLogService.getUsageLogsByOrganization(organizationId);
+        } else if (userId != null && startDate != null && endDate != null) {
             // Filtre par utilisateur et période
             LocalDateTime start = startDate.atStartOfDay();
             LocalDateTime end = endDate.atTime(LocalTime.MAX);

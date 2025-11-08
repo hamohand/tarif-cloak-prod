@@ -29,26 +29,28 @@ public class UsageLogService {
      * elle logue un warning mais ne lève jamais d'exception pour ne pas faire échouer la requête principale.
      * 
      * @param keycloakUserId ID de l'utilisateur Keycloak
+     * @param organizationId ID de l'organisation (peut être null)
      * @param endpoint Endpoint appelé (ex: "/recherche/sections")
      * @param searchTerm Terme de recherche
      * @param tokens Nombre de tokens utilisés
      * @param costUsd Coût en USD
      */
-    public void logUsage(String keycloakUserId, String endpoint, String searchTerm, 
+    public void logUsage(String keycloakUserId, Long organizationId, String endpoint, String searchTerm, 
                         Integer tokens, Double costUsd) {
         // Convertir Double en BigDecimal pour la précision monétaire
         BigDecimal costUsdDecimal = costUsd != null ? BigDecimal.valueOf(costUsd) : null;
-        logUsageInternal(keycloakUserId, endpoint, searchTerm, tokens, costUsdDecimal);
+        logUsageInternal(keycloakUserId, organizationId, endpoint, searchTerm, tokens, costUsdDecimal);
     }
     
     /**
      * Méthode interne pour enregistrer un log avec BigDecimal.
      */
-    private void logUsageInternal(String keycloakUserId, String endpoint, String searchTerm, 
+    private void logUsageInternal(String keycloakUserId, Long organizationId, String endpoint, String searchTerm, 
                                   Integer tokens, BigDecimal costUsd) {
         try {
             UsageLog usageLog = new UsageLog();
             usageLog.setKeycloakUserId(keycloakUserId);
+            usageLog.setOrganizationId(organizationId);
             usageLog.setEndpoint(endpoint);
             usageLog.setSearchTerm(searchTerm);
             usageLog.setTokensUsed(tokens);
@@ -96,6 +98,24 @@ public class UsageLogService {
      */
     public List<UsageLog> getAllUsageLogs() {
         return repository.findAll();
+    }
+    
+    /**
+     * Récupère les logs d'une organisation entre deux dates.
+     */
+    public List<UsageLog> getUsageLogsByOrganizationAndDateRange(Long organizationId, 
+                                                                  LocalDateTime start, 
+                                                                  LocalDateTime end) {
+        return repository.findByOrganizationIdAndTimestampBetween(organizationId, start, end);
+    }
+    
+    /**
+     * Récupère les logs d'une organisation.
+     */
+    public List<UsageLog> getUsageLogsByOrganization(Long organizationId) {
+        return repository.findAll().stream()
+                .filter(log -> log.getOrganizationId() != null && log.getOrganizationId().equals(organizationId))
+                .collect(java.util.stream.Collectors.toList());
     }
 }
 

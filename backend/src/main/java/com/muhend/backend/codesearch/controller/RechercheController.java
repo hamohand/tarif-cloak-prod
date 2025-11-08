@@ -9,6 +9,7 @@ import com.muhend.backend.codesearch.service.ai.AiPrompts;
 import com.muhend.backend.codesearch.service.ai.AiService;
 import com.muhend.backend.codesearch.service.ai.OpenAiService;
 import com.muhend.backend.usage.service.UsageLogService;
+import com.muhend.backend.organization.service.OrganizationService;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,11 +43,12 @@ public class RechercheController {
     private final Position4Service position4Service;
     private final Position6DzService position6DzService;
     private final UsageLogService usageLogService;
+    private final OrganizationService organizationService;
 
     @Autowired
     public RechercheController(AiService aiService, AiPrompts aiPrompts, SectionService sectionService, ChapitreService chapitreService,
                                Position4Service position4Service, Position6DzService position6DzService,
-                               UsageLogService usageLogService) {
+                               UsageLogService usageLogService, OrganizationService organizationService) {
         this.aiService = aiService;
         this.aiPrompts = aiPrompts;
         this.sectionService = sectionService;
@@ -54,6 +56,7 @@ public class RechercheController {
         this.position4Service = position4Service;
         this.position6DzService = position6DzService;
         this.usageLogService = usageLogService;
+        this.organizationService = organizationService;
     }
 
     // Enumération des différents niveaux de recherche
@@ -146,19 +149,29 @@ public class RechercheController {
                 return;
             }
             
+            // Récupérer l'organisation de l'utilisateur (peut être null)
+            Long organizationId = null;
+            try {
+                organizationId = organizationService.getOrganizationIdByUserId(userId);
+            } catch (Exception e) {
+                // Si on ne peut pas récupérer l'organisation, on continue sans (non bloquant)
+                log.debug("Impossible de récupérer l'organisation pour l'utilisateur {}: {}", userId, e.getMessage());
+            }
+            
             // Récupérer les informations d'utilisation depuis OpenAiService
             UsageInfo usageInfo = OpenAiService.getCurrentUsage();
             if (usageInfo != null && usageInfo.getTokens() != null && usageInfo.getTokens() > 0) {
                 // Le service logUsage est déjà non-bloquant, on peut l'appeler sans try-catch
                 usageLogService.logUsage(
                     userId,
+                    organizationId,
                     endpoint,
                     searchTerm,
                     usageInfo.getTokens(),
                     usageInfo.getCostUsd()
                 );
-                log.debug("Tentative d'enregistrement du log: userId={}, endpoint={}, tokens={}, cost={}", 
-                         userId, endpoint, usageInfo.getTokens(), usageInfo.getCostUsd());
+                log.debug("Tentative d'enregistrement du log: userId={}, organizationId={}, endpoint={}, tokens={}, cost={}", 
+                         userId, organizationId, endpoint, usageInfo.getTokens(), usageInfo.getCostUsd());
             } else {
                 log.debug("Aucune information d'utilisation disponible pour l'endpoint: {} (usageInfo={})", 
                          endpoint, usageInfo != null ? "présent mais tokens=0 ou null" : "null");

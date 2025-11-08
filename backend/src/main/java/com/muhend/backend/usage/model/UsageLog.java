@@ -26,6 +26,9 @@ public class UsageLog {
     @Column(name = "keycloak_user_id", nullable = false)
     private String keycloakUserId;
     
+    @Column(name = "organization_id")
+    private Long organizationId;  // ID de l'organisation (peut être null si l'utilisateur n'a pas d'organisation)
+    
     @Column(name = "endpoint", nullable = false, length = 255)
     private String endpoint;  // "/recherche/sections", "/recherche/chapitres", etc.
     

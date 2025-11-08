@@ -37,5 +37,23 @@ public interface UsageLogRepository extends JpaRepository<UsageLog, Long> {
         LocalDateTime start,
         LocalDateTime end
     );
+    
+    /**
+     * Récupère les logs d'une organisation entre deux dates.
+     */
+    List<UsageLog> findByOrganizationIdAndTimestampBetween(
+        Long organizationId,
+        LocalDateTime start,
+        LocalDateTime end
+    );
+    
+    /**
+     * Compte le nombre de logs d'une organisation entre deux dates.
+     */
+    long countByOrganizationIdAndTimestampBetween(
+        Long organizationId,
+        LocalDateTime start,
+        LocalDateTime end
+    );
 }
 
