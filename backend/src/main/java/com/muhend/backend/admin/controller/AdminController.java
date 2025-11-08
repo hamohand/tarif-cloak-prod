@@ -120,8 +120,9 @@ public class AdminController {
         // Calculer les statistiques
         long totalRequests = logs.size();
         double totalCost = logs.stream()
-            .mapToDouble(log -> log.getCostUsd() != null ? log.getCostUsd() : 0.0)
-            .sum();
+            .map(log -> log.getCostUsd() != null ? log.getCostUsd() : java.math.BigDecimal.ZERO)
+            .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add)
+            .doubleValue();
         long totalTokens = logs.stream()
             .mapToLong(log -> log.getTokensUsed() != null ? log.getTokensUsed() : 0L)
             .sum();

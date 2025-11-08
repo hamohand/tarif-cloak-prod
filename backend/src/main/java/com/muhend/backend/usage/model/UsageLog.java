@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
@@ -35,7 +36,7 @@ public class UsageLog {
     private Integer tokensUsed;
     
     @Column(name = "cost_usd", precision = 10, scale = 6)
-    private Double costUsd;
+    private BigDecimal costUsd;
     
     @Column(name = "timestamp", nullable = false)
     private LocalDateTime timestamp;

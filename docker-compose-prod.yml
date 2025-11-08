@@ -12,16 +12,17 @@ x-traefik-host-rule: &traefik-host-rule "Host(`${FRONTEND_DOMAIN}`) || Host(`${W
 x-traefik-frontend-labels: &traefik-frontend-labels
   traefik.enable: "true"
   traefik.docker.network: "webproxy"
-  # --- Routeur HTTPS pour le frontend ---
+  # --- Routeur HTTPS pour le frontend (priorité plus basse, catch-all) ---
   "traefik.http.routers.hscode-frontend-secure.rule": *traefik-host-rule
   "traefik.http.routers.hscode-frontend-secure.entrypoints": "websecure"
   "traefik.http.routers.hscode-frontend-secure.tls.certresolver": "${TRAEFIK_CERT_RESOLVER:-myresolver}"
-    # --- LIAISON EXPLICITE ---
   "traefik.http.routers.hscode-frontend-secure.service": "hscode-frontend"
+  "traefik.http.routers.hscode-frontend-secure.priority": "1"
   # --- Routeur HTTP pour la redirection vers HTTPS ---
   "traefik.http.routers.hscode-frontend-http.rule": *traefik-host-rule
   "traefik.http.routers.hscode-frontend-http.entrypoints": "web"
   "traefik.http.routers.hscode-frontend-http.middlewares": "https-redirect"
+  "traefik.http.routers.hscode-frontend-http.priority": "1"
   # --- Service pointant vers le conteneur frontend ---
   "traefik.http.services.hscode-frontend.loadbalancer.server.port": "${FRONTEND_INTERNAL_PORT:-80}"
 
@@ -32,17 +33,19 @@ x-traefik-backend-labels: &traefik-backend-labels
   traefik.docker.network: "webproxy"
   # --- Définition du middleware pour ce service ---
   "traefik.http.middlewares.hscode-api-stripprefix.stripprefix.prefixes": "/api"
-  # --- Routeur HTTPS pour le backend ---
+  # --- Routeur HTTPS pour le backend (priorité élevée pour être évalué en premier) ---
   "traefik.http.routers.hscode-backend-secure.rule": "(Host(`${FRONTEND_DOMAIN}`) || Host(`${WWW_FRONTEND_DOMAIN}`)) && PathPrefix(`/api`)"
   "traefik.http.routers.hscode-backend-secure.entrypoints": "websecure"
   "traefik.http.routers.hscode-backend-secure.tls.certresolver": "${TRAEFIK_CERT_RESOLVER:-myresolver}"
   "traefik.http.routers.hscode-backend-secure.middlewares": "hscode-api-stripprefix"
   "traefik.http.routers.hscode-backend-secure.service": "hscode-backend"
+  "traefik.http.routers.hscode-backend-secure.priority": "10"
   # --- Routeur HTTP pour la redirection vers HTTPS ---
   "traefik.http.routers.hscode-backend-http.rule": "(Host(`${FRONTEND_DOMAIN}`) || Host(`${WWW_FRONTEND_DOMAIN}`)) && PathPrefix(`/api`)"
   "traefik.http.routers.hscode-backend-http.entrypoints": "web"
   "traefik.http.routers.hscode-backend-http.middlewares": "https-redirect" # Utilise le middleware global
   "traefik.http.routers.hscode-backend-http.service": "hscode-backend"
+  "traefik.http.routers.hscode-backend-http.priority": "10"
   # --- Service pointant vers le conteneur backend ---
   "traefik.http.services.hscode-backend.loadbalancer.server.port": "${BACKEND_INTERNAL_PORT:-8081}"
 

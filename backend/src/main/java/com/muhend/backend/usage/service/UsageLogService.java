@@ -5,6 +5,7 @@ import com.muhend.backend.usage.repository.UsageLogRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -35,6 +36,16 @@ public class UsageLogService {
      */
     public void logUsage(String keycloakUserId, String endpoint, String searchTerm, 
                         Integer tokens, Double costUsd) {
+        // Convertir Double en BigDecimal pour la précision monétaire
+        BigDecimal costUsdDecimal = costUsd != null ? BigDecimal.valueOf(costUsd) : null;
+        logUsageInternal(keycloakUserId, endpoint, searchTerm, tokens, costUsdDecimal);
+    }
+    
+    /**
+     * Méthode interne pour enregistrer un log avec BigDecimal.
+     */
+    private void logUsageInternal(String keycloakUserId, String endpoint, String searchTerm, 
+                                  Integer tokens, BigDecimal costUsd) {
         try {
             UsageLog usageLog = new UsageLog();
             usageLog.setKeycloakUserId(keycloakUserId);
@@ -46,7 +57,7 @@ public class UsageLogService {
             
             repository.save(usageLog);
             log.debug("Usage log enregistré pour l'utilisateur: {}, endpoint: {}, coût: {} USD", 
-                     keycloakUserId, endpoint, costUsd != null ? costUsd : 0.0);
+                     keycloakUserId, endpoint, costUsd != null ? costUsd : BigDecimal.ZERO);
         } catch (org.springframework.dao.DataAccessException e) {
             // Erreur de base de données (table absente, connexion, etc.) - non bloquant
             log.warn("Impossible d'enregistrer le log d'utilisation en base de données (table peut-être absente ou erreur DB): {}", 
