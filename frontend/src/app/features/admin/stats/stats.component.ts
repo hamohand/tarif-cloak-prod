@@ -53,7 +53,7 @@ import { FormsModule } from '@angular/forms';
       <!-- Statistiques par entreprise -->
       <div class="section-card">
         <h3>🏢 Par Entreprise</h3>
-        <div *ngIf="stats?.statsByOrganization && stats.statsByOrganization.length > 0; else noOrgStats">
+        <div *ngIf="statsByOrganization.length > 0; else noOrgStats">
           <table class="stats-table">
             <thead>
               <tr>
@@ -64,7 +64,7 @@ import { FormsModule } from '@angular/forms';
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let org of stats.statsByOrganization">
+              <tr *ngFor="let org of statsByOrganization">
                 <td>{{ org.organizationName }}</td>
                 <td>{{ org.requestCount }}</td>
                 <td>{{ formatCurrency(org.totalCostUsd) }}</td>
@@ -81,7 +81,7 @@ import { FormsModule } from '@angular/forms';
       <!-- Statistiques par utilisateur -->
       <div class="section-card">
         <h3>👤 Par Utilisateur</h3>
-        <div *ngIf="stats?.statsByUser && stats.statsByUser.length > 0; else noUserStats">
+        <div *ngIf="statsByUser.length > 0; else noUserStats">
           <table class="stats-table">
             <thead>
               <tr>
@@ -92,7 +92,7 @@ import { FormsModule } from '@angular/forms';
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let user of stats.statsByUser">
+              <tr *ngFor="let user of statsByUser">
                 <td>{{ truncateUserId(user.keycloakUserId) }}</td>
                 <td>{{ user.requestCount }}</td>
                 <td>{{ formatCurrency(user.totalCostUsd) }}</td>
@@ -109,7 +109,7 @@ import { FormsModule } from '@angular/forms';
       <!-- Utilisations récentes -->
       <div class="section-card">
         <h3>🕐 Utilisations Récentes</h3>
-        <div *ngIf="stats?.recentUsage && stats.recentUsage.length > 0; else noRecentUsage">
+        <div *ngIf="recentUsage.length > 0; else noRecentUsage">
           <table class="stats-table">
             <thead>
               <tr>
@@ -122,7 +122,7 @@ import { FormsModule } from '@angular/forms';
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let usage of stats.recentUsage">
+              <tr *ngFor="let usage of recentUsage">
                 <td>{{ formatDate(usage.timestamp) }}</td>
                 <td>{{ truncateUserId(usage.keycloakUserId) }}</td>
                 <td>{{ usage.endpoint }}</td>
@@ -356,8 +356,6 @@ export class StatsComponent implements OnInit {
     this.adminService.getUsageStats(orgId, start, end).subscribe({
       next: (data) => {
         this.stats = data;
-        // Extraire les organisations depuis les statistiques
-        this.organizations = data.statsByOrganization || [];
         this.loading = false;
       },
       error: (err) => {
@@ -404,6 +402,19 @@ export class StatsComponent implements OnInit {
       return userId.substring(0, 20) + '...';
     }
     return userId;
+  }
+
+  // Getters sécurisés pour éviter les erreurs TypeScript
+  get statsByOrganization(): OrganizationStats[] {
+    return this.stats?.statsByOrganization || [];
+  }
+
+  get statsByUser(): UserStats[] {
+    return this.stats?.statsByUser || [];
+  }
+
+  get recentUsage(): UsageLog[] {
+    return this.stats?.recentUsage || [];
   }
 }
 

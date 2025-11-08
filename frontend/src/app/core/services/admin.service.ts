@@ -7,9 +7,9 @@ export interface UsageStats {
   totalRequests: number;
   totalCostUsd: number;
   totalTokens: number;
-  statsByOrganization: OrganizationStats[];
-  statsByUser: UserStats[];
-  recentUsage: UsageLog[];
+  statsByOrganization?: OrganizationStats[];
+  statsByUser?: UserStats[];
+  recentUsage?: UsageLog[];
 }
 
 export interface OrganizationStats {
