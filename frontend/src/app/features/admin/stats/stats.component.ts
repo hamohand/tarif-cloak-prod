@@ -17,9 +17,9 @@ import { FormsModule } from '@angular/forms';
         <div class="filters">
           <div class="filter-group">
             <label for="organizationId">Organisation:</label>
-            <select id="organizationId" [(ngModel)]="selectedOrganizationId" (change)="loadStats()">
-              <option [value]="null">Toutes</option>
-              <option *ngFor="let org of organizations" [value]="org.id">{{ org.name }}</option>
+            <select id="organizationId" [ngModel]="selectedOrganizationId" (ngModelChange)="onOrganizationChange($event)">
+              <option [ngValue]="null">Toutes</option>
+              <option *ngFor="let org of organizations" [ngValue]="org.id">{{ org.name }}</option>
             </select>
           </div>
           <div class="filter-group">
@@ -222,7 +222,7 @@ import { FormsModule } from '@angular/forms';
     }
 
     .stat-card {
-      background: white;
+      background: #f5f5f5;
       padding: 1.5rem;
       border-radius: 8px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
@@ -243,7 +243,7 @@ import { FormsModule } from '@angular/forms';
     }
 
     .section-card {
-      background: white;
+      background: #f5f5f5;
       padding: 1.5rem;
       border-radius: 8px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
@@ -345,13 +345,22 @@ export class StatsComponent implements OnInit {
     });
   }
 
+  onOrganizationChange(value: number | null) {
+    // S'assurer que null est bien traité comme null et non comme chaîne
+    this.selectedOrganizationId = value;
+    this.loadStats();
+  }
+
   loadStats() {
     this.loading = true;
     this.error = null;
 
-    const orgId = this.selectedOrganizationId || undefined;
-    const start = this.startDate || undefined;
-    const end = this.endDate || undefined;
+    // Convertir null en undefined pour éviter qu'il soit envoyé comme chaîne "null"
+    const orgId = (this.selectedOrganizationId !== null && this.selectedOrganizationId !== undefined) 
+      ? this.selectedOrganizationId 
+      : undefined;
+    const start = (this.startDate && this.startDate.trim() !== '') ? this.startDate : undefined;
+    const end = (this.endDate && this.endDate.trim() !== '') ? this.endDate : undefined;
 
     this.adminService.getUsageStats(orgId, start, end).subscribe({
       next: (data) => {

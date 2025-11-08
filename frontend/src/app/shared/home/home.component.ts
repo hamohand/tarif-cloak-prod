@@ -11,13 +11,17 @@ import { Component } from '@angular/core';
       
       
       <div class="features">
+     <div class="feature-card">
       <!-- Using <a> tags with href for navigation fallback -->
       <a href="/recherche" class="cta-button" style="text-decoration: none; display: inline-block;">
         Accéder à l'application Tariff-recherche
       </a><br><br>
+      </div>
+      <div class="feature-card">
       <a href="/recherche/searchListLots" class="cta-button" style="text-decoration: none; display: inline-block;">
         Accéder à l'application Tariff-multi-recherche
       </a>
+      </div>
         <div class="feature-card">
           <h3>🔐 Sécurité</h3>
           <p>Authentification sécurisée</p>
@@ -64,7 +68,7 @@ import { Component } from '@angular/core';
     }
 
     .feature-card {
-      background: white;
+      background: rgb(230, 230, 230);
       padding: 2rem;
       border-radius: 8px;
       box-shadow: 0 2px 5px rgba(0,0,0,0.1);

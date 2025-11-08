@@ -26,7 +26,7 @@ import { RouterOutlet } from '@angular/router';
   styles: [`
       :host { /* Utiliser :host pour cibler le composant lui-même */
           display: block;
-          background-color: hsl(220, 15%, 98%); /* Fond de page très clair */
+          background-color: hsl(220, 15%, 95%); /* Fond de page légèrement assombri */
           min-height: 100vh; /* S'assurer que le fond couvre toute la hauteur */
           font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; /* Police moderne et propre */
           color: hsl(210, 10%, 25%); /* Couleur de texte par défaut plus douce */
@@ -36,7 +36,7 @@ import { RouterOutlet } from '@angular/router';
           max-width: 1200px;
           margin: 0 auto;
           padding: 30px;
-          background-color: #ffffff; /* Fond blanc pur pour le contenu principal */
+          background-color: #f5f5f5; /* Fond légèrement assombri pour le contenu principal */
           border-radius: 8px; /* Bords légèrement arrondis pour un aspect moderne */
           box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05); /* Ombre douce pour un effet de "flottaison" */
           min-height: calc(100vh - 60px); /* Ajuster la hauteur minimale du conteneur */

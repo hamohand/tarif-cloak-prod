@@ -382,4 +382,30 @@ export class AuthService {
   public getUserInfo(): any {
     return this.oauthService.getIdentityClaims();
   }
+
+  /**
+   * Vérifie si l'utilisateur a un rôle spécifique
+   * @param role Le nom du rôle à vérifier (ex: 'ADMIN', 'USER')
+   */
+  public hasRole(role: string): boolean {
+    const token = this.oauthService.getAccessToken();
+    if (!token) {
+      return false;
+    }
+
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      // Vérifier dans realm_access.roles (rôles du realm)
+      const realmRoles = payload.realm_access?.roles || [];
+      // Vérifier dans resource_access[client-id].roles (rôles du client)
+      const clientRoles = payload.resource_access?.['frontend-client']?.roles || [];
+      // Vérifier aussi avec d'autres noms de client possibles
+      const allClientRoles = Object.values(payload.resource_access || {}).flatMap((client: any) => client.roles || []);
+      
+      return realmRoles.includes(role) || clientRoles.includes(role) || allClientRoles.includes(role);
+    } catch (e) {
+      console.warn('Impossible de décoder le token pour vérifier les rôles:', e);
+      return false;
+    }
+  }
 }

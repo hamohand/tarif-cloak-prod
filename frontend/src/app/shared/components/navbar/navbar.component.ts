@@ -19,6 +19,9 @@ import {AsyncPipe} from '@angular/common';
         @if (isAuthenticated$ | async) {
           <a routerLink="/recherche" class="nav-link">Tariff</a>
         }
+        @if (isAuthenticated$ | async && isAdmin()) {
+          <a routerLink="/admin/stats" class="nav-link">Stats</a>
+        }
       </div>
 
       <div class="nav-auth">
@@ -215,5 +218,9 @@ export class NavbarComponent implements OnInit {
 
   getUserInfo() {
     return this.authService.getUserInfo();
+  }
+
+  isAdmin(): boolean {
+    return this.authService.hasRole('ADMIN');
   }
 }

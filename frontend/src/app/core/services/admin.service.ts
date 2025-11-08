@@ -69,13 +69,16 @@ export class AdminService {
   getUsageStats(organizationId?: number, startDate?: string, endDate?: string): Observable<UsageStats> {
     let params = new HttpParams();
     
-    if (organizationId) {
+    // Ne pas inclure le paramètre si la valeur est null, undefined, ou NaN
+    // Vérifier explicitement que c'est un nombre valide (y compris 0)
+    if (organizationId !== null && organizationId !== undefined && 
+        !isNaN(organizationId) && typeof organizationId === 'number') {
       params = params.set('organizationId', organizationId.toString());
     }
-    if (startDate) {
+    if (startDate && startDate.trim() !== '' && startDate !== 'null') {
       params = params.set('startDate', startDate);
     }
-    if (endDate) {
+    if (endDate && endDate.trim() !== '' && endDate !== 'null') {
       params = params.set('endDate', endDate);
     }
 
