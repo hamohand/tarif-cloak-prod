@@ -9,6 +9,7 @@ import {LoginComponent} from './features/auth/login/login.component';
 import {SearchComponent} from './tarif/search/search.component';
 import {TarifComponent} from './tarif/home/tarif.component';
 import {TARIF_ROUTES} from './tarif/tarif.routes';
+import { StatsComponent } from './features/admin/stats/stats.component';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -21,6 +22,11 @@ export const routes: Routes = [
     children: TARIF_ROUTES,
     component: TarifComponent,
     //component: DashboardComponent,
+    canActivate: [authGuard]
+  },
+  {
+    path: 'admin/stats',
+    component: StatsComponent,
     canActivate: [authGuard]
   },
   { path: '**', redirectTo: '' }

@@ -68,7 +68,7 @@ import { Component } from '@angular/core';
       padding: 2rem;
       border-radius: 8px;
       box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-      width: 250px;
+      width: 150px;
     }
 
     .feature-card h3 {
