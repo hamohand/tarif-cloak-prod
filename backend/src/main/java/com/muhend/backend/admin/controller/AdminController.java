@@ -1,10 +1,13 @@
 package com.muhend.backend.admin.controller;
 
 import com.muhend.backend.admin.service.EndpointDiscoveryService;
+import com.muhend.backend.usage.model.UsageLog;
+import com.muhend.backend.usage.service.UsageLogService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,6 +15,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
 
@@ -22,6 +28,7 @@ import java.util.Map;
 public class AdminController {
 
     private final EndpointDiscoveryService endpointDiscoveryService;
+    private final UsageLogService usageLogService;
 
     @GetMapping("/endpoints")
     @PreAuthorize("hasRole('ADMIN')")
@@ -73,6 +80,57 @@ public class AdminController {
             "role", role.toUpperCase(),
             "description", "Endpoints nécessitant le rôle " + role.toUpperCase(),
             "endpoints", endpoints
+        ));
+    }
+
+    @GetMapping("/usage-logs")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(
+        summary = "Consulter les logs d'utilisation",
+        description = "Retourne la liste des logs d'utilisation des recherches. " +
+                     "Paramètres optionnels: ?userId=... pour filtrer par utilisateur, " +
+                     "?startDate=... et ?endDate=... pour filtrer par période (format: yyyy-MM-dd).",
+        security = @SecurityRequirement(name = "bearerAuth")
+    )
+    public ResponseEntity<Map<String, Object>> getUsageLogs(
+            @RequestParam(required = false) String userId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        
+        List<UsageLog> logs;
+        
+        if (userId != null && startDate != null && endDate != null) {
+            // Filtre par utilisateur et période
+            LocalDateTime start = startDate.atStartOfDay();
+            LocalDateTime end = endDate.atTime(LocalTime.MAX);
+            logs = usageLogService.getUsageLogsByUserAndDateRange(userId, start, end);
+        } else if (userId != null) {
+            // Filtre par utilisateur uniquement
+            logs = usageLogService.getUsageLogsByUser(userId);
+        } else if (startDate != null && endDate != null) {
+            // Filtre par période uniquement
+            LocalDateTime start = startDate.atStartOfDay();
+            LocalDateTime end = endDate.atTime(LocalTime.MAX);
+            logs = usageLogService.getUsageLogsByDateRange(start, end);
+        } else {
+            // Tous les logs
+            logs = usageLogService.getAllUsageLogs();
+        }
+        
+        // Calculer les statistiques
+        long totalRequests = logs.size();
+        double totalCost = logs.stream()
+            .mapToDouble(log -> log.getCostUsd() != null ? log.getCostUsd() : 0.0)
+            .sum();
+        long totalTokens = logs.stream()
+            .mapToLong(log -> log.getTokensUsed() != null ? log.getTokensUsed() : 0L)
+            .sum();
+        
+        return ResponseEntity.ok(Map.of(
+            "total", totalRequests,
+            "totalCostUsd", totalCost,
+            "totalTokens", totalTokens,
+            "logs", logs
         ));
     }
 }

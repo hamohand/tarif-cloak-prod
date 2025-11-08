@@ -7,10 +7,14 @@ import com.muhend.backend.codesearch.service.Position6DzService;
 import com.muhend.backend.codesearch.service.SectionService;
 import com.muhend.backend.codesearch.service.ai.AiPrompts;
 import com.muhend.backend.codesearch.service.ai.AiService;
+import com.muhend.backend.codesearch.service.ai.OpenAiService;
+import com.muhend.backend.usage.service.UsageLogService;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
@@ -22,6 +26,7 @@ import java.util.stream.Collectors;
  */
 @RestController
 @Data
+@Slf4j
 // --- IMPORTANT --- *******************************************************************
 // On supprime "/api" du mapping, car Traefik le gère déjà.
 // Spring ne verra que le chemin "/recherche".
@@ -36,16 +41,19 @@ public class RechercheController {
     private final ChapitreService chapitreService;
     private final Position4Service position4Service;
     private final Position6DzService position6DzService;
+    private final UsageLogService usageLogService;
 
     @Autowired
     public RechercheController(AiService aiService, AiPrompts aiPrompts, SectionService sectionService, ChapitreService chapitreService,
-                               Position4Service position4Service, Position6DzService position6DzService) {
+                               Position4Service position4Service, Position6DzService position6DzService,
+                               UsageLogService usageLogService) {
         this.aiService = aiService;
         this.aiPrompts = aiPrompts;
         this.sectionService = sectionService;
         this.chapitreService = chapitreService;
         this.position4Service = position4Service;
         this.position6DzService = position6DzService;
+        this.usageLogService = usageLogService;
     }
 
     // Enumération des différents niveaux de recherche
@@ -60,19 +68,25 @@ public class RechercheController {
     // Niveau de recherche 0 : sections
     @GetMapping(value = "/sections", produces = "application/json")
     public List<Position> reponseSections(@RequestParam String termeRecherche) {
-        return handleSearchRequest(termeRecherche, SearchLevel.SECTIONS);
+        List<Position> result = handleSearchRequest(termeRecherche, SearchLevel.SECTIONS);
+        logUsage("/recherche/sections", termeRecherche);
+        return result;
     }
 
     // Niveau de recherche 1 : chapitres
     @GetMapping(path = "/chapitres", produces = "application/json")
     public List<Position> reponseChapitres(@RequestParam String termeRecherche) {
-        return handleSearchRequest(termeRecherche, SearchLevel.CHAPITRES);
+        List<Position> result = handleSearchRequest(termeRecherche, SearchLevel.CHAPITRES);
+        logUsage("/recherche/chapitres", termeRecherche);
+        return result;
     }
 
     // Niveau de recherche 2 : positions 4
     @GetMapping(path = "/positions4", produces = "application/json")
     public List<Position> reponsePositions4(@RequestParam String termeRecherche) {
-        return handleSearchRequest(termeRecherche, SearchLevel.POSITIONS4);
+        List<Position> result = handleSearchRequest(termeRecherche, SearchLevel.POSITIONS4);
+        logUsage("/recherche/positions4", termeRecherche);
+        return result;
     }
 
     // Niveau de recherche 3 : positions 6
@@ -89,6 +103,7 @@ public class RechercheController {
                 System.out.println("[CONTROLLER] ATTENTION: Résultat null, conversion en liste vide.");
                 result = new ArrayList<>();
             }
+            logUsage("/recherche/positions6", termeRecherche);
             return result;
         } catch (Exception e) {
             System.err.println("[CONTROLLER] ERREUR INATTENDUE: " + e.getMessage());
@@ -96,6 +111,57 @@ public class RechercheController {
             // En cas d'erreur, renvoyer une liste vide pour éviter de casser le frontend
             return new ArrayList<>();
         }
+    }
+    
+    /**
+     * Log l'utilisation d'une recherche.
+     * Récupère les informations de coût depuis OpenAiService et enregistre le log.
+     */
+    private void logUsage(String endpoint, String searchTerm) {
+        try {
+            // Récupérer l'utilisateur depuis le contexte de sécurité
+            String userId = getCurrentUserId();
+            if (userId == null) {
+                log.warn("Impossible de récupérer l'utilisateur pour le logging. Utilisation non enregistrée.");
+                return;
+            }
+            
+            // Récupérer les informations d'utilisation depuis OpenAiService
+            UsageInfo usageInfo = OpenAiService.getCurrentUsage();
+            if (usageInfo != null) {
+                usageLogService.logUsage(
+                    userId,
+                    endpoint,
+                    searchTerm,
+                    usageInfo.getTokens(),
+                    usageInfo.getCostUsd()
+                );
+                // Nettoyer le ThreadLocal après utilisation
+                OpenAiService.clearCurrentUsage();
+            } else {
+                log.warn("Aucune information d'utilisation disponible pour l'endpoint: {}", endpoint);
+            }
+        } catch (Exception e) {
+            // Ne pas faire échouer la requête si le logging échoue
+            log.error("Erreur lors du logging de l'utilisation", e);
+        }
+    }
+    
+    /**
+     * Récupère l'ID de l'utilisateur Keycloak depuis le contexte de sécurité.
+     * @return L'ID de l'utilisateur (sub du JWT) ou null si non disponible
+     */
+    private String getCurrentUserId() {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication != null && authentication.getPrincipal() instanceof Jwt) {
+                Jwt jwt = (Jwt) authentication.getPrincipal();
+                return jwt.getClaimAsString("sub");
+            }
+        } catch (Exception e) {
+            log.error("Erreur lors de la récupération de l'ID utilisateur", e);
+        }
+        return null;
     }
 
 
@@ -252,7 +318,7 @@ public class RechercheController {
 
         } while (nbTentatives < tentativesMax && positions.isEmpty());
 
-        List<Position> positionsPositions6Dz = positions;
+        //List<Position> positionsPositions6Dz = positions;
         System.out.println("[HANDLER] Level 3 -> Résultat de l'IA: " + (positions != null ? positions.size() : "null") + " élément(s)");
 
         if (positions == null || positions.isEmpty()) {
@@ -312,7 +378,7 @@ public class RechercheController {
     }
 
     private List<Position> ragChapitres(List<Position> listePositions) {
-        if (!listePositions.isEmpty() || listePositions != null) {
+        if (listePositions != null && !listePositions.isEmpty()) {
             return listePositions.stream()
                     .flatMap(position -> chapitreService.getChapitresBySection(position.getCode()).stream())
                     .map(chapitre -> new Position(chapitre.getCode(), chapitre.getDescription()))

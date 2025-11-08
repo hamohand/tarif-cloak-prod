@@ -2,6 +2,7 @@ package com.muhend.backend.codesearch.service.ai;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.muhend.backend.codesearch.model.UsageInfo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -40,6 +41,9 @@ public class OpenAiService {
     private final float temperature = 0.0F;
 
     double prix_requete = 0.00;
+    
+    // ThreadLocal pour stocker les informations d'utilisation de la requête courante
+    private static final ThreadLocal<UsageInfo> currentUsage = new ThreadLocal<>();
 
 //    /// //////////////// Options pour le prompt et le résultat /////////////////////////////////////
 //    // - message système: true avec justification false sans.
@@ -131,6 +135,15 @@ public class OpenAiService {
             //total requete
             prix_requete = totalTokens * PRICE_TOTAL;
 
+            // Stocker les informations d'utilisation dans le ThreadLocal pour le tracking
+            UsageInfo usageInfo = new UsageInfo(
+                totalTokens,
+                prix_requete,
+                promptTokens,
+                completionTokens
+            );
+            currentUsage.set(usageInfo);
+
             // Enregistrer ou afficher les informations des tokens pour diagnostic
 //            log.info("Prompt Tokens (input), niveau : " + titre +" = " + promptTokens);
 //            System.out.println("Prompt Tokens (input), niveau : " + titre + " = " + promptTokens);
@@ -146,8 +159,26 @@ public class OpenAiService {
         } catch (Exception e) {
             // Logs pour un meilleur diagnostic
             System.err.println("Erreur lors de la requête à l'API OpenAI : " + e.getMessage());
+            // Nettoyer le ThreadLocal en cas d'erreur
+            currentUsage.remove();
             return "L'appel à l'API OpenAI a échoué.";
         }
 
+    }
+    
+    /**
+     * Récupère les informations d'utilisation de la requête courante.
+     * @return UsageInfo contenant les tokens et le coût, ou null si aucune information disponible
+     */
+    public static UsageInfo getCurrentUsage() {
+        return currentUsage.get();
+    }
+    
+    /**
+     * Nettoie les informations d'utilisation de la requête courante.
+     * À appeler après avoir enregistré les informations pour éviter les fuites mémoire.
+     */
+    public static void clearCurrentUsage() {
+        currentUsage.remove();
     }
 }
