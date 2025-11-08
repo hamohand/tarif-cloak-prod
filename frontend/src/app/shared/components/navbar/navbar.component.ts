@@ -18,9 +18,9 @@ import {AsyncPipe} from '@angular/common';
         <a routerLink="/" class="nav-link">Accueil</a>
         @if (isAuthenticated$ | async) {
           <a routerLink="/recherche" class="nav-link">Tariff</a>
-        }
-        @if (isAuthenticated$ | async && isAdmin()) {
-          <a routerLink="/admin/stats" class="nav-link">Stats</a>
+          @if (isAdmin()) {
+            <a routerLink="/admin/stats" class="nav-link">Stats</a>
+          }
         }
       </div>
 
