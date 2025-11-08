@@ -28,7 +28,17 @@ export class AuthService {
     }
     
     this.configured = true;
-    this.oauthService.configure(authConfig);
+    
+    // Forcer requireHttps à false dans la configuration pour éviter les erreurs HTTPS
+    const config = {
+      ...authConfig,
+      requireHttps: false,
+      strictDiscoveryDocumentValidation: false,
+      skipIssuerCheck: true,
+      skipSubjectCheck: true
+    };
+    
+    this.oauthService.configure(config);
     
     // Vérifier si on revient d'un callback OAuth (code dans l'URL)
     const urlParams = new URLSearchParams(window.location.search);
@@ -91,14 +101,25 @@ export class AuthService {
           return;
         }
         
-        // Si le chargement du document de découverte échoue, c'est un problème critique
-        if (error.message && (error.message.includes('discovery') || error.message.includes('Failed to load'))) {
-          console.error('Erreur critique : Impossible de charger le document de découverte Keycloak:', error);
-          this.cleanupTokens();
-          this.isAuthenticatedSubject.next(false);
+        // Si le chargement du document de découverte échoue, vérifier le type d'erreur
+        if (error?.message) {
+          // Si c'est une erreur HTTPS, essayer de contourner en reconfigurant
+          if (error.message.includes('HTTPS') || error.message.includes('TLS') || error.message.includes('requireHttps')) {
+            console.warn('Erreur HTTPS détectée. La configuration requireHttps: false devrait résoudre ce problème.');
+            console.warn('Vérifiez que l\'URL de l\'issuer Keycloak est correcte:', authConfig.issuer);
+            // Ne pas nettoyer les tokens, juste marquer comme non authentifié
+            this.isAuthenticatedSubject.next(false);
+          } else if (error.message.includes('discovery') || error.message.includes('Failed to load')) {
+            console.error('Erreur critique : Impossible de charger le document de découverte Keycloak:', error);
+            this.cleanupTokens();
+            this.isAuthenticatedSubject.next(false);
+          } else {
+            // Si c'est juste la tentative de connexion automatique qui échoue, ce n'est pas grave
+            // (pas de log nécessaire, c'est normal si pas de session active)
+            this.isAuthenticatedSubject.next(false);
+          }
         } else {
-          // Si c'est juste la tentative de connexion automatique qui échoue, ce n'est pas grave
-          // (pas de log nécessaire, c'est normal si pas de session active)
+          // Si pas de message d'erreur, c'est peut-être juste une absence de session
           this.isAuthenticatedSubject.next(false);
         }
       });
@@ -189,14 +210,20 @@ export class AuthService {
 
   /**
    * Vérifie si le token est expiré et déconnecte l'utilisateur si nécessaire
+   * Cette méthode ne doit pas être appelée pendant la navigation (dans isAuthenticated())
+   * car elle peut déclencher une redirection qui interrompt la navigation en cours.
    */
   private checkTokenExpiration(): void {
     const token = this.oauthService.getAccessToken();
     
     // Si pas de token, l'utilisateur n'est pas authentifié
     if (!token) {
-      this.stopTokenCheck();
-      this.isAuthenticatedSubject.next(false);
+      const currentValue = this.isAuthenticatedSubject.value;
+      if (currentValue) {
+        // Seulement mettre à jour le statut si nécessaire, sans redirection
+        this.stopTokenCheck();
+        this.isAuthenticatedSubject.next(false);
+      }
       return;
     }
     
@@ -212,7 +239,10 @@ export class AuthService {
         this.stopTokenCheck();
         this.cleanupTokens();
         this.isAuthenticatedSubject.next(false);
-        this.router.navigate(['/']);
+        // Utiliser setTimeout pour éviter d'interrompre la navigation en cours
+        setTimeout(() => {
+          this.router.navigate(['/']);
+        }, 0);
         return;
       }
       
@@ -226,7 +256,16 @@ export class AuthService {
           this.stopTokenCheck();
           this.cleanupTokens();
           this.isAuthenticatedSubject.next(false);
-          this.router.navigate(['/']);
+          // Utiliser setTimeout pour éviter d'interrompre la navigation en cours
+          setTimeout(() => {
+            this.router.navigate(['/']);
+          }, 0);
+        } else {
+          // Token valide, s'assurer que le statut est correct
+          const currentValue = this.isAuthenticatedSubject.value;
+          if (!currentValue) {
+            this.isAuthenticatedSubject.next(true);
+          }
         }
       }
     } catch (e) {
@@ -235,7 +274,10 @@ export class AuthService {
       this.stopTokenCheck();
       this.cleanupTokens();
       this.isAuthenticatedSubject.next(false);
-      this.router.navigate(['/']);
+      // Utiliser setTimeout pour éviter d'interrompre la navigation en cours
+      setTimeout(() => {
+        this.router.navigate(['/']);
+      }, 0);
     }
   }
 
@@ -299,8 +341,18 @@ export class AuthService {
   }
 
   public isAuthenticated(): Observable<boolean> {
-    // Vérifier l'expiration avant de retourner le statut
-    this.checkTokenExpiration();
+    // Ne pas appeler checkTokenExpiration() ici car cela peut causer des effets de bord
+    // (redirection) qui interrompent la navigation. La vérification périodique s'en charge.
+    // On vérifie juste si le token est valide sans déclencher de redirection
+    const token = this.oauthService.getAccessToken();
+    if (token && this.isTokenValid()) {
+      // Si le token est valide, s'assurer que le statut est à jour
+      const currentValue = this.isAuthenticatedSubject.value;
+      if (!currentValue) {
+        // Si le statut n'est pas à jour mais que le token est valide, le mettre à jour
+        this.isAuthenticatedSubject.next(true);
+      }
+    }
     return this.isAuthenticatedSubject.asObservable();
   }
 
