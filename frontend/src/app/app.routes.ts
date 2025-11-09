@@ -11,6 +11,7 @@ import {TarifComponent} from './tarif/home/tarif.component';
 import {TARIF_ROUTES} from './tarif/tarif.routes';
 import { StatsComponent } from './features/admin/stats/stats.component';
 import { OrganizationsComponent } from './features/admin/organizations/organizations.component';
+import { UserDashboardComponent } from './features/user/dashboard/dashboard.component';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -23,6 +24,11 @@ export const routes: Routes = [
     children: TARIF_ROUTES,
     component: TarifComponent,
     //component: DashboardComponent,
+    canActivate: [authGuard]
+  },
+  {
+    path: 'dashboard',
+    component: UserDashboardComponent,
     canActivate: [authGuard]
   },
   {
