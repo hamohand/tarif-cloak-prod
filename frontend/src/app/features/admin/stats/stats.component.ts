@@ -20,10 +20,11 @@ Chart.register(...registerables);
         <div class="filters">
           <div class="filter-group">
             <label for="organizationId">Organisation:</label>
-            <select id="organizationId" [ngModel]="selectedOrganizationId" (ngModelChange)="onOrganizationChange($event)">
+            <select id="organizationId" [ngModel]="selectedOrganizationId" (ngModelChange)="onOrganizationChange($event)" [disabled]="organizationsLoading">
               <option [ngValue]="null">Toutes</option>
               <option *ngFor="let org of organizations" [ngValue]="org.id">{{ org.name }}</option>
             </select>
+            <span *ngIf="organizationsLoading" class="loading-text">Chargement...</span>
           </div>
           <div class="filter-group">
             <label for="startDate">Date de début:</label>
@@ -166,7 +167,17 @@ Chart.register(...registerables);
 
       <!-- Message d'erreur -->
       <div *ngIf="error" class="error">
-        <p>Erreur lors du chargement des statistiques: {{ error }}</p>
+        <p>{{ error }}</p>
+      </div>
+
+      <!-- Message d'erreur pour les organisations -->
+      <div *ngIf="organizationsError" class="error">
+        <p>⚠️ {{ organizationsError }}</p>
+      </div>
+
+      <!-- Message d'information sur les organisations -->
+      <div *ngIf="organizations.length === 0 && !organizationsLoading && !organizationsError" class="info">
+        <p>⚠️ Aucune organisation trouvée. Créez des organisations depuis la page "Organisations".</p>
       </div>
     </div>
   `,
@@ -219,6 +230,17 @@ Chart.register(...registerables);
       border: 1px solid #ddd;
       border-radius: 4px;
       font-size: 1rem;
+    }
+
+    .filter-group select[disabled] {
+      background-color: #f5f5f5;
+      cursor: not-allowed;
+    }
+
+    .loading-text {
+      font-size: 0.875rem;
+      color: #6c757d;
+      margin-left: 0.5rem;
     }
 
     .btn-reset {
@@ -339,6 +361,14 @@ Chart.register(...registerables);
       margin-top: 1rem;
     }
 
+    .info {
+      background: #d1ecf1;
+      color: #0c5460;
+      padding: 1rem;
+      border-radius: 4px;
+      margin-top: 1rem;
+    }
+
     @media (max-width: 768px) {
       .stats-container {
         padding: 1rem;
@@ -377,6 +407,8 @@ export class StatsComponent implements OnInit, AfterViewInit, OnDestroy {
   endDate: string = '';
   loading = false;
   error: string | null = null;
+  organizationsError: string | null = null;
+  organizationsLoading = false;
 
   private requestsChart: Chart | null = null;
   private costsChart: Chart | null = null;
@@ -405,12 +437,37 @@ export class StatsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   loadOrganizations() {
+    this.organizationsLoading = true;
+    this.organizationsError = null;
+    
     this.adminService.getOrganizations().subscribe({
       next: (orgs) => {
-        this.organizations = orgs;
+        console.log('Organisations chargées:', orgs);
+        this.organizations = orgs || [];
+        this.organizationsLoading = false;
+        if (this.organizations.length === 0) {
+          console.warn('Aucune organisation trouvée. Vérifiez que vous avez le rôle ADMIN et que des organisations existent.');
+          this.organizationsError = 'Aucune organisation trouvée. Vérifiez que vous avez le rôle ADMIN et que des organisations existent dans la base de données.';
+        }
       },
       error: (err) => {
         console.error('Erreur lors du chargement des organisations:', err);
+        this.organizationsLoading = false;
+        this.organizations = [];
+        
+        // Déterminer le message d'erreur approprié
+        if (err.status === 403) {
+          this.organizationsError = 'Accès refusé. Vous devez avoir le rôle ADMIN pour voir les organisations.';
+          console.error('Accès refusé. Vérifiez que vous avez le rôle ADMIN.');
+        } else if (err.status === 401) {
+          this.organizationsError = 'Non authentifié. Veuillez vous reconnecter.';
+          console.error('Non authentifié. Vérifiez votre token JWT.');
+        } else if (err.status === 0) {
+          this.organizationsError = 'Impossible de se connecter au backend. Vérifiez que le backend est démarré.';
+          console.error('Impossible de se connecter au backend. Vérifiez que le backend est démarré.');
+        } else {
+          this.organizationsError = `Erreur lors du chargement des organisations: ${err.message || err.statusText || 'Erreur inconnue'}`;
+        }
       }
     });
   }
