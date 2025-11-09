@@ -534,7 +534,11 @@ export class StatsComponent implements OnInit, AfterViewInit, OnDestroy {
           tooltip: {
             callbacks: {
               label: (context) => {
-                return `Coût: ${this.formatCurrency(context.parsed.y)}`;
+                const value = context.parsed.y;
+                if (value === null || value === undefined) {
+                  return 'Coût: $0.000000';
+                }
+                return `Coût: ${this.formatCurrency(value)}`;
               }
             }
           }
