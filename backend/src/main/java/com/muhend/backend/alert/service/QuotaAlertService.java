@@ -7,7 +7,6 @@ import com.muhend.backend.organization.dto.OrganizationDto;
 import com.muhend.backend.organization.service.OrganizationService;
 import com.muhend.backend.usage.repository.UsageLogRepository;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

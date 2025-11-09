@@ -2,6 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminService, Organization, OrganizationUser, CreateOrganizationRequest, UpdateOrganizationRequest, UpdateQuotaRequest, AddUserToOrganizationRequest } from '../../../core/services/admin.service';
+import { NotificationService } from '../../../core/services/notification.service';
 
 @Component({
   selector: 'app-organizations',
@@ -689,19 +690,23 @@ export class OrganizationsComponent implements OnInit {
 
   createOrganization() {
     if (!this.newOrganization.name.trim()) {
-      this.errorMessage = 'Le nom est obligatoire';
+      this.notificationService.error('Le nom est obligatoire');
       return;
     }
 
     this.adminService.createOrganization(this.newOrganization).subscribe({
       next: () => {
+        this.notificationService.success('Organisation créée avec succès');
         this.showCreateForm = false;
         this.newOrganization = { name: '', email: null };
         this.loadOrganizations();
         this.searchTerm = ''; // Réinitialiser la recherche
+        this.errorMessage = '';
       },
       error: (err) => {
-        this.errorMessage = 'Erreur lors de la création: ' + (err.error?.message || err.message);
+        const message = err.error?.message || err.message || 'Erreur lors de la création';
+        this.errorMessage = message;
+        this.notificationService.error(message);
       }
     });
   }
@@ -754,12 +759,15 @@ export class OrganizationsComponent implements OnInit {
     const request: UpdateQuotaRequest = { monthlyQuota: this.editingQuota };
     this.adminService.updateQuota(id, request).subscribe({
       next: () => {
+        this.notificationService.success('Quota mis à jour avec succès');
         this.cancelQuotaEdit();
         this.loadOrganizations();
         this.filterOrganizations(); // Re-filtrer après mise à jour
       },
       error: (err) => {
-        this.errorMessage = 'Erreur lors de la mise à jour du quota: ' + (err.error?.message || err.message);
+        const message = err.error?.message || err.message || 'Erreur lors de la mise à jour du quota';
+        this.errorMessage = message;
+        this.notificationService.error(message);
       }
     });
   }
