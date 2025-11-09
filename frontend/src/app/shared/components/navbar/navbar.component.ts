@@ -1,7 +1,8 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, OnDestroy } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { Observable } from 'rxjs';
+import { Observable, interval, Subscription } from 'rxjs';
 import { AuthService } from '../../../core/services/auth.service';
+import { AlertService } from '../../../core/services/alert.service';
 import {AsyncPipe} from '@angular/common';
 
 @Component({
@@ -19,6 +20,12 @@ import {AsyncPipe} from '@angular/common';
         @if (isAuthenticated$ | async) {
           <a routerLink="/recherche" class="nav-link">Tariff</a>
           <a routerLink="/dashboard" class="nav-link">Tableau de bord</a>
+          <a routerLink="/alerts" class="nav-link alerts-link">
+            🔔 Alertes
+            @if (alertCount > 0) {
+              <span class="alert-badge">{{ alertCount }}</span>
+            }
+          </a>
           @if (isAdmin()) {
             <a routerLink="/admin/stats" class="nav-link">Stats</a>
             <a routerLink="/admin/organizations" class="nav-link">Organisations</a>
@@ -191,16 +198,79 @@ import {AsyncPipe} from '@angular/common';
     .btn:active {
       transform: translateY(0);
     }
+
+    .alerts-link {
+      position: relative;
+    }
+
+    .alert-badge {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      background: #e74c3c;
+      color: white;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      font-weight: 700;
+      border: 2px solid white;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.1);
+      }
+    }
   `]
 })
-export class NavbarComponent implements OnInit {
+export class NavbarComponent implements OnInit, OnDestroy {
   private authService = inject(AuthService);
   private router = inject(Router);
+  private alertService = inject(AlertService);
 
   isAuthenticated$!: Observable<boolean>;
+  alertCount = 0;
+  private refreshSubscription?: Subscription;
 
   ngOnInit() {
     this.isAuthenticated$ = this.authService.isAuthenticated();
+    this.loadAlertCount();
+    // Rafraîchir le compteur toutes les 30 secondes
+    this.refreshSubscription = interval(30000).subscribe(() => {
+      this.loadAlertCount();
+    });
+  }
+
+  ngOnDestroy() {
+    if (this.refreshSubscription) {
+      this.refreshSubscription.unsubscribe();
+    }
+  }
+
+  loadAlertCount() {
+    this.isAuthenticated$.subscribe(isAuthenticated => {
+      if (isAuthenticated) {
+        this.alertService.getMyAlertsCount().subscribe({
+          next: (response) => {
+            this.alertCount = response.count;
+          },
+          error: (err) => {
+            console.error('Erreur lors du chargement du compteur d\'alertes:', err);
+            this.alertCount = 0;
+          }
+        });
+      } else {
+        this.alertCount = 0;
+      }
+    });
   }
   login() {
     this.router.navigate(['/auth/login']);

@@ -12,6 +12,7 @@ import {TARIF_ROUTES} from './tarif/tarif.routes';
 import { StatsComponent } from './features/admin/stats/stats.component';
 import { OrganizationsComponent } from './features/admin/organizations/organizations.component';
 import { UserDashboardComponent } from './features/user/dashboard/dashboard.component';
+import { AlertsComponent } from './features/user/alerts/alerts.component';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -29,6 +30,11 @@ export const routes: Routes = [
   {
     path: 'dashboard',
     component: UserDashboardComponent,
+    canActivate: [authGuard]
+  },
+  {
+    path: 'alerts',
+    component: AlertsComponent,
     canActivate: [authGuard]
   },
   {
