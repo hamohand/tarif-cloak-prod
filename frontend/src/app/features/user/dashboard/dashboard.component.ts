@@ -700,6 +700,13 @@ export class UserDashboardComponent implements OnInit, AfterViewInit, OnDestroy 
               label: (context) => {
                 const label = context.dataset.label || '';
                 const value = context.parsed.y;
+                if (value === null || value === undefined) {
+                  if (label.includes('Coût')) {
+                    return `${label}: $0.000000`;
+                  } else {
+                    return `${label}: 0`;
+                  }
+                }
                 if (label.includes('Coût')) {
                   return `${label}: ${this.formatCurrency(value)}`;
                 } else {
