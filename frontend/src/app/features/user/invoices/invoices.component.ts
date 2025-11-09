@@ -67,7 +67,7 @@ import { NotificationService } from '../../../core/services/notification.service
       } @else {
         <!-- Informations de pagination -->
         <div class="pagination-info">
-          <p>Affichage de {{ (currentPage - 1) * pageSize + 1 }} à {{ Math.min(currentPage * pageSize, filteredInvoices.length) }} sur {{ filteredInvoices.length }} facture(s)</p>
+          <p>Affichage de {{ getStartIndex() }} à {{ getEndIndex() }} sur {{ filteredInvoices.length }} facture(s)</p>
         </div>
 
         <div class="invoices-table-wrapper">
