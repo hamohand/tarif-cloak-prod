@@ -42,7 +42,7 @@ import { NotificationService, Notification } from '../../../core/services/notifi
     }
 
     .notification {
-      background: white;
+      background: #e8e8e8;
       border-radius: 8px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
       padding: 1rem;

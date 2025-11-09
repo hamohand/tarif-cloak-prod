@@ -277,22 +277,23 @@ import { NotificationService } from '../../../core/services/notification.service
       align-items: center;
     }
 
-    .search-input {
-      padding: 0.6rem 1rem;
-      border: 1px solid #ddd;
-      border-radius: 6px;
-      font-size: 1rem;
-      min-width: 250px;
-    }
+      .search-input {
+        padding: 0.6rem 1rem;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 1rem;
+        min-width: 250px;
+        background: #f5f5f5;
+      }
 
-    .view-select {
-      padding: 0.6rem 1rem;
-      border: 1px solid #ddd;
-      border-radius: 6px;
-      font-size: 1rem;
-      background: white;
-      cursor: pointer;
-    }
+      .view-select {
+        padding: 0.6rem 1rem;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 1rem;
+        background: #f5f5f5;
+        cursor: pointer;
+      }
 
     .organizations-list {
       display: flex;
@@ -301,7 +302,7 @@ import { NotificationService } from '../../../core/services/notification.service
     }
 
     .organization-card {
-      background: #f5f5f5;
+      background: #e0e0e0;
       border-radius: 8px;
       padding: 1.5rem;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -338,7 +339,7 @@ import { NotificationService } from '../../../core/services/notification.service
     .quota-section {
       margin: 1rem 0;
       padding: 1rem;
-      background: white;
+      background: #d5d5d5;
       border-radius: 4px;
       display: flex;
       align-items: center;
@@ -422,7 +423,7 @@ import { NotificationService } from '../../../core/services/notification.service
     .organizations-table {
       width: 100%;
       border-collapse: collapse;
-      background: white;
+      background: #e0e0e0;
       border-radius: 8px;
       overflow: hidden;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -436,7 +437,7 @@ import { NotificationService } from '../../../core/services/notification.service
     }
 
     .organizations-table th {
-      background: #f8f9fa;
+      background: #d5d5d5;
       font-weight: 600;
       color: #2c3e50;
       position: sticky;
@@ -483,12 +484,12 @@ import { NotificationService } from '../../../core/services/notification.service
       color: #f44336;
     }
 
-    .form-card, .edit-form {
-      background: white;
-      padding: 1.5rem;
-      border-radius: 8px;
-      margin-bottom: 1.5rem;
-    }
+      .form-card, .edit-form {
+        background: #e0e0e0;
+        padding: 1.5rem;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+      }
 
     .form-group {
       margin-bottom: 1rem;
@@ -515,12 +516,12 @@ import { NotificationService } from '../../../core/services/notification.service
       margin-top: 1rem;
     }
 
-    .users-section {
-      margin-top: 1.5rem;
-      padding: 1.5rem;
-      background: white;
-      border-radius: 8px;
-    }
+      .users-section {
+        margin-top: 1.5rem;
+        padding: 1.5rem;
+        background: #e0e0e0;
+        border-radius: 8px;
+      }
 
     .users-table {
       width: 100%;
@@ -536,7 +537,7 @@ import { NotificationService } from '../../../core/services/notification.service
     }
 
     .users-table th {
-      background: #f8f9fa;
+      background: #d5d5d5;
       font-weight: 600;
       color: #2c3e50;
     }
@@ -544,7 +545,7 @@ import { NotificationService } from '../../../core/services/notification.service
     .add-user-form {
       margin-top: 1.5rem;
       padding: 1rem;
-      background: #f8f9fa;
+      background: #d5d5d5;
       border-radius: 4px;
     }
 
@@ -622,6 +623,7 @@ import { NotificationService } from '../../../core/services/notification.service
 })
 export class OrganizationsComponent implements OnInit {
   private adminService = inject(AdminService);
+  private notificationService = inject(NotificationService);
 
   organizations: Organization[] = [];
   filteredOrganizations: Organization[] = [];
@@ -662,8 +664,10 @@ export class OrganizationsComponent implements OnInit {
         this.loading = false;
       },
       error: (err) => {
-        this.errorMessage = 'Erreur lors du chargement des organisations: ' + (err.error?.message || err.message);
+        const message = err.error?.message || err.message || 'Erreur lors du chargement des organisations';
+        this.errorMessage = message;
         this.loading = false;
+        this.notificationService.error(message);
       }
     });
   }
@@ -728,18 +732,22 @@ export class OrganizationsComponent implements OnInit {
 
   updateOrganization(id: number) {
     if (!this.editingOrg.name?.trim()) {
-      this.errorMessage = 'Le nom est obligatoire';
+      this.notificationService.error('Le nom est obligatoire');
       return;
     }
 
     this.adminService.updateOrganization(id, this.editingOrg).subscribe({
       next: () => {
+        this.notificationService.success('Organisation mise à jour avec succès');
         this.cancelEdit();
         this.loadOrganizations();
         this.filterOrganizations(); // Re-filtrer après mise à jour
+        this.errorMessage = '';
       },
       error: (err) => {
-        this.errorMessage = 'Erreur lors de la mise à jour: ' + (err.error?.message || err.message);
+        const message = err.error?.message || err.message || 'Erreur lors de la mise à jour';
+        this.errorMessage = message;
+        this.notificationService.error(message);
       }
     });
   }
@@ -810,19 +818,23 @@ export class OrganizationsComponent implements OnInit {
 
   addUser(organizationId: number) {
     if (!this.newUserId.trim()) {
-      this.errorMessage = 'L\'ID utilisateur est obligatoire';
+      this.notificationService.warning('L\'ID utilisateur Keycloak est obligatoire');
       return;
     }
 
     const request: AddUserToOrganizationRequest = { keycloakUserId: this.newUserId.trim() };
     this.adminService.addUserToOrganization(organizationId, request).subscribe({
       next: () => {
+        this.notificationService.success('Utilisateur ajouté avec succès');
         this.newUserId = '';
         this.loadUsers(organizationId);
         this.loadOrganizations(); // Rafraîchir pour mettre à jour le userCount
+        this.userErrorMessage = '';
       },
       error: (err) => {
-        this.errorMessage = 'Erreur lors de l\'ajout de l\'utilisateur: ' + (err.error?.message || err.message);
+        const message = err.error?.message || err.message || 'Erreur lors de l\'ajout de l\'utilisateur';
+        this.userErrorMessage = message;
+        this.notificationService.error(message);
       }
     });
   }
@@ -834,11 +846,15 @@ export class OrganizationsComponent implements OnInit {
 
     this.adminService.removeUserFromOrganization(organizationId, keycloakUserId).subscribe({
       next: () => {
+        this.notificationService.success('Utilisateur retiré avec succès');
         this.loadUsers(organizationId);
         this.loadOrganizations(); // Rafraîchir pour mettre à jour le userCount
+        this.userErrorMessage = '';
       },
       error: (err) => {
-        this.errorMessage = 'Erreur lors du retrait de l\'utilisateur: ' + (err.error?.message || err.message);
+        const message = err.error?.message || err.message || 'Erreur lors du retrait de l'utilisateur';
+        this.userErrorMessage = message;
+        this.notificationService.error(message);
       }
     });
   }

@@ -243,7 +243,7 @@ Chart.register(...registerables);
     }
 
     .stat-card {
-      background: #f5f5f5;
+      background: #e0e0e0;
       padding: 1.5rem;
       border-radius: 8px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
@@ -264,7 +264,7 @@ Chart.register(...registerables);
     }
 
     .section-card {
-      background: #f5f5f5;
+      background: #e8e8e8;
       padding: 1.5rem;
       border-radius: 8px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
@@ -279,7 +279,7 @@ Chart.register(...registerables);
     }
 
     .chart-wrapper {
-      background: white;
+      background: #e0e0e0;
       padding: 1.5rem;
       border-radius: 8px;
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
@@ -302,7 +302,7 @@ Chart.register(...registerables);
     }
 
     .stats-table th {
-      background: #f8f9fa;
+      background: #d5d5d5;
       padding: 0.75rem;
       text-align: left;
       font-weight: 600;

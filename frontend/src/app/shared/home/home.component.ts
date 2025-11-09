@@ -71,7 +71,7 @@ import { Component } from '@angular/core';
     }
 
     .feature-card {
-      background: rgb(230, 230, 230);
+      background: rgb(220, 220, 220);
       padding: 2rem;
       border-radius: 8px;
       box-shadow: 0 2px 5px rgba(0,0,0,0.1);

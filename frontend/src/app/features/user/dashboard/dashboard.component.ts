@@ -205,7 +205,7 @@ Chart.register(...registerables);
     .organization-card,
     .quota-card,
     .stats-card {
-      background: #f5f5f5;
+      background: #e0e0e0;
       border-radius: 8px;
       padding: 1.5rem;
       margin-bottom: 1.5rem;
@@ -316,7 +316,7 @@ Chart.register(...registerables);
     }
 
     .stat-item {
-      background: white;
+      background: #d0d0d0;
       padding: 1rem;
       border-radius: 8px;
       text-align: center;
@@ -386,7 +386,7 @@ Chart.register(...registerables);
     }
 
     .usage-table th {
-      background: #f8f9fa;
+      background: #d5d5d5;
       font-weight: 600;
       color: #2c3e50;
     }
@@ -434,7 +434,7 @@ Chart.register(...registerables);
     .chart-section {
       margin: 2rem 0;
       padding: 1.5rem;
-      background: white;
+      background: #e0e0e0;
       border-radius: 8px;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }

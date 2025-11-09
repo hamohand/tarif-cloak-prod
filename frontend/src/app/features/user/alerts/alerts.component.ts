@@ -61,7 +61,7 @@ import { interval, Subscription } from 'rxjs';
   styles: [`
     .alerts-container {
       padding: 2rem;
-      background-color: #f5f5f5;
+      background-color: #e8e8e8;
       min-height: calc(100vh - 60px);
     }
 
@@ -103,7 +103,7 @@ import { interval, Subscription } from 'rxjs';
     }
 
     .alert-card {
-      background: white;
+      background: #e0e0e0;
       border-radius: 8px;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
       padding: 1.5rem;
