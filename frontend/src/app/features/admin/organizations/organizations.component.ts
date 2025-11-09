@@ -227,6 +227,9 @@ import { NotificationService } from '../../../core/services/notification.service
                   <!-- Formulaire d'ajout d'utilisateur -->
                   <div class="add-user-form">
                     <h5>Ajouter un utilisateur</h5>
+                    @if (userErrorMessage) {
+                      <div class="error-message">{{ userErrorMessage }}</div>
+                    }
                     <form (ngSubmit)="addUser(org.id)">
                       <div class="form-group">
                         <label for="newUserId-{{org.id}}">ID Utilisateur Keycloak *</label>
@@ -649,6 +652,7 @@ export class OrganizationsComponent implements OnInit {
   organizationUsers: OrganizationUser[] = [];
   loadingUsers = false;
   newUserId = '';
+  userErrorMessage = '';
 
   ngOnInit() {
     this.loadOrganizations();
@@ -664,7 +668,7 @@ export class OrganizationsComponent implements OnInit {
         this.loading = false;
       },
       error: (err) => {
-        const message = err.error?.message || err.message || 'Erreur lors du chargement des organisations';
+        const message = err.error?.message || err.message || "Erreur lors du chargement des organisations";
         this.errorMessage = message;
         this.loading = false;
         this.notificationService.error(message);
@@ -694,7 +698,7 @@ export class OrganizationsComponent implements OnInit {
 
   createOrganization() {
     if (!this.newOrganization.name.trim()) {
-      this.notificationService.error('Le nom est obligatoire');
+      this.notificationService.error("Le nom est obligatoire");
       return;
     }
 
@@ -708,7 +712,7 @@ export class OrganizationsComponent implements OnInit {
         this.errorMessage = '';
       },
       error: (err) => {
-        const message = err.error?.message || err.message || 'Erreur lors de la création';
+        const message = err.error?.message || err.message || "Erreur lors de la création";
         this.errorMessage = message;
         this.notificationService.error(message);
       }
@@ -732,7 +736,7 @@ export class OrganizationsComponent implements OnInit {
 
   updateOrganization(id: number) {
     if (!this.editingOrg.name?.trim()) {
-      this.notificationService.error('Le nom est obligatoire');
+      this.notificationService.error("Le nom est obligatoire");
       return;
     }
 
@@ -745,7 +749,7 @@ export class OrganizationsComponent implements OnInit {
         this.errorMessage = '';
       },
       error: (err) => {
-        const message = err.error?.message || err.message || 'Erreur lors de la mise à jour';
+        const message = err.error?.message || err.message || "Erreur lors de la mise à jour";
         this.errorMessage = message;
         this.notificationService.error(message);
       }
@@ -773,7 +777,7 @@ export class OrganizationsComponent implements OnInit {
         this.filterOrganizations(); // Re-filtrer après mise à jour
       },
       error: (err) => {
-        const message = err.error?.message || err.message || 'Erreur lors de la mise à jour du quota';
+        const message = err.error?.message || err.message || "Erreur lors de la mise à jour du quota";
         this.errorMessage = message;
         this.notificationService.error(message);
       }
@@ -798,14 +802,17 @@ export class OrganizationsComponent implements OnInit {
   loadUsers(organizationId: number) {
     this.loadingUsers = true;
     this.organizationUsers = [];
+    this.userErrorMessage = '';
     this.adminService.getOrganizationUsers(organizationId).subscribe({
       next: (users) => {
         this.organizationUsers = users;
         this.loadingUsers = false;
       },
       error: (err) => {
-        this.errorMessage = 'Erreur lors du chargement des utilisateurs: ' + (err.error?.message || err.message);
+        const message = "Erreur lors du chargement des utilisateurs: " + (err.error?.message || err.message);
+        this.userErrorMessage = message;
         this.loadingUsers = false;
+        this.notificationService.error(message);
       }
     });
   }
@@ -814,11 +821,12 @@ export class OrganizationsComponent implements OnInit {
     this.showingUsersId = null;
     this.organizationUsers = [];
     this.newUserId = '';
+    this.userErrorMessage = '';
   }
 
   addUser(organizationId: number) {
     if (!this.newUserId.trim()) {
-      this.notificationService.warning('L\'ID utilisateur Keycloak est obligatoire');
+      this.notificationService.warning("L'ID utilisateur Keycloak est obligatoire");
       return;
     }
 
@@ -832,7 +840,7 @@ export class OrganizationsComponent implements OnInit {
         this.userErrorMessage = '';
       },
       error: (err) => {
-        const message = err.error?.message || err.message || 'Erreur lors de l\'ajout de l\'utilisateur';
+        const message = err.error?.message || err.message || "Erreur lors de l'ajout de l'utilisateur";
         this.userErrorMessage = message;
         this.notificationService.error(message);
       }
@@ -852,7 +860,7 @@ export class OrganizationsComponent implements OnInit {
         this.userErrorMessage = '';
       },
       error: (err) => {
-        const message = err.error?.message || err.message || 'Erreur lors du retrait de l'utilisateur';
+        const message = err.error?.message || err.message || "Erreur lors du retrait de l'utilisateur";
         this.userErrorMessage = message;
         this.notificationService.error(message);
       }
