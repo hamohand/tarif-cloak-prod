@@ -71,12 +71,21 @@ public class RechercheController {
     // Niveau de recherche 0 : sections
     @GetMapping(value = "/sections", produces = "application/json")
     public List<Position> reponseSections(@RequestParam String termeRecherche) {
+        boolean searchExecuted = false;
         try {
+            // Vérifier le quota avant de faire la recherche
+            checkQuotaBeforeSearch();
             List<Position> result = handleSearchRequest(termeRecherche, SearchLevel.SECTIONS);
+            searchExecuted = true;
             return result;
+        } catch (com.muhend.backend.organization.exception.QuotaExceededException e) {
+            // Ne pas logger si le quota est dépassé (recherche non effectuée)
+            throw e;
         } finally {
-            // Toujours nettoyer le ThreadLocal et logger, même en cas d'erreur
-            logUsage("/recherche/sections", termeRecherche);
+            // Nettoyer le ThreadLocal et logger seulement si la recherche a été effectuée
+            if (searchExecuted) {
+                logUsage("/recherche/sections", termeRecherche);
+            }
             OpenAiService.clearCurrentUsage(); // Nettoyage de sécurité
         }
     }
@@ -84,12 +93,21 @@ public class RechercheController {
     // Niveau de recherche 1 : chapitres
     @GetMapping(path = "/chapitres", produces = "application/json")
     public List<Position> reponseChapitres(@RequestParam String termeRecherche) {
+        boolean searchExecuted = false;
         try {
+            // Vérifier le quota avant de faire la recherche
+            checkQuotaBeforeSearch();
             List<Position> result = handleSearchRequest(termeRecherche, SearchLevel.CHAPITRES);
+            searchExecuted = true;
             return result;
+        } catch (com.muhend.backend.organization.exception.QuotaExceededException e) {
+            // Ne pas logger si le quota est dépassé (recherche non effectuée)
+            throw e;
         } finally {
-            // Toujours nettoyer le ThreadLocal et logger, même en cas d'erreur
-            logUsage("/recherche/chapitres", termeRecherche);
+            // Nettoyer le ThreadLocal et logger seulement si la recherche a été effectuée
+            if (searchExecuted) {
+                logUsage("/recherche/chapitres", termeRecherche);
+            }
             OpenAiService.clearCurrentUsage(); // Nettoyage de sécurité
         }
     }
@@ -97,12 +115,21 @@ public class RechercheController {
     // Niveau de recherche 2 : positions 4
     @GetMapping(path = "/positions4", produces = "application/json")
     public List<Position> reponsePositions4(@RequestParam String termeRecherche) {
+        boolean searchExecuted = false;
         try {
+            // Vérifier le quota avant de faire la recherche
+            checkQuotaBeforeSearch();
             List<Position> result = handleSearchRequest(termeRecherche, SearchLevel.POSITIONS4);
+            searchExecuted = true;
             return result;
+        } catch (com.muhend.backend.organization.exception.QuotaExceededException e) {
+            // Ne pas logger si le quota est dépassé (recherche non effectuée)
+            throw e;
         } finally {
-            // Toujours nettoyer le ThreadLocal et logger, même en cas d'erreur
-            logUsage("/recherche/positions4", termeRecherche);
+            // Nettoyer le ThreadLocal et logger seulement si la recherche a été effectuée
+            if (searchExecuted) {
+                logUsage("/recherche/positions4", termeRecherche);
+            }
             OpenAiService.clearCurrentUsage(); // Nettoyage de sécurité
         }
     }
@@ -113,7 +140,11 @@ public class RechercheController {
         System.out.println("=== Requête reçue sur /positions6 ==="); // Log de base
         System.out.println("Terme de recherche: " + termeRecherche);
 
+        boolean searchExecuted = false;
         try {
+            // Vérifier le quota avant de faire la recherche (peut lever QuotaExceededException)
+            checkQuotaBeforeSearch();
+            
             List<Position> result = handleSearchRequest(termeRecherche, SearchLevel.POSITIONS6);
             System.out.println("[CONTROLLER] handleSearchRequest a retourné: " + (result == null ? "null" : result.size() + " éléments"));
 
@@ -121,16 +152,23 @@ public class RechercheController {
                 System.out.println("[CONTROLLER] ATTENTION: Résultat null, conversion en liste vide.");
                 result = new ArrayList<>();
             }
+            searchExecuted = true;
             return result;
+        } catch (com.muhend.backend.organization.exception.QuotaExceededException e) {
+            // Ne pas logger si le quota est dépassé (recherche non effectuée)
+            throw e;
         } catch (Exception e) {
             System.err.println("[CONTROLLER] ERREUR INATTENDUE: " + e.getMessage());
             e.printStackTrace();
             log.error("Erreur lors de la recherche positions6", e);
             // En cas d'erreur, renvoyer une liste vide pour éviter de casser le frontend
+            // Note: on ne marque pas searchExecuted = true car la recherche a échoué
             return new ArrayList<>();
         } finally {
-            // Toujours nettoyer le ThreadLocal et logger, même en cas d'erreur
-            logUsage("/recherche/positions6", termeRecherche);
+            // Nettoyer le ThreadLocal et logger seulement si la recherche a été effectuée avec succès
+            if (searchExecuted) {
+                logUsage("/recherche/positions6", termeRecherche);
+            }
             OpenAiService.clearCurrentUsage(); // Nettoyage de sécurité
         }
     }
@@ -197,6 +235,33 @@ public class RechercheController {
             log.error("Erreur lors de la récupération de l'ID utilisateur", e);
         }
         return null;
+    }
+    
+    /**
+     * Vérifie le quota de l'organisation de l'utilisateur avant d'effectuer une recherche.
+     * Phase 4 MVP : Quotas Basiques
+     */
+    private void checkQuotaBeforeSearch() {
+        try {
+            String userId = getCurrentUserId();
+            if (userId == null) {
+                // Si on ne peut pas récupérer l'utilisateur, on autorise (non bloquant)
+                log.debug("Impossible de récupérer l'utilisateur pour la vérification du quota. Recherche autorisée.");
+                return;
+            }
+            
+            Long organizationId = organizationService.getOrganizationIdByUserId(userId);
+            if (organizationId != null) {
+                // Vérifier le quota (lève une exception si dépassé)
+                organizationService.checkQuota(organizationId);
+            }
+        } catch (com.muhend.backend.organization.exception.QuotaExceededException e) {
+            // Relancer l'exception pour qu'elle soit gérée par le gestionnaire d'exceptions global
+            throw e;
+        } catch (Exception e) {
+            // En cas d'erreur lors de la vérification du quota, on autorise la recherche (non bloquant)
+            log.warn("Erreur lors de la vérification du quota (non bloquant): {}", e.getMessage());
+        }
     }
 
 

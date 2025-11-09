@@ -3,14 +3,17 @@ package com.muhend.backend.organization.service;
 import com.muhend.backend.organization.dto.CreateOrganizationRequest;
 import com.muhend.backend.organization.dto.OrganizationDto;
 import com.muhend.backend.organization.dto.OrganizationUserDto;
+import com.muhend.backend.organization.exception.QuotaExceededException;
 import com.muhend.backend.organization.model.Organization;
 import com.muhend.backend.organization.model.OrganizationUser;
 import com.muhend.backend.organization.repository.OrganizationRepository;
 import com.muhend.backend.organization.repository.OrganizationUserRepository;
+import com.muhend.backend.usage.repository.UsageLogRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -24,11 +27,14 @@ public class OrganizationService {
     
     private final OrganizationRepository organizationRepository;
     private final OrganizationUserRepository organizationUserRepository;
+    private final UsageLogRepository usageLogRepository;
     
     public OrganizationService(OrganizationRepository organizationRepository,
-                              OrganizationUserRepository organizationUserRepository) {
+                              OrganizationUserRepository organizationUserRepository,
+                              UsageLogRepository usageLogRepository) {
         this.organizationRepository = organizationRepository;
         this.organizationUserRepository = organizationUserRepository;
+        this.usageLogRepository = usageLogRepository;
     }
     
     /**
@@ -146,12 +152,90 @@ public class OrganizationService {
     }
     
     /**
+     * Vérifie si le quota mensuel d'une organisation est dépassé.
+     * Si monthlyQuota est null, le quota est illimité et cette méthode retourne toujours true.
+     * Phase 4 MVP : Quotas Basiques
+     * 
+     * @param organizationId ID de l'organisation
+     * @return true si le quota n'est pas dépassé, false sinon
+     * @throws QuotaExceededException si le quota est dépassé
+     */
+    public boolean checkQuota(Long organizationId) {
+        if (organizationId == null) {
+            // Si l'organisation est null, on autorise (utilisateur sans organisation)
+            return true;
+        }
+        
+        Organization organization = organizationRepository.findById(organizationId)
+                .orElse(null);
+        
+        if (organization == null) {
+            // Organisation non trouvée, on autorise (non bloquant)
+            log.warn("Organisation {} non trouvée lors de la vérification du quota", organizationId);
+            return true;
+        }
+        
+        Integer monthlyQuota = organization.getMonthlyQuota();
+        
+        // Si le quota est null, il est illimité
+        if (monthlyQuota == null) {
+            return true;
+        }
+        
+        // Calculer le début et la fin du mois en cours
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime startOfMonth = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+        LocalDateTime endOfMonth = now.withDayOfMonth(now.toLocalDate().lengthOfMonth())
+                .withHour(23).withMinute(59).withSecond(59).withNano(999999999);
+        
+        // Compter les requêtes du mois en cours
+        long currentUsage = usageLogRepository.countByOrganizationIdAndTimestampBetween(
+                organizationId, startOfMonth, endOfMonth);
+        
+        // Vérifier si le quota est dépassé
+        if (currentUsage >= monthlyQuota) {
+            String message = String.format(
+                    "Quota mensuel dépassé pour l'organisation '%s' (ID: %d). Utilisation: %d/%d requêtes",
+                    organization.getName(), organizationId, currentUsage, monthlyQuota);
+            log.warn(message);
+            throw new QuotaExceededException(message);
+        }
+        
+        log.debug("Quota OK pour l'organisation {}: {}/{} requêtes utilisées ce mois", 
+                 organizationId, currentUsage, monthlyQuota);
+        return true;
+    }
+    
+    /**
+     * Met à jour le quota mensuel d'une organisation.
+     * Phase 4 MVP : Quotas Basiques
+     * 
+     * @param organizationId ID de l'organisation
+     * @param monthlyQuota Nouveau quota mensuel (null pour quota illimité)
+     * @return L'organisation mise à jour
+     */
+    @Transactional
+    public OrganizationDto updateMonthlyQuota(Long organizationId, Integer monthlyQuota) {
+        Organization organization = organizationRepository.findById(organizationId)
+                .orElseThrow(() -> new IllegalArgumentException("Organisation non trouvée avec l'ID: " + organizationId));
+        
+        organization.setMonthlyQuota(monthlyQuota);
+        organization = organizationRepository.save(organization);
+        
+        log.info("Quota mensuel mis à jour pour l'organisation {} (ID: {}): {} requêtes/mois", 
+                organization.getName(), organizationId, monthlyQuota != null ? monthlyQuota : "illimité");
+        
+        return toDto(organization);
+    }
+    
+    /**
      * Convertit une Organisation en DTO.
      */
     private OrganizationDto toDto(Organization organization) {
         OrganizationDto dto = new OrganizationDto();
         dto.setId(organization.getId());
         dto.setName(organization.getName());
+        dto.setMonthlyQuota(organization.getMonthlyQuota());
         dto.setCreatedAt(organization.getCreatedAt());
         return dto;
     }

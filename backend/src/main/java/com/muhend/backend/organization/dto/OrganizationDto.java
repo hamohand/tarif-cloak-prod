@@ -16,6 +16,7 @@ public class OrganizationDto {
     
     private Long id;
     private String name;
+    private Integer monthlyQuota; // null = quota illimité
     private LocalDateTime createdAt;
     
     // Pour les réponses avec le nombre d'utilisateurs

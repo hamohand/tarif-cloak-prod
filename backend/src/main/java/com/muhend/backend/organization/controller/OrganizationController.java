@@ -4,6 +4,7 @@ import com.muhend.backend.organization.dto.AddUserToOrganizationRequest;
 import com.muhend.backend.organization.dto.CreateOrganizationRequest;
 import com.muhend.backend.organization.dto.OrganizationDto;
 import com.muhend.backend.organization.dto.OrganizationUserDto;
+import com.muhend.backend.organization.dto.UpdateQuotaRequest;
 import com.muhend.backend.organization.service.OrganizationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -115,6 +116,21 @@ public class OrganizationController {
     public ResponseEntity<List<OrganizationDto>> getOrganizationsByUser(@PathVariable String keycloakUserId) {
         List<OrganizationDto> organizations = organizationService.getOrganizationsByUser(keycloakUserId);
         return ResponseEntity.ok(organizations);
+    }
+    
+    @PutMapping("/{id}/quota")
+    @Operation(
+        summary = "Mettre à jour le quota mensuel d'une organisation",
+        description = "Met à jour le quota mensuel d'une organisation. " +
+                     "Si monthlyQuota est null, le quota devient illimité. " +
+                     "Nécessite le rôle ADMIN. Phase 4 MVP : Quotas Basiques",
+        security = @SecurityRequirement(name = "bearerAuth")
+    )
+    public ResponseEntity<OrganizationDto> updateMonthlyQuota(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateQuotaRequest request) {
+        OrganizationDto organization = organizationService.updateMonthlyQuota(id, request.getMonthlyQuota());
+        return ResponseEntity.ok(organization);
     }
 }
 

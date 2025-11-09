@@ -25,6 +25,9 @@ public class Organization {
     @Column(name = "name", nullable = false, length = 255)
     private String name;
     
+    @Column(name = "monthly_quota", nullable = true)
+    private Integer monthlyQuota; // null = quota illimité
+    
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
     
