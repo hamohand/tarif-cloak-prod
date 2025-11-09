@@ -1,0 +1,302 @@
+package com.muhend.backend.invoice.controller;
+
+import com.muhend.backend.invoice.dto.GenerateInvoiceRequest;
+import com.muhend.backend.invoice.dto.InvoiceDto;
+import com.muhend.backend.invoice.dto.UpdateInvoiceStatusRequest;
+import com.muhend.backend.invoice.service.InvoicePdfService;
+import com.muhend.backend.invoice.service.InvoiceService;
+import com.muhend.backend.organization.service.OrganizationService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.bind.annotation.*;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Contrôleur pour gérer les factures.
+ * Phase 5 MVP : Facturation
+ */
+@RestController
+@RequestMapping("/invoices")
+@RequiredArgsConstructor
+@Slf4j
+@Tag(name = "Invoices", description = "Gestion des factures")
+public class InvoiceController {
+    
+    private final InvoiceService invoiceService;
+    private final InvoicePdfService invoicePdfService;
+    private final OrganizationService organizationService;
+    
+    /**
+     * Récupère l'ID de l'utilisateur Keycloak depuis le contexte de sécurité.
+     */
+    private String getCurrentUserId() {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication != null && authentication.getPrincipal() instanceof Jwt) {
+                Jwt jwt = (Jwt) authentication.getPrincipal();
+                return jwt.getClaimAsString("sub");
+            }
+        } catch (Exception e) {
+            log.error("Erreur lors de la récupération de l'ID utilisateur", e);
+        }
+        return null;
+    }
+    
+    /**
+     * Récupère toutes les factures de l'utilisateur connecté (basées sur son organisation).
+     */
+    @GetMapping("/my-invoices")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Récupérer mes factures",
+            description = "Retourne toutes les factures de l'organisation de l'utilisateur connecté.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    public ResponseEntity<List<InvoiceDto>> getMyInvoices() {
+        String userId = getCurrentUserId();
+        if (userId == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        
+        Long organizationId = organizationService.getOrganizationIdByUserId(userId);
+        if (organizationId == null) {
+            return ResponseEntity.ok(List.of()); // Pas d'organisation, pas de factures
+        }
+        
+        List<InvoiceDto> invoices = invoiceService.getInvoicesByOrganization(organizationId);
+        return ResponseEntity.ok(invoices);
+    }
+    
+    /**
+     * Récupère une facture par son ID (pour l'utilisateur connecté).
+     */
+    @GetMapping("/my-invoices/{id}")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Récupérer une de mes factures",
+            description = "Retourne une facture spécifique de l'organisation de l'utilisateur connecté.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    public ResponseEntity<InvoiceDto> getMyInvoice(@PathVariable Long id) {
+        String userId = getCurrentUserId();
+        if (userId == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        
+        Long organizationId = organizationService.getOrganizationIdByUserId(userId);
+        if (organizationId == null) {
+            return ResponseEntity.notFound().build();
+        }
+        
+        InvoiceDto invoice = invoiceService.getInvoiceById(id);
+        
+        // Vérifier que la facture appartient à l'organisation de l'utilisateur
+        if (!invoice.getOrganizationId().equals(organizationId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        
+        return ResponseEntity.ok(invoice);
+    }
+    
+    /**
+     * Récupère toutes les factures (admin uniquement).
+     */
+    @GetMapping("/admin/all")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(
+            summary = "Récupérer toutes les factures",
+            description = "Retourne toutes les factures de toutes les organisations. Nécessite le rôle ADMIN.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    public ResponseEntity<List<InvoiceDto>> getAllInvoices() {
+        List<InvoiceDto> invoices = invoiceService.getAllInvoices();
+        return ResponseEntity.ok(invoices);
+    }
+    
+    /**
+     * Récupère les factures d'une organisation spécifique (admin uniquement).
+     */
+    @GetMapping("/admin/organization/{organizationId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(
+            summary = "Récupérer les factures d'une organisation",
+            description = "Retourne toutes les factures d'une organisation. Nécessite le rôle ADMIN.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    public ResponseEntity<List<InvoiceDto>> getInvoicesByOrganization(@PathVariable Long organizationId) {
+        List<InvoiceDto> invoices = invoiceService.getInvoicesByOrganization(organizationId);
+        return ResponseEntity.ok(invoices);
+    }
+    
+    /**
+     * Récupère une facture par son ID (admin uniquement).
+     */
+    @GetMapping("/admin/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(
+            summary = "Récupérer une facture",
+            description = "Retourne une facture spécifique. Nécessite le rôle ADMIN.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    public ResponseEntity<InvoiceDto> getInvoice(@PathVariable Long id) {
+        InvoiceDto invoice = invoiceService.getInvoiceById(id);
+        return ResponseEntity.ok(invoice);
+    }
+    
+    /**
+     * Génère une facture pour une période personnalisée (admin uniquement).
+     */
+    @PostMapping("/admin/generate")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(
+            summary = "Générer une facture",
+            description = "Génère une facture pour une organisation et une période spécifiques. Nécessite le rôle ADMIN.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    public ResponseEntity<InvoiceDto> generateInvoice(@Valid @RequestBody GenerateInvoiceRequest request) {
+        InvoiceDto invoice = invoiceService.generateInvoice(
+                request.getOrganizationId(),
+                request.getPeriodStart(),
+                request.getPeriodEnd()
+        );
+        return ResponseEntity.ok(invoice);
+    }
+    
+    /**
+     * Génère une facture mensuelle pour une organisation (admin uniquement).
+     */
+    @PostMapping("/admin/generate-monthly")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(
+            summary = "Générer une facture mensuelle",
+            description = "Génère une facture mensuelle pour une organisation. Nécessite le rôle ADMIN.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    public ResponseEntity<InvoiceDto> generateMonthlyInvoice(
+            @RequestParam Long organizationId,
+            @RequestParam int year,
+            @RequestParam int month) {
+        InvoiceDto invoice = invoiceService.generateMonthlyInvoice(organizationId, year, month);
+        return ResponseEntity.ok(invoice);
+    }
+    
+    /**
+     * Génère les factures mensuelles pour toutes les organisations (admin uniquement).
+     */
+    @PostMapping("/admin/generate-all-monthly")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(
+            summary = "Générer les factures mensuelles pour toutes les organisations",
+            description = "Génère les factures mensuelles pour toutes les organisations ayant une utilisation. Nécessite le rôle ADMIN.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    public ResponseEntity<Map<String, Object>> generateAllMonthlyInvoices(
+            @RequestParam int year,
+            @RequestParam int month) {
+        List<InvoiceDto> invoices = invoiceService.generateMonthlyInvoicesForAllOrganizations(year, month);
+        return ResponseEntity.ok(Map.of(
+                "message", "Factures générées avec succès",
+                "count", invoices.size(),
+                "invoices", invoices
+        ));
+    }
+    
+    /**
+     * Met à jour le statut d'une facture (admin uniquement).
+     */
+    @PutMapping("/admin/{id}/status")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(
+            summary = "Mettre à jour le statut d'une facture",
+            description = "Met à jour le statut d'une facture (ex: marquer comme payée). Nécessite le rôle ADMIN.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    public ResponseEntity<InvoiceDto> updateInvoiceStatus(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateInvoiceStatusRequest request) {
+        InvoiceDto invoice = invoiceService.updateInvoiceStatus(id, request.getStatus(), request.getNotes());
+        return ResponseEntity.ok(invoice);
+    }
+    
+    /**
+     * Télécharge le PDF d'une facture (pour l'utilisateur connecté).
+     */
+    @GetMapping("/my-invoices/{id}/pdf")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Télécharger le PDF d'une de mes factures",
+            description = "Télécharge le PDF d'une facture de l'organisation de l'utilisateur connecté.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    public ResponseEntity<byte[]> downloadMyInvoicePdf(@PathVariable Long id) {
+        String userId = getCurrentUserId();
+        if (userId == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        
+        Long organizationId = organizationService.getOrganizationIdByUserId(userId);
+        if (organizationId == null) {
+            return ResponseEntity.notFound().build();
+        }
+        
+        InvoiceDto invoice = invoiceService.getInvoiceById(id);
+        
+        // Vérifier que la facture appartient à l'organisation de l'utilisateur
+        if (!invoice.getOrganizationId().equals(organizationId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        
+        return generatePdfResponse(invoice);
+    }
+    
+    /**
+     * Télécharge le PDF d'une facture (admin uniquement).
+     */
+    @GetMapping("/admin/{id}/pdf")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(
+            summary = "Télécharger le PDF d'une facture",
+            description = "Télécharge le PDF d'une facture. Nécessite le rôle ADMIN.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    public ResponseEntity<byte[]> downloadInvoicePdf(@PathVariable Long id) {
+        InvoiceDto invoice = invoiceService.getInvoiceById(id);
+        return generatePdfResponse(invoice);
+    }
+    
+    /**
+     * Génère une réponse PDF à partir d'une facture.
+     */
+    private ResponseEntity<byte[]> generatePdfResponse(InvoiceDto invoice) {
+        try {
+            byte[] pdfBytes = invoicePdfService.generatePdf(invoice);
+            
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            headers.setContentDispositionFormData("attachment", 
+                    "facture_" + invoice.getInvoiceNumber() + ".pdf");
+            headers.setContentLength(pdfBytes.length);
+            
+            return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
+        } catch (IOException e) {
+            log.error("Erreur lors de la génération du PDF pour la facture {}", invoice.getInvoiceNumber(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+}
+
