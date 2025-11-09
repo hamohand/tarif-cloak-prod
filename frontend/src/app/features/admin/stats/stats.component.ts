@@ -1,7 +1,10 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ViewChild, ElementRef, AfterViewInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AdminService, UsageStats, OrganizationStats, UserStats, UsageLog, Organization } from '../../../core/services/admin.service';
 import { FormsModule } from '@angular/forms';
+import { Chart, ChartConfiguration, registerables } from 'chart.js';
+
+Chart.register(...registerables);
 
 @Component({
   selector: 'app-stats',
@@ -54,6 +57,18 @@ import { FormsModule } from '@angular/forms';
       <div class="section-card">
         <h3>🏢 Par Entreprise</h3>
         <div *ngIf="statsByOrganization.length > 0; else noOrgStats">
+          <!-- Graphiques -->
+          <div class="charts-container">
+            <div class="chart-wrapper">
+              <h4>Requêtes par Organisation</h4>
+              <canvas #requestsChart></canvas>
+            </div>
+            <div class="chart-wrapper">
+              <h4>Coûts par Organisation</h4>
+              <canvas #costsChart></canvas>
+            </div>
+          </div>
+          <!-- Tableau -->
           <table class="stats-table">
             <thead>
               <tr>
@@ -82,6 +97,12 @@ import { FormsModule } from '@angular/forms';
       <div class="section-card">
         <h3>👤 Par Utilisateur</h3>
         <div *ngIf="statsByUser.length > 0; else noUserStats">
+          <!-- Graphique Top Utilisateurs -->
+          <div class="chart-wrapper">
+            <h4>Top 10 Utilisateurs (par requêtes)</h4>
+            <canvas #usersChart></canvas>
+          </div>
+          <!-- Tableau -->
           <table class="stats-table">
             <thead>
               <tr>
@@ -250,6 +271,30 @@ import { FormsModule } from '@angular/forms';
       margin-bottom: 2rem;
     }
 
+    .charts-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 2rem;
+      margin-bottom: 2rem;
+    }
+
+    .chart-wrapper {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .chart-wrapper h4 {
+      margin: 0 0 1rem 0;
+      color: #2c3e50;
+      font-size: 1.1rem;
+    }
+
+    .chart-wrapper canvas {
+      max-height: 300px;
+    }
+
     .stats-table {
       width: 100%;
       border-collapse: collapse;
@@ -318,8 +363,12 @@ import { FormsModule } from '@angular/forms';
     }
   `]
 })
-export class StatsComponent implements OnInit {
+export class StatsComponent implements OnInit, AfterViewInit, OnDestroy {
   private adminService = inject(AdminService);
+
+  @ViewChild('requestsChart', { static: false }) requestsChartRef!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('costsChart', { static: false }) costsChartRef!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('usersChart', { static: false }) usersChartRef!: ElementRef<HTMLCanvasElement>;
 
   stats: UsageStats | null = null;
   organizations: Organization[] = [];
@@ -329,9 +378,30 @@ export class StatsComponent implements OnInit {
   loading = false;
   error: string | null = null;
 
+  private requestsChart: Chart | null = null;
+  private costsChart: Chart | null = null;
+  private usersChart: Chart | null = null;
+
   ngOnInit() {
     this.loadOrganizations();
     this.loadStats();
+  }
+
+  ngAfterViewInit() {
+    // Les graphiques seront créés après le chargement des données
+  }
+
+  ngOnDestroy() {
+    // Détruire les graphiques pour éviter les fuites mémoire
+    if (this.requestsChart) {
+      this.requestsChart.destroy();
+    }
+    if (this.costsChart) {
+      this.costsChart.destroy();
+    }
+    if (this.usersChart) {
+      this.usersChart.destroy();
+    }
   }
 
   loadOrganizations() {
@@ -366,6 +436,10 @@ export class StatsComponent implements OnInit {
       next: (data) => {
         this.stats = data;
         this.loading = false;
+        // Mettre à jour les graphiques après le chargement des données
+        setTimeout(() => {
+          this.updateCharts();
+        }, 100);
       },
       error: (err) => {
         this.error = err.message || 'Une erreur est survenue';
@@ -373,6 +447,165 @@ export class StatsComponent implements OnInit {
         console.error('Erreur lors du chargement des statistiques:', err);
       }
     });
+  }
+
+  updateCharts() {
+    if (this.stats) {
+      this.createOrganizationCharts();
+      this.createUsersChart();
+    }
+  }
+
+  createOrganizationCharts() {
+    const orgStats = this.statsByOrganization;
+    if (orgStats.length === 0 || !this.requestsChartRef || !this.costsChartRef) {
+      return;
+    }
+
+    const labels = orgStats.map(org => org.organizationName);
+    const requestData = orgStats.map(org => org.requestCount);
+    const costData = orgStats.map(org => org.totalCostUsd);
+
+    // Graphique des requêtes
+    if (this.requestsChart) {
+      this.requestsChart.destroy();
+    }
+    const requestsConfig: ChartConfiguration = {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Requêtes',
+          data: requestData,
+          backgroundColor: 'rgba(52, 152, 219, 0.6)',
+          borderColor: 'rgba(52, 152, 219, 1)',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: {
+            display: false
+          },
+          title: {
+            display: false
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              stepSize: 1
+            }
+          }
+        }
+      }
+    };
+    this.requestsChart = new Chart(this.requestsChartRef.nativeElement, requestsConfig);
+
+    // Graphique des coûts
+    if (this.costsChart) {
+      this.costsChart.destroy();
+    }
+    const costsConfig: ChartConfiguration = {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Coût (USD)',
+          data: costData,
+          backgroundColor: 'rgba(46, 204, 113, 0.6)',
+          borderColor: 'rgba(46, 204, 113, 1)',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: {
+            display: false
+          },
+          title: {
+            display: false
+          },
+          tooltip: {
+            callbacks: {
+              label: (context) => {
+                return `Coût: ${this.formatCurrency(context.parsed.y)}`;
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: (value) => {
+                return '$' + Number(value).toFixed(6);
+              }
+            }
+          }
+        }
+      }
+    };
+    this.costsChart = new Chart(this.costsChartRef.nativeElement, costsConfig);
+  }
+
+  createUsersChart() {
+    const userStats = this.statsByUser;
+    if (userStats.length === 0 || !this.usersChartRef) {
+      return;
+    }
+
+    // Prendre les top 10 utilisateurs
+    const topUsers = userStats
+      .sort((a, b) => b.requestCount - a.requestCount)
+      .slice(0, 10);
+
+    const labels = topUsers.map(user => this.truncateUserId(user.keycloakUserId));
+    const requestData = topUsers.map(user => user.requestCount);
+
+    if (this.usersChart) {
+      this.usersChart.destroy();
+    }
+    const usersConfig: ChartConfiguration = {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Requêtes',
+          data: requestData,
+          backgroundColor: 'rgba(155, 89, 182, 0.6)',
+          borderColor: 'rgba(155, 89, 182, 1)',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        indexAxis: 'y', // Graphique horizontal
+        plugins: {
+          legend: {
+            display: false
+          },
+          title: {
+            display: false
+          }
+        },
+        scales: {
+          x: {
+            beginAtZero: true,
+            ticks: {
+              stepSize: 1
+            }
+          }
+        }
+      }
+    };
+    this.usersChart = new Chart(this.usersChartRef.nativeElement, usersConfig);
   }
 
   resetFilters() {
