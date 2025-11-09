@@ -13,6 +13,8 @@ import { StatsComponent } from './features/admin/stats/stats.component';
 import { OrganizationsComponent } from './features/admin/organizations/organizations.component';
 import { UserDashboardComponent } from './features/user/dashboard/dashboard.component';
 import { AlertsComponent } from './features/user/alerts/alerts.component';
+import { InvoicesComponent } from './features/user/invoices/invoices.component';
+import { InvoiceDetailComponent } from './features/user/invoices/invoice-detail.component';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -35,6 +37,16 @@ export const routes: Routes = [
   {
     path: 'alerts',
     component: AlertsComponent,
+    canActivate: [authGuard]
+  },
+  {
+    path: 'invoices',
+    component: InvoicesComponent,
+    canActivate: [authGuard]
+  },
+  {
+    path: 'invoices/:id',
+    component: InvoiceDetailComponent,
     canActivate: [authGuard]
   },
   {

@@ -20,6 +20,7 @@ import {AsyncPipe} from '@angular/common';
         @if (isAuthenticated$ | async) {
           <a routerLink="/recherche" class="nav-link">Tariff</a>
           <a routerLink="/dashboard" class="nav-link">Tableau de bord</a>
+          <a routerLink="/invoices" class="nav-link">Factures</a>
           <a routerLink="/alerts" class="nav-link alerts-link">
             🔔 Alertes
             @if (alertCount > 0) {
