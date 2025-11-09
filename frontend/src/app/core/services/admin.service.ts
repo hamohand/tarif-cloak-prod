@@ -48,8 +48,35 @@ export interface UsageLogsResponse {
 export interface Organization {
   id: number;
   name: string;
+  email?: string | null;
+  monthlyQuota?: number | null;
   createdAt: string;
   userCount?: number;
+}
+
+export interface CreateOrganizationRequest {
+  name: string;
+  email?: string | null;
+}
+
+export interface UpdateOrganizationRequest {
+  name?: string;
+  email?: string | null;
+}
+
+export interface UpdateQuotaRequest {
+  monthlyQuota?: number | null;
+}
+
+export interface OrganizationUser {
+  id: number;
+  keycloakUserId: string;
+  organizationId: number;
+  joinedAt: string;
+}
+
+export interface AddUserToOrganizationRequest {
+  keycloakUserId: string;
 }
 
 @Injectable({
@@ -116,6 +143,55 @@ export class AdminService {
    */
   getOrganizations(): Observable<Organization[]> {
     return this.http.get<Organization[]>(`${this.apiUrl}/organizations`);
+  }
+
+  /**
+   * Récupère une organisation par son ID.
+   */
+  getOrganization(id: number): Observable<Organization> {
+    return this.http.get<Organization>(`${this.apiUrl}/organizations/${id}`);
+  }
+
+  /**
+   * Crée une nouvelle organisation.
+   */
+  createOrganization(request: CreateOrganizationRequest): Observable<Organization> {
+    return this.http.post<Organization>(`${this.apiUrl}/organizations`, request);
+  }
+
+  /**
+   * Met à jour une organisation.
+   */
+  updateOrganization(id: number, request: UpdateOrganizationRequest): Observable<Organization> {
+    return this.http.put<Organization>(`${this.apiUrl}/organizations/${id}`, request);
+  }
+
+  /**
+   * Met à jour le quota mensuel d'une organisation.
+   */
+  updateQuota(id: number, request: UpdateQuotaRequest): Observable<Organization> {
+    return this.http.put<Organization>(`${this.apiUrl}/organizations/${id}/quota`, request);
+  }
+
+  /**
+   * Récupère les utilisateurs d'une organisation.
+   */
+  getOrganizationUsers(organizationId: number): Observable<OrganizationUser[]> {
+    return this.http.get<OrganizationUser[]>(`${this.apiUrl}/organizations/${organizationId}/users`);
+  }
+
+  /**
+   * Ajoute un utilisateur à une organisation.
+   */
+  addUserToOrganization(organizationId: number, request: AddUserToOrganizationRequest): Observable<OrganizationUser> {
+    return this.http.post<OrganizationUser>(`${this.apiUrl}/organizations/${organizationId}/users`, request);
+  }
+
+  /**
+   * Retire un utilisateur d'une organisation.
+   */
+  removeUserFromOrganization(organizationId: number, keycloakUserId: string): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/organizations/${organizationId}/users/${keycloakUserId}`);
   }
 }
 

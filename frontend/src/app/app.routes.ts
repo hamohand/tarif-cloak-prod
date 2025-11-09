@@ -10,6 +10,7 @@ import {SearchComponent} from './tarif/search/search.component';
 import {TarifComponent} from './tarif/home/tarif.component';
 import {TARIF_ROUTES} from './tarif/tarif.routes';
 import { StatsComponent } from './features/admin/stats/stats.component';
+import { OrganizationsComponent } from './features/admin/organizations/organizations.component';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -27,6 +28,11 @@ export const routes: Routes = [
   {
     path: 'admin/stats',
     component: StatsComponent,
+    canActivate: [authGuard]
+  },
+  {
+    path: 'admin/organizations',
+    component: OrganizationsComponent,
     canActivate: [authGuard]
   },
   { path: '**', redirectTo: '' }

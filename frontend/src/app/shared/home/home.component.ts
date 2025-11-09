@@ -22,19 +22,21 @@ import { Component } from '@angular/core';
         Accéder à l'application Tariff-multi-recherche
       </a>
       </div>
-        <div class="feature-card">
-          <h3>🔐 Sécurité</h3>
-          <p>Authentification sécurisée</p>
-        </div>
+      <div>
+          <div class="feature-card">
+            <h3>🔐 Sécurité</h3>
+            <p>Authentification sécurisée</p>
+          </div>
 
-        <div class="feature-card">
-          <h3>⚡ Performance</h3>
-          <p>Application rapide et réactive</p>
-        </div>
+          <div class="feature-card">
+            <h3>⚡ Performance</h3>
+            <p>Application rapide et réactive</p>
+          </div>
 
-        <div class="feature-card">
-          <h3>📱 Responsive</h3>
-          <p>Compatible avec tous les appareils</p>
+          <div class="feature-card">
+            <h3>📱 Responsive</h3>
+            <p>Compatible avec tous les appareils</p>
+          </div>
         </div>
       </div>
 

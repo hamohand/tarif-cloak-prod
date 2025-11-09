@@ -20,6 +20,7 @@ import {AsyncPipe} from '@angular/common';
           <a routerLink="/recherche" class="nav-link">Tariff</a>
           @if (isAdmin()) {
             <a routerLink="/admin/stats" class="nav-link">Stats</a>
+            <a routerLink="/admin/organizations" class="nav-link">Organisations</a>
           }
         }
       </div>
