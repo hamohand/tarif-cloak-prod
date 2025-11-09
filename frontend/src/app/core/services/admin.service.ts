@@ -52,6 +52,7 @@ export interface Organization {
   monthlyQuota?: number | null;
   createdAt: string;
   userCount?: number;
+  currentMonthUsage?: number; // Nombre de requêtes utilisées ce mois
 }
 
 export interface CreateOrganizationRequest {

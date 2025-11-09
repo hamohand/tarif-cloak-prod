@@ -285,12 +285,21 @@ public class OrganizationService {
     }
     
     /**
-     * Convertit une Organisation en DTO avec le nombre d'utilisateurs.
+     * Convertit une Organisation en DTO avec le nombre d'utilisateurs et l'utilisation du mois.
      */
     private OrganizationDto toDtoWithUserCount(Organization organization) {
         OrganizationDto dto = toDto(organization);
         long userCount = organizationUserRepository.findByOrganizationId(organization.getId()).size();
         dto.setUserCount(userCount);
+        
+        // Calculer l'utilisation du mois en cours
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime startOfMonth = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+        LocalDateTime endOfMonth = now.withDayOfMonth(now.toLocalDate().lengthOfMonth())
+                .withHour(23).withMinute(59).withSecond(59).withNano(999999999);
+        long currentMonthUsage = usageLogRepository.countByOrganizationIdAndTimestampBetween(organization.getId(), startOfMonth, endOfMonth);
+        dto.setCurrentMonthUsage(currentMonthUsage);
+        
         return dto;
     }
     

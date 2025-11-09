@@ -11,9 +11,20 @@ import { AdminService, Organization, OrganizationUser, CreateOrganizationRequest
     <div class="organizations-container">
       <h2>🏢 Gestion des Organisations</h2>
 
-      <!-- Bouton pour créer une nouvelle organisation -->
+      <!-- Barre d'actions et recherche -->
       <div class="actions-bar">
         <button class="btn btn-primary" (click)="showCreateForm = true">+ Créer une organisation</button>
+        <div class="search-bar">
+          <input type="text" 
+                 [(ngModel)]="searchTerm" 
+                 (input)="filterOrganizations()" 
+                 placeholder="Rechercher par nom ou email..." 
+                 class="search-input" />
+          <select [(ngModel)]="viewMode" (change)="filterOrganizations()" class="view-select">
+            <option value="cards">Vue cartes</option>
+            <option value="table">Vue tableau</option>
+          </select>
+        </div>
       </div>
 
       <!-- Formulaire de création -->
@@ -41,10 +52,66 @@ import { AdminService, Organization, OrganizationUser, CreateOrganizationRequest
       <div class="organizations-list">
         @if (loading) {
           <p>Chargement...</p>
-        } @else if (organizations.length === 0) {
+        } @else if (filteredOrganizations.length === 0) {
           <p class="empty-message">Aucune organisation trouvée.</p>
+        } @else if (viewMode === 'table') {
+          <!-- Vue tableau -->
+          <table class="organizations-table">
+            <thead>
+              <tr>
+                <th>Nom</th>
+                <th>Email</th>
+                <th>Utilisateurs</th>
+                <th>Quota mensuel</th>
+                <th>Utilisation ce mois</th>
+                <th>% Utilisé</th>
+                <th>Date de création</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (org of filteredOrganizations; track org.id) {
+                <tr>
+                  <td><strong>{{ org.name }}</strong></td>
+                  <td>{{ org.email || '-' }}</td>
+                  <td>{{ org.userCount || 0 }}</td>
+                  <td>
+                    {{ org.monthlyQuota !== null && org.monthlyQuota !== undefined ? org.monthlyQuota : 'Illimité' }}
+                  </td>
+                  <td>
+                    <span [class.quota-warning]="getQuotaPercentage(org) >= 80" 
+                          [class.quota-danger]="getQuotaPercentage(org) >= 100">
+                      {{ org.currentMonthUsage || 0 }}
+                    </span>
+                  </td>
+                  <td>
+                    @if (org.monthlyQuota !== null && org.monthlyQuota !== undefined) {
+                      <div class="quota-progress-mini">
+                        <div class="quota-progress-bar-mini">
+                          <div class="quota-progress-fill-mini" 
+                               [style.width.%]="getQuotaPercentage(org)"
+                               [class.quota-warning]="getQuotaPercentage(org) >= 80"
+                               [class.quota-danger]="getQuotaPercentage(org) >= 100">
+                          </div>
+                        </div>
+                        <span>{{ getQuotaPercentage(org).toFixed(1) }}%</span>
+                      </div>
+                    } @else {
+                      <span>-</span>
+                    }
+                  </td>
+                  <td>{{ formatDate(org.createdAt) }}</td>
+                  <td>
+                    <button class="btn btn-sm btn-secondary" (click)="toggleEdit(org)">✏️</button>
+                    <button class="btn btn-sm btn-info" (click)="toggleUsers(org.id)">👥</button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
         } @else {
-          @for (org of organizations; track org.id) {
+          <!-- Vue cartes -->
+          @for (org of filteredOrganizations; track org.id) {
             <div class="organization-card">
               <div class="org-header">
                 <div class="org-info">
@@ -76,11 +143,31 @@ import { AdminService, Organization, OrganizationUser, CreateOrganizationRequest
                   </div>
                 } @else {
                   <div class="quota-display">
-                    <span class="quota-value">
-                      {{ org.monthlyQuota !== null && org.monthlyQuota !== undefined ? org.monthlyQuota : 'Illimité' }}
-                    </span>
+                    <div class="quota-info">
+                      <span class="quota-value">
+                        {{ org.monthlyQuota !== null && org.monthlyQuota !== undefined ? org.monthlyQuota : 'Illimité' }}
+                      </span>
+                      @if (org.monthlyQuota !== null && org.monthlyQuota !== undefined) {
+                        <span class="quota-usage" 
+                              [class.quota-warning]="getQuotaPercentage(org) >= 80"
+                              [class.quota-danger]="getQuotaPercentage(org) >= 100">
+                          ({{ org.currentMonthUsage || 0 }}/{{ org.monthlyQuota }} - {{ getQuotaPercentage(org).toFixed(1) }}%)
+                        </span>
+                      } @else {
+                        <span class="quota-usage">({{ org.currentMonthUsage || 0 }} requêtes ce mois)</span>
+                      }
+                    </div>
                     <button class="btn btn-sm btn-secondary" (click)="startQuotaEdit(org)">✏️</button>
                   </div>
+                  @if (org.monthlyQuota !== null && org.monthlyQuota !== undefined) {
+                    <div class="quota-progress-bar-card">
+                      <div class="quota-progress-fill-card" 
+                           [style.width.%]="getQuotaPercentage(org)"
+                           [class.quota-warning]="getQuotaPercentage(org) >= 80"
+                           [class.quota-danger]="getQuotaPercentage(org) >= 100">
+                      </div>
+                    </div>
+                  }
                 }
               </div>
 
@@ -176,6 +263,34 @@ import { AdminService, Organization, OrganizationUser, CreateOrganizationRequest
 
     .actions-bar {
       margin-bottom: 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .search-bar {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+    }
+
+    .search-input {
+      padding: 0.6rem 1rem;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 1rem;
+      min-width: 250px;
+    }
+
+    .view-select {
+      padding: 0.6rem 1rem;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 1rem;
+      background: white;
+      cursor: pointer;
     }
 
     .organizations-list {
@@ -249,12 +364,122 @@ import { AdminService, Organization, OrganizationUser, CreateOrganizationRequest
     .quota-display {
       display: flex;
       align-items: center;
+      justify-content: space-between;
       gap: 0.5rem;
+      width: 100%;
+    }
+
+    .quota-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
     }
 
     .quota-value {
       font-weight: 600;
       color: #2c3e50;
+    }
+
+    .quota-usage {
+      font-size: 0.85rem;
+      color: #666;
+    }
+
+    .quota-usage.quota-warning {
+      color: #ff9800;
+      font-weight: 600;
+    }
+
+    .quota-usage.quota-danger {
+      color: #f44336;
+      font-weight: 600;
+    }
+
+    .quota-progress-bar-card {
+      width: 100%;
+      height: 8px;
+      background: #e0e0e0;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 0.5rem;
+    }
+
+    .quota-progress-fill-card {
+      height: 100%;
+      background: linear-gradient(90deg, #4caf50, #8bc34a);
+      transition: width 0.3s ease;
+    }
+
+    .quota-progress-fill-card.quota-warning {
+      background: linear-gradient(90deg, #ff9800, #ffc107);
+    }
+
+    .quota-progress-fill-card.quota-danger {
+      background: linear-gradient(90deg, #f44336, #ef5350);
+    }
+
+    .organizations-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .organizations-table th,
+    .organizations-table td {
+      padding: 1rem;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .organizations-table th {
+      background: #f8f9fa;
+      font-weight: 600;
+      color: #2c3e50;
+      position: sticky;
+      top: 0;
+    }
+
+    .organizations-table tr:hover {
+      background: #f5f5f5;
+    }
+
+    .quota-progress-mini {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .quota-progress-bar-mini {
+      width: 80px;
+      height: 6px;
+      background: #e0e0e0;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .quota-progress-fill-mini {
+      height: 100%;
+      background: linear-gradient(90deg, #4caf50, #8bc34a);
+      transition: width 0.3s ease;
+    }
+
+    .quota-progress-fill-mini.quota-warning {
+      background: linear-gradient(90deg, #ff9800, #ffc107);
+    }
+
+    .quota-progress-fill-mini.quota-danger {
+      background: linear-gradient(90deg, #f44336, #ef5350);
+    }
+
+    .quota-warning {
+      color: #ff9800;
+    }
+
+    .quota-danger {
+      color: #f44336;
     }
 
     .form-card, .edit-form {
@@ -398,8 +623,11 @@ export class OrganizationsComponent implements OnInit {
   private adminService = inject(AdminService);
 
   organizations: Organization[] = [];
+  filteredOrganizations: Organization[] = [];
   loading = false;
   errorMessage = '';
+  searchTerm = '';
+  viewMode: 'cards' | 'table' = 'cards';
 
   // Création
   showCreateForm = false;
@@ -429,6 +657,7 @@ export class OrganizationsComponent implements OnInit {
     this.adminService.getOrganizations().subscribe({
       next: (orgs) => {
         this.organizations = orgs;
+        this.filterOrganizations();
         this.loading = false;
       },
       error: (err) => {
@@ -436,6 +665,26 @@ export class OrganizationsComponent implements OnInit {
         this.loading = false;
       }
     });
+  }
+
+  filterOrganizations() {
+    if (!this.searchTerm || this.searchTerm.trim() === '') {
+      this.filteredOrganizations = this.organizations;
+    } else {
+      const search = this.searchTerm.toLowerCase().trim();
+      this.filteredOrganizations = this.organizations.filter(org => 
+        org.name.toLowerCase().includes(search) || 
+        (org.email && org.email.toLowerCase().includes(search))
+      );
+    }
+  }
+
+  getQuotaPercentage(org: Organization): number {
+    if (!org.monthlyQuota || org.monthlyQuota === 0) {
+      return 0;
+    }
+    const usage = org.currentMonthUsage || 0;
+    return (usage / org.monthlyQuota) * 100;
   }
 
   createOrganization() {
@@ -449,6 +698,7 @@ export class OrganizationsComponent implements OnInit {
         this.showCreateForm = false;
         this.newOrganization = { name: '', email: null };
         this.loadOrganizations();
+        this.searchTerm = ''; // Réinitialiser la recherche
       },
       error: (err) => {
         this.errorMessage = 'Erreur lors de la création: ' + (err.error?.message || err.message);
@@ -481,6 +731,7 @@ export class OrganizationsComponent implements OnInit {
       next: () => {
         this.cancelEdit();
         this.loadOrganizations();
+        this.filterOrganizations(); // Re-filtrer après mise à jour
       },
       error: (err) => {
         this.errorMessage = 'Erreur lors de la mise à jour: ' + (err.error?.message || err.message);
@@ -505,6 +756,7 @@ export class OrganizationsComponent implements OnInit {
       next: () => {
         this.cancelQuotaEdit();
         this.loadOrganizations();
+        this.filterOrganizations(); // Re-filtrer après mise à jour
       },
       error: (err) => {
         this.errorMessage = 'Erreur lors de la mise à jour du quota: ' + (err.error?.message || err.message);

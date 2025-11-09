@@ -22,5 +22,8 @@ public class OrganizationDto {
     
     // Pour les réponses avec le nombre d'utilisateurs
     private Long userCount;
+    
+    // Pour les réponses avec l'utilisation du quota
+    private Long currentMonthUsage; // Nombre de requêtes utilisées ce mois
 }
 
