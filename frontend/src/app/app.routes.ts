@@ -15,6 +15,8 @@ import { UserDashboardComponent } from './features/user/dashboard/dashboard.comp
 import { AlertsComponent } from './features/user/alerts/alerts.component';
 import { InvoicesComponent } from './features/user/invoices/invoices.component';
 import { InvoiceDetailComponent } from './features/user/invoices/invoice-detail.component';
+import { InvoicesAdminComponent } from './features/admin/invoices/invoices-admin.component';
+import { InvoiceDetailAdminComponent } from './features/admin/invoices/invoice-detail-admin.component';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -57,6 +59,16 @@ export const routes: Routes = [
   {
     path: 'admin/organizations',
     component: OrganizationsComponent,
+    canActivate: [authGuard]
+  },
+  {
+    path: 'admin/invoices',
+    component: InvoicesAdminComponent,
+    canActivate: [authGuard]
+  },
+  {
+    path: 'admin/invoices/:id',
+    component: InvoiceDetailAdminComponent,
     canActivate: [authGuard]
   },
   { path: '**', redirectTo: '' }
