@@ -16,6 +16,7 @@ public class OrganizationDto {
     
     private Long id;
     private String name;
+    private String email; // Email de contact de l'organisation
     private Integer monthlyQuota; // null = quota illimité
     private LocalDateTime createdAt;
     

@@ -4,6 +4,7 @@ import com.muhend.backend.organization.dto.AddUserToOrganizationRequest;
 import com.muhend.backend.organization.dto.CreateOrganizationRequest;
 import com.muhend.backend.organization.dto.OrganizationDto;
 import com.muhend.backend.organization.dto.OrganizationUserDto;
+import com.muhend.backend.organization.dto.UpdateOrganizationRequest;
 import com.muhend.backend.organization.dto.UpdateQuotaRequest;
 import com.muhend.backend.organization.service.OrganizationService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -116,6 +117,21 @@ public class OrganizationController {
     public ResponseEntity<List<OrganizationDto>> getOrganizationsByUser(@PathVariable String keycloakUserId) {
         List<OrganizationDto> organizations = organizationService.getOrganizationsByUser(keycloakUserId);
         return ResponseEntity.ok(organizations);
+    }
+    
+    @PutMapping("/{id}")
+    @Operation(
+        summary = "Mettre à jour une organisation",
+        description = "Met à jour le nom et/ou l'email d'une organisation. " +
+                     "Nécessite le rôle ADMIN.",
+        security = @SecurityRequirement(name = "bearerAuth")
+    )
+    public ResponseEntity<OrganizationDto> updateOrganization(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateOrganizationRequest request) {
+        OrganizationDto organization = organizationService.updateOrganization(
+                id, request.getName(), request.getEmail());
+        return ResponseEntity.ok(organization);
     }
     
     @PutMapping("/{id}/quota")

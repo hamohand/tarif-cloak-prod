@@ -311,28 +311,33 @@ if (!usageLogService.checkQuota(organizationId)) {
 
 ## 🚀 Ordre d'Implémentation Recommandé
 
-### Cette Semaine
-1. ✅ **Phase 1 : Tracking Basique**
-   - Table `usage_log`
-   - Entité + Repository
-   - Service de logging
-   - Modification du controller
-   - Endpoint ADMIN pour voir les logs
+### ✅ Phase 1 : Tracking Basique (TERMINÉE)
+- ✅ Table `usage_log`
+- ✅ Entité + Repository
+- ✅ Service de logging
+- ✅ Modification du controller
+- ✅ Endpoint ADMIN pour voir les logs
+- **Documentation** : Voir `DOCUMENTATION_PHASES.md` - Phase 1
 
-### Semaine Prochaine
-2. ✅ **Phase 2 : Association Utilisateur → Entreprise**
-   - Tables `organization` et `organization_user`
-   - Endpoints ADMIN pour gérer
-   - Mise à jour du logging
+### ✅ Phase 2 : Association Utilisateur → Entreprise (TERMINÉE)
+- ✅ Tables `organization` et `organization_user`
+- ✅ Endpoints ADMIN pour gérer
+- ✅ Mise à jour du logging
+- **Documentation** : Voir `DOCUMENTATION_PHASES.md` - Phase 2
 
-### Après
-3. ✅ **Phase 3 : Visualisation**
-   - Endpoint de stats
-   - Page Angular simple
+### ✅ Phase 3 : Visualisation (TERMINÉE)
+- ✅ Endpoint de stats
+- ✅ Page Angular simple
+- ✅ Filtrage par organisation et période
+- **Documentation** : Voir `DOCUMENTATION_PHASES.md` - Phase 3
 
-4. ✅ **Phase 4 : Quotas** (si nécessaire)
-   - Vérification de quota
-   - Blocage si dépassé
+### ✅ Phase 4 : Quotas (TERMINÉE)
+- ✅ Vérification de quota
+- ✅ Blocage si dépassé
+- ✅ Gestionnaire d'exceptions
+- ✅ Endpoint pour mettre à jour le quota
+- ✅ Tests unitaires et d'intégration
+- **Documentation** : Voir `DOCUMENTATION_PHASES.md` - Phase 4
 
 ---
 

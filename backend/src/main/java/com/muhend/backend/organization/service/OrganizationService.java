@@ -47,11 +47,54 @@ public class OrganizationService {
             throw new IllegalArgumentException("Une organisation avec le nom '" + request.getName() + "' existe déjà");
         }
         
+        // Vérifier si une organisation avec cet email existe déjà (si email fourni)
+        if (request.getEmail() != null && !request.getEmail().trim().isEmpty()) {
+            if (organizationRepository.existsByEmail(request.getEmail())) {
+                throw new IllegalArgumentException("Une organisation avec l'email '" + request.getEmail() + "' existe déjà");
+            }
+        }
+        
         Organization organization = new Organization();
         organization.setName(request.getName());
+        organization.setEmail(request.getEmail() != null && !request.getEmail().trim().isEmpty() ? request.getEmail().trim() : null);
         organization = organizationRepository.save(organization);
         
-        log.info("Organisation créée: id={}, name={}", organization.getId(), organization.getName());
+        log.info("Organisation créée: id={}, name={}, email={}", organization.getId(), organization.getName(), organization.getEmail());
+        return toDto(organization);
+    }
+    
+    /**
+     * Met à jour une organisation.
+     */
+    @Transactional
+    public OrganizationDto updateOrganization(Long id, String name, String email) {
+        Organization organization = organizationRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Organisation non trouvée avec l'ID: " + id));
+        
+        // Vérifier si le nom change et si le nouveau nom existe déjà
+        if (name != null && !name.trim().isEmpty() && !name.equals(organization.getName())) {
+            if (organizationRepository.existsByName(name)) {
+                throw new IllegalArgumentException("Une organisation avec le nom '" + name + "' existe déjà");
+            }
+            organization.setName(name.trim());
+        }
+        
+        // Vérifier si l'email change et si le nouvel email existe déjà
+        if (email != null && !email.trim().isEmpty()) {
+            String trimmedEmail = email.trim();
+            if (!trimmedEmail.equals(organization.getEmail())) {
+                if (organizationRepository.existsByEmail(trimmedEmail)) {
+                    throw new IllegalArgumentException("Une organisation avec l'email '" + trimmedEmail + "' existe déjà");
+                }
+                organization.setEmail(trimmedEmail);
+            }
+        } else if (email != null && email.trim().isEmpty()) {
+            // Permettre de mettre l'email à null en envoyant une chaîne vide
+            organization.setEmail(null);
+        }
+        
+        organization = organizationRepository.save(organization);
+        log.info("Organisation mise à jour: id={}, name={}, email={}", organization.getId(), organization.getName(), organization.getEmail());
         return toDto(organization);
     }
     
@@ -235,6 +278,7 @@ public class OrganizationService {
         OrganizationDto dto = new OrganizationDto();
         dto.setId(organization.getId());
         dto.setName(organization.getName());
+        dto.setEmail(organization.getEmail());
         dto.setMonthlyQuota(organization.getMonthlyQuota());
         dto.setCreatedAt(organization.getCreatedAt());
         return dto;

@@ -18,5 +18,15 @@ public interface OrganizationRepository extends JpaRepository<Organization, Long
      * Vérifie si une organisation existe avec ce nom.
      */
     boolean existsByName(String name);
+    
+    /**
+     * Trouve une organisation par son email (exact match).
+     */
+    Optional<Organization> findByEmail(String email);
+    
+    /**
+     * Vérifie si une organisation existe avec cet email.
+     */
+    boolean existsByEmail(String email);
 }
 
