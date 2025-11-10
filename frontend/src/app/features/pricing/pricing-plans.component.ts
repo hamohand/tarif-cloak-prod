@@ -292,9 +292,12 @@ export class PricingPlansComponent implements OnInit {
       next: (plans) => {
         this.plans = plans;
         this.loading = false;
+        if (plans.length === 0) {
+          this.error = 'Aucun plan tarifaire disponible pour le moment.';
+        }
       },
       error: (err) => {
-        this.error = 'Erreur lors du chargement des plans tarifaires';
+        this.error = 'Erreur lors du chargement des plans tarifaires: ' + (err.error?.message || err.message || 'Erreur inconnue');
         this.loading = false;
         console.error('Erreur:', err);
       }
