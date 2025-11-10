@@ -20,10 +20,14 @@ import java.util.Map;
 public class OpenAiService {
     private final AiPrompts aiPrompts;
     private final String aiKey;
+    private final double baseRequestPrice;
 
-    public OpenAiService(AiPrompts aiPrompts, @Value("${OPENAI_API_KEY}") String aiKey) {
+    public OpenAiService(AiPrompts aiPrompts, 
+                        @Value("${OPENAI_API_KEY}") String aiKey,
+                        @Value("${pricing.base-request-price:0.01}") double baseRequestPrice) {
         this.aiPrompts = aiPrompts;
         this.aiKey = aiKey;
+        this.baseRequestPrice = baseRequestPrice;
     }
     /**
      * Pour utiliser GPT-4o ou toute autre API d'OpenAI, vous devez d'abord intégrer leur SDK ou utiliser un client HTTP pour appeler l'API.
@@ -132,8 +136,10 @@ public class OpenAiService {
             final double PRICE_INPUT = 0.15 / 1_000_000;   // $ par token input
             final double PRICE_OUTPUT = 0.60 / 1_000_000;  // $ par token output
             final double PRICE_TOTAL = PRICE_INPUT + PRICE_OUTPUT;
-            //total requete
-            prix_requete = totalTokens * PRICE_TOTAL;
+            // Coût des tokens
+            double tokenCost = totalTokens * PRICE_TOTAL;
+            // Coût total = tarif de base + coût des tokens
+            prix_requete = baseRequestPrice + tokenCost;
 
             // Stocker les informations d'utilisation dans le ThreadLocal pour le tracking
             UsageInfo usageInfo = new UsageInfo(

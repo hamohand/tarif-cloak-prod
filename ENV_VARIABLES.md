@@ -175,6 +175,14 @@ OLLAMA_API_KEY=CHANGEZ_MOI
 OLLAMA_BASE_URL=http://host.docker.internal:11434
 ```
 
+### Configuration Tarification
+
+```env
+# Tarif de base par requête (en USD)
+# Ce tarif s'ajoute au coût des tokens pour chaque requête
+BASE_REQUEST_PRICE_USD=0.01
+```
+
 ### Configuration Frontend
 
 ```env
@@ -288,6 +296,11 @@ ANTHROPIC_API_KEY=votre_cle_anthropic
 ANTHROPIC_MODEL=claude-3-sonnet-20240229
 OLLAMA_API_KEY=votre_cle_ollama
 OLLAMA_BASE_URL=http://host.docker.internal:11434
+
+# ===============================================================
+# TARIFICATION
+# ===============================================================
+BASE_REQUEST_PRICE_USD=0.01
 
 # ===============================================================
 # FRONTEND
