@@ -95,4 +95,34 @@ public class KeycloakAdminService {
         logger.error("Failed to create user after {} attempts", MAX_RETRIES);
         throw new RuntimeException("Failed to connect to Keycloak after " + MAX_RETRIES + " attempts", lastException);
     }
+
+    /**
+     * Récupère l'email d'un utilisateur depuis Keycloak.
+     *
+     * @param keycloakUserId ID de l'utilisateur Keycloak
+     * @return L'email de l'utilisateur ou null si non trouvé
+     */
+    public String getUserEmail(String keycloakUserId) {
+        try {
+            RealmResource realmResource = keycloak.realm(realm);
+            UserRepresentation user = realmResource.users().get(keycloakUserId).toRepresentation();
+            return user.getEmail();
+        } catch (Exception e) {
+            logger.error("Erreur lors de la récupération de l'email de l'utilisateur {}: {}", keycloakUserId, e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Récupère les emails de plusieurs utilisateurs depuis Keycloak.
+     *
+     * @param keycloakUserIds Liste des IDs d'utilisateurs Keycloak
+     * @return Liste des emails (sans les nulls)
+     */
+    public java.util.List<String> getUserEmails(java.util.List<String> keycloakUserIds) {
+        return keycloakUserIds.stream()
+                .map(this::getUserEmail)
+                .filter(email -> email != null && !email.trim().isEmpty())
+                .collect(java.util.stream.Collectors.toList());
+    }
 }

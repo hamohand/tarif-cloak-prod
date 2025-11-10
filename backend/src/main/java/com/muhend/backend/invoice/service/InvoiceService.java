@@ -6,7 +6,10 @@ import com.muhend.backend.invoice.model.Invoice;
 import com.muhend.backend.invoice.model.InvoiceItem;
 import com.muhend.backend.invoice.repository.InvoiceItemRepository;
 import com.muhend.backend.invoice.repository.InvoiceRepository;
+import com.muhend.backend.email.service.EmailService;
+import com.muhend.backend.auth.service.KeycloakAdminService;
 import com.muhend.backend.organization.dto.OrganizationDto;
+import com.muhend.backend.organization.dto.OrganizationUserDto;
 import com.muhend.backend.organization.service.OrganizationService;
 import com.muhend.backend.usage.model.UsageLog;
 import com.muhend.backend.usage.repository.UsageLogRepository;
@@ -37,18 +40,25 @@ public class InvoiceService {
     private final InvoiceItemRepository invoiceItemRepository;
     private final UsageLogRepository usageLogRepository;
     private final OrganizationService organizationService;
+    private final EmailService emailService;
+    private final KeycloakAdminService keycloakAdminService;
     
     private static final DateTimeFormatter INVOICE_NUMBER_FORMAT = DateTimeFormatter.ofPattern("yyyyMM");
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     
     public InvoiceService(
             InvoiceRepository invoiceRepository,
             InvoiceItemRepository invoiceItemRepository,
             UsageLogRepository usageLogRepository,
-            OrganizationService organizationService) {
+            OrganizationService organizationService,
+            EmailService emailService,
+            KeycloakAdminService keycloakAdminService) {
         this.invoiceRepository = invoiceRepository;
         this.invoiceItemRepository = invoiceItemRepository;
         this.usageLogRepository = usageLogRepository;
         this.organizationService = organizationService;
+        this.emailService = emailService;
+        this.keycloakAdminService = keycloakAdminService;
     }
     
     /**
@@ -125,7 +135,12 @@ public class InvoiceService {
         log.info("Facture générée: {} pour l'organisation {} (période: {})",
                 invoiceNumber, organization.getName(), yearMonth.format(DateTimeFormatter.ofPattern("yyyy-MM")));
         
-        return toDto(invoice);
+        InvoiceDto invoiceDto = toDto(invoice);
+        
+        // Envoyer un email de notification
+        sendInvoiceNotificationEmail(invoiceDto, organization);
+        
+        return invoiceDto;
     }
     
     /**
@@ -198,7 +213,12 @@ public class InvoiceService {
         log.info("Facture générée: {} pour l'organisation {} (période: {} - {})",
                 invoiceNumber, organization.getName(), periodStart, periodEnd);
         
-        return toDto(invoice);
+        InvoiceDto invoiceDto = toDto(invoice);
+        
+        // Envoyer un email de notification
+        sendInvoiceNotificationEmail(invoiceDto, organization);
+        
+        return invoiceDto;
     }
     
     /**
@@ -451,6 +471,67 @@ public class InvoiceService {
         dto.setTotalPrice(item.getTotalPrice());
         dto.setItemType(item.getItemType());
         return dto;
+    }
+
+    /**
+     * Envoie un email de notification pour une nouvelle facture.
+     * Envoie l'email à l'organisation et à tous les utilisateurs de l'organisation.
+     */
+    private void sendInvoiceNotificationEmail(InvoiceDto invoice, OrganizationDto organization) {
+        try {
+            // Collecter les emails des destinataires
+            List<String> recipientEmails = new ArrayList<>();
+
+            // Ajouter l'email de l'organisation s'il existe
+            if (organization.getEmail() != null && !organization.getEmail().trim().isEmpty()) {
+                recipientEmails.add(organization.getEmail().trim());
+            }
+
+            // Récupérer les utilisateurs de l'organisation et leurs emails depuis Keycloak
+            List<OrganizationUserDto> organizationUsers = organizationService.getUsersByOrganization(organization.getId());
+            List<String> keycloakUserIds = organizationUsers.stream()
+                    .map(OrganizationUserDto::getKeycloakUserId)
+                    .collect(Collectors.toList());
+
+            // Récupérer les emails des utilisateurs depuis Keycloak
+            List<String> userEmails = keycloakAdminService.getUserEmails(keycloakUserIds);
+            recipientEmails.addAll(userEmails);
+
+            // Supprimer les doublons
+            recipientEmails = recipientEmails.stream()
+                    .distinct()
+                    .filter(email -> email != null && !email.trim().isEmpty())
+                    .collect(Collectors.toList());
+
+            if (recipientEmails.isEmpty()) {
+                log.warn("Aucun email trouvé pour envoyer la notification de facture {} à l'organisation {}",
+                        invoice.getInvoiceNumber(), organization.getName());
+                return;
+            }
+
+            // Formater les dates et le montant
+            String periodStartFormatted = invoice.getPeriodStart().format(DATE_FORMATTER);
+            String periodEndFormatted = invoice.getPeriodEnd().format(DATE_FORMATTER);
+            String totalAmountFormatted = String.format("%.2f", invoice.getTotalAmount());
+
+            // Envoyer l'email à tous les destinataires
+            emailService.sendInvoiceNotificationEmailToMultiple(
+                    recipientEmails,
+                    organization.getName(),
+                    invoice.getInvoiceNumber(),
+                    periodStartFormatted,
+                    periodEndFormatted,
+                    totalAmountFormatted,
+                    invoice.getId()
+            );
+
+            log.info("Email de notification de facture {} envoyé à {} destinataire(s) pour l'organisation {}",
+                    invoice.getInvoiceNumber(), recipientEmails.size(), organization.getName());
+        } catch (Exception e) {
+            // Ne pas faire échouer la génération de facture si l'envoi d'email échoue
+            log.error("Erreur lors de l'envoi de l'email de notification pour la facture {}: {}",
+                    invoice.getInvoiceNumber(), e.getMessage(), e);
+        }
     }
     
     /**

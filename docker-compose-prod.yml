@@ -222,6 +222,20 @@ services:
       WWW_FRONTEND_DOMAIN: "${WWW_FRONTEND_DOMAIN}"
       PROJECT_NAME: "${PROJECT_NAME}"
       FRONTEND_SERVICE_NAME: "${FRONTEND_SERVICE_NAME}"
+      FRONTEND_URL: "${FRONTEND_URL:-https://${FRONTEND_DOMAIN}}"
+      # Configuration SMTP (Email)
+      SMTP_HOST: "${SMTP_HOST:-smtp.gmail.com}"
+      SMTP_PORT: "${SMTP_PORT:-587}"
+      SMTP_USERNAME: "${SMTP_USERNAME:-}"
+      SMTP_PASSWORD: "${SMTP_PASSWORD:-}"
+      SMTP_AUTH: "${SMTP_AUTH:-true}"
+      SMTP_STARTTLS: "${SMTP_STARTTLS:-true}"
+      SMTP_STARTTLS_REQUIRED: "${SMTP_STARTTLS_REQUIRED:-true}"
+      SMTP_CONNECTION_TIMEOUT: "${SMTP_CONNECTION_TIMEOUT:-5000}"
+      SMTP_TIMEOUT: "${SMTP_TIMEOUT:-5000}"
+      SMTP_WRITE_TIMEOUT: "${SMTP_WRITE_TIMEOUT:-5000}"
+      SMTP_FROM: "${SMTP_FROM:-noreply@enclume-numerique.com}"
+      SMTP_FROM_NAME: "${SMTP_FROM_NAME:-Enclume Numérique}"
     labels:
       <<: *traefik-backend-labels
     restart: unless-stopped

@@ -123,6 +123,35 @@ KEYCLOAK_RETRY_WAIT_DURATION=10s
 CORS_ALLOWED_ORIGINS=https://hscode.enclume-numerique.com,https://www.hscode.enclume-numerique.com,http://localhost:4200
 ```
 
+### Configuration SMTP (Email)
+
+```env
+# Serveur SMTP
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+
+# Identifiants SMTP
+SMTP_USERNAME=votre_email@gmail.com
+SMTP_PASSWORD=votre_mot_de_passe_application
+
+# Configuration SMTP
+SMTP_AUTH=true
+SMTP_STARTTLS=true
+SMTP_STARTTLS_REQUIRED=true
+SMTP_CONNECTION_TIMEOUT=5000
+SMTP_TIMEOUT=5000
+SMTP_WRITE_TIMEOUT=5000
+
+# Expéditeur par défaut
+SMTP_FROM=noreply@enclume-numerique.com
+SMTP_FROM_NAME=Enclume Numérique
+
+# URL du frontend (pour les liens dans les emails)
+FRONTEND_URL=https://hscode.enclume-numerique.com
+```
+
+**Note** : Pour Gmail, vous devez utiliser un "Mot de passe d'application" au lieu de votre mot de passe habituel. Consultez [la documentation Gmail](https://support.google.com/accounts/answer/185833) pour plus d'informations.
+
 ### Configuration Spring Boot
 
 ```env
@@ -227,6 +256,23 @@ KEYCLOAK_RETRY_WAIT_DURATION=10s
 # CORS
 # ===============================================================
 CORS_ALLOWED_ORIGINS=https://hscode.enclume-numerique.com,https://www.hscode.enclume-numerique.com,http://localhost:4200
+
+# ===============================================================
+# SMTP (EMAIL)
+# ===============================================================
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USERNAME=votre_email@gmail.com
+SMTP_PASSWORD=votre_mot_de_passe_application
+SMTP_AUTH=true
+SMTP_STARTTLS=true
+SMTP_STARTTLS_REQUIRED=true
+SMTP_CONNECTION_TIMEOUT=5000
+SMTP_TIMEOUT=5000
+SMTP_WRITE_TIMEOUT=5000
+SMTP_FROM=noreply@enclume-numerique.com
+SMTP_FROM_NAME=Enclume Numérique
+FRONTEND_URL=https://hscode.enclume-numerique.com
 
 # ===============================================================
 # SPRING BOOT
