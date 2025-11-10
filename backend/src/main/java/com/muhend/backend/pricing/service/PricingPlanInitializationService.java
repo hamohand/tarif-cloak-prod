@@ -23,10 +23,10 @@ public class PricingPlanInitializationService {
     @PostConstruct
     @Transactional
     public void initializePricingPlans() {
-        if (pricingPlanRepository.count() == 0) {
-            log.info("Initialisation des plans tarifaires par défaut...");
-            
-            // Plan d'essai gratuit
+        log.info("Vérification et initialisation des plans tarifaires par défaut...");
+        
+        // Plan d'essai gratuit
+        if (!pricingPlanRepository.existsByName("Essai gratuit")) {
             PricingPlan trial = new PricingPlan();
             trial.setName("Essai gratuit");
             trial.setDescription("20 requêtes gratuites valables pendant une semaine");
@@ -38,8 +38,11 @@ public class PricingPlanInitializationService {
             trial.setIsActive(true);
             trial.setDisplayOrder(0);
             pricingPlanRepository.save(trial);
-            
-            // Plan facturé à la requête
+            log.info("Plan 'Essai gratuit' créé");
+        }
+        
+        // Plan facturé à la requête
+        if (!pricingPlanRepository.existsByName("Pay-per-Request")) {
             PricingPlan payPerRequest = new PricingPlan();
             payPerRequest.setName("Pay-per-Request");
             payPerRequest.setDescription("Facturation à la requête sans limite de temps");
@@ -51,7 +54,11 @@ public class PricingPlanInitializationService {
             payPerRequest.setIsActive(true);
             payPerRequest.setDisplayOrder(1);
             pricingPlanRepository.save(payPerRequest);
-            
+            log.info("Plan 'Pay-per-Request' créé");
+        }
+        
+        // Plan Starter
+        if (!pricingPlanRepository.existsByName("Starter")) {
             PricingPlan starter = new PricingPlan();
             starter.setName("Starter");
             starter.setDescription("Plan de démarrage idéal pour les petites entreprises");
@@ -63,7 +70,11 @@ public class PricingPlanInitializationService {
             starter.setIsActive(true);
             starter.setDisplayOrder(2);
             pricingPlanRepository.save(starter);
-            
+            log.info("Plan 'Starter' créé");
+        }
+        
+        // Plan Professional
+        if (!pricingPlanRepository.existsByName("Professional")) {
             PricingPlan professional = new PricingPlan();
             professional.setName("Professional");
             professional.setDescription("Plan professionnel pour les entreprises en croissance");
@@ -75,7 +86,11 @@ public class PricingPlanInitializationService {
             professional.setIsActive(true);
             professional.setDisplayOrder(3);
             pricingPlanRepository.save(professional);
-            
+            log.info("Plan 'Professional' créé");
+        }
+        
+        // Plan Enterprise
+        if (!pricingPlanRepository.existsByName("Enterprise")) {
             PricingPlan enterprise = new PricingPlan();
             enterprise.setName("Enterprise");
             enterprise.setDescription("Plan entreprise avec quota illimité");
@@ -87,11 +102,10 @@ public class PricingPlanInitializationService {
             enterprise.setIsActive(true);
             enterprise.setDisplayOrder(4);
             pricingPlanRepository.save(enterprise);
-            
-            log.info("Plans tarifaires initialisés avec succès");
-        } else {
-            log.debug("Les plans tarifaires existent déjà, pas d'initialisation nécessaire");
+            log.info("Plan 'Enterprise' créé");
         }
+        
+        log.info("Vérification des plans tarifaires terminée");
     }
 }
 

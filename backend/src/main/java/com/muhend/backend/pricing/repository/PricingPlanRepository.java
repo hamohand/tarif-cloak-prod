@@ -12,5 +12,7 @@ public interface PricingPlanRepository extends JpaRepository<PricingPlan, Long> 
     List<PricingPlan> findByIsActiveTrueOrderByDisplayOrderAsc();
     Optional<PricingPlan> findByIdAndIsActiveTrue(Long id);
     List<PricingPlan> findAllByOrderByDisplayOrderAsc();
+    Optional<PricingPlan> findByName(String name);
+    boolean existsByName(String name);
 }
 
