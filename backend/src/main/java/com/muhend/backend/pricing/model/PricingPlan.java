@@ -28,10 +28,10 @@ public class PricingPlan {
     @Column(name = "description", length = 500)
     private String description;
     
-    @Column(name = "price_per_month", nullable = true, precision = 10, scale = 2, columnDefinition = "NUMERIC(10,2)")
+    @Column(name = "price_per_month", nullable = true, columnDefinition = "NUMERIC(10,2) NULL")
     private BigDecimal pricePerMonth; // Prix mensuel en USD (null pour les plans facturés à la requête)
     
-    @Column(name = "price_per_request", nullable = true, precision = 10, scale = 2)
+    @Column(name = "price_per_request", nullable = true, columnDefinition = "NUMERIC(10,2) NULL")
     private BigDecimal pricePerRequest; // Prix par requête en USD (null pour les plans mensuels)
     
     @Column(name = "monthly_quota", nullable = true)

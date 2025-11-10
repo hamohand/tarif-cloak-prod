@@ -16,8 +16,7 @@ spring:
     password: ${POSTGRES_PASSWORD}
   jpa:
     hibernate:
-      ddl-auto: update  # Temporairement activé pour créer la table usage_log. Revenir à 'validate' après la création.
-#      ddl-auto: validate  #En production (?), utilisez 'validate' ou Flyway/Liquibase
+      ddl-auto: update  # La table pricing_plan est créée manuellement avec price_per_month nullable avant le démarrage
     show-sql: false
 
   # ===================================================
