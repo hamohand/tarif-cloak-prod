@@ -10,6 +10,8 @@ export interface RegisterUser {
   firstName: string;
   lastName: string;
   password: string;
+  organizationName: string;
+  organizationEmail?: string;
 }
 
 export interface KeycloakUser {

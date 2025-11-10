@@ -105,6 +105,43 @@ import { RegisterService } from '../../../core/services/register.service';
             }
           </div>
 
+          <div class="form-section-divider">
+            <h3>Informations de l'organisation</h3>
+          </div>
+
+          <div class="form-group">
+            <label for="organizationName">Nom de l'organisation *</label>
+            <input
+              type="text"
+              id="organizationName"
+              formControlName="organizationName"
+              class="form-control"
+              [class.error]="isFieldInvalid('organizationName')"
+              placeholder="Ex: Mon Entreprise">
+            @if (isFieldInvalid('organizationName')) {
+              <div class="error-message">
+                {{ getErrorMessage('organizationName') }}
+              </div>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="organizationEmail">Email de l'organisation</label>
+            <input
+              type="email"
+              id="organizationEmail"
+              formControlName="organizationEmail"
+              class="form-control"
+              [class.error]="isFieldInvalid('organizationEmail')"
+              placeholder="contact@mon-entreprise.com">
+            @if (isFieldInvalid('organizationEmail')) {
+              <div class="error-message">
+                {{ getErrorMessage('organizationEmail') }}
+              </div>
+            }
+            <small class="form-hint">Optionnel - Email de contact de l'organisation</small>
+          </div>
+
           <div class="form-actions">
             <button
               type="submit"
@@ -153,7 +190,7 @@ import { RegisterService } from '../../../core/services/register.service';
       border-radius: 12px;
       box-shadow: 0 4px 20px rgba(0,0,0,0.1);
       width: 100%;
-      max-width: 500px;
+      max-width: 600px;
     }
 
     h2 {
@@ -256,6 +293,26 @@ import { RegisterService } from '../../../core/services/register.service';
     .form-footer a:hover {
       text-decoration: underline;
     }
+
+    .form-section-divider {
+      margin: 2rem 0 1rem 0;
+      padding-top: 1.5rem;
+      border-top: 2px solid #e1e8ed;
+    }
+
+    .form-section-divider h3 {
+      color: #2c3e50;
+      font-size: 1.1rem;
+      margin: 0 0 1rem 0;
+      font-weight: 600;
+    }
+
+    .form-hint {
+      color: #7f8c8d;
+      font-size: 0.875rem;
+      margin-top: 0.25rem;
+      display: block;
+    }
   `]
 })
 export class RegisterComponent {
@@ -273,7 +330,9 @@ export class RegisterComponent {
     firstName: ['', [Validators.required, Validators.minLength(2)]],
     lastName: ['', [Validators.required, Validators.minLength(2)]],
     password: ['', [Validators.required, Validators.minLength(6)]],
-    confirmPassword: ['', [Validators.required]]
+    confirmPassword: ['', [Validators.required]],
+    organizationName: ['', [Validators.required, Validators.minLength(1), Validators.maxLength(255)]],
+    organizationEmail: ['', [Validators.email, Validators.maxLength(255)]]
   }, {
     validators: this.passwordMatchValidator
   });
@@ -310,6 +369,10 @@ export class RegisterComponent {
         const requiredLength = field.errors['minlength'].requiredLength;
         return `Minimum ${requiredLength} caractères requis`;
       }
+      if (field.errors['maxlength']) {
+        const maxLength = field.errors['maxlength'].requiredLength;
+        return `Maximum ${maxLength} caractères autorisés`;
+      }
       if (field.errors['passwordMismatch']) {
         return 'Les mots de passe ne correspondent pas';
       }
@@ -331,11 +394,14 @@ export class RegisterComponent {
         email: userData.email,
         firstName: userData.firstName,
         lastName: userData.lastName,
-        password: userData.password
+        password: userData.password,
+        organizationName: userData.organizationName,
+        organizationEmail: userData.organizationEmail || undefined
       }).subscribe({
         next: (response) => {
           this.isLoading = false;
-          this.successMessage = 'Compte créé avec succès ! Vous pouvez maintenant vous connecter.';
+          const orgName = response.organizationName || userData.organizationName;
+          this.successMessage = `Compte et organisation "${orgName}" créés avec succès ! Vous pouvez maintenant vous connecter.`;
           // Réinitialiser le formulaire
           this.registerForm.reset();
           // Rediriger vers login après 3 secondes

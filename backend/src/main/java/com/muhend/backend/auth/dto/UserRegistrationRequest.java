@@ -21,4 +21,13 @@ public class UserRegistrationRequest {
     private String firstName;
 
     private String lastName;
+    
+    // Informations de l'organisation
+    @NotBlank(message = "Le nom de l'organisation est obligatoire")
+    @Size(min = 1, max = 255, message = "Le nom de l'organisation doit contenir entre 1 et 255 caractères")
+    private String organizationName;
+    
+    @Email(message = "Format d'email invalide pour l'organisation")
+    @Size(max = 255, message = "L'email de l'organisation doit contenir au maximum 255 caractères")
+    private String organizationEmail; // Optionnel
 }

@@ -95,6 +95,60 @@ public class KeycloakAdminService {
         logger.error("Failed to create user after {} attempts", MAX_RETRIES);
         throw new RuntimeException("Failed to connect to Keycloak after " + MAX_RETRIES + " attempts", lastException);
     }
+    
+    /**
+     * Extrait l'ID Keycloak d'un utilisateur depuis l'en-tête Location de la réponse.
+     *
+     * @param response La réponse Keycloak après création d'un utilisateur
+     * @return L'ID Keycloak de l'utilisateur ou null si non trouvé
+     */
+    public String getUserIdFromResponse(Response response) {
+        try {
+            String location = response.getLocation() != null ? response.getLocation().toString() : null;
+            if (location != null) {
+                // L'URL est généralement au format: .../users/{userId}
+                int lastSlashIndex = location.lastIndexOf('/');
+                if (lastSlashIndex >= 0 && lastSlashIndex < location.length() - 1) {
+                    String userId = location.substring(lastSlashIndex + 1);
+                    logger.info("User ID extracted from Location header: {}", userId);
+                    return userId;
+                }
+            }
+            logger.warn("Location header not found or invalid in response");
+            return null;
+        } catch (Exception e) {
+            logger.error("Erreur lors de l'extraction de l'ID utilisateur depuis la réponse: {}", e.getMessage());
+            return null;
+        }
+    }
+    
+    /**
+     * Récupère l'ID Keycloak d'un utilisateur par son nom d'utilisateur.
+     * Méthode de fallback si l'extraction depuis la réponse échoue.
+     *
+     * @param username Le nom d'utilisateur
+     * @return L'ID Keycloak de l'utilisateur ou null si non trouvé
+     */
+    public String getUserIdByUsername(String username) {
+        try {
+            RealmResource realmResource = keycloak.realm(realm);
+            java.util.List<org.keycloak.representations.idm.UserRepresentation> users = 
+                realmResource.users().searchByUsername(username, true);
+            
+            if (users != null && !users.isEmpty()) {
+                // Chercher l'utilisateur exact (car searchByUsername peut retourner plusieurs résultats)
+                for (org.keycloak.representations.idm.UserRepresentation user : users) {
+                    if (username.equals(user.getUsername())) {
+                        return user.getId();
+                    }
+                }
+            }
+            return null;
+        } catch (Exception e) {
+            logger.error("Erreur lors de la récupération de l'ID utilisateur pour '{}': {}", username, e.getMessage());
+            return null;
+        }
+    }
 
     /**
      * Récupère l'email d'un utilisateur depuis Keycloak.
