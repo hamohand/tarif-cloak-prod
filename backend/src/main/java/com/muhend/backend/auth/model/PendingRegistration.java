@@ -47,6 +47,9 @@ public class PendingRegistration {
     @Column(name = "organization_email", nullable = false, length = 255)
     private String organizationEmail;
     
+    @Column(name = "pricing_plan_id", nullable = true)
+    private Long pricingPlanId; // ID du plan tarifaire sélectionné (optionnel)
+    
     @Column(name = "confirmation_token", nullable = false, unique = true, length = 64)
     private String confirmationToken;
     

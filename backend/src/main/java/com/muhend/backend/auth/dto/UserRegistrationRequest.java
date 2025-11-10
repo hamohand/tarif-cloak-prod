@@ -31,4 +31,6 @@ public class UserRegistrationRequest {
     @Email(message = "Format d'email invalide pour l'organisation")
     @Size(max = 255, message = "L'email de l'organisation doit contenir au maximum 255 caractères")
     private String organizationEmail; // Obligatoire et utilisé comme identifiant unique
+    
+    private Long pricingPlanId; // ID du plan tarifaire sélectionné (optionnel)
 }

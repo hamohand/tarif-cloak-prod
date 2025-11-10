@@ -29,7 +29,10 @@ public class Organization {
     private String email; // Email de l'organisation (identifiant unique)
     
     @Column(name = "monthly_quota", nullable = true)
-    private Integer monthlyQuota; // null = quota illimité
+    private Integer monthlyQuota; // null = quota illimité (peut être défini par le plan tarifaire)
+    
+    @Column(name = "pricing_plan_id", nullable = true)
+    private Long pricingPlanId; // Référence au plan tarifaire
     
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;

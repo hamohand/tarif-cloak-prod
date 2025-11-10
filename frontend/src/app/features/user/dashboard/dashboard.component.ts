@@ -1,8 +1,11 @@
 import { Component, OnInit, inject, ViewChild, ElementRef, AfterViewInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { UserService, UserUsageStats, UserQuota, Organization } from '../../../core/services/user.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { PricingPlanService, PricingPlan } from '../../../core/services/pricing-plan.service';
+import { NotificationService } from '../../../core/services/notification.service';
 import { Chart, ChartConfiguration, registerables } from 'chart.js';
 
 Chart.register(...registerables);
@@ -10,7 +13,7 @@ Chart.register(...registerables);
 @Component({
   selector: 'app-user-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   template: `
     <div class="dashboard-container">
       <h2>📊 Mon Tableau de Bord</h2>
@@ -39,6 +42,61 @@ Chart.register(...registerables);
           <p class="no-org-message">Vous n'êtes associé à aucune organisation.</p>
         }
       </div>
+
+      <!-- Plan tarifaire -->
+      @if (organization) {
+        <div class="pricing-plan-card">
+          <h3>💳 Plan Tarifaire</h3>
+          @if (loadingPlans) {
+            <p>Chargement...</p>
+          } @else if (pricingPlans.length > 0) {
+            <div class="current-plan">
+              @if (currentPlan) {
+                <div class="plan-info">
+                  <p><strong>Plan actuel:</strong> {{ currentPlan.name }}</p>
+                  <p><strong>Prix:</strong> ${{ currentPlan.pricePerMonth }}/mois</p>
+                  @if (currentPlan.monthlyQuota) {
+                    <p><strong>Quota:</strong> {{ currentPlan.monthlyQuota | number }} requêtes/mois</p>
+                  } @else {
+                    <p><strong>Quota:</strong> Illimité</p>
+                  }
+                </div>
+              } @else {
+                <p class="no-plan-message">Aucun plan tarifaire sélectionné</p>
+              }
+            </div>
+            <div class="change-plan-section">
+              <h4>Changer de plan</h4>
+              <select [(ngModel)]="selectedPlanId" class="plan-select">
+                <option [value]="null">Aucun plan (gratuit)</option>
+                @for (plan of pricingPlans; track plan.id) {
+                  <option [value]="plan.id" [selected]="plan.id === organization.pricingPlanId">
+                    {{ plan.name }} - ${{ plan.pricePerMonth }}/mois
+                    @if (plan.monthlyQuota) {
+                      ({{ plan.monthlyQuota | number }} requêtes/mois)
+                    } @else {
+                      (Quota illimité)
+                    }
+                  </option>
+                }
+              </select>
+              <button 
+                class="btn btn-primary" 
+                (click)="changePricingPlan()"
+                [disabled]="isChangingPlan || selectedPlanId === organization.pricingPlanId">
+                @if (isChangingPlan) {
+                  <span>Changement en cours...</span>
+                } @else {
+                  <span>Changer de plan</span>
+                }
+              </button>
+              <a routerLink="/pricing" class="view-all-plans-link">Voir tous les plans tarifaires</a>
+            </div>
+          } @else {
+            <p class="no-plans-message">Aucun plan tarifaire disponible</p>
+          }
+        </div>
+      }
 
       <!-- Quota -->
       <div class="quota-card" *ngIf="quota || loadingQuota">
@@ -461,11 +519,83 @@ Chart.register(...registerables);
       max-width: 200px;
       max-height: 200px;
     }
+
+    .pricing-plan-card {
+      background: white;
+      border-radius: 12px;
+      padding: 2rem;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      margin-bottom: 2rem;
+    }
+
+    .pricing-plan-card h3 {
+      margin-top: 0;
+      margin-bottom: 1.5rem;
+      color: #2c3e50;
+    }
+
+    .current-plan {
+      margin-bottom: 2rem;
+      padding: 1rem;
+      background: #f8f9fa;
+      border-radius: 8px;
+    }
+
+    .plan-info p {
+      margin: 0.5rem 0;
+      color: #2c3e50;
+    }
+
+    .no-plan-message, .no-plans-message {
+      color: #7f8c8d;
+      font-style: italic;
+    }
+
+    .change-plan-section {
+      margin-top: 2rem;
+      padding-top: 2rem;
+      border-top: 2px solid #e1e8ed;
+    }
+
+    .change-plan-section h4 {
+      margin-bottom: 1rem;
+      color: #2c3e50;
+    }
+
+    .plan-select {
+      width: 100%;
+      padding: 0.75rem;
+      border: 2px solid #e1e8ed;
+      border-radius: 6px;
+      font-size: 1rem;
+      margin-bottom: 1rem;
+      background: white;
+    }
+
+    .plan-select:focus {
+      outline: none;
+      border-color: #3498db;
+    }
+
+    .view-all-plans-link {
+      display: block;
+      margin-top: 1rem;
+      text-align: center;
+      color: #3498db;
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+
+    .view-all-plans-link:hover {
+      text-decoration: underline;
+    }
   `]
 })
 export class UserDashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   private userService = inject(UserService);
   private authService = inject(AuthService);
+  private pricingPlanService = inject(PricingPlanService);
+  private notificationService = inject(NotificationService);
 
   @ViewChild('quotaChart', { static: false }) quotaChartRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('usageChart', { static: false }) usageChartRef!: ElementRef<HTMLCanvasElement>;
@@ -483,6 +613,13 @@ export class UserDashboardComponent implements OnInit, AfterViewInit, OnDestroy 
   startDate = '';
   endDate = '';
 
+  // Plans tarifaires
+  pricingPlans: PricingPlan[] = [];
+  currentPlan: PricingPlan | null = null;
+  selectedPlanId: number | null = null;
+  loadingPlans = false;
+  isChangingPlan = false;
+
   private quotaChart: Chart | null = null;
   private usageChart: Chart | null = null;
 
@@ -491,6 +628,7 @@ export class UserDashboardComponent implements OnInit, AfterViewInit, OnDestroy 
     this.loadOrganization();
     this.loadQuota();
     this.loadStats();
+    this.loadPricingPlans();
   }
 
   loadOrganization() {
@@ -499,11 +637,66 @@ export class UserDashboardComponent implements OnInit, AfterViewInit, OnDestroy 
     this.userService.getMyOrganization().subscribe({
       next: (org) => {
         this.organization = org;
+        this.selectedPlanId = org?.pricingPlanId || null;
         this.loadingOrg = false;
+        // Mettre à jour le plan actuel si l'organisation a un plan
+        if (org?.pricingPlanId) {
+          this.updateCurrentPlan(org.pricingPlanId);
+        } else {
+          this.currentPlan = null;
+        }
       },
       error: (err) => {
         this.errorMessage = 'Erreur lors du chargement de l\'organisation: ' + (err.error?.message || err.message);
         this.loadingOrg = false;
+      }
+    });
+  }
+
+  loadPricingPlans() {
+    this.loadingPlans = true;
+    this.pricingPlanService.getActivePricingPlans().subscribe({
+      next: (plans) => {
+        this.pricingPlans = plans;
+        this.loadingPlans = false;
+        // Mettre à jour le plan actuel si l'organisation a un plan
+        if (this.organization?.pricingPlanId) {
+          this.updateCurrentPlan(this.organization.pricingPlanId);
+        }
+      },
+      error: (err) => {
+        console.error('Erreur lors du chargement des plans tarifaires:', err);
+        this.loadingPlans = false;
+      }
+    });
+  }
+
+  updateCurrentPlan(planId: number) {
+    const plan = this.pricingPlans.find(p => p.id === planId);
+    this.currentPlan = plan || null;
+  }
+
+  changePricingPlan() {
+    if (this.isChangingPlan || !this.organization) {
+      return;
+    }
+
+    this.isChangingPlan = true;
+    this.errorMessage = '';
+
+    this.pricingPlanService.changeMyOrganizationPricingPlan(this.selectedPlanId).subscribe({
+      next: (updatedOrg) => {
+        this.organization = updatedOrg;
+        this.updateCurrentPlan(updatedOrg.pricingPlanId || 0);
+        this.isChangingPlan = false;
+        this.notificationService.success('Plan tarifaire changé avec succès');
+        // Recharger le quota pour refléter les changements
+        this.loadQuota();
+      },
+      error: (err) => {
+        this.errorMessage = 'Erreur lors du changement de plan: ' + (err.error?.message || err.message);
+        this.isChangingPlan = false;
+        this.notificationService.error('Erreur lors du changement de plan');
       }
     });
   }

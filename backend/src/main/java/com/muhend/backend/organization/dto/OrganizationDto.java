@@ -18,6 +18,7 @@ public class OrganizationDto {
     private String name;
     private String email; // Email de contact de l'organisation
     private Integer monthlyQuota; // null = quota illimité
+    private Long pricingPlanId; // ID du plan tarifaire
     private LocalDateTime createdAt;
     
     // Pour les réponses avec le nombre d'utilisateurs

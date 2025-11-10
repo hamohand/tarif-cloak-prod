@@ -1,13 +1,15 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { RegisterService } from '../../../core/services/register.service';
+import { PricingPlanService, PricingPlan } from '../../../core/services/pricing-plan.service';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, CommonModule],
   template: `
     <div class="register-container">
       <div class="register-card">
@@ -140,6 +142,41 @@ import { RegisterService } from '../../../core/services/register.service';
               </div>
             }
             <small class="form-hint">Un email de confirmation sera envoyé à cette adresse pour valider l'inscription</small>
+          </div>
+
+          <div class="form-section-divider">
+            <h3>Plan tarifaire</h3>
+          </div>
+
+          <div class="form-group">
+            <label for="pricingPlanId">Sélectionner un plan tarifaire (optionnel)</label>
+            @if (loadingPlans) {
+              <div class="loading-plans">Chargement des plans...</div>
+            } @else if (pricingPlans.length > 0) {
+              <select
+                id="pricingPlanId"
+                formControlName="pricingPlanId"
+                class="form-control">
+                <option [value]="null">Aucun plan (gratuit)</option>
+                @for (plan of pricingPlans; track plan.id) {
+                  <option [value]="plan.id">
+                    {{ plan.name }} - ${{ plan.pricePerMonth }}/mois
+                    @if (plan.monthlyQuota) {
+                      ({{ plan.monthlyQuota | number }} requêtes/mois)
+                    } @else {
+                      (Quota illimité)
+                    }
+                  </option>
+                }
+              </select>
+              <small class="form-hint">
+                <a routerLink="/pricing" target="_blank">Voir tous les plans tarifaires</a>
+              </small>
+            } @else {
+              <div class="no-plans">
+                <p>Aucun plan tarifaire disponible. <a routerLink="/pricing">Voir les plans</a></p>
+              </div>
+            }
           </div>
 
           <div class="form-actions">
@@ -313,16 +350,44 @@ import { RegisterService } from '../../../core/services/register.service';
       margin-top: 0.25rem;
       display: block;
     }
+
+    .form-hint a {
+      color: #3498db;
+      text-decoration: none;
+    }
+
+    .form-hint a:hover {
+      text-decoration: underline;
+    }
+
+    .loading-plans, .no-plans {
+      padding: 1rem;
+      text-align: center;
+      color: #7f8c8d;
+    }
+
+    .no-plans a {
+      color: #3498db;
+      text-decoration: none;
+    }
+
+    .no-plans a:hover {
+      text-decoration: underline;
+    }
   `]
 })
-export class RegisterComponent {
+export class RegisterComponent implements OnInit {
   private fb = inject(FormBuilder);
   private registerService = inject(RegisterService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
+  private pricingPlanService = inject(PricingPlanService);
 
   isLoading = false;
   errorMessage = '';
   successMessage = '';
+  pricingPlans: PricingPlan[] = [];
+  loadingPlans = false;
 
   registerForm: FormGroup = this.fb.group({
     username: ['', [Validators.required, Validators.minLength(3)]],
@@ -332,10 +397,38 @@ export class RegisterComponent {
     password: ['', [Validators.required, Validators.minLength(6)]],
     confirmPassword: ['', [Validators.required]],
     organizationName: ['', [Validators.required, Validators.minLength(1), Validators.maxLength(255)]],
-    organizationEmail: ['', [Validators.required, Validators.email, Validators.maxLength(255)]]
+    organizationEmail: ['', [Validators.required, Validators.email, Validators.maxLength(255)]],
+    pricingPlanId: [null]
   }, {
     validators: this.passwordMatchValidator
   });
+
+  ngOnInit() {
+    // Récupérer le planId depuis les query params si présent
+    this.route.queryParams.subscribe(params => {
+      const planId = params['planId'];
+      if (planId) {
+        this.registerForm.patchValue({ pricingPlanId: +planId });
+      }
+    });
+
+    // Charger les plans tarifaires
+    this.loadPricingPlans();
+  }
+
+  loadPricingPlans() {
+    this.loadingPlans = true;
+    this.pricingPlanService.getActivePricingPlans().subscribe({
+      next: (plans) => {
+        this.pricingPlans = plans;
+        this.loadingPlans = false;
+      },
+      error: (err) => {
+        console.error('Erreur lors du chargement des plans tarifaires:', err);
+        this.loadingPlans = false;
+      }
+    });
+  }
 
   passwordMatchValidator(form: FormGroup) {
     const password = form.get('password');
@@ -396,7 +489,8 @@ export class RegisterComponent {
         lastName: userData.lastName,
         password: userData.password,
         organizationName: userData.organizationName,
-        organizationEmail: userData.organizationEmail
+        organizationEmail: userData.organizationEmail,
+        pricingPlanId: userData.pricingPlanId || null
       }).subscribe({
         next: (response) => {
           this.isLoading = false;

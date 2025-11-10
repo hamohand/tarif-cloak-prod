@@ -81,6 +81,7 @@ public class PendingRegistrationService {
         pending.setPassword(request.getPassword()); // TODO: Hasher le mot de passe si nécessaire
         pending.setOrganizationName(request.getOrganizationName());
         pending.setOrganizationEmail(request.getOrganizationEmail());
+        pending.setPricingPlanId(request.getPricingPlanId()); // Inclure le plan tarifaire sélectionné
         pending.setConfirmationToken(confirmationToken);
         pending.setExpiresAt(LocalDateTime.now().plusHours(tokenExpirationHours));
         pending.setConfirmed(false);
@@ -180,6 +181,7 @@ public class PendingRegistrationService {
                 new com.muhend.backend.organization.dto.CreateOrganizationRequest();
             orgRequest.setName(pending.getOrganizationName());
             orgRequest.setEmail(pending.getOrganizationEmail());
+            orgRequest.setPricingPlanId(pending.getPricingPlanId()); // Inclure le plan tarifaire sélectionné
             
             var organizationDto = organizationService.createOrganization(orgRequest);
             log.info("Organisation créée: id={}, name={}", organizationDto.getId(), organizationDto.getName());

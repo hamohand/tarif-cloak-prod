@@ -9,6 +9,7 @@ import com.muhend.backend.organization.model.Organization;
 import com.muhend.backend.organization.model.OrganizationUser;
 import com.muhend.backend.organization.repository.OrganizationRepository;
 import com.muhend.backend.organization.repository.OrganizationUserRepository;
+import com.muhend.backend.pricing.service.PricingPlanService;
 import com.muhend.backend.usage.repository.UsageLogRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -30,15 +31,18 @@ public class OrganizationService {
     private final OrganizationUserRepository organizationUserRepository;
     private final UsageLogRepository usageLogRepository;
     private final KeycloakAdminService keycloakAdminService;
+    private final PricingPlanService pricingPlanService;
     
     public OrganizationService(OrganizationRepository organizationRepository,
                               OrganizationUserRepository organizationUserRepository,
                               UsageLogRepository usageLogRepository,
-                              KeycloakAdminService keycloakAdminService) {
+                              KeycloakAdminService keycloakAdminService,
+                              PricingPlanService pricingPlanService) {
         this.organizationRepository = organizationRepository;
         this.organizationUserRepository = organizationUserRepository;
         this.usageLogRepository = usageLogRepository;
         this.keycloakAdminService = keycloakAdminService;
+        this.pricingPlanService = pricingPlanService;
     }
     
     /**
@@ -59,9 +63,27 @@ public class OrganizationService {
         Organization organization = new Organization();
         organization.setName(request.getName());
         organization.setEmail(request.getEmail().trim());
+        
+        // Si un plan tarifaire est spécifié, le valider et l'associer
+        if (request.getPricingPlanId() != null) {
+            try {
+                pricingPlanService.getPricingPlanById(request.getPricingPlanId());
+                organization.setPricingPlanId(request.getPricingPlanId());
+                // Le quota peut être défini par le plan tarifaire
+                var plan = pricingPlanService.getPricingPlanById(request.getPricingPlanId());
+                if (plan.getMonthlyQuota() != null) {
+                    organization.setMonthlyQuota(plan.getMonthlyQuota());
+                }
+            } catch (IllegalArgumentException e) {
+                log.warn("Plan tarifaire invalide {}: {}", request.getPricingPlanId(), e.getMessage());
+                throw new IllegalArgumentException("Plan tarifaire invalide: " + e.getMessage());
+            }
+        }
+        
         organization = organizationRepository.save(organization);
         
-        log.info("Organisation créée: id={}, name={}, email={}", organization.getId(), organization.getName(), organization.getEmail());
+        log.info("Organisation créée: id={}, name={}, email={}, pricingPlanId={}", 
+            organization.getId(), organization.getName(), organization.getEmail(), organization.getPricingPlanId());
         return toDto(organization);
     }
     
@@ -274,6 +296,41 @@ public class OrganizationService {
     }
     
     /**
+     * Change le plan tarifaire d'une organisation.
+     */
+    @Transactional
+    public OrganizationDto changePricingPlan(Long organizationId, Long pricingPlanId) {
+        Organization organization = organizationRepository.findById(organizationId)
+                .orElseThrow(() -> new IllegalArgumentException("Organisation non trouvée avec l'ID: " + organizationId));
+        
+        // Valider le plan tarifaire
+        if (pricingPlanId != null) {
+            try {
+                var plan = pricingPlanService.getPricingPlanById(pricingPlanId);
+                organization.setPricingPlanId(pricingPlanId);
+                // Mettre à jour le quota selon le plan
+                if (plan.getMonthlyQuota() != null) {
+                    organization.setMonthlyQuota(plan.getMonthlyQuota());
+                } else {
+                    // Si le plan n'a pas de quota défini, garder le quota actuel ou le mettre à null
+                    // (on peut décider de laisser le quota actuel)
+                }
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("Plan tarifaire invalide: " + e.getMessage());
+            }
+        } else {
+            // Permettre de retirer le plan tarifaire
+            organization.setPricingPlanId(null);
+        }
+        
+        organization = organizationRepository.save(organization);
+        log.info("Plan tarifaire changé pour l'organisation {} (ID: {}): planId={}", 
+            organization.getName(), organizationId, pricingPlanId);
+        
+        return toDtoWithUserCount(organization);
+    }
+    
+    /**
      * Convertit une Organisation en DTO.
      */
     private OrganizationDto toDto(Organization organization) {
@@ -282,6 +339,7 @@ public class OrganizationService {
         dto.setName(organization.getName());
         dto.setEmail(organization.getEmail());
         dto.setMonthlyQuota(organization.getMonthlyQuota());
+        dto.setPricingPlanId(organization.getPricingPlanId());
         dto.setCreatedAt(organization.getCreatedAt());
         return dto;
     }

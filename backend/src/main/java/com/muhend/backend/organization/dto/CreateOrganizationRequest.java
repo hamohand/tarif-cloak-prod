@@ -23,5 +23,7 @@ public class CreateOrganizationRequest {
     @Email(message = "Format d'email invalide")
     @Size(max = 255, message = "L'email doit contenir au maximum 255 caractères")
     private String email; // Email de l'organisation (obligatoire et identifiant unique)
+    
+    private Long pricingPlanId; // ID du plan tarifaire sélectionné (optionnel)
 }
 

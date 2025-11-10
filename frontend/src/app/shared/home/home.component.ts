@@ -22,6 +22,11 @@ import { Component } from '@angular/core';
         Accéder à l'application Tariff-multi-recherche
       </a>
       </div>
+      <div class="feature-card">
+      <a href="/pricing" class="cta-button" style="text-decoration: none; display: inline-block;">
+        Voir les plans tarifaires
+      </a>
+      </div>
         
 </div>
 

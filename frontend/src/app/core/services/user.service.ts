@@ -8,6 +8,7 @@ export interface Organization {
   name: string;
   email?: string | null;
   monthlyQuota?: number | null;
+  pricingPlanId?: number | null;
   createdAt: string;
   userCount?: number;
 }

@@ -12,6 +12,7 @@ export interface RegisterUser {
   password: string;
   organizationName: string;
   organizationEmail: string; // Obligatoire
+  pricingPlanId?: number | null; // ID du plan tarifaire sélectionné (optionnel)
 }
 
 export interface KeycloakUser {

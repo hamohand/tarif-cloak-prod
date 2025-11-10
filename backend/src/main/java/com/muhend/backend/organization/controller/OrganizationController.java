@@ -1,6 +1,7 @@
 package com.muhend.backend.organization.controller;
 
 import com.muhend.backend.organization.dto.AddUserToOrganizationRequest;
+import com.muhend.backend.organization.dto.ChangePricingPlanRequest;
 import com.muhend.backend.organization.dto.CreateOrganizationRequest;
 import com.muhend.backend.organization.dto.OrganizationDto;
 import com.muhend.backend.organization.dto.OrganizationUserDto;
@@ -146,6 +147,21 @@ public class OrganizationController {
             @PathVariable Long id,
             @Valid @RequestBody UpdateQuotaRequest request) {
         OrganizationDto organization = organizationService.updateMonthlyQuota(id, request.getMonthlyQuota());
+        return ResponseEntity.ok(organization);
+    }
+    
+    @PutMapping("/{id}/pricing-plan")
+    @Operation(
+        summary = "Changer le plan tarifaire d'une organisation",
+        description = "Change le plan tarifaire d'une organisation. " +
+                     "Le quota mensuel sera mis à jour selon le plan sélectionné. " +
+                     "Nécessite le rôle ADMIN.",
+        security = @SecurityRequirement(name = "bearerAuth")
+    )
+    public ResponseEntity<OrganizationDto> changePricingPlan(
+            @PathVariable Long id,
+            @Valid @RequestBody ChangePricingPlanRequest request) {
+        OrganizationDto organization = organizationService.changePricingPlan(id, request.getPricingPlanId());
         return ResponseEntity.ok(organization);
     }
 }

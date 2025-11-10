@@ -1,9 +1,11 @@
 package com.muhend.backend.user.controller;
 
+import com.muhend.backend.organization.dto.ChangePricingPlanRequest;
 import com.muhend.backend.organization.dto.OrganizationDto;
 import com.muhend.backend.organization.service.OrganizationService;
 import com.muhend.backend.usage.model.UsageLog;
 import com.muhend.backend.usage.repository.UsageLogRepository;
+import jakarta.validation.Valid;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -240,6 +242,32 @@ public class UserController {
         quota.put("isUnlimited", organization.getMonthlyQuota() == null);
 
         return ResponseEntity.ok(quota);
+    }
+    
+    /**
+     * Change le plan tarifaire de l'organisation de l'utilisateur connecté.
+     */
+    @PutMapping("/organization/pricing-plan")
+    @Operation(
+        summary = "Changer le plan tarifaire de mon organisation",
+        description = "Change le plan tarifaire de l'organisation de l'utilisateur connecté. " +
+                     "Le quota mensuel sera mis à jour selon le plan sélectionné.",
+        security = @SecurityRequirement(name = "bearerAuth")
+    )
+    public ResponseEntity<OrganizationDto> changeMyOrganizationPricingPlan(
+            @Valid @RequestBody ChangePricingPlanRequest request) {
+        String userId = getCurrentUserId();
+        if (userId == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        Long organizationId = organizationService.getOrganizationIdByUserId(userId);
+        if (organizationId == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        OrganizationDto organization = organizationService.changePricingPlan(organizationId, request.getPricingPlanId());
+        return ResponseEntity.ok(organization);
     }
 
     /**
