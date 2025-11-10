@@ -53,14 +53,16 @@ import {AsyncPipe} from '@angular/common';
       </div>
     </nav>
     
-    @if (isAuthenticated$ | async && isAdmin()) {
-      <nav class="admin-navbar">
-        <div class="admin-nav-links">
-          <a routerLink="/admin/stats" class="admin-nav-link">📊 Stats</a>
-          <a routerLink="/admin/organizations" class="admin-nav-link">🏢 Organisations</a>
-          <a routerLink="/admin/invoices" class="admin-nav-link">📄 Factures (Admin)</a>
-        </div>
-      </nav>
+    @if (isAuthenticated$ | async) {
+      @if (isAdmin()) {
+        <nav class="admin-navbar">
+          <div class="admin-nav-links">
+            <a routerLink="/admin/stats" class="admin-nav-link">📊 Stats</a>
+            <a routerLink="/admin/organizations" class="admin-nav-link">🏢 Organisations</a>
+            <a routerLink="/admin/invoices" class="admin-nav-link">📄 Factures (Admin)</a>
+          </div>
+        </nav>
+      }
     }
   `,
   styles: [`
