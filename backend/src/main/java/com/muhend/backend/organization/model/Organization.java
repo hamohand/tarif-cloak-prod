@@ -25,8 +25,8 @@ public class Organization {
     @Column(name = "name", nullable = false, length = 255)
     private String name;
     
-    @Column(name = "email", nullable = true, length = 255)
-    private String email; // Email de contact de l'organisation
+    @Column(name = "email", nullable = false, unique = true, length = 255)
+    private String email; // Email de l'organisation (identifiant unique)
     
     @Column(name = "monthly_quota", nullable = true)
     private Integer monthlyQuota; // null = quota illimité

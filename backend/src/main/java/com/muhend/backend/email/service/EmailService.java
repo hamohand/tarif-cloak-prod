@@ -202,6 +202,64 @@ public class EmailService {
     }
 
     /**
+     * Envoie un email de confirmation d'inscription.
+     *
+     * @param organizationEmail Email de l'organisation (destinataire)
+     * @param userEmail Email de l'utilisateur qui s'inscrit
+     * @param organizationName Nom de l'organisation
+     * @param confirmationUrl URL de confirmation
+     * @param isExistingOrganization true si l'organisation existe déjà, false si c'est une nouvelle organisation
+     */
+    public void sendRegistrationConfirmationEmail(
+            String organizationEmail,
+            String userEmail,
+            String organizationName,
+            String confirmationUrl,
+            boolean isExistingOrganization) {
+        try {
+            Context context = new Context();
+            context.setVariable("organizationEmail", organizationEmail != null ? organizationEmail : "");
+            context.setVariable("userEmail", userEmail != null ? userEmail : "");
+            context.setVariable("organizationName", organizationName != null ? organizationName : "");
+            context.setVariable("confirmationUrl", confirmationUrl != null ? confirmationUrl : "");
+            context.setVariable("isExistingOrganization", isExistingOrganization);
+            context.setVariable("frontendUrl", getFrontendUrl());
+
+            String htmlContent = templateEngine.process("registration-confirmation", context);
+            if (htmlContent == null || htmlContent.trim().isEmpty()) {
+                throw new RuntimeException("Le template d'email a généré un contenu vide");
+            }
+
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            String from = fromEmail != null ? fromEmail : "noreply@enclume-numerique.com";
+            String fromNameValue = fromName != null ? fromName : "Enclume Numérique";
+            
+            helper.setFrom(from, fromNameValue);
+            helper.setTo(organizationEmail != null ? organizationEmail : "");
+            
+            String subject = isExistingOrganization 
+                ? "Nouvelle demande d'inscription - " + (organizationName != null ? organizationName : "")
+                : "Confirmation de création d'organisation - " + (organizationName != null ? organizationName : "");
+            helper.setSubject(subject);
+            helper.setText(htmlContent, true);
+
+            mailSender.send(message);
+            log.info("Email de confirmation d'inscription envoyé à {} pour l'organisation {}", 
+                organizationEmail, organizationName);
+        } catch (MessagingException e) {
+            log.error("Erreur lors de l'envoi de l'email de confirmation d'inscription à {}: {}", 
+                organizationEmail, e.getMessage(), e);
+            throw new RuntimeException("Erreur lors de l'envoi de l'email", e);
+        } catch (Exception e) {
+            log.error("Erreur inattendue lors de l'envoi de l'email de confirmation à {}: {}", 
+                organizationEmail, e.getMessage(), e);
+            throw new RuntimeException("Erreur lors de l'envoi de l'email", e);
+        }
+    }
+
+    /**
      * Récupère l'URL du frontend depuis les variables d'environnement ou utilise une valeur par défaut.
      */
     private String getFrontendUrl() {

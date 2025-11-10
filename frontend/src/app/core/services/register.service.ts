@@ -11,7 +11,7 @@ export interface RegisterUser {
   lastName: string;
   password: string;
   organizationName: string;
-  organizationEmail?: string;
+  organizationEmail: string; // Obligatoire
 }
 
 export interface KeycloakUser {

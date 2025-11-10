@@ -47,16 +47,14 @@ public class OrganizationService {
             throw new IllegalArgumentException("Une organisation avec le nom '" + request.getName() + "' existe déjà");
         }
         
-        // Vérifier si une organisation avec cet email existe déjà (si email fourni)
-        if (request.getEmail() != null && !request.getEmail().trim().isEmpty()) {
-            if (organizationRepository.existsByEmail(request.getEmail())) {
-                throw new IllegalArgumentException("Une organisation avec l'email '" + request.getEmail() + "' existe déjà");
-            }
+        // Vérifier si une organisation avec cet email existe déjà (email est obligatoire et unique)
+        if (organizationRepository.existsByEmail(request.getEmail())) {
+            throw new IllegalArgumentException("Une organisation avec l'email '" + request.getEmail() + "' existe déjà");
         }
         
         Organization organization = new Organization();
         organization.setName(request.getName());
-        organization.setEmail(request.getEmail() != null && !request.getEmail().trim().isEmpty() ? request.getEmail().trim() : null);
+        organization.setEmail(request.getEmail().trim());
         organization = organizationRepository.save(organization);
         
         log.info("Organisation créée: id={}, name={}, email={}", organization.getId(), organization.getName(), organization.getEmail());

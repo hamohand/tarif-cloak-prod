@@ -1,0 +1,296 @@
+package com.muhend.backend.auth.service;
+
+import com.muhend.backend.auth.dto.UserRegistrationRequest;
+import com.muhend.backend.auth.model.PendingRegistration;
+import com.muhend.backend.auth.repository.PendingRegistrationRepository;
+import com.muhend.backend.email.service.EmailService;
+import com.muhend.backend.organization.model.Organization;
+import com.muhend.backend.organization.repository.OrganizationRepository;
+import com.muhend.backend.organization.service.OrganizationService;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.security.SecureRandom;
+import java.time.LocalDateTime;
+import java.util.Base64;
+import java.util.List;
+import java.util.Optional;
+
+/**
+ * Service pour gérer les inscriptions en attente de confirmation.
+ */
+@Service
+@Slf4j
+public class PendingRegistrationService {
+    
+    private final PendingRegistrationRepository pendingRegistrationRepository;
+    private final OrganizationRepository organizationRepository;
+    private final OrganizationService organizationService;
+    private final KeycloakAdminService keycloakAdminService;
+    private final EmailService emailService;
+    
+    @Value("${registration.confirmation.token.expiration.hours:24}")
+    private int tokenExpirationHours;
+    
+    @Value("${frontend.url:http://localhost:4200}")
+    private String frontendUrl;
+    
+    private static final SecureRandom secureRandom = new SecureRandom();
+    
+    public PendingRegistrationService(
+            PendingRegistrationRepository pendingRegistrationRepository,
+            OrganizationRepository organizationRepository,
+            OrganizationService organizationService,
+            KeycloakAdminService keycloakAdminService,
+            EmailService emailService) {
+        this.pendingRegistrationRepository = pendingRegistrationRepository;
+        this.organizationRepository = organizationRepository;
+        this.organizationService = organizationService;
+        this.keycloakAdminService = keycloakAdminService;
+        this.emailService = emailService;
+    }
+    
+    /**
+     * Crée une inscription en attente et envoie un email de confirmation.
+     */
+    @Transactional
+    public PendingRegistration createPendingRegistration(UserRegistrationRequest request) {
+        // Vérifier si l'organisation existe déjà
+        boolean organizationExists = organizationRepository.existsByEmail(request.getOrganizationEmail());
+        
+        // Vérifier si une inscription en attente existe déjà pour cet email d'organisation
+        List<PendingRegistration> existingPending = pendingRegistrationRepository
+            .findByOrganizationEmail(request.getOrganizationEmail());
+        
+        if (!existingPending.isEmpty()) {
+            log.info("Inscription en attente déjà existante pour l'email d'organisation: {}", 
+                request.getOrganizationEmail());
+        }
+        
+        // Générer un token de confirmation
+        String confirmationToken = generateConfirmationToken();
+        
+        // Créer l'inscription en attente
+        PendingRegistration pending = new PendingRegistration();
+        pending.setUsername(request.getUsername());
+        pending.setEmail(request.getEmail());
+        pending.setFirstName(request.getFirstName());
+        pending.setLastName(request.getLastName());
+        pending.setPassword(request.getPassword()); // TODO: Hasher le mot de passe si nécessaire
+        pending.setOrganizationName(request.getOrganizationName());
+        pending.setOrganizationEmail(request.getOrganizationEmail());
+        pending.setConfirmationToken(confirmationToken);
+        pending.setExpiresAt(LocalDateTime.now().plusHours(tokenExpirationHours));
+        pending.setConfirmed(false);
+        
+        pending = pendingRegistrationRepository.save(pending);
+        log.info("Inscription en attente créée: id={}, organizationEmail={}, token={}", 
+            pending.getId(), pending.getOrganizationEmail(), confirmationToken);
+        
+        // Envoyer l'email de confirmation
+        sendConfirmationEmail(pending, organizationExists);
+        
+        return pending;
+    }
+    
+    /**
+     * Confirme une inscription en attente et crée l'utilisateur et l'organisation.
+     */
+    @Transactional
+    public void confirmRegistration(String token) {
+        Optional<PendingRegistration> pendingOpt = pendingRegistrationRepository
+            .findByConfirmationToken(token);
+        
+        if (pendingOpt.isEmpty()) {
+            throw new IllegalArgumentException("Token de confirmation invalide");
+        }
+        
+        PendingRegistration pending = pendingOpt.get();
+        
+        // Vérifier si déjà confirmé
+        if (pending.getConfirmed()) {
+            throw new IllegalStateException("Cette inscription a déjà été confirmée");
+        }
+        
+        // Vérifier si le token a expiré
+        if (pending.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new IllegalStateException("Le token de confirmation a expiré");
+        }
+        
+        // Vérifier si l'organisation existe déjà
+        Optional<Organization> existingOrg = organizationRepository
+            .findByEmail(pending.getOrganizationEmail());
+        
+        if (existingOrg.isPresent()) {
+            // Organisation existe déjà : créer uniquement l'utilisateur et l'associer
+            log.info("Organisation existante trouvée: {}", existingOrg.get().getEmail());
+            createUserAndAssociateToOrganization(pending, existingOrg.get().getId());
+        } else {
+            // Organisation n'existe pas : créer l'organisation et l'utilisateur
+            log.info("Création d'une nouvelle organisation: {}", pending.getOrganizationEmail());
+            createOrganizationAndUser(pending);
+        }
+        
+        // Marquer comme confirmé
+        pending.setConfirmed(true);
+        pendingRegistrationRepository.save(pending);
+        
+        log.info("Inscription confirmée avec succès: token={}", token);
+    }
+    
+    /**
+     * Crée une organisation et un utilisateur.
+     */
+    private void createOrganizationAndUser(PendingRegistration pending) {
+        try {
+            // 1. Créer l'utilisateur dans Keycloak
+            UserRegistrationRequest keycloakRequest = new UserRegistrationRequest();
+            keycloakRequest.setUsername(pending.getUsername());
+            keycloakRequest.setEmail(pending.getEmail());
+            keycloakRequest.setFirstName(pending.getFirstName());
+            keycloakRequest.setLastName(pending.getLastName());
+            keycloakRequest.setPassword(pending.getPassword());
+            
+            jakarta.ws.rs.core.Response response = keycloakAdminService.createUser(keycloakRequest);
+            int status = response.getStatus();
+            
+            if (status != jakarta.ws.rs.core.Response.Status.CREATED.getStatusCode()) {
+                response.close();
+                throw new RuntimeException("Erreur lors de la création de l'utilisateur dans Keycloak");
+            }
+            
+            // 2. Récupérer l'ID Keycloak
+            String keycloakUserId = keycloakAdminService.getUserIdFromResponse(response);
+            if (keycloakUserId == null) {
+                keycloakUserId = keycloakAdminService.getUserIdByUsername(pending.getUsername());
+            }
+            
+            if (keycloakUserId == null) {
+                response.close();
+                throw new RuntimeException("Impossible de récupérer l'ID Keycloak de l'utilisateur créé");
+            }
+            
+            response.close();
+            log.info("Utilisateur Keycloak créé: {}", keycloakUserId);
+            
+            // 3. Créer l'organisation
+            com.muhend.backend.organization.dto.CreateOrganizationRequest orgRequest = 
+                new com.muhend.backend.organization.dto.CreateOrganizationRequest();
+            orgRequest.setName(pending.getOrganizationName());
+            orgRequest.setEmail(pending.getOrganizationEmail());
+            
+            var organizationDto = organizationService.createOrganization(orgRequest);
+            log.info("Organisation créée: id={}, name={}", organizationDto.getId(), organizationDto.getName());
+            
+            // 4. Associer l'utilisateur à l'organisation
+            organizationService.addUserToOrganization(organizationDto.getId(), keycloakUserId);
+            log.info("Utilisateur {} associé à l'organisation {}", keycloakUserId, organizationDto.getId());
+            
+        } catch (Exception e) {
+            log.error("Erreur lors de la création de l'organisation et de l'utilisateur: {}", e.getMessage(), e);
+            throw new RuntimeException("Erreur lors de la création: " + e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * Crée un utilisateur et l'associe à une organisation existante.
+     */
+    private void createUserAndAssociateToOrganization(PendingRegistration pending, Long organizationId) {
+        try {
+            // 1. Créer l'utilisateur dans Keycloak
+            UserRegistrationRequest keycloakRequest = new UserRegistrationRequest();
+            keycloakRequest.setUsername(pending.getUsername());
+            keycloakRequest.setEmail(pending.getEmail());
+            keycloakRequest.setFirstName(pending.getFirstName());
+            keycloakRequest.setLastName(pending.getLastName());
+            keycloakRequest.setPassword(pending.getPassword());
+            
+            jakarta.ws.rs.core.Response response = keycloakAdminService.createUser(keycloakRequest);
+            int status = response.getStatus();
+            
+            if (status != jakarta.ws.rs.core.Response.Status.CREATED.getStatusCode()) {
+                response.close();
+                throw new RuntimeException("Erreur lors de la création de l'utilisateur dans Keycloak");
+            }
+            
+            // 2. Récupérer l'ID Keycloak
+            String keycloakUserId = keycloakAdminService.getUserIdFromResponse(response);
+            if (keycloakUserId == null) {
+                keycloakUserId = keycloakAdminService.getUserIdByUsername(pending.getUsername());
+            }
+            
+            if (keycloakUserId == null) {
+                response.close();
+                throw new RuntimeException("Impossible de récupérer l'ID Keycloak de l'utilisateur créé");
+            }
+            
+            response.close();
+            log.info("Utilisateur Keycloak créé: {}", keycloakUserId);
+            
+            // 3. Associer l'utilisateur à l'organisation existante
+            organizationService.addUserToOrganization(organizationId, keycloakUserId);
+            log.info("Utilisateur {} associé à l'organisation existante {}", keycloakUserId, organizationId);
+            
+        } catch (Exception e) {
+            log.error("Erreur lors de la création de l'utilisateur et de l'association: {}", e.getMessage(), e);
+            throw new RuntimeException("Erreur lors de la création: " + e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * Génère un token de confirmation sécurisé.
+     */
+    private String generateConfirmationToken() {
+        byte[] randomBytes = new byte[32];
+        secureRandom.nextBytes(randomBytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes);
+    }
+    
+    /**
+     * Envoie un email de confirmation.
+     */
+    private void sendConfirmationEmail(PendingRegistration pending, boolean organizationExists) {
+        try {
+            String confirmationUrl = frontendUrl + "/auth/confirm-registration?token=" + pending.getConfirmationToken();
+            
+            if (organizationExists) {
+                // Email pour rejoindre une organisation existante
+                emailService.sendRegistrationConfirmationEmail(
+                    pending.getOrganizationEmail(),
+                    pending.getEmail(),
+                    pending.getOrganizationName(),
+                    confirmationUrl,
+                    true // isExistingOrganization
+                );
+            } else {
+                // Email pour créer une nouvelle organisation
+                emailService.sendRegistrationConfirmationEmail(
+                    pending.getOrganizationEmail(),
+                    pending.getEmail(),
+                    pending.getOrganizationName(),
+                    confirmationUrl,
+                    false // isExistingOrganization
+                );
+            }
+            
+            log.info("Email de confirmation envoyé à: {}", pending.getOrganizationEmail());
+        } catch (Exception e) {
+            log.error("Erreur lors de l'envoi de l'email de confirmation: {}", e.getMessage(), e);
+            // Ne pas faire échouer la création de l'inscription en attente si l'email échoue
+        }
+    }
+    
+    /**
+     * Nettoie les inscriptions expirées (peut être appelé par un scheduled task).
+     */
+    @Transactional
+    public void cleanupExpiredRegistrations() {
+        LocalDateTime now = LocalDateTime.now();
+        List<PendingRegistration> expired = pendingRegistrationRepository.findExpiredUnconfirmed(now);
+        log.info("Nettoyage de {} inscriptions expirées", expired.size());
+        pendingRegistrationRepository.deleteExpiredUnconfirmed(now);
+    }
+}
+

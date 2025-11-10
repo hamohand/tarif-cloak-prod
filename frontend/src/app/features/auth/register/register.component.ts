@@ -126,7 +126,7 @@ import { RegisterService } from '../../../core/services/register.service';
           </div>
 
           <div class="form-group">
-            <label for="organizationEmail">Email de l'organisation</label>
+            <label for="organizationEmail">Email de l'organisation *</label>
             <input
               type="email"
               id="organizationEmail"
@@ -139,7 +139,7 @@ import { RegisterService } from '../../../core/services/register.service';
                 {{ getErrorMessage('organizationEmail') }}
               </div>
             }
-            <small class="form-hint">Optionnel - Email de contact de l'organisation</small>
+            <small class="form-hint">Un email de confirmation sera envoyé à cette adresse pour valider l'inscription</small>
           </div>
 
           <div class="form-actions">
@@ -332,7 +332,7 @@ export class RegisterComponent {
     password: ['', [Validators.required, Validators.minLength(6)]],
     confirmPassword: ['', [Validators.required]],
     organizationName: ['', [Validators.required, Validators.minLength(1), Validators.maxLength(255)]],
-    organizationEmail: ['', [Validators.email, Validators.maxLength(255)]]
+    organizationEmail: ['', [Validators.required, Validators.email, Validators.maxLength(255)]]
   }, {
     validators: this.passwordMatchValidator
   });
@@ -396,18 +396,15 @@ export class RegisterComponent {
         lastName: userData.lastName,
         password: userData.password,
         organizationName: userData.organizationName,
-        organizationEmail: userData.organizationEmail || undefined
+        organizationEmail: userData.organizationEmail
       }).subscribe({
         next: (response) => {
           this.isLoading = false;
-          const orgName = response.organizationName || userData.organizationName;
-          this.successMessage = `Compte et organisation "${orgName}" créés avec succès ! Vous pouvez maintenant vous connecter.`;
+          const orgEmail = response.organizationEmail || userData.organizationEmail;
+          this.successMessage = response.message || `Un email de confirmation a été envoyé à ${orgEmail}. Veuillez vérifier votre boîte de réception et cliquer sur le lien de confirmation pour finaliser votre inscription.`;
           // Réinitialiser le formulaire
           this.registerForm.reset();
-          // Rediriger vers login après 3 secondes
-          setTimeout(() => {
-            this.router.navigate(['/auth/login']);
-          }, 3000);
+          // Ne pas rediriger automatiquement, l'utilisateur doit confirmer par email
         },
         error: (error) => {
           this.isLoading = false;
