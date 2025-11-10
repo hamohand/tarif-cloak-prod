@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.DynamicInsert;
+import org.hibernate.annotations.DynamicUpdate;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -16,6 +18,8 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@DynamicInsert
+@DynamicUpdate
 public class PricingPlan {
     
     @Id
@@ -28,10 +32,10 @@ public class PricingPlan {
     @Column(name = "description", length = 500)
     private String description;
     
-    @Column(name = "price_per_month", nullable = true, columnDefinition = "NUMERIC(10,2) NULL")
+    @Column(name = "price_per_month", columnDefinition = "NUMERIC(10,2)")
     private BigDecimal pricePerMonth; // Prix mensuel en USD (null pour les plans facturés à la requête)
     
-    @Column(name = "price_per_request", nullable = true, columnDefinition = "NUMERIC(10,2) NULL")
+    @Column(name = "price_per_request", columnDefinition = "NUMERIC(10,2)")
     private BigDecimal pricePerRequest; // Prix par requête en USD (null pour les plans mensuels)
     
     @Column(name = "monthly_quota", nullable = true)

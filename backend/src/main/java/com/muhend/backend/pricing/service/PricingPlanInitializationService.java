@@ -2,9 +2,11 @@ package com.muhend.backend.pricing.service;
 
 import com.muhend.backend.pricing.model.PricingPlan;
 import com.muhend.backend.pricing.repository.PricingPlanRepository;
-import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,15 +14,17 @@ import java.math.BigDecimal;
 
 /**
  * Service pour initialiser les plans tarifaires par défaut.
+ * S'exécute après la correction du schéma de la table.
  */
 @Service
 @Slf4j
+@Order(2)
 public class PricingPlanInitializationService {
     
     @Autowired
     private PricingPlanRepository pricingPlanRepository;
     
-    @PostConstruct
+    @EventListener(ApplicationReadyEvent.class)
     @Transactional
     public void initializePricingPlans() {
         log.info("Vérification et initialisation des plans tarifaires par défaut...");
