@@ -24,8 +24,14 @@ import {AsyncPipe} from '@angular/common';
           <a routerLink="/dashboard" class="nav-link">Tableau de bord</a>
           <a routerLink="/invoices" class="nav-link invoices-link">
             📄 Factures
-            @if (newInvoicesCount > 0) {
-              <span class="invoice-badge">{{ newInvoicesCount }}</span>
+            @if (newInvoicesCount > 0 || overdueInvoicesCount > 0) {
+              <span class="invoice-badge" [class.overdue-badge]="overdueInvoicesCount > 0">
+                @if (overdueInvoicesCount > 0) {
+                  ⚠️ {{ overdueInvoicesCount }}
+                } @else {
+                  {{ newInvoicesCount }}
+                }
+              </span>
             }
           </a>
           <a routerLink="/alerts" class="nav-link alerts-link">
@@ -233,6 +239,22 @@ import {AsyncPipe} from '@angular/common';
     .invoice-badge {
       background: #3498db;
     }
+
+    .invoice-badge.overdue-badge {
+      background: #e74c3c;
+      animation: pulse-red 2s infinite;
+    }
+
+    @keyframes pulse-red {
+      0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.7);
+      }
+      50% {
+        transform: scale(1.1);
+        box-shadow: 0 0 0 5px rgba(231, 76, 60, 0);
+      }
+    }
     
     @keyframes pulse {
       0%, 100% {
@@ -254,17 +276,21 @@ export class NavbarComponent implements OnInit, OnDestroy {
   isAuthenticated$!: Observable<boolean>;
   alertCount = 0;
   newInvoicesCount = 0;
+  overdueInvoicesCount = 0;
   private previousInvoicesCount: number | null = null;
+  private previousOverdueInvoicesCount: number | null = null;
   private refreshSubscription?: Subscription;
 
   ngOnInit() {
     this.isAuthenticated$ = this.authService.isAuthenticated();
     this.loadAlertCount();
     this.loadNewInvoicesCount();
+    this.loadOverdueInvoicesCount();
     // Rafraîchir les compteurs toutes les 30 secondes
     this.refreshSubscription = interval(30000).subscribe(() => {
       this.loadAlertCount();
       this.loadNewInvoicesCount();
+      this.loadOverdueInvoicesCount();
     });
   }
 
@@ -331,6 +357,43 @@ export class NavbarComponent implements OnInit, OnDestroy {
       }
     });
   }
+
+  loadOverdueInvoicesCount() {
+    this.isAuthenticated$.subscribe(isAuthenticated => {
+      if (isAuthenticated) {
+        this.invoiceService.getOverdueInvoicesCount().subscribe({
+          next: (response) => {
+            const newCount = response.count;
+            
+            // Afficher une notification si une nouvelle facture en retard est détectée
+            if (this.previousOverdueInvoicesCount !== null && newCount > this.previousOverdueInvoicesCount) {
+              const diff = newCount - this.previousOverdueInvoicesCount;
+              if (diff === 1) {
+                this.notificationService.warning(`Une facture est maintenant en retard !`);
+              } else {
+                this.notificationService.warning(`${diff} factures sont maintenant en retard !`);
+              }
+            }
+            
+            this.overdueInvoicesCount = newCount;
+            if (this.previousOverdueInvoicesCount === null) {
+              this.previousOverdueInvoicesCount = newCount;
+            } else {
+              this.previousOverdueInvoicesCount = newCount;
+            }
+          },
+          error: (err) => {
+            console.error('Erreur lors du chargement du compteur de factures en retard:', err);
+            this.overdueInvoicesCount = 0;
+          }
+        });
+      } else {
+        this.overdueInvoicesCount = 0;
+        this.previousOverdueInvoicesCount = null;
+      }
+    });
+  }
+
   login() {
     this.router.navigate(['/auth/login']);
   }

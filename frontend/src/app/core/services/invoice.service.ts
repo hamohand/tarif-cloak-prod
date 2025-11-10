@@ -90,6 +90,13 @@ export class InvoiceService {
   }
 
   /**
+   * Compte les factures en retard (OVERDUE) de l'utilisateur connecté.
+   */
+  getOverdueInvoicesCount(): Observable<{ count: number }> {
+    return this.http.get<{ count: number }>(`${this.apiUrl}/my-invoices/overdue-count`);
+  }
+
+  /**
    * Récupère toutes les factures (admin uniquement).
    */
   getAllInvoices(): Observable<Invoice[]> {

@@ -52,5 +52,15 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
      * Récupère les factures non consultées d'une organisation.
      */
     List<Invoice> findByOrganizationIdAndViewedAtIsNullOrderByCreatedAtDesc(Long organizationId);
+    
+    /**
+     * Récupère les factures en attente (PENDING) dont la date d'échéance est dépassée.
+     */
+    List<Invoice> findByStatusAndDueDateBefore(Invoice.InvoiceStatus status, LocalDate date);
+    
+    /**
+     * Compte les factures en retard (OVERDUE) d'une organisation.
+     */
+    long countByOrganizationIdAndStatus(Long organizationId, Invoice.InvoiceStatus status);
 }
 

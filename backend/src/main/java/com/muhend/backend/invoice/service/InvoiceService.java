@@ -14,6 +14,7 @@ import com.muhend.backend.organization.service.OrganizationService;
 import com.muhend.backend.usage.model.UsageLog;
 import com.muhend.backend.usage.repository.UsageLogRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -402,6 +403,13 @@ public class InvoiceService {
     }
     
     /**
+     * Compte les factures en retard (OVERDUE) d'une organisation.
+     */
+    public long countOverdueInvoices(Long organizationId) {
+        return invoiceRepository.countByOrganizationIdAndStatus(organizationId, Invoice.InvoiceStatus.OVERDUE);
+    }
+    
+    /**
      * Marque une facture comme consultée.
      */
     @Transactional
@@ -613,6 +621,116 @@ public class InvoiceService {
                 invoices.size(), yearMonth.format(DateTimeFormatter.ofPattern("yyyy-MM")));
         
         return invoices;
+    }
+    
+    /**
+     * Tâche planifiée pour marquer automatiquement les factures en retard (OVERDUE).
+     * Exécutée quotidiennement à 9h00 du matin.
+     */
+    @Scheduled(cron = "0 0 9 * * ?") // Tous les jours à 9h00
+    @Transactional
+    public void markOverdueInvoices() {
+        log.info("Démarrage de la vérification des factures en retard...");
+        
+        LocalDate today = LocalDate.now();
+        List<Invoice> overdueInvoices = invoiceRepository.findByStatusAndDueDateBefore(
+                Invoice.InvoiceStatus.PENDING, today);
+        
+        if (overdueInvoices.isEmpty()) {
+            log.info("Aucune facture en retard trouvée.");
+            return;
+        }
+        
+        log.info("{} facture(s) en retard trouvée(s).", overdueInvoices.size());
+        
+        for (Invoice invoice : overdueInvoices) {
+            try {
+                // Marquer comme en retard
+                invoice.setStatus(Invoice.InvoiceStatus.OVERDUE);
+                invoice = invoiceRepository.save(invoice);
+                
+                log.info("Facture {} marquée comme en retard (date d'échéance: {})",
+                        invoice.getInvoiceNumber(), invoice.getDueDate());
+                
+                // Envoyer un email de rappel
+                InvoiceDto invoiceDto = toDto(invoice);
+                OrganizationDto organization = organizationService.getOrganizationById(invoice.getOrganizationId());
+                if (organization != null) {
+                    sendOverdueInvoiceReminderEmail(invoiceDto, organization);
+                }
+                
+            } catch (Exception e) {
+                log.error("Erreur lors du traitement de la facture en retard {}: {}",
+                        invoice.getInvoiceNumber(), e.getMessage(), e);
+            }
+        }
+        
+        log.info("Vérification des factures en retard terminée. {} facture(s) traitée(s).", overdueInvoices.size());
+    }
+    
+    /**
+     * Envoie un email de rappel pour une facture en retard.
+     */
+    private void sendOverdueInvoiceReminderEmail(InvoiceDto invoice, OrganizationDto organization) {
+        try {
+            // Collecter les emails des destinataires
+            List<String> recipientEmails = new ArrayList<>();
+
+            // Ajouter l'email de l'organisation s'il existe
+            if (organization.getEmail() != null && !organization.getEmail().trim().isEmpty()) {
+                recipientEmails.add(organization.getEmail().trim());
+            }
+
+            // Récupérer les utilisateurs de l'organisation et leurs emails depuis Keycloak
+            List<OrganizationUserDto> organizationUsers = organizationService.getUsersByOrganization(organization.getId());
+            List<String> keycloakUserIds = organizationUsers.stream()
+                    .map(OrganizationUserDto::getKeycloakUserId)
+                    .collect(Collectors.toList());
+
+            // Récupérer les emails des utilisateurs depuis Keycloak
+            List<String> userEmails = keycloakAdminService.getUserEmails(keycloakUserIds);
+            recipientEmails.addAll(userEmails);
+
+            // Supprimer les doublons
+            recipientEmails = recipientEmails.stream()
+                    .distinct()
+                    .filter(email -> email != null && !email.trim().isEmpty())
+                    .collect(Collectors.toList());
+
+            if (recipientEmails.isEmpty()) {
+                log.warn("Aucun email trouvé pour envoyer le rappel de facture en retard {} à l'organisation {}",
+                        invoice.getInvoiceNumber(), organization.getName());
+                return;
+            }
+
+            // Formater les dates et le montant
+            String periodStartFormatted = invoice.getPeriodStart().format(DATE_FORMATTER);
+            String periodEndFormatted = invoice.getPeriodEnd().format(DATE_FORMATTER);
+            String dueDateFormatted = invoice.getDueDate().format(DATE_FORMATTER);
+            String totalAmountFormatted = String.format("%.2f", invoice.getTotalAmount());
+            
+            // Calculer le nombre de jours de retard
+            long daysOverdue = java.time.temporal.ChronoUnit.DAYS.between(invoice.getDueDate(), LocalDate.now());
+
+            // Envoyer l'email à tous les destinataires
+            emailService.sendOverdueInvoiceReminderEmailToMultiple(
+                    recipientEmails,
+                    organization.getName(),
+                    invoice.getInvoiceNumber(),
+                    periodStartFormatted,
+                    periodEndFormatted,
+                    dueDateFormatted,
+                    totalAmountFormatted,
+                    daysOverdue,
+                    invoice.getId()
+            );
+
+            log.info("Email de rappel de facture en retard {} envoyé à {} destinataire(s) pour l'organisation {}",
+                    invoice.getInvoiceNumber(), recipientEmails.size(), organization.getName());
+        } catch (Exception e) {
+            log.error("Erreur lors de l'envoi de l'email de rappel pour la facture en retard {}: {}",
+                    invoice.getInvoiceNumber(), e.getMessage(), e);
+        }
     }
 }
 

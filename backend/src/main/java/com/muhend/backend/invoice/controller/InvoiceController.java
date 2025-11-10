@@ -143,6 +143,31 @@ public class InvoiceController {
     }
     
     /**
+     * Compte les factures en retard (OVERDUE) de l'utilisateur connecté.
+     */
+    @GetMapping("/my-invoices/overdue-count")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Compter les factures en retard",
+            description = "Retourne le nombre de factures en retard (OVERDUE) de l'organisation de l'utilisateur connecté.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    public ResponseEntity<Map<String, Object>> getOverdueInvoicesCount() {
+        String userId = getCurrentUserId();
+        if (userId == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        
+        Long organizationId = organizationService.getOrganizationIdByUserId(userId);
+        if (organizationId == null) {
+            return ResponseEntity.ok(Map.of("count", 0L));
+        }
+        
+        long count = invoiceService.countOverdueInvoices(organizationId);
+        return ResponseEntity.ok(Map.of("count", count));
+    }
+    
+    /**
      * Marque une facture comme consultée (pour l'utilisateur connecté).
      */
     @PutMapping("/my-invoices/{id}/mark-viewed")
