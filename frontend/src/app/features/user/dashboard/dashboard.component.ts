@@ -54,7 +54,7 @@ Chart.register(...registerables);
               @if (currentPlan) {
                 <div class="plan-info">
                   <p><strong>Plan actuel:</strong> {{ currentPlan.name }}</p>
-                  <p><strong>Prix:</strong> ${{ currentPlan.pricePerMonth }}/mois</p>
+                  <p><strong>Prix:</strong> \${{ currentPlan.pricePerMonth }}/mois</p>
                   @if (currentPlan.monthlyQuota) {
                     <p><strong>Quota:</strong> {{ currentPlan.monthlyQuota | number }} requêtes/mois</p>
                   } @else {
@@ -71,7 +71,7 @@ Chart.register(...registerables);
                 <option [value]="null">Aucun plan (gratuit)</option>
                 @for (plan of pricingPlans; track plan.id) {
                   <option [value]="plan.id" [selected]="plan.id === organization.pricingPlanId">
-                    {{ plan.name }} - ${{ plan.pricePerMonth }}/mois
+                    {{ plan.name }} - \${{ plan.pricePerMonth }}/mois
                     @if (plan.monthlyQuota) {
                       ({{ plan.monthlyQuota | number }} requêtes/mois)
                     } @else {

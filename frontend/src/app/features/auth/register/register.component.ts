@@ -160,7 +160,7 @@ import { CommonModule } from '@angular/common';
                 <option [value]="null">Aucun plan (gratuit)</option>
                 @for (plan of pricingPlans; track plan.id) {
                   <option [value]="plan.id">
-                    {{ plan.name }} - ${{ plan.pricePerMonth }}/mois
+                    {{ plan.name }} - \${{ plan.pricePerMonth }}/mois
                     @if (plan.monthlyQuota) {
                       ({{ plan.monthlyQuota | number }} requêtes/mois)
                     } @else {
