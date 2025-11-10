@@ -216,6 +216,19 @@ public class EmailService {
             String organizationName,
             String confirmationUrl,
             boolean isExistingOrganization) {
+        // Vérifier que la configuration SMTP est valide
+        String smtpUsername = System.getenv("SMTP_USERNAME");
+        String smtpPassword = System.getenv("SMTP_PASSWORD");
+        if (smtpUsername == null || smtpUsername.trim().isEmpty() || 
+            smtpPassword == null || smtpPassword.trim().isEmpty()) {
+            log.error("Configuration SMTP incomplète : SMTP_USERNAME et/ou SMTP_PASSWORD ne sont pas définis. " +
+                     "Veuillez configurer ces variables d'environnement dans votre fichier .env");
+            throw new IllegalStateException(
+                "Configuration SMTP manquante. Les variables SMTP_USERNAME et SMTP_PASSWORD doivent être définies. " +
+                "Consultez ENV_VARIABLES.md pour plus d'informations."
+            );
+        }
+        
         try {
             Context context = new Context();
             context.setVariable("organizationEmail", organizationEmail != null ? organizationEmail : "");
