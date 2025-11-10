@@ -362,6 +362,31 @@ public class InvoiceService {
     }
     
     /**
+     * Compte les nouvelles factures non consultées d'une organisation.
+     */
+    public long countNewInvoices(Long organizationId) {
+        return invoiceRepository.countByOrganizationIdAndViewedAtIsNull(organizationId);
+    }
+    
+    /**
+     * Marque une facture comme consultée.
+     */
+    @Transactional
+    public InvoiceDto markInvoiceAsViewed(Long invoiceId) {
+        Invoice invoice = invoiceRepository.findById(invoiceId)
+                .orElseThrow(() -> new IllegalArgumentException("Facture non trouvée avec l'ID: " + invoiceId));
+        
+        // Marquer comme consultée seulement si ce n'est pas déjà fait
+        if (invoice.getViewedAt() == null) {
+            invoice.setViewedAt(LocalDateTime.now());
+            invoice = invoiceRepository.save(invoice);
+            log.info("Facture {} marquée comme consultée", invoice.getInvoiceNumber());
+        }
+        
+        return toDto(invoice);
+    }
+    
+    /**
      * Convertit une Invoice en DTO.
      */
     private InvoiceDto toDto(Invoice invoice) {
@@ -379,6 +404,7 @@ public class InvoiceService {
         dto.setDueDate(invoice.getDueDate());
         dto.setPaidAt(invoice.getPaidAt());
         dto.setNotes(invoice.getNotes());
+        dto.setViewedAt(invoice.getViewedAt());
         
         // Récupérer les lignes de facture
         List<InvoiceItem> items = invoiceItemRepository.findByInvoiceIdOrderById(invoice.getId());

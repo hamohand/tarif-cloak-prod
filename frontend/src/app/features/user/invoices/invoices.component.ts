@@ -84,9 +84,12 @@ import { NotificationService } from '../../../core/services/notification.service
             </thead>
             <tbody>
               @for (invoice of paginatedInvoices; track invoice.id) {
-                <tr>
+                <tr [class.new-invoice]="!invoice.viewedAt">
                   <td>
                     <strong>{{ invoice.invoiceNumber }}</strong>
+                    @if (!invoice.viewedAt) {
+                      <span class="new-badge">Nouveau</span>
+                    }
                   </td>
                   <td>
                     {{ formatDate(invoice.periodStart) }} - {{ formatDate(invoice.periodEnd) }}
@@ -237,6 +240,35 @@ import { NotificationService } from '../../../core/services/notification.service
     .status-cancelled {
       background: #e0e0e0;
       color: #666;
+    }
+
+    .new-badge {
+      display: inline-block;
+      margin-left: 0.5rem;
+      padding: 0.15rem 0.5rem;
+      background: #3498db;
+      color: white;
+      border-radius: 10px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      animation: pulse 2s infinite;
+    }
+
+    .new-invoice {
+      background: #e8f4f8 !important;
+    }
+
+    .new-invoice:hover {
+      background: #d0e8f0 !important;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.7;
+      }
     }
 
     .btn {

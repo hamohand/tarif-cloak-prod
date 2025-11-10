@@ -61,6 +61,9 @@ public class Invoice {
     @Column(name = "notes", length = 1000)
     private String notes;
     
+    @Column(name = "viewed_at")
+    private LocalDateTime viewedAt;
+    
     @PrePersist
     protected void onCreate() {
         if (createdAt == null) {

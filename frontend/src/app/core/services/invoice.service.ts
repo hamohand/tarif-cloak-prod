@@ -17,6 +17,7 @@ export interface Invoice {
   dueDate: string;
   paidAt?: string | null;
   notes?: string | null;
+  viewedAt?: string | null;
   items?: InvoiceItem[];
   totalRequests?: number;
   totalTokens?: number;
@@ -71,6 +72,21 @@ export class InvoiceService {
     return this.http.get(`${this.apiUrl}/my-invoices/${id}/pdf`, {
       responseType: 'blob'
     });
+  }
+
+  /**
+   * Compte les nouvelles factures non consultées de l'utilisateur connecté.
+   */
+  getNewInvoicesCount(): Observable<{ count: number }> {
+    return this.http.get<{ count: number }>(`${this.apiUrl}/my-invoices/new-count`);
+  }
+
+  /**
+   * Marque une facture comme consultée (pour l'utilisateur connecté).
+   * Note: Les factures sont automatiquement marquées comme consultées lors de la récupération.
+   */
+  markInvoiceAsViewed(id: number): Observable<Invoice> {
+    return this.http.put<Invoice>(`${this.apiUrl}/my-invoices/${id}/mark-viewed`, {});
   }
 
   /**

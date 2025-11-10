@@ -3,6 +3,8 @@ import { Router, RouterLink } from '@angular/router';
 import { Observable, interval, Subscription } from 'rxjs';
 import { AuthService } from '../../../core/services/auth.service';
 import { AlertService } from '../../../core/services/alert.service';
+import { InvoiceService } from '../../../core/services/invoice.service';
+import { NotificationService } from '../../../core/services/notification.service';
 import {AsyncPipe} from '@angular/common';
 
 @Component({
@@ -20,7 +22,12 @@ import {AsyncPipe} from '@angular/common';
         @if (isAuthenticated$ | async) {
           <a routerLink="/recherche" class="nav-link">Tariff</a>
           <a routerLink="/dashboard" class="nav-link">Tableau de bord</a>
-          <a routerLink="/invoices" class="nav-link">Factures</a>
+          <a routerLink="/invoices" class="nav-link invoices-link">
+            📄 Factures
+            @if (newInvoicesCount > 0) {
+              <span class="invoice-badge">{{ newInvoicesCount }}</span>
+            }
+          </a>
           <a routerLink="/alerts" class="nav-link alerts-link">
             🔔 Alertes
             @if (alertCount > 0) {
@@ -201,11 +208,11 @@ import {AsyncPipe} from '@angular/common';
       transform: translateY(0);
     }
 
-    .alerts-link {
+    .alerts-link, .invoices-link {
       position: relative;
     }
 
-    .alert-badge {
+    .alert-badge, .invoice-badge {
       position: absolute;
       top: -5px;
       right: -5px;
@@ -223,6 +230,10 @@ import {AsyncPipe} from '@angular/common';
       animation: pulse 2s infinite;
     }
 
+    .invoice-badge {
+      background: #3498db;
+    }
+    
     @keyframes pulse {
       0%, 100% {
         transform: scale(1);
@@ -237,17 +248,23 @@ export class NavbarComponent implements OnInit, OnDestroy {
   private authService = inject(AuthService);
   private router = inject(Router);
   private alertService = inject(AlertService);
+  private invoiceService = inject(InvoiceService);
+  private notificationService = inject(NotificationService);
 
   isAuthenticated$!: Observable<boolean>;
   alertCount = 0;
+  newInvoicesCount = 0;
+  private previousInvoicesCount: number | null = null;
   private refreshSubscription?: Subscription;
 
   ngOnInit() {
     this.isAuthenticated$ = this.authService.isAuthenticated();
     this.loadAlertCount();
-    // Rafraîchir le compteur toutes les 30 secondes
+    this.loadNewInvoicesCount();
+    // Rafraîchir les compteurs toutes les 30 secondes
     this.refreshSubscription = interval(30000).subscribe(() => {
       this.loadAlertCount();
+      this.loadNewInvoicesCount();
     });
   }
 
@@ -271,6 +288,46 @@ export class NavbarComponent implements OnInit, OnDestroy {
         });
       } else {
         this.alertCount = 0;
+      }
+    });
+  }
+
+  loadNewInvoicesCount() {
+    this.isAuthenticated$.subscribe(isAuthenticated => {
+      if (isAuthenticated) {
+        this.invoiceService.getNewInvoicesCount().subscribe({
+          next: (response) => {
+            const newCount = response.count;
+            
+            // Afficher une notification si une nouvelle facture est détectée
+            // (seulement après la première vérification, pour éviter de notifier au chargement initial)
+            if (this.previousInvoicesCount !== null && newCount > this.previousInvoicesCount) {
+              const diff = newCount - this.previousInvoicesCount;
+              if (diff === 1) {
+                this.notificationService.info(`Une nouvelle facture est disponible !`);
+              } else {
+                this.notificationService.info(`${diff} nouvelles factures sont disponibles !`);
+              }
+            }
+            
+            this.newInvoicesCount = newCount;
+            // Initialiser ou mettre à jour le compteur précédent
+            if (this.previousInvoicesCount === null) {
+              // Première vérification : initialiser sans notifier
+              this.previousInvoicesCount = newCount;
+            } else {
+              // Mettre à jour pour les vérifications suivantes
+              this.previousInvoicesCount = newCount;
+            }
+          },
+          error: (err) => {
+            console.error('Erreur lors du chargement du compteur de factures:', err);
+            this.newInvoicesCount = 0;
+          }
+        });
+      } else {
+        this.newInvoicesCount = 0;
+        this.previousInvoicesCount = null;
       }
     });
   }

@@ -42,5 +42,15 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
      * Récupère la dernière facture d'une organisation.
      */
     Optional<Invoice> findFirstByOrganizationIdOrderByCreatedAtDesc(Long organizationId);
+    
+    /**
+     * Compte les factures non consultées d'une organisation (viewedAt est null).
+     */
+    long countByOrganizationIdAndViewedAtIsNull(Long organizationId);
+    
+    /**
+     * Récupère les factures non consultées d'une organisation.
+     */
+    List<Invoice> findByOrganizationIdAndViewedAtIsNullOrderByCreatedAtDesc(Long organizationId);
 }
 

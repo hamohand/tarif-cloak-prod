@@ -84,12 +84,13 @@ public class InvoiceController {
     
     /**
      * Récupère une facture par son ID (pour l'utilisateur connecté).
+     * Marque automatiquement la facture comme consultée.
      */
     @GetMapping("/my-invoices/{id}")
     @PreAuthorize("isAuthenticated()")
     @Operation(
             summary = "Récupérer une de mes factures",
-            description = "Retourne une facture spécifique de l'organisation de l'utilisateur connecté.",
+            description = "Retourne une facture spécifique de l'organisation de l'utilisateur connecté et la marque comme consultée.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
     public ResponseEntity<InvoiceDto> getMyInvoice(@PathVariable Long id) {
@@ -110,6 +111,66 @@ public class InvoiceController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         
+        // Marquer automatiquement comme consultée
+        invoice = invoiceService.markInvoiceAsViewed(id);
+        
+        return ResponseEntity.ok(invoice);
+    }
+    
+    /**
+     * Compte les nouvelles factures non consultées de l'utilisateur connecté.
+     */
+    @GetMapping("/my-invoices/new-count")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Compter les nouvelles factures",
+            description = "Retourne le nombre de nouvelles factures non consultées de l'organisation de l'utilisateur connecté.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    public ResponseEntity<Map<String, Object>> getNewInvoicesCount() {
+        String userId = getCurrentUserId();
+        if (userId == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        
+        Long organizationId = organizationService.getOrganizationIdByUserId(userId);
+        if (organizationId == null) {
+            return ResponseEntity.ok(Map.of("count", 0L));
+        }
+        
+        long count = invoiceService.countNewInvoices(organizationId);
+        return ResponseEntity.ok(Map.of("count", count));
+    }
+    
+    /**
+     * Marque une facture comme consultée (pour l'utilisateur connecté).
+     */
+    @PutMapping("/my-invoices/{id}/mark-viewed")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Marquer une facture comme consultée",
+            description = "Marque une facture comme consultée. Nécessite que la facture appartienne à l'organisation de l'utilisateur connecté.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    public ResponseEntity<InvoiceDto> markInvoiceAsViewed(@PathVariable Long id) {
+        String userId = getCurrentUserId();
+        if (userId == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        
+        Long organizationId = organizationService.getOrganizationIdByUserId(userId);
+        if (organizationId == null) {
+            return ResponseEntity.notFound().build();
+        }
+        
+        InvoiceDto invoice = invoiceService.getInvoiceById(id);
+        
+        // Vérifier que la facture appartient à l'organisation de l'utilisateur
+        if (!invoice.getOrganizationId().equals(organizationId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        
+        invoice = invoiceService.markInvoiceAsViewed(id);
         return ResponseEntity.ok(invoice);
     }
     

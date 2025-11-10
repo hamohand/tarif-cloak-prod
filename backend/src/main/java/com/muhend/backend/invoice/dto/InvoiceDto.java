@@ -31,6 +31,7 @@ public class InvoiceDto {
     private LocalDate dueDate;
     private LocalDateTime paidAt;
     private String notes;
+    private LocalDateTime viewedAt;
     private List<InvoiceItemDto> items;
     
     // Statistiques d'utilisation pour la période
