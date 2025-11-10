@@ -359,12 +359,14 @@ public class InvoiceService {
     
     /**
      * Met à jour le statut d'une facture.
+     * Envoie un email de notification si le statut est mis à PENDING.
      */
     @Transactional
     public InvoiceDto updateInvoiceStatus(Long invoiceId, Invoice.InvoiceStatus status, String notes) {
         Invoice invoice = invoiceRepository.findById(invoiceId)
                 .orElseThrow(() -> new IllegalArgumentException("Facture non trouvée avec l'ID: " + invoiceId));
         
+        Invoice.InvoiceStatus previousStatus = invoice.getStatus();
         invoice.setStatus(status);
         if (notes != null && !notes.trim().isEmpty()) {
             invoice.setNotes(notes);
@@ -376,9 +378,20 @@ public class InvoiceService {
         
         invoice = invoiceRepository.save(invoice);
         
-        log.info("Statut de la facture {} mis à jour: {}", invoice.getInvoiceNumber(), status);
+        log.info("Statut de la facture {} mis à jour: {} -> {}", invoice.getInvoiceNumber(), previousStatus, status);
         
-        return toDto(invoice);
+        InvoiceDto invoiceDto = toDto(invoice);
+        
+        // Envoyer un email de notification si le statut est mis à PENDING
+        // (seulement si le statut précédent n'était pas déjà PENDING pour éviter les doublons)
+        if (status == Invoice.InvoiceStatus.PENDING && previousStatus != Invoice.InvoiceStatus.PENDING) {
+            OrganizationDto organization = organizationService.getOrganizationById(invoice.getOrganizationId());
+            if (organization != null) {
+                sendInvoiceNotificationEmail(invoiceDto, organization);
+            }
+        }
+        
+        return invoiceDto;
     }
     
     /**
@@ -476,8 +489,16 @@ public class InvoiceService {
     /**
      * Envoie un email de notification pour une nouvelle facture.
      * Envoie l'email à l'organisation et à tous les utilisateurs de l'organisation.
+     * L'email est envoyé uniquement si le statut de la facture est PENDING (en attente).
      */
     private void sendInvoiceNotificationEmail(InvoiceDto invoice, OrganizationDto organization) {
+        // Envoyer l'email uniquement si le statut est PENDING
+        if (invoice.getStatus() != Invoice.InvoiceStatus.PENDING) {
+            log.debug("Email de notification non envoyé pour la facture {} car le statut est {} (attendu: PENDING)",
+                    invoice.getInvoiceNumber(), invoice.getStatus());
+            return;
+        }
+        
         try {
             // Collecter les emails des destinataires
             List<String> recipientEmails = new ArrayList<>();
