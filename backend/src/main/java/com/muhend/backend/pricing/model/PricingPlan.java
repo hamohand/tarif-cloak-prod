@@ -28,11 +28,17 @@ public class PricingPlan {
     @Column(name = "description", length = 500)
     private String description;
     
-    @Column(name = "price_per_month", nullable = false, precision = 10, scale = 2)
-    private BigDecimal pricePerMonth; // Prix mensuel en USD
+    @Column(name = "price_per_month", nullable = true, precision = 10, scale = 2)
+    private BigDecimal pricePerMonth; // Prix mensuel en USD (null pour les plans facturés à la requête)
+    
+    @Column(name = "price_per_request", nullable = true, precision = 10, scale = 2)
+    private BigDecimal pricePerRequest; // Prix par requête en USD (null pour les plans mensuels)
     
     @Column(name = "monthly_quota", nullable = true)
-    private Integer monthlyQuota; // null = quota illimité
+    private Integer monthlyQuota; // null = quota illimité ou plan facturé à la requête
+    
+    @Column(name = "trial_period_days", nullable = true)
+    private Integer trialPeriodDays; // Nombre de jours de période d'essai (null si pas un plan d'essai)
     
     @Column(name = "features", columnDefinition = "TEXT")
     private String features; // JSON ou texte décrivant les fonctionnalités

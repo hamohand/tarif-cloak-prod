@@ -19,6 +19,7 @@ public class OrganizationDto {
     private String email; // Email de contact de l'organisation
     private Integer monthlyQuota; // null = quota illimité
     private Long pricingPlanId; // ID du plan tarifaire
+    private LocalDateTime trialExpiresAt; // Date d'expiration du plan d'essai (null si pas un plan d'essai)
     private LocalDateTime createdAt;
     
     // Pour les réponses avec le nombre d'utilisateurs

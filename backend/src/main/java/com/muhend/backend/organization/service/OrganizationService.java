@@ -67,12 +67,17 @@ public class OrganizationService {
         // Si un plan tarifaire est spécifié, le valider et l'associer
         if (request.getPricingPlanId() != null) {
             try {
-                pricingPlanService.getPricingPlanById(request.getPricingPlanId());
+                var plan = pricingPlanService.getPricingPlanById(request.getPricingPlanId());
                 organization.setPricingPlanId(request.getPricingPlanId());
                 // Le quota peut être défini par le plan tarifaire
-                var plan = pricingPlanService.getPricingPlanById(request.getPricingPlanId());
                 if (plan.getMonthlyQuota() != null) {
                     organization.setMonthlyQuota(plan.getMonthlyQuota());
+                }
+                // Si c'est un plan d'essai, définir la date d'expiration
+                if (plan.getTrialPeriodDays() != null && plan.getTrialPeriodDays() > 0) {
+                    organization.setTrialExpiresAt(LocalDateTime.now().plusDays(plan.getTrialPeriodDays()));
+                    log.info("Plan d'essai activé pour l'organisation {}: expiration dans {} jours", 
+                        organization.getName(), plan.getTrialPeriodDays());
                 }
             } catch (IllegalArgumentException e) {
                 log.warn("Plan tarifaire invalide {}: {}", request.getPricingPlanId(), e.getMessage());
@@ -315,12 +320,22 @@ public class OrganizationService {
                     // Si le plan n'a pas de quota défini, garder le quota actuel ou le mettre à null
                     // (on peut décider de laisser le quota actuel)
                 }
+                // Si c'est un plan d'essai, définir la date d'expiration
+                if (plan.getTrialPeriodDays() != null && plan.getTrialPeriodDays() > 0) {
+                    organization.setTrialExpiresAt(LocalDateTime.now().plusDays(plan.getTrialPeriodDays()));
+                    log.info("Plan d'essai activé pour l'organisation {}: expiration dans {} jours", 
+                        organization.getName(), plan.getTrialPeriodDays());
+                } else {
+                    // Si ce n'est pas un plan d'essai, réinitialiser la date d'expiration
+                    organization.setTrialExpiresAt(null);
+                }
             } catch (IllegalArgumentException e) {
                 throw new IllegalArgumentException("Plan tarifaire invalide: " + e.getMessage());
             }
         } else {
             // Permettre de retirer le plan tarifaire
             organization.setPricingPlanId(null);
+            organization.setTrialExpiresAt(null);
         }
         
         organization = organizationRepository.save(organization);
@@ -340,6 +355,7 @@ public class OrganizationService {
         dto.setEmail(organization.getEmail());
         dto.setMonthlyQuota(organization.getMonthlyQuota());
         dto.setPricingPlanId(organization.getPricingPlanId());
+        dto.setTrialExpiresAt(organization.getTrialExpiresAt());
         dto.setCreatedAt(organization.getCreatedAt());
         return dto;
     }

@@ -7,8 +7,10 @@ export interface PricingPlan {
   id: number;
   name: string;
   description?: string;
-  pricePerMonth: number;
-  monthlyQuota?: number | null; // null = quota illimité
+  pricePerMonth?: number | null; // null pour les plans facturés à la requête
+  pricePerRequest?: number | null; // null pour les plans mensuels
+  monthlyQuota?: number | null; // null = quota illimité ou plan facturé à la requête
+  trialPeriodDays?: number | null; // null si pas un plan d'essai
   features?: string;
   isActive: boolean;
   displayOrder: number;

@@ -54,9 +54,25 @@ Chart.register(...registerables);
               @if (currentPlan) {
                 <div class="plan-info">
                   <p><strong>Plan actuel:</strong> {{ currentPlan.name }}</p>
-                  <p><strong>Prix:</strong> \${{ currentPlan.pricePerMonth }}/mois</p>
-                  @if (currentPlan.monthlyQuota) {
+                  <p><strong>Prix:</strong> 
+                    @if (currentPlan.pricePerMonth !== null && currentPlan.pricePerMonth !== undefined) {
+                      @if (currentPlan.pricePerMonth === 0) {
+                        Gratuit
+                      } @else {
+                        \${{ currentPlan.pricePerMonth }}/mois
+                      }
+                    } @else if (currentPlan.pricePerRequest !== null && currentPlan.pricePerRequest !== undefined) {
+                      \${{ currentPlan.pricePerRequest }}/requête
+                    } @else {
+                      Gratuit
+                    }
+                  </p>
+                  @if (currentPlan.trialPeriodDays) {
+                    <p><strong>Période d'essai:</strong> Valable {{ currentPlan.trialPeriodDays }} jours</p>
+                  } @else if (currentPlan.monthlyQuota) {
                     <p><strong>Quota:</strong> {{ currentPlan.monthlyQuota | number }} requêtes/mois</p>
+                  } @else if (currentPlan.pricePerRequest !== null && currentPlan.pricePerRequest !== undefined) {
+                    <p><strong>Quota:</strong> Facturation à la requête</p>
                   } @else {
                     <p><strong>Quota:</strong> Illimité</p>
                   }
@@ -71,9 +87,24 @@ Chart.register(...registerables);
                 <option [value]="null">Aucun plan (gratuit)</option>
                 @for (plan of pricingPlans; track plan.id) {
                   <option [value]="plan.id" [selected]="plan.id === organization.pricingPlanId">
-                    {{ plan.name }} - \${{ plan.pricePerMonth }}/mois
-                    @if (plan.monthlyQuota) {
+                    {{ plan.name }} - 
+                    @if (plan.pricePerMonth !== null && plan.pricePerMonth !== undefined) {
+                      @if (plan.pricePerMonth === 0) {
+                        Gratuit
+                      } @else {
+                        \${{ plan.pricePerMonth }}/mois
+                      }
+                    } @else if (plan.pricePerRequest !== null && plan.pricePerRequest !== undefined) {
+                      \${{ plan.pricePerRequest }}/requête
+                    } @else {
+                      Gratuit
+                    }
+                    @if (plan.trialPeriodDays) {
+                      ({{ plan.trialPeriodDays }} jours)
+                    } @else if (plan.monthlyQuota) {
                       ({{ plan.monthlyQuota | number }} requêtes/mois)
+                    } @else if (plan.pricePerRequest !== null && plan.pricePerRequest !== undefined) {
+                      (Facturation à la requête)
                     } @else {
                       (Quota illimité)
                     }

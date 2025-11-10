@@ -64,7 +64,9 @@ public class PricingPlanService {
         dto.setName(plan.getName());
         dto.setDescription(plan.getDescription());
         dto.setPricePerMonth(plan.getPricePerMonth());
+        dto.setPricePerRequest(plan.getPricePerRequest());
         dto.setMonthlyQuota(plan.getMonthlyQuota());
+        dto.setTrialPeriodDays(plan.getTrialPeriodDays());
         dto.setFeatures(plan.getFeatures());
         dto.setIsActive(plan.getIsActive());
         dto.setDisplayOrder(plan.getDisplayOrder());

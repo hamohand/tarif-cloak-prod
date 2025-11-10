@@ -34,6 +34,9 @@ public class Organization {
     @Column(name = "pricing_plan_id", nullable = true)
     private Long pricingPlanId; // Référence au plan tarifaire
     
+    @Column(name = "trial_expires_at", nullable = true)
+    private LocalDateTime trialExpiresAt; // Date d'expiration du plan d'essai (null si pas un plan d'essai)
+    
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
     

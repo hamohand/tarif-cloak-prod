@@ -27,16 +27,32 @@ import { PricingPlanService, PricingPlan } from '../../core/services/pricing-pla
               }
               <h3>{{ plan.name }}</h3>
               <div class="price">
-                <span class="currency">$</span>
-                <span class="amount">{{ plan.pricePerMonth }}</span>
-                <span class="period">/mois</span>
+                @if (plan.pricePerMonth !== null && plan.pricePerMonth !== undefined) {
+                  @if (plan.pricePerMonth === 0) {
+                    <span class="amount">Gratuit</span>
+                  } @else {
+                    <span class="currency">$</span>
+                    <span class="amount">{{ plan.pricePerMonth }}</span>
+                    <span class="period">/mois</span>
+                  }
+                } @else if (plan.pricePerRequest !== null && plan.pricePerRequest !== undefined) {
+                  <span class="currency">$</span>
+                  <span class="amount">{{ plan.pricePerRequest }}</span>
+                  <span class="period">/requête</span>
+                } @else {
+                  <span class="amount">Gratuit</span>
+                }
               </div>
               @if (plan.description) {
                 <p class="description">{{ plan.description }}</p>
               }
               <div class="quota">
-                @if (plan.monthlyQuota) {
+                @if (plan.trialPeriodDays) {
+                  <strong>Valable {{ plan.trialPeriodDays }} jours</strong>
+                } @else if (plan.monthlyQuota) {
                   <strong>{{ plan.monthlyQuota | number }} requêtes/mois</strong>
+                } @else if (plan.pricePerRequest !== null && plan.pricePerRequest !== undefined) {
+                  <strong>Facturation à la requête</strong>
                 } @else {
                   <strong>Quota illimité</strong>
                 }

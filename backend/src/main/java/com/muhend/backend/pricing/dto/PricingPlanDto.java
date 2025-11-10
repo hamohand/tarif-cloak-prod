@@ -17,8 +17,10 @@ public class PricingPlanDto {
     private Long id;
     private String name;
     private String description;
-    private BigDecimal pricePerMonth;
-    private Integer monthlyQuota; // null = quota illimité
+    private BigDecimal pricePerMonth; // null pour les plans facturés à la requête
+    private BigDecimal pricePerRequest; // null pour les plans mensuels
+    private Integer monthlyQuota; // null = quota illimité ou plan facturé à la requête
+    private Integer trialPeriodDays; // null si pas un plan d'essai
     private String features;
     private Boolean isActive;
     private Integer displayOrder;
