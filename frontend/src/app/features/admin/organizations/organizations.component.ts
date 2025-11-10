@@ -206,6 +206,7 @@ import { NotificationService } from '../../../core/services/notification.service
                       <thead>
                         <tr>
                           <th>ID Utilisateur Keycloak</th>
+                          <th>Nom d'utilisateur</th>
                           <th>Date d'ajout</th>
                           <th>Actions</th>
                         </tr>
@@ -214,6 +215,7 @@ import { NotificationService } from '../../../core/services/notification.service
                         @for (user of organizationUsers; track user.id) {
                           <tr>
                             <td>{{ truncateUserId(user.keycloakUserId) }}</td>
+                            <td><strong>{{ user.username || 'N/A' }}</strong></td>
                             <td>{{ formatDate(user.joinedAt) }}</td>
                             <td>
                               <button class="btn btn-sm btn-danger" (click)="removeUser(org.id, user.keycloakUserId)">Retirer</button>
@@ -256,8 +258,22 @@ import { NotificationService } from '../../../core/services/notification.service
   styles: [`
     .organizations-container {
       padding: 2rem;
-      max-width: 1200px;
+      max-width: 100%;
+      width: 100%;
       margin: 0 auto;
+      box-sizing: border-box;
+    }
+
+    @media (min-width: 1200px) {
+      .organizations-container {
+        max-width: 1200px;
+      }
+    }
+
+    @media (min-width: 1600px) {
+      .organizations-container {
+        max-width: 1400px;
+      }
     }
 
     h2 {
@@ -428,8 +444,15 @@ import { NotificationService } from '../../../core/services/notification.service
       border-collapse: collapse;
       background: #e0e0e0;
       border-radius: 8px;
-      overflow: hidden;
+      overflow-x: auto;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      display: block;
+    }
+
+    @media (min-width: 768px) {
+      .organizations-table {
+        display: table;
+      }
     }
 
     .organizations-table th,
@@ -530,6 +553,14 @@ import { NotificationService } from '../../../core/services/notification.service
       width: 100%;
       border-collapse: collapse;
       margin: 1rem 0;
+      overflow-x: auto;
+      display: block;
+    }
+
+    @media (min-width: 768px) {
+      .users-table {
+        display: table;
+      }
     }
 
     .users-table th,

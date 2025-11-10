@@ -22,6 +22,7 @@ export interface OrganizationStats {
 
 export interface UserStats {
   keycloakUserId: string;
+  username?: string; // Nom d'utilisateur depuis Keycloak
   requestCount: number;
   totalCostUsd: number;
   totalTokens: number;
@@ -30,6 +31,7 @@ export interface UserStats {
 export interface UsageLog {
   id: number;
   keycloakUserId: string;
+  username?: string; // Nom d'utilisateur depuis Keycloak
   organizationId: number | null;
   endpoint: string;
   searchTerm: string;
@@ -72,6 +74,7 @@ export interface UpdateQuotaRequest {
 export interface OrganizationUser {
   id: number;
   keycloakUserId: string;
+  username?: string; // Nom d'utilisateur depuis Keycloak
   organizationId: number;
   joinedAt: string;
 }

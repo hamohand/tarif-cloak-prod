@@ -1,6 +1,7 @@
 package com.muhend.backend.admin.controller;
 
 import com.muhend.backend.admin.service.EndpointDiscoveryService;
+import com.muhend.backend.auth.service.KeycloakAdminService;
 import com.muhend.backend.organization.dto.OrganizationDto;
 import com.muhend.backend.organization.service.OrganizationService;
 import com.muhend.backend.usage.model.UsageLog;
@@ -33,6 +34,7 @@ public class AdminController {
     private final EndpointDiscoveryService endpointDiscoveryService;
     private final UsageLogService usageLogService;
     private final OrganizationService organizationService;
+    private final KeycloakAdminService keycloakAdminService;
 
     @GetMapping("/endpoints")
     @PreAuthorize("hasRole('ADMIN')")
@@ -270,6 +272,13 @@ public class AdminController {
                 Map<String, Object> userStats = userStatsMap.computeIfAbsent(userId, k -> {
                     Map<String, Object> stats = new HashMap<>();
                     stats.put("keycloakUserId", userId);
+                    // Récupérer le nom d'utilisateur depuis Keycloak
+                    try {
+                        String username = keycloakAdminService.getUsername(userId);
+                        stats.put("username", username != null ? username : "N/A");
+                    } catch (Exception e) {
+                        stats.put("username", "N/A");
+                    }
                     stats.put("requestCount", 0L);
                     stats.put("totalCostUsd", 0.0);
                     stats.put("totalTokens", 0L);
@@ -298,6 +307,13 @@ public class AdminController {
         Map<String, Object> map = new HashMap<>();
         map.put("id", log.getId());
         map.put("keycloakUserId", log.getKeycloakUserId());
+        // Récupérer le nom d'utilisateur depuis Keycloak
+        try {
+            String username = keycloakAdminService.getUsername(log.getKeycloakUserId());
+            map.put("username", username != null ? username : "N/A");
+        } catch (Exception e) {
+            map.put("username", "N/A");
+        }
         map.put("organizationId", log.getOrganizationId());
         map.put("endpoint", log.getEndpoint());
         map.put("searchTerm", log.getSearchTerm());

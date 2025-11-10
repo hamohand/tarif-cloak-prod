@@ -1,5 +1,6 @@
 package com.muhend.backend.organization.service;
 
+import com.muhend.backend.auth.service.KeycloakAdminService;
 import com.muhend.backend.organization.dto.CreateOrganizationRequest;
 import com.muhend.backend.organization.dto.OrganizationDto;
 import com.muhend.backend.organization.dto.OrganizationUserDto;
@@ -28,13 +29,16 @@ public class OrganizationService {
     private final OrganizationRepository organizationRepository;
     private final OrganizationUserRepository organizationUserRepository;
     private final UsageLogRepository usageLogRepository;
+    private final KeycloakAdminService keycloakAdminService;
     
     public OrganizationService(OrganizationRepository organizationRepository,
                               OrganizationUserRepository organizationUserRepository,
-                              UsageLogRepository usageLogRepository) {
+                              UsageLogRepository usageLogRepository,
+                              KeycloakAdminService keycloakAdminService) {
         this.organizationRepository = organizationRepository;
         this.organizationUserRepository = organizationUserRepository;
         this.usageLogRepository = usageLogRepository;
+        this.keycloakAdminService = keycloakAdminService;
     }
     
     /**
@@ -310,6 +314,17 @@ public class OrganizationService {
         dto.setOrganizationId(organizationUser.getOrganization().getId());
         dto.setOrganizationName(organizationUser.getOrganization().getName());
         dto.setKeycloakUserId(organizationUser.getKeycloakUserId());
+        
+        // Récupérer le nom d'utilisateur depuis Keycloak
+        try {
+            String username = keycloakAdminService.getUsername(organizationUser.getKeycloakUserId());
+            dto.setUsername(username != null ? username : "N/A");
+        } catch (Exception e) {
+            log.warn("Impossible de récupérer le nom d'utilisateur pour {}: {}", 
+                organizationUser.getKeycloakUserId(), e.getMessage());
+            dto.setUsername("N/A");
+        }
+        
         dto.setJoinedAt(organizationUser.getJoinedAt());
         return dto;
     }

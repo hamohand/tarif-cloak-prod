@@ -40,11 +40,6 @@ import {AsyncPipe} from '@angular/common';
               <span class="alert-badge">{{ alertCount }}</span>
             }
           </a>
-          @if (isAdmin()) {
-            <a routerLink="/admin/stats" class="nav-link">Stats</a>
-            <a routerLink="/admin/organizations" class="nav-link">Organisations</a>
-            <a routerLink="/admin/invoices" class="nav-link">Factures (Admin)</a>
-          }
         }
       </div>
 
@@ -57,6 +52,16 @@ import {AsyncPipe} from '@angular/common';
         }
       </div>
     </nav>
+    
+    @if (isAuthenticated$ | async && isAdmin()) {
+      <nav class="admin-navbar">
+        <div class="admin-nav-links">
+          <a routerLink="/admin/stats" class="admin-nav-link">📊 Stats</a>
+          <a routerLink="/admin/organizations" class="admin-nav-link">🏢 Organisations</a>
+          <a routerLink="/admin/invoices" class="admin-nav-link">📄 Factures (Admin)</a>
+        </div>
+      </nav>
+    }
   `,
   styles: [`
     .navbar {
@@ -262,6 +267,72 @@ import {AsyncPipe} from '@angular/common';
       }
       50% {
         transform: scale(1.1);
+      }
+    }
+
+    .admin-navbar {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 0.75rem 2rem;
+      background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+      color: white;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      position: relative;
+      z-index: 999;
+    }
+
+    .admin-nav-links {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .admin-nav-link {
+      color: white;
+      text-decoration: none;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      transition: all 0.3s ease;
+      position: relative;
+      font-weight: 500;
+      font-size: 0.95rem;
+    }
+
+    .admin-nav-link:hover {
+      background-color: rgba(255, 255, 255, 0.15);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    @media (max-width: 768px) {
+      .navbar {
+        flex-wrap: wrap;
+        padding: 1rem;
+      }
+
+      .nav-links {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+      }
+
+      .nav-link {
+        padding: 0.5rem 0.8rem;
+        font-size: 0.9rem;
+      }
+
+      .admin-navbar {
+        padding: 0.5rem 1rem;
+      }
+
+      .admin-nav-links {
+        gap: 0.5rem;
+      }
+
+      .admin-nav-link {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.85rem;
       }
     }
   `]

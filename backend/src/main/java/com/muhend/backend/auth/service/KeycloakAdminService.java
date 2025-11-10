@@ -179,4 +179,21 @@ public class KeycloakAdminService {
                 .filter(email -> email != null && !email.trim().isEmpty())
                 .collect(java.util.stream.Collectors.toList());
     }
+    
+    /**
+     * Récupère le nom d'utilisateur (username) d'un utilisateur depuis Keycloak.
+     *
+     * @param keycloakUserId ID de l'utilisateur Keycloak
+     * @return Le nom d'utilisateur ou null si non trouvé
+     */
+    public String getUsername(String keycloakUserId) {
+        try {
+            RealmResource realmResource = keycloak.realm(realm);
+            UserRepresentation user = realmResource.users().get(keycloakUserId).toRepresentation();
+            return user.getUsername();
+        } catch (Exception e) {
+            logger.error("Erreur lors de la récupération du nom d'utilisateur pour {}: {}", keycloakUserId, e.getMessage());
+            return null;
+        }
+    }
 }

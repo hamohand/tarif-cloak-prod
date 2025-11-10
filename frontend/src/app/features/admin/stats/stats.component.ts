@@ -108,6 +108,7 @@ Chart.register(...registerables);
             <thead>
               <tr>
                 <th>Utilisateur ID</th>
+                <th>Nom d'utilisateur</th>
                 <th>Requêtes</th>
                 <th>Coût (USD)</th>
                 <th>Tokens</th>
@@ -116,6 +117,7 @@ Chart.register(...registerables);
             <tbody>
               <tr *ngFor="let user of statsByUser">
                 <td>{{ truncateUserId(user.keycloakUserId) }}</td>
+                <td><strong>{{ user.username || 'N/A' }}</strong></td>
                 <td>{{ user.requestCount }}</td>
                 <td>{{ formatCurrency(user.totalCostUsd) }}</td>
                 <td>{{ formatNumber(user.totalTokens) }}</td>
@@ -136,7 +138,8 @@ Chart.register(...registerables);
             <thead>
               <tr>
                 <th>Date</th>
-                <th>Utilisateur</th>
+                <th>Utilisateur ID</th>
+                <th>Nom d'utilisateur</th>
                 <th>Endpoint</th>
                 <th>Terme de recherche</th>
                 <th>Coût (USD)</th>
@@ -147,6 +150,7 @@ Chart.register(...registerables);
               <tr *ngFor="let usage of recentUsage">
                 <td>{{ formatDate(usage.timestamp) }}</td>
                 <td>{{ truncateUserId(usage.keycloakUserId) }}</td>
+                <td><strong>{{ usage.username || 'N/A' }}</strong></td>
                 <td>{{ usage.endpoint }}</td>
                 <td>{{ usage.searchTerm }}</td>
                 <td>{{ formatCurrency(usage.costUsd || 0) }}</td>

@@ -18,6 +18,7 @@ public class OrganizationUserDto {
     private Long organizationId;
     private String organizationName;
     private String keycloakUserId;
+    private String username; // Nom d'utilisateur depuis Keycloak
     private LocalDateTime joinedAt;
 }
 
