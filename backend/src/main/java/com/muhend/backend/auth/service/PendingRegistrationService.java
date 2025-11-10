@@ -253,10 +253,15 @@ public class PendingRegistrationService {
      */
     private void sendConfirmationEmail(PendingRegistration pending, boolean organizationExists) {
         try {
+            log.info("Tentative d'envoi d'email de confirmation pour l'inscription en attente id={}, organizationEmail={}", 
+                pending.getId(), pending.getOrganizationEmail());
+            
             String confirmationUrl = frontendUrl + "/auth/confirm-registration?token=" + pending.getConfirmationToken();
+            log.debug("URL de confirmation générée: {}", confirmationUrl);
             
             if (organizationExists) {
                 // Email pour rejoindre une organisation existante
+                log.info("Envoi d'email pour rejoindre une organisation existante: {}", pending.getOrganizationName());
                 emailService.sendRegistrationConfirmationEmail(
                     pending.getOrganizationEmail(),
                     pending.getEmail(),
@@ -266,6 +271,7 @@ public class PendingRegistrationService {
                 );
             } else {
                 // Email pour créer une nouvelle organisation
+                log.info("Envoi d'email pour créer une nouvelle organisation: {}", pending.getOrganizationName());
                 emailService.sendRegistrationConfirmationEmail(
                     pending.getOrganizationEmail(),
                     pending.getEmail(),
@@ -275,10 +281,23 @@ public class PendingRegistrationService {
                 );
             }
             
-            log.info("Email de confirmation envoyé à: {}", pending.getOrganizationEmail());
+            log.info("✓ Email de confirmation envoyé avec succès à: {}", pending.getOrganizationEmail());
+        } catch (IllegalStateException e) {
+            // Erreur de configuration SMTP
+            log.error("✗ ERREUR DE CONFIGURATION SMTP lors de l'envoi de l'email de confirmation: {}", e.getMessage());
+            log.error("✗ Détails: {}", e.getCause() != null ? e.getCause().getMessage() : "Aucun détail supplémentaire");
+            // Ne pas faire échouer la création de l'inscription en attente, mais logger l'erreur
+            throw new RuntimeException("Impossible d'envoyer l'email de confirmation. Configuration SMTP manquante ou incorrecte: " + e.getMessage(), e);
         } catch (Exception e) {
-            log.error("Erreur lors de l'envoi de l'email de confirmation: {}", e.getMessage(), e);
+            log.error("✗ ERREUR lors de l'envoi de l'email de confirmation à {}: {}", 
+                pending.getOrganizationEmail(), e.getMessage(), e);
+            log.error("✗ Type d'exception: {}", e.getClass().getName());
+            if (e.getCause() != null) {
+                log.error("✗ Cause: {}", e.getCause().getMessage());
+            }
             // Ne pas faire échouer la création de l'inscription en attente si l'email échoue
+            // mais lever une exception pour que l'utilisateur soit informé
+            throw new RuntimeException("Impossible d'envoyer l'email de confirmation: " + e.getMessage(), e);
         }
     }
     
