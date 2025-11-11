@@ -37,6 +37,9 @@ public class Organization {
     @Column(name = "trial_expires_at", nullable = true)
     private LocalDateTime trialExpiresAt; // Date d'expiration du plan d'essai (null si pas un plan d'essai)
     
+    @Column(name = "stripe_customer_id", length = 255)
+    private String stripeCustomerId; // ID du client Stripe (pour éviter de créer plusieurs clients)
+    
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
     

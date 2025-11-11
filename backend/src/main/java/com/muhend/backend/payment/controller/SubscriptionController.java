@@ -1,8 +1,11 @@
 package com.muhend.backend.payment.controller;
 
 import com.muhend.backend.organization.service.OrganizationService;
+import com.muhend.backend.payment.dto.CancelSubscriptionRequest;
 import com.muhend.backend.payment.dto.SubscriptionDto;
 import com.muhend.backend.payment.service.SubscriptionService;
+import com.muhend.backend.payment.service.StripeService;
+import com.stripe.exception.StripeException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -15,6 +18,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.validation.Valid;
 import java.util.List;
 
 /**
@@ -29,6 +33,7 @@ public class SubscriptionController {
     
     private final SubscriptionService subscriptionService;
     private final OrganizationService organizationService;
+    private final StripeService stripeService;
     
     /**
      * Récupère l'ID de l'utilisateur Keycloak depuis le contexte de sécurité.
@@ -129,6 +134,56 @@ public class SubscriptionController {
         }
         
         return ResponseEntity.ok(subscription);
+    }
+    
+    /**
+     * Annule un abonnement.
+     */
+    @PostMapping("/my-subscriptions/{id}/cancel")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Annuler un abonnement",
+            description = "Annule un abonnement de l'organisation de l'utilisateur connecté. " +
+                         "L'abonnement peut être annulé immédiatement ou à la fin de la période actuelle.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    public ResponseEntity<SubscriptionDto> cancelSubscription(
+            @PathVariable Long id,
+            @Valid @RequestBody CancelSubscriptionRequest request) {
+        try {
+            String userId = getCurrentUserId();
+            if (userId == null) {
+                return ResponseEntity.badRequest().build();
+            }
+            
+            Long organizationId = organizationService.getOrganizationIdByUserId(userId);
+            if (organizationId == null) {
+                return ResponseEntity.notFound().build();
+            }
+            
+            SubscriptionDto subscription = subscriptionService.getSubscriptionById(id);
+            
+            // Vérifier que l'abonnement appartient à l'organisation de l'utilisateur
+            if (!subscription.getOrganizationId().equals(organizationId)) {
+                return ResponseEntity.status(403).build();
+            }
+            
+            // Annuler l'abonnement via Stripe
+            boolean cancelAtPeriodEnd = request.getCancelAtPeriodEnd() != null ? request.getCancelAtPeriodEnd() : true;
+            stripeService.cancelSubscription(id, cancelAtPeriodEnd);
+            
+            // Récupérer l'abonnement mis à jour
+            subscription = subscriptionService.getSubscriptionById(id);
+            
+            return ResponseEntity.ok(subscription);
+            
+        } catch (StripeException e) {
+            log.error("Erreur lors de l'annulation de l'abonnement Stripe", e);
+            return ResponseEntity.internalServerError().build();
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            log.error("Erreur lors de l'annulation de l'abonnement", e);
+            return ResponseEntity.badRequest().build();
+        }
     }
 }
 

@@ -1,7 +1,13 @@
 package com.muhend.backend.payment.controller;
 
 import com.muhend.backend.payment.config.StripeConfig;
+import com.muhend.backend.invoice.model.Invoice;
+import com.muhend.backend.invoice.repository.InvoiceRepository;
+import com.muhend.backend.organization.model.Organization;
+import com.muhend.backend.organization.repository.OrganizationRepository;
+import com.muhend.backend.payment.model.Payment;
 import com.muhend.backend.payment.model.Subscription;
+import com.muhend.backend.payment.repository.PaymentRepository;
 import com.muhend.backend.payment.repository.SubscriptionRepository;
 import com.stripe.exception.SignatureVerificationException;
 import com.stripe.model.Event;
@@ -13,6 +19,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -29,12 +36,21 @@ public class StripeWebhookController {
     
     private final StripeConfig stripeConfig;
     private final SubscriptionRepository subscriptionRepository;
+    private final PaymentRepository paymentRepository;
+    private final InvoiceRepository invoiceRepository;
+    private final OrganizationRepository organizationRepository;
     
     public StripeWebhookController(
             StripeConfig stripeConfig,
-            SubscriptionRepository subscriptionRepository) {
+            SubscriptionRepository subscriptionRepository,
+            PaymentRepository paymentRepository,
+            InvoiceRepository invoiceRepository,
+            OrganizationRepository organizationRepository) {
         this.stripeConfig = stripeConfig;
         this.subscriptionRepository = subscriptionRepository;
+        this.paymentRepository = paymentRepository;
+        this.invoiceRepository = invoiceRepository;
+        this.organizationRepository = organizationRepository;
     }
     
     /**
@@ -214,11 +230,72 @@ public class StripeWebhookController {
             return;
         }
         
-        log.info("Paiement de facture réussi: invoiceId={}, amount={}",
-                stripeInvoice.getId(), stripeInvoice.getAmountPaid());
+        log.info("Paiement de facture réussi: invoiceId={}, amount={}, subscriptionId={}",
+                stripeInvoice.getId(), stripeInvoice.getAmountPaid(), stripeInvoice.getSubscription());
         
-        // TODO: Créer/mettre à jour le paiement dans la base de données
-        // TODO: Mettre à jour le statut de la facture locale si elle existe
+        // Récupérer l'organisation via le customer
+        String customerId = stripeInvoice.getCustomer();
+        Organization organization = organizationRepository.findByStripeCustomerId(customerId)
+                .orElse(null);
+        
+        if (organization == null) {
+            log.warn("Organisation introuvable pour le client Stripe: {}", customerId);
+            return;
+        }
+        
+        // Récupérer ou créer le paiement
+        Payment payment = paymentRepository
+                .findByPaymentProviderPaymentId(stripeInvoice.getCharge())
+                .orElseGet(() -> {
+                    Payment newPayment = new Payment();
+                    newPayment.setOrganizationId(organization.getId());
+                    newPayment.setPaymentProvider("stripe");
+                    newPayment.setCurrency(stripeInvoice.getCurrency().toUpperCase());
+                    return newPayment;
+                });
+        
+        // Mettre à jour les informations du paiement
+        payment.setAmount(BigDecimal.valueOf(stripeInvoice.getAmountPaid()).divide(BigDecimal.valueOf(100))); // Convertir de centimes
+        payment.setStatus(Payment.PaymentStatus.SUCCEEDED);
+        payment.setPaymentProviderPaymentId(stripeInvoice.getCharge() != null ? stripeInvoice.getCharge() : "");
+        payment.setPaymentProviderPaymentIntentId(stripeInvoice.getPaymentIntent() != null ? stripeInvoice.getPaymentIntent() : "");
+        payment.setDescription("Paiement d'abonnement - " + stripeInvoice.getNumber());
+        payment.setInvoiceUrl(stripeInvoice.getHostedInvoiceUrl());
+        // Note: getReceiptUrl() n'existe pas dans l'API Stripe Invoice, on utilise hostedInvoiceUrl à la place
+        payment.setReceiptUrl(stripeInvoice.getHostedInvoiceUrl());
+        if (stripeInvoice.getStatusTransitions() != null && stripeInvoice.getStatusTransitions().getPaidAt() != null) {
+            payment.setPaidAt(toLocalDateTime(stripeInvoice.getStatusTransitions().getPaidAt()));
+        } else {
+            payment.setPaidAt(LocalDateTime.now());
+        }
+        
+        // Lier à l'abonnement si disponible
+        if (stripeInvoice.getSubscription() != null) {
+            subscriptionRepository.findByPaymentProviderSubscriptionId(stripeInvoice.getSubscription())
+                    .ifPresent(sub -> payment.setSubscriptionId(sub.getId()));
+        }
+        
+        paymentRepository.save(payment);
+        log.info("Paiement enregistré: id={}, organizationId={}, amount={}", 
+                payment.getId(), organization.getId(), payment.getAmount());
+        
+        // Mettre à jour le statut de la facture locale si elle existe
+        if (stripeInvoice.getMetadata() != null && stripeInvoice.getMetadata().containsKey("invoice_id")) {
+            try {
+                Long invoiceId = Long.parseLong(stripeInvoice.getMetadata().get("invoice_id"));
+                invoiceRepository.findById(invoiceId).ifPresent(invoice -> {
+                    invoice.setStatus(Invoice.InvoiceStatus.PAID);
+                    invoice.setPaidAt(LocalDateTime.now());
+                    invoice.setPaymentId(payment.getId());
+                    invoice.setPaymentProvider("stripe");
+                    invoice.setPaymentProviderInvoiceId(stripeInvoice.getId());
+                    invoiceRepository.save(invoice);
+                    log.info("Facture locale mise à jour: invoiceId={}", invoiceId);
+                });
+            } catch (NumberFormatException e) {
+                log.warn("Impossible de parser invoice_id depuis les métadonnées Stripe", e);
+            }
+        }
     }
     
     /**
@@ -231,10 +308,47 @@ public class StripeWebhookController {
             return;
         }
         
-        log.warn("Échec du paiement de facture: invoiceId={}", stripeInvoice.getId());
+        log.warn("Échec du paiement de facture: invoiceId={}, subscriptionId={}", 
+                stripeInvoice.getId(), stripeInvoice.getSubscription());
         
-        // TODO: Mettre à jour le statut de l'abonnement en PAST_DUE
-        // TODO: Notifier l'organisation
+        // Mettre à jour le statut de l'abonnement en PAST_DUE
+        if (stripeInvoice.getSubscription() != null) {
+            subscriptionRepository.findByPaymentProviderSubscriptionId(stripeInvoice.getSubscription())
+                    .ifPresent(subscription -> {
+                        subscription.setStatus(Subscription.SubscriptionStatus.PAST_DUE);
+                        subscriptionRepository.save(subscription);
+                        log.info("Abonnement mis à jour en PAST_DUE: subscriptionId={}", subscription.getId());
+                    });
+        }
+        
+        // Enregistrer l'échec du paiement
+        String customerId = stripeInvoice.getCustomer();
+        Organization organization = organizationRepository.findByStripeCustomerId(customerId)
+                .orElse(null);
+        
+        if (organization != null) {
+            Payment payment = new Payment();
+            payment.setOrganizationId(organization.getId());
+            payment.setAmount(BigDecimal.valueOf(stripeInvoice.getAmountDue()).divide(BigDecimal.valueOf(100)));
+            payment.setCurrency(stripeInvoice.getCurrency().toUpperCase());
+            payment.setStatus(Payment.PaymentStatus.FAILED);
+            payment.setPaymentProvider("stripe");
+            payment.setDescription("Échec du paiement - " + stripeInvoice.getNumber());
+            // Note: getLastPaymentError() n'existe pas dans l'API Stripe Invoice
+            // On peut utiliser attemptCount ou d'autres informations disponibles
+            payment.setFailureReason("Paiement échoué pour la facture " + stripeInvoice.getNumber());
+            
+            if (stripeInvoice.getSubscription() != null) {
+                subscriptionRepository.findByPaymentProviderSubscriptionId(stripeInvoice.getSubscription())
+                        .ifPresent(sub -> payment.setSubscriptionId(sub.getId()));
+            }
+            
+            paymentRepository.save(payment);
+            log.info("Échec de paiement enregistré: id={}, organizationId={}", 
+                    payment.getId(), organization.getId());
+        }
+        
+        // TODO: Notifier l'organisation par email
     }
     
     /**
@@ -247,10 +361,46 @@ public class StripeWebhookController {
             return;
         }
         
-        log.info("Paiement réussi: paymentIntentId={}, amount={}",
-                paymentIntent.getId(), paymentIntent.getAmount());
+        log.info("Paiement réussi: paymentIntentId={}, amount={}, customerId={}",
+                paymentIntent.getId(), paymentIntent.getAmount(), paymentIntent.getCustomer());
         
-        // TODO: Créer/mettre à jour le paiement dans la base de données
+        // Récupérer l'organisation via le customer
+        String customerId = paymentIntent.getCustomer();
+        if (customerId == null) {
+            log.warn("Customer ID manquant dans payment_intent.succeeded");
+            return;
+        }
+        
+        Organization organization = organizationRepository.findByStripeCustomerId(customerId)
+                .orElse(null);
+        
+        if (organization == null) {
+            log.warn("Organisation introuvable pour le client Stripe: {}", customerId);
+            return;
+        }
+        
+        // Récupérer ou créer le paiement
+        Payment payment = paymentRepository
+                .findByPaymentProviderPaymentIntentId(paymentIntent.getId())
+                .orElseGet(() -> {
+                    Payment newPayment = new Payment();
+                    newPayment.setOrganizationId(organization.getId());
+                    newPayment.setPaymentProvider("stripe");
+                    newPayment.setCurrency(paymentIntent.getCurrency().toUpperCase());
+                    return newPayment;
+                });
+        
+        // Mettre à jour les informations du paiement
+        payment.setAmount(BigDecimal.valueOf(paymentIntent.getAmount()).divide(BigDecimal.valueOf(100))); // Convertir de centimes
+        payment.setStatus(Payment.PaymentStatus.SUCCEEDED);
+        payment.setPaymentProviderPaymentIntentId(paymentIntent.getId());
+        payment.setPaymentMethod(paymentIntent.getPaymentMethod() != null ? paymentIntent.getPaymentMethod() : "card");
+        payment.setDescription(paymentIntent.getDescription() != null ? paymentIntent.getDescription() : "Paiement ponctuel");
+        payment.setPaidAt(LocalDateTime.now());
+        
+        paymentRepository.save(payment);
+        log.info("Paiement enregistré: id={}, organizationId={}, amount={}", 
+                payment.getId(), organization.getId(), payment.getAmount());
     }
     
     /**
@@ -263,9 +413,37 @@ public class StripeWebhookController {
             return;
         }
         
-        log.warn("Échec du paiement: paymentIntentId={}", paymentIntent.getId());
+        log.warn("Échec du paiement: paymentIntentId={}, customerId={}", 
+                paymentIntent.getId(), paymentIntent.getCustomer());
         
-        // TODO: Enregistrer l'échec du paiement
+        // Récupérer l'organisation via le customer
+        String customerId = paymentIntent.getCustomer();
+        if (customerId == null) {
+            return;
+        }
+        
+        Organization organization = organizationRepository.findByStripeCustomerId(customerId)
+                .orElse(null);
+        
+        if (organization == null) {
+            return;
+        }
+        
+        // Enregistrer l'échec du paiement
+        Payment payment = new Payment();
+        payment.setOrganizationId(organization.getId());
+        payment.setAmount(BigDecimal.valueOf(paymentIntent.getAmount()).divide(BigDecimal.valueOf(100)));
+        payment.setCurrency(paymentIntent.getCurrency().toUpperCase());
+        payment.setStatus(Payment.PaymentStatus.FAILED);
+        payment.setPaymentProvider("stripe");
+        payment.setPaymentProviderPaymentIntentId(paymentIntent.getId());
+        payment.setDescription("Échec du paiement");
+        payment.setFailureReason(paymentIntent.getLastPaymentError() != null ? 
+                paymentIntent.getLastPaymentError().getMessage() : "Paiement échoué");
+        
+        paymentRepository.save(payment);
+        log.info("Échec de paiement enregistré: id={}, organizationId={}", 
+                payment.getId(), organization.getId());
     }
     
     /**

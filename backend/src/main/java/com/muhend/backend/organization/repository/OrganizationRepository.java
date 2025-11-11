@@ -28,5 +28,10 @@ public interface OrganizationRepository extends JpaRepository<Organization, Long
      * Vérifie si une organisation existe avec cet email.
      */
     boolean existsByEmail(String email);
+    
+    /**
+     * Trouve une organisation par son ID de client Stripe.
+     */
+    java.util.Optional<Organization> findByStripeCustomerId(String stripeCustomerId);
 }
 
