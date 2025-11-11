@@ -7,6 +7,7 @@ import com.muhend.backend.organization.dto.CreateOrganizationRequest;
 import com.muhend.backend.organization.dto.OrganizationDto;
 import com.muhend.backend.organization.dto.OrganizationUserDto;
 import com.muhend.backend.organization.exception.QuotaExceededException;
+import com.muhend.backend.organization.exception.UserNotAssociatedException;
 import com.muhend.backend.organization.model.Organization;
 import com.muhend.backend.organization.model.OrganizationUser;
 import com.muhend.backend.organization.repository.OrganizationRepository;
@@ -212,18 +213,31 @@ public class OrganizationService {
     }
     
     /**
-     * Récupère l'ID de l'organisation d'un utilisateur (première organisation trouvée).
-     * Pour la Phase 2, on suppose qu'un utilisateur n'a qu'une seule organisation.
-     * @return L'ID de l'organisation ou null si l'utilisateur n'a pas d'organisation
+     * Récupère l'ID de l'organisation d'un utilisateur.
+     * EXIGE qu'un utilisateur soit associé à une organisation.
+     * Un utilisateur DOIT toujours être associé à une organisation dans cette application.
+     * 
+     * @param keycloakUserId ID Keycloak de l'utilisateur
+     * @return L'ID de l'organisation
+     * @throws UserNotAssociatedException si l'utilisateur n'a pas d'organisation
      */
     public Long getOrganizationIdByUserId(String keycloakUserId) {
         List<OrganizationUser> organizationUsers = organizationUserRepository.findByKeycloakUserId(keycloakUserId);
         if (organizationUsers.isEmpty()) {
-            return null; // L'utilisateur n'a pas d'organisation
+            throw new UserNotAssociatedException(
+                keycloakUserId, 
+                "L'utilisateur doit être associé à une organisation. Aucune organisation trouvée."
+            );
         }
         // Retourner la première organisation (on pourra améliorer cela plus tard)
         Organization organization = organizationUsers.get(0).getOrganization();
-        return organization != null ? organization.getId() : null;
+        if (organization == null) {
+            throw new UserNotAssociatedException(
+                keycloakUserId,
+                "L'organisation associée à l'utilisateur est invalide."
+            );
+        }
+        return organization.getId();
     }
     
     /**
@@ -244,18 +258,13 @@ public class OrganizationService {
      */
     public boolean checkQuota(Long organizationId) {
         if (organizationId == null) {
-            // Si l'organisation est null, on autorise (utilisateur sans organisation)
-            return true;
+            throw new IllegalArgumentException(
+                "Un utilisateur doit être associé à une organisation. organizationId ne peut pas être null."
+            );
         }
         
         Organization organization = organizationRepository.findById(organizationId)
-                .orElse(null);
-        
-        if (organization == null) {
-            // Organisation non trouvée, on autorise (non bloquant)
-            log.warn("Organisation {} non trouvée lors de la vérification du quota", organizationId);
-            return true;
-        }
+                .orElseThrow(() -> new IllegalArgumentException("Organisation non trouvée avec l'ID: " + organizationId));
         
         Integer monthlyQuota = organization.getMonthlyQuota();
         

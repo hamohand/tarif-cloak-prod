@@ -10,6 +10,7 @@ import com.muhend.backend.codesearch.service.ai.AiService;
 import com.muhend.backend.codesearch.service.ai.OpenAiService;
 import com.muhend.backend.usage.service.UsageLogService;
 import com.muhend.backend.organization.service.OrganizationService;
+import com.muhend.backend.organization.exception.UserNotAssociatedException;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -187,13 +188,18 @@ public class RechercheController {
                 return;
             }
             
-            // Récupérer l'organisation de l'utilisateur (peut être null)
-            Long organizationId = null;
+            // Récupérer l'organisation de l'utilisateur (obligatoire)
+            // Si l'utilisateur n'a pas d'organisation, on ne peut pas logger l'utilisation
+            Long organizationId;
             try {
                 organizationId = organizationService.getOrganizationIdByUserId(userId);
+            } catch (UserNotAssociatedException e) {
+                log.warn("Utilisateur {} non associé à une organisation. Logging non effectué.", userId);
+                return;
             } catch (Exception e) {
-                // Si on ne peut pas récupérer l'organisation, on continue sans (non bloquant)
-                log.debug("Impossible de récupérer l'organisation pour l'utilisateur {}: {}", userId, e.getMessage());
+                // En cas d'erreur inattendue, on ne bloque pas mais on ne log pas
+                log.warn("Erreur lors de la récupération de l'organisation pour l'utilisateur {}: {}", userId, e.getMessage());
+                return;
             }
             
             // Récupérer les informations d'utilisation depuis OpenAiService
@@ -240,27 +246,34 @@ public class RechercheController {
     /**
      * Vérifie le quota de l'organisation de l'utilisateur avant d'effectuer une recherche.
      * Phase 4 MVP : Quotas Basiques
+     * Un utilisateur DOIT être associé à une organisation pour effectuer des recherches.
      */
     private void checkQuotaBeforeSearch() {
         try {
             String userId = getCurrentUserId();
             if (userId == null) {
-                // Si on ne peut pas récupérer l'utilisateur, on autorise (non bloquant)
-                log.debug("Impossible de récupérer l'utilisateur pour la vérification du quota. Recherche autorisée.");
-                return;
+                throw new IllegalStateException("Impossible de récupérer l'utilisateur pour la vérification du quota. Recherche non autorisée.");
             }
             
+            // EXIGER une organisation (lève une exception si pas d'organisation)
             Long organizationId = organizationService.getOrganizationIdByUserId(userId);
-            if (organizationId != null) {
-                // Vérifier le quota (lève une exception si dépassé)
-                organizationService.checkQuota(organizationId);
-            }
+            
+            // Vérifier le quota (lève une exception si dépassé)
+            organizationService.checkQuota(organizationId);
+            
+        } catch (UserNotAssociatedException e) {
+            // Un utilisateur doit être associé à une organisation
+            throw new IllegalStateException("Vous devez être associé à une organisation pour effectuer des recherches.", e);
         } catch (com.muhend.backend.organization.exception.QuotaExceededException e) {
             // Relancer l'exception pour qu'elle soit gérée par le gestionnaire d'exceptions global
             throw e;
+        } catch (IllegalArgumentException e) {
+            // Erreur lors de la vérification du quota (organisation introuvable, etc.)
+            throw new IllegalStateException("Impossible de vérifier le quota. Recherche non autorisée.", e);
         } catch (Exception e) {
-            // En cas d'erreur lors de la vérification du quota, on autorise la recherche (non bloquant)
-            log.warn("Erreur lors de la vérification du quota (non bloquant): {}", e.getMessage());
+            // En cas d'erreur inattendue, on bloque la recherche pour la sécurité
+            log.error("Erreur inattendue lors de la vérification du quota: {}", e.getMessage(), e);
+            throw new IllegalStateException("Erreur lors de la vérification du quota. Recherche non autorisée.", e);
         }
     }
 

@@ -2,9 +2,11 @@ package com.muhend.backend.user.controller;
 
 import com.muhend.backend.organization.dto.ChangePricingPlanRequest;
 import com.muhend.backend.organization.dto.OrganizationDto;
+import com.muhend.backend.organization.exception.UserNotAssociatedException;
 import com.muhend.backend.organization.service.OrganizationService;
 import com.muhend.backend.usage.model.UsageLog;
 import com.muhend.backend.usage.repository.UsageLogRepository;
+import org.springframework.http.HttpStatus;
 import jakarta.validation.Valid;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -45,12 +47,13 @@ public class UserController {
 
     /**
      * Récupère l'organisation de l'utilisateur connecté.
+     * Un utilisateur DOIT toujours être associé à une organisation.
      */
     @GetMapping("/organization")
     @Operation(
         summary = "Récupérer mon organisation",
         description = "Retourne l'organisation de l'utilisateur connecté. " +
-                     "Si l'utilisateur n'a pas d'organisation, retourne null.",
+                     "Un utilisateur doit toujours être associé à une organisation.",
         security = @SecurityRequirement(name = "bearerAuth")
     )
     public ResponseEntity<OrganizationDto> getMyOrganization() {
@@ -59,13 +62,14 @@ public class UserController {
             return ResponseEntity.badRequest().build();
         }
 
-        Long organizationId = organizationService.getOrganizationIdByUserId(userId);
-        if (organizationId == null) {
-            return ResponseEntity.ok(null);
+        try {
+            Long organizationId = organizationService.getOrganizationIdByUserId(userId);
+            OrganizationDto organization = organizationService.getOrganizationById(organizationId);
+            return ResponseEntity.ok(organization);
+        } catch (UserNotAssociatedException e) {
+            log.error("Utilisateur {} non associé à une organisation", userId);
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
-
-        OrganizationDto organization = organizationService.getOrganizationById(organizationId);
-        return ResponseEntity.ok(organization);
     }
 
     /**
@@ -91,36 +95,30 @@ public class UserController {
             return ResponseEntity.badRequest().build();
         }
 
-        // Récupérer l'organisation de l'utilisateur
-        Long organizationId = organizationService.getOrganizationIdByUserId(userId);
-        
-        // Déterminer la période (par défaut, ce mois)
-        LocalDateTime startDateTime;
-        LocalDateTime endDateTime;
-        
-        if (startDate != null && endDate != null) {
-            startDateTime = startDate.atStartOfDay();
-            endDateTime = endDate.atTime(LocalTime.MAX);
-        } else {
-            // Par défaut, ce mois en cours
-            LocalDateTime now = LocalDateTime.now();
-            startDateTime = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
-            endDateTime = now.withDayOfMonth(now.toLocalDate().lengthOfMonth())
-                    .withHour(23).withMinute(59).withSecond(59).withNano(999999999);
-        }
+        try {
+            // Récupérer l'organisation de l'utilisateur (obligatoire)
+            Long organizationId = organizationService.getOrganizationIdByUserId(userId);
+            
+            // Déterminer la période (par défaut, ce mois)
+            LocalDateTime startDateTime;
+            LocalDateTime endDateTime;
+            
+            if (startDate != null && endDate != null) {
+                startDateTime = startDate.atStartOfDay();
+                endDateTime = endDate.atTime(LocalTime.MAX);
+            } else {
+                // Par défaut, ce mois en cours
+                LocalDateTime now = LocalDateTime.now();
+                startDateTime = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+                endDateTime = now.withDayOfMonth(now.toLocalDate().lengthOfMonth())
+                        .withHour(23).withMinute(59).withSecond(59).withNano(999999999);
+            }
 
-        // Récupérer les logs de l'utilisateur
-        List<UsageLog> userLogs;
-        if (organizationId != null) {
-            // Filtrer par organisation ET utilisateur
-            userLogs = usageLogRepository.findByOrganizationIdAndTimestampBetween(organizationId, startDateTime, endDateTime)
+            // Récupérer les logs de l'utilisateur (filtrer par organisation ET utilisateur)
+            List<UsageLog> userLogs = usageLogRepository.findByOrganizationIdAndTimestampBetween(organizationId, startDateTime, endDateTime)
                     .stream()
                     .filter(log -> userId.equals(log.getKeycloakUserId()))
                     .toList();
-        } else {
-            // Utilisateur sans organisation, récupérer tous ses logs
-            userLogs = usageLogRepository.findByKeycloakUserIdAndTimestampBetween(userId, startDateTime, endDateTime);
-        }
 
         // Calculer les statistiques
         long totalRequests = userLogs.size();
@@ -140,34 +138,28 @@ public class UserController {
                 .map(this::toUsageLogMap)
                 .toList();
 
-        // Statistiques du mois en cours (pour l'affichage du quota)
-        LocalDateTime startOfMonth = LocalDateTime.now().withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
-        LocalDateTime endOfMonth = LocalDateTime.now().withDayOfMonth(LocalDateTime.now().toLocalDate().lengthOfMonth())
-                .withHour(23).withMinute(59).withSecond(59).withNano(999999999);
-        
-        List<UsageLog> monthlyLogs;
-        if (organizationId != null) {
-            monthlyLogs = usageLogRepository.findByOrganizationIdAndTimestampBetween(organizationId, startOfMonth, endOfMonth)
+            // Statistiques du mois en cours (pour l'affichage du quota)
+            LocalDateTime startOfMonth = LocalDateTime.now().withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+            LocalDateTime endOfMonth = LocalDateTime.now().withDayOfMonth(LocalDateTime.now().toLocalDate().lengthOfMonth())
+                    .withHour(23).withMinute(59).withSecond(59).withNano(999999999);
+            
+            List<UsageLog> monthlyLogs = usageLogRepository.findByOrganizationIdAndTimestampBetween(organizationId, startOfMonth, endOfMonth)
                     .stream()
                     .filter(log -> userId.equals(log.getKeycloakUserId()))
                     .toList();
-        } else {
-            monthlyLogs = usageLogRepository.findByKeycloakUserIdAndTimestampBetween(userId, startOfMonth, endOfMonth);
-        }
-        long monthlyRequests = monthlyLogs.size();
+            long monthlyRequests = monthlyLogs.size();
 
-        Map<String, Object> stats = new LinkedHashMap<>();
-        stats.put("totalRequests", totalRequests);
-        stats.put("totalCostUsd", totalCost.doubleValue());
-        stats.put("totalTokens", totalTokens);
-        stats.put("monthlyRequests", monthlyRequests);
-        stats.put("recentUsage", recentUsage);
-        
-        // Ajouter les informations de quota si l'utilisateur a une organisation
-        if (organizationId != null) {
+            Map<String, Object> stats = new LinkedHashMap<>();
+            stats.put("totalRequests", totalRequests);
+            stats.put("totalCostUsd", totalCost.doubleValue());
+            stats.put("totalTokens", totalTokens);
+            stats.put("monthlyRequests", monthlyRequests);
+            stats.put("recentUsage", recentUsage);
+            
+            // Ajouter les informations de quota (l'utilisateur a toujours une organisation)
             OrganizationDto organization = organizationService.getOrganizationById(organizationId);
             if (organization != null) {
-                // Calculer l'utilisation totale de l'organisation ce mois (réutiliser startOfMonth et endOfMonth)
+                // Calculer l'utilisation totale de l'organisation ce mois
                 long organizationMonthlyUsage = usageLogRepository.countByOrganizationIdAndTimestampBetween(organizationId, startOfMonth, endOfMonth);
                 
                 Map<String, Object> quotaInfo = new LinkedHashMap<>();
@@ -182,18 +174,24 @@ public class UserController {
                         : 0.0);
                 stats.put("quotaInfo", quotaInfo);
             }
-        }
 
-        return ResponseEntity.ok(stats);
+            return ResponseEntity.ok(stats);
+        } catch (UserNotAssociatedException e) {
+            log.error("Utilisateur {} non associé à une organisation", userId);
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(Map.of("error", "Vous devez être associé à une organisation pour consulter vos statistiques."));
+        }
     }
 
     /**
      * Récupère l'état du quota de l'utilisateur connecté.
+     * Un utilisateur DOIT toujours être associé à une organisation.
      */
     @GetMapping("/quota")
     @Operation(
         summary = "Récupérer l'état de mon quota",
-        description = "Retourne l'état du quota mensuel de l'organisation de l'utilisateur connecté.",
+        description = "Retourne l'état du quota mensuel de l'organisation de l'utilisateur connecté. " +
+                     "Un utilisateur doit toujours être associé à une organisation.",
         security = @SecurityRequirement(name = "bearerAuth")
     )
     public ResponseEntity<Map<String, Object>> getMyQuota() {
@@ -202,48 +200,47 @@ public class UserController {
             return ResponseEntity.badRequest().build();
         }
 
-        Long organizationId = organizationService.getOrganizationIdByUserId(userId);
-        if (organizationId == null) {
-            Map<String, Object> response = new LinkedHashMap<>();
-            response.put("hasOrganization", false);
-            response.put("message", "Vous n'êtes associé à aucune organisation");
-            return ResponseEntity.ok(response);
+        try {
+            Long organizationId = organizationService.getOrganizationIdByUserId(userId);
+            OrganizationDto organization = organizationService.getOrganizationById(organizationId);
+            if (organization == null) {
+                return ResponseEntity.notFound().build();
+            }
+
+            // Calculer l'utilisation du mois en cours
+            // Note: Le quota est au niveau de l'organisation, donc on compte tous les logs de l'organisation
+            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime startOfMonth = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+            LocalDateTime endOfMonth = now.withDayOfMonth(now.toLocalDate().lengthOfMonth())
+                    .withHour(23).withMinute(59).withSecond(59).withNano(999999999);
+            
+            // Le quota est partagé entre tous les utilisateurs de l'organisation
+            long currentUsage = usageLogRepository.countByOrganizationIdAndTimestampBetween(organizationId, startOfMonth, endOfMonth);
+            
+            // Calculer aussi l'utilisation personnelle de l'utilisateur
+            long personalUsage = usageLogRepository.countByKeycloakUserIdAndTimestampBetween(userId, startOfMonth, endOfMonth);
+
+            Map<String, Object> quota = new LinkedHashMap<>();
+            quota.put("hasOrganization", true);
+            quota.put("organizationId", organizationId);
+            quota.put("organizationName", organization.getName());
+            quota.put("monthlyQuota", organization.getMonthlyQuota());
+            quota.put("currentUsage", currentUsage); // Usage total de l'organisation
+            quota.put("personalUsage", personalUsage); // Usage personnel de l'utilisateur
+            quota.put("remaining", organization.getMonthlyQuota() != null 
+                    ? Math.max(0, organization.getMonthlyQuota() - currentUsage)
+                    : -1); // -1 = illimité
+            quota.put("percentageUsed", organization.getMonthlyQuota() != null && organization.getMonthlyQuota() > 0
+                    ? (double) currentUsage / organization.getMonthlyQuota() * 100
+                    : 0.0);
+            quota.put("isUnlimited", organization.getMonthlyQuota() == null);
+
+            return ResponseEntity.ok(quota);
+        } catch (UserNotAssociatedException e) {
+            log.error("Utilisateur {} non associé à une organisation", userId);
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(Map.of("error", "Vous devez être associé à une organisation pour consulter votre quota."));
         }
-
-        OrganizationDto organization = organizationService.getOrganizationById(organizationId);
-        if (organization == null) {
-            return ResponseEntity.notFound().build();
-        }
-
-        // Calculer l'utilisation du mois en cours
-        // Note: Le quota est au niveau de l'organisation, donc on compte tous les logs de l'organisation
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime startOfMonth = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
-        LocalDateTime endOfMonth = now.withDayOfMonth(now.toLocalDate().lengthOfMonth())
-                .withHour(23).withMinute(59).withSecond(59).withNano(999999999);
-        
-        // Le quota est partagé entre tous les utilisateurs de l'organisation
-        long currentUsage = usageLogRepository.countByOrganizationIdAndTimestampBetween(organizationId, startOfMonth, endOfMonth);
-        
-        // Calculer aussi l'utilisation personnelle de l'utilisateur
-        long personalUsage = usageLogRepository.countByKeycloakUserIdAndTimestampBetween(userId, startOfMonth, endOfMonth);
-
-        Map<String, Object> quota = new LinkedHashMap<>();
-        quota.put("hasOrganization", true);
-        quota.put("organizationId", organizationId);
-        quota.put("organizationName", organization.getName());
-        quota.put("monthlyQuota", organization.getMonthlyQuota());
-        quota.put("currentUsage", currentUsage); // Usage total de l'organisation
-        quota.put("personalUsage", personalUsage); // Usage personnel de l'utilisateur
-        quota.put("remaining", organization.getMonthlyQuota() != null 
-                ? Math.max(0, organization.getMonthlyQuota() - currentUsage)
-                : -1); // -1 = illimité
-        quota.put("percentageUsed", organization.getMonthlyQuota() != null && organization.getMonthlyQuota() > 0
-                ? (double) currentUsage / organization.getMonthlyQuota() * 100
-                : 0.0);
-        quota.put("isUnlimited", organization.getMonthlyQuota() == null);
-
-        return ResponseEntity.ok(quota);
     }
     
     /**
@@ -263,13 +260,15 @@ public class UserController {
             return ResponseEntity.badRequest().build();
         }
 
-        Long organizationId = organizationService.getOrganizationIdByUserId(userId);
-        if (organizationId == null) {
-            return ResponseEntity.badRequest().build();
+        try {
+            Long organizationId = organizationService.getOrganizationIdByUserId(userId);
+            OrganizationDto organization = organizationService.changePricingPlan(organizationId, request.getPricingPlanId());
+            return ResponseEntity.ok(organization);
+        } catch (UserNotAssociatedException e) {
+            log.error("Utilisateur {} non associé à une organisation", userId);
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(null);
         }
-
-        OrganizationDto organization = organizationService.changePricingPlan(organizationId, request.getPricingPlanId());
-        return ResponseEntity.ok(organization);
     }
 
     /**

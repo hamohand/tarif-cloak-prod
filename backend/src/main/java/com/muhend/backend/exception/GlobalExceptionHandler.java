@@ -1,6 +1,7 @@
 package com.muhend.backend.exception;
 
 import com.muhend.backend.organization.exception.QuotaExceededException;
+import com.muhend.backend.organization.exception.UserNotAssociatedException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -33,6 +34,25 @@ public class GlobalExceptionHandler {
         
         return ResponseEntity
                 .status(HttpStatus.TOO_MANY_REQUESTS)
+                .body(response);
+    }
+    
+    /**
+     * Gère les exceptions lorsqu'un utilisateur n'est pas associé à une organisation.
+     * Renvoie une réponse HTTP 403 (Forbidden) avec un message d'erreur.
+     * Un utilisateur DOIT toujours être associé à une organisation dans cette application.
+     */
+    @ExceptionHandler(UserNotAssociatedException.class)
+    public ResponseEntity<Map<String, Object>> handleUserNotAssociatedException(UserNotAssociatedException ex) {
+        log.warn("Utilisateur non associé à une organisation: {}", ex.getMessage());
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("error", "USER_NOT_ASSOCIATED");
+        response.put("message", ex.getMessage());
+        response.put("status", HttpStatus.FORBIDDEN.value());
+        
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
                 .body(response);
     }
 }
