@@ -228,24 +228,28 @@ public class PendingRegistrationService {
                     )
             );
             int status = response.getStatus();
-            
-            if (status != jakarta.ws.rs.core.Response.Status.CREATED.getStatusCode()) {
+            String keycloakUserId = null;
+            if (status == jakarta.ws.rs.core.Response.Status.CREATED.getStatusCode()) {
+                keycloakUserId = keycloakAdminService.getUserIdFromResponse(response);
+                if (keycloakUserId == null) {
+                    keycloakUserId = keycloakAdminService.getUserIdByUsername(pending.getUsername());
+                }
                 response.close();
-                throw new RuntimeException("Erreur lors de la création de l'utilisateur dans Keycloak");
-            }
-            
-            // 2. Récupérer l'ID Keycloak
-            String keycloakUserId = keycloakAdminService.getUserIdFromResponse(response);
-            if (keycloakUserId == null) {
+            } else if (status == jakarta.ws.rs.core.Response.Status.CONFLICT.getStatusCode()) {
+                log.warn("Utilisateur Keycloak déjà existant pour le username {}", pending.getUsername());
+                response.close();
                 keycloakUserId = keycloakAdminService.getUserIdByUsername(pending.getUsername());
+            } else {
+                String errorBody = response.hasEntity() ? response.readEntity(String.class) : "N/A";
+                response.close();
+                throw new RuntimeException("Erreur lors de la création de l'utilisateur dans Keycloak (status="
+                        + status + ", body=" + errorBody + ")");
             }
             
             if (keycloakUserId == null) {
-                response.close();
                 throw new RuntimeException("Impossible de récupérer l'ID Keycloak de l'utilisateur créé");
             }
             
-            response.close();
             log.info("Utilisateur Keycloak créé: {}", keycloakUserId);
             
             // 3. Créer le compte Keycloak de l'organisation
@@ -262,16 +266,23 @@ public class PendingRegistrationService {
             );
             
             int orgStatus = orgResponse.getStatus();
-            if (orgStatus != jakarta.ws.rs.core.Response.Status.CREATED.getStatusCode()) {
+            String organizationKeycloakUserId = null;
+            if (orgStatus == jakarta.ws.rs.core.Response.Status.CREATED.getStatusCode()) {
+                organizationKeycloakUserId = keycloakAdminService.getUserIdFromResponse(orgResponse);
+                if (organizationKeycloakUserId == null) {
+                    organizationKeycloakUserId = keycloakAdminService.getUserIdByUsername(pending.getOrganizationEmail());
+                }
                 orgResponse.close();
-                throw new RuntimeException("Erreur lors de la création du compte organisation dans Keycloak (status=" + orgStatus + ")");
-            }
-            
-            String organizationKeycloakUserId = keycloakAdminService.getUserIdFromResponse(orgResponse);
-            if (organizationKeycloakUserId == null) {
+            } else if (orgStatus == jakarta.ws.rs.core.Response.Status.CONFLICT.getStatusCode()) {
+                log.warn("Compte Keycloak organisation déjà existant pour {}", pending.getOrganizationEmail());
+                orgResponse.close();
                 organizationKeycloakUserId = keycloakAdminService.getUserIdByUsername(pending.getOrganizationEmail());
+            } else {
+                String errorBody = orgResponse.hasEntity() ? orgResponse.readEntity(String.class) : "N/A";
+                orgResponse.close();
+                throw new RuntimeException("Erreur lors de la création du compte organisation dans Keycloak (status="
+                        + orgStatus + ", body=" + errorBody + ")");
             }
-            orgResponse.close();
             
             if (organizationKeycloakUserId == null) {
                 throw new RuntimeException("Impossible de récupérer l'ID Keycloak du compte organisation");
@@ -330,24 +341,28 @@ public class PendingRegistrationService {
                     )
             );
             int status = response.getStatus();
-            
-            if (status != jakarta.ws.rs.core.Response.Status.CREATED.getStatusCode()) {
+            String keycloakUserId = null;
+            if (status == jakarta.ws.rs.core.Response.Status.CREATED.getStatusCode()) {
+                keycloakUserId = keycloakAdminService.getUserIdFromResponse(response);
+                if (keycloakUserId == null) {
+                    keycloakUserId = keycloakAdminService.getUserIdByUsername(pending.getUsername());
+                }
                 response.close();
-                throw new RuntimeException("Erreur lors de la création de l'utilisateur dans Keycloak");
-            }
-            
-            // 2. Récupérer l'ID Keycloak
-            String keycloakUserId = keycloakAdminService.getUserIdFromResponse(response);
-            if (keycloakUserId == null) {
+            } else if (status == jakarta.ws.rs.core.Response.Status.CONFLICT.getStatusCode()) {
+                log.warn("Utilisateur Keycloak déjà existant pour {}", pending.getUsername());
+                response.close();
                 keycloakUserId = keycloakAdminService.getUserIdByUsername(pending.getUsername());
+            } else {
+                String errorBody = response.hasEntity() ? response.readEntity(String.class) : "N/A";
+                response.close();
+                throw new RuntimeException("Erreur lors de la création de l'utilisateur dans Keycloak (status="
+                        + status + ", body=" + errorBody + ")");
             }
             
             if (keycloakUserId == null) {
-                response.close();
                 throw new RuntimeException("Impossible de récupérer l'ID Keycloak de l'utilisateur créé");
             }
             
-            response.close();
             log.info("Utilisateur Keycloak créé: {}", keycloakUserId);
             
             // 3. Associer l'utilisateur à l'organisation existante
