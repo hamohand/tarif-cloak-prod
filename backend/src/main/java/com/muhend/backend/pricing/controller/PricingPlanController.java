@@ -1,15 +1,15 @@
 package com.muhend.backend.pricing.controller;
 
 import com.muhend.backend.pricing.dto.PricingPlanDto;
+import com.muhend.backend.pricing.dto.UpdatePricingPlanRequest;
 import com.muhend.backend.pricing.service.PricingPlanService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -19,7 +19,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/pricing-plans")
 @RequiredArgsConstructor
-@Tag(name = "Pricing Plans", description = "Endpoints pour consulter les plans tarifaires")
+@Tag(name = "Pricing Plans", description = "Endpoints pour consulter et gérer les plans tarifaires")
 public class PricingPlanController {
     
     private final PricingPlanService pricingPlanService;
@@ -43,6 +43,20 @@ public class PricingPlanController {
     public ResponseEntity<PricingPlanDto> getPricingPlanById(@PathVariable Long id) {
         PricingPlanDto plan = pricingPlanService.getPricingPlanById(id);
         return ResponseEntity.ok(plan);
+    }
+    
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(
+        summary = "Mettre à jour un plan tarifaire",
+        description = "Met à jour un plan tarifaire. Réservé aux administrateurs. " +
+                     "Seuls les champs fournis dans la requête seront mis à jour (mise à jour partielle)."
+    )
+    public ResponseEntity<PricingPlanDto> updatePricingPlan(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdatePricingPlanRequest request) {
+        PricingPlanDto updatedPlan = pricingPlanService.updatePricingPlan(id, request);
+        return ResponseEntity.ok(updatedPlan);
     }
 }
 

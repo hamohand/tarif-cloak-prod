@@ -40,7 +40,7 @@ public class SecurityConfig {
     @Order(1)
     public SecurityFilterChain publicSecurityFilterChain(HttpSecurity http) throws Exception {
         http
-            .securityMatcher("/auth/**", "/public/**", "/pricing-plans/**", "/swagger-ui/**", "/v3/api-docs/**", "/health/**")
+            .securityMatcher("/auth/**", "/public/**", "/swagger-ui/**", "/v3/api-docs/**", "/health/**")
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(authorize -> authorize
@@ -61,6 +61,8 @@ public class SecurityConfig {
             .csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(authorize -> authorize
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                // Les requêtes GET sur /pricing-plans sont publiques
+                .requestMatchers(HttpMethod.GET, "/pricing-plans/**").permitAll()
                 // Endpoint de recherche accessible aux utilisateurs avec le rôle USER ou ADMIN
                 .requestMatchers("/recherche/**").hasAnyRole("USER", "ADMIN")
                 // Tous les autres endpoints nécessitent une authentification
