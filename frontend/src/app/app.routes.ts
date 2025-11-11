@@ -18,6 +18,7 @@ import { InvoiceDetailComponent } from './features/user/invoices/invoice-detail.
 import { InvoicesAdminComponent } from './features/admin/invoices/invoices-admin.component';
 import { InvoiceDetailAdminComponent } from './features/admin/invoices/invoice-detail-admin.component';
 import { PricingPlansComponent } from './features/pricing/pricing-plans.component';
+import { OrganizationAccountComponent } from './features/organization/organization-account.component';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -41,6 +42,11 @@ export const routes: Routes = [
   {
     path: 'alerts',
     component: AlertsComponent,
+    canActivate: [authGuard]
+  },
+  {
+    path: 'organization/account',
+    component: OrganizationAccountComponent,
     canActivate: [authGuard]
   },
   {

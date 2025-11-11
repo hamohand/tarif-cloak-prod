@@ -182,6 +182,14 @@ public class OrganizationService {
                 .orElseThrow(() -> new IllegalArgumentException("Organisation non trouvée pour cet identifiant utilisateur."));
         return toDtoWithUserCount(organization);
     }
+
+    public List<OrganizationUserDto> getOrganizationUsersByKeycloakUserId(String keycloakUserId) {
+        Organization organization = organizationRepository.findByKeycloakUserId(keycloakUserId)
+                .orElseThrow(() -> new IllegalArgumentException("Organisation non trouvée pour cet identifiant utilisateur."));
+        return organizationUserRepository.findByOrganizationId(organization.getId()).stream()
+                .map(this::toOrganizationUserDto)
+                .collect(Collectors.toList());
+    }
     
     /**
      * Ajoute un utilisateur à une organisation.

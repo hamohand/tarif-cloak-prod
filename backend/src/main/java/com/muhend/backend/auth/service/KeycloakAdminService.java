@@ -226,4 +226,18 @@ public class KeycloakAdminService {
             return null;
         }
     }
+
+    public void disableUser(String keycloakUserId) {
+        try {
+            RealmResource realmResource = keycloak.realm(realm);
+            UsersResource usersResource = realmResource.users();
+            UserRepresentation user = usersResource.get(keycloakUserId).toRepresentation();
+            user.setEnabled(false);
+           usersResource.get(keycloakUserId).update(user);
+            logger.info("Utilisateur {} désactivé dans Keycloak", keycloakUserId);
+        } catch (Exception e) {
+            logger.error("Erreur lors de la désactivation de l'utilisateur {}: {}", keycloakUserId, e.getMessage(), e);
+            throw new RuntimeException("Erreur lors de la désactivation de l'utilisateur: " + e.getMessage(), e);
+        }
+    }
 }

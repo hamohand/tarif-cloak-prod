@@ -133,6 +133,17 @@ public class PendingRegistrationService {
         String confirmationToken = generateConfirmationToken();
         String temporaryPassword = generateTemporaryPassword();
         
+        // Vérifier si l'utilisateur existe déjà dans Keycloak et le désactiver si besoin
+        String existingUserId = keycloakAdminService.getUserIdByUsername(request.getUsername());
+        if (existingUserId != null) {
+            try {
+                keycloakAdminService.disableUser(existingUserId);
+                log.info("Utilisateur {} existant désactivé dans Keycloak avant réinvitation", request.getUsername());
+            } catch (Exception e) {
+                log.warn("Impossible de désactiver l'utilisateur existant {}: {}", request.getUsername(), e.getMessage());
+            }
+        }
+        
         PendingRegistration pending = new PendingRegistration();
         pending.setUsername(request.getUsername());
         pending.setEmail(request.getEmail());
