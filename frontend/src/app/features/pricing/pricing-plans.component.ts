@@ -36,7 +36,7 @@ import { PricingPlanService, PricingPlan } from '../../core/services/pricing-pla
                     <span class="period">/mois</span>
                   }
                 } @else if (plan.pricePerRequest !== null && plan.pricePerRequest !== undefined) {
-                  <span class="currency">$</span>
+                  <span class="currency">€</span>
                   <span class="amount">{{ plan.pricePerRequest }}</span>
                   <span class="period">/requête</span>
                 } @else {

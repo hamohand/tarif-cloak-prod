@@ -73,6 +73,10 @@ public class PendingRegistrationService {
         String confirmationToken = generateConfirmationToken();
         
         // Créer l'inscription en attente
+        log.info("=== Création PendingRegistration ===");
+        log.info("Email utilisateur depuis request: {}", request.getEmail());
+        log.info("Email organisation depuis request: {}", request.getOrganizationEmail());
+        
         PendingRegistration pending = new PendingRegistration();
         pending.setUsername(request.getUsername());
         pending.setEmail(request.getEmail());
@@ -86,7 +90,13 @@ public class PendingRegistrationService {
         pending.setExpiresAt(LocalDateTime.now().plusHours(tokenExpirationHours));
         pending.setConfirmed(false);
         
+        log.info("Email utilisateur dans pending avant save: {}", pending.getEmail());
+        log.info("Email organisation dans pending avant save: {}", pending.getOrganizationEmail());
+        
         pending = pendingRegistrationRepository.save(pending);
+        
+        log.info("Email utilisateur dans pending après save: {}", pending.getEmail());
+        log.info("Email organisation dans pending après save: {}", pending.getOrganizationEmail());
         log.info("Inscription en attente créée: id={}, organizationEmail={}, token={}", 
             pending.getId(), pending.getOrganizationEmail(), confirmationToken);
         
@@ -147,12 +157,18 @@ public class PendingRegistrationService {
     private void createOrganizationAndUser(PendingRegistration pending) {
         try {
             // 1. Créer l'utilisateur dans Keycloak
+            log.info("=== Création utilisateur pour nouvelle organisation ===");
+            log.info("Email utilisateur depuis PendingRegistration: {}", pending.getEmail());
+            log.info("Email organisation depuis PendingRegistration: {}", pending.getOrganizationEmail());
+            
             UserRegistrationRequest keycloakRequest = new UserRegistrationRequest();
             keycloakRequest.setUsername(pending.getUsername());
             keycloakRequest.setEmail(pending.getEmail());
             keycloakRequest.setFirstName(pending.getFirstName());
             keycloakRequest.setLastName(pending.getLastName());
             keycloakRequest.setPassword(pending.getPassword());
+            
+            log.info("Email utilisateur dans keycloakRequest: {}", keycloakRequest.getEmail());
             
             jakarta.ws.rs.core.Response response = keycloakAdminService.createUser(keycloakRequest);
             int status = response.getStatus();
@@ -202,12 +218,18 @@ public class PendingRegistrationService {
     private void createUserAndAssociateToOrganization(PendingRegistration pending, Long organizationId) {
         try {
             // 1. Créer l'utilisateur dans Keycloak
+            log.info("=== Création utilisateur pour organisation existante ===");
+            log.info("Email utilisateur depuis PendingRegistration: {}", pending.getEmail());
+            log.info("Email organisation depuis PendingRegistration: {}", pending.getOrganizationEmail());
+            
             UserRegistrationRequest keycloakRequest = new UserRegistrationRequest();
             keycloakRequest.setUsername(pending.getUsername());
             keycloakRequest.setEmail(pending.getEmail());
             keycloakRequest.setFirstName(pending.getFirstName());
             keycloakRequest.setLastName(pending.getLastName());
             keycloakRequest.setPassword(pending.getPassword());
+            
+            log.info("Email utilisateur dans keycloakRequest: {}", keycloakRequest.getEmail());
             
             jakarta.ws.rs.core.Response response = keycloakAdminService.createUser(keycloakRequest);
             int status = response.getStatus();

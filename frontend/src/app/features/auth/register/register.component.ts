@@ -415,7 +415,7 @@ export class RegisterComponent implements OnInit {
     organizationEmail: ['', [Validators.required, Validators.email, Validators.maxLength(255)]],
     pricingPlanId: [null]
   }, {
-    validators: this.passwordMatchValidator
+    validators: [this.passwordMatchValidator, this.emailDifferenceValidator]
   });
 
   ngOnInit() {
@@ -458,6 +458,24 @@ export class RegisterComponent implements OnInit {
     return null;
   }
 
+  emailDifferenceValidator(form: FormGroup) {
+    const email = form.get('email');
+    const organizationEmail = form.get('organizationEmail');
+
+    if (email && organizationEmail && email.value && organizationEmail.value && 
+        email.value.toLowerCase() === organizationEmail.value.toLowerCase()) {
+      email.setErrors({ sameAsOrganizationEmail: true });
+      return { sameAsOrganizationEmail: true };
+    }
+
+    if (email?.errors?.['sameAsOrganizationEmail']) {
+      const errors = { ...email.errors };
+      delete errors['sameAsOrganizationEmail'];
+      email.setErrors(Object.keys(errors).length > 0 ? errors : null);
+    }
+    return null;
+  }
+
   isFieldInvalid(fieldName: string): boolean {
     const field = this.registerForm.get(fieldName);
     return !!(field && field.invalid && (field.dirty || field.touched));
@@ -484,6 +502,9 @@ export class RegisterComponent implements OnInit {
       if (field.errors['passwordMismatch']) {
         return 'Les mots de passe ne correspondent pas';
       }
+      if (field.errors['sameAsOrganizationEmail']) {
+        return 'L\'email utilisateur doit être différent de l\'email de l\'organisation';
+      }
     }
 
     return '';
@@ -496,6 +517,12 @@ export class RegisterComponent implements OnInit {
       this.successMessage = '';
 
       const userData = this.registerForm.value;
+      
+      // Log pour diagnostiquer le problème
+      console.log('=== Données du formulaire avant envoi ===');
+      console.log('Email utilisateur:', userData.email);
+      console.log('Email organisation:', userData.organizationEmail);
+      console.log('Username:', userData.username);
 
       this.registerService.registerUser({
         username: userData.username,
