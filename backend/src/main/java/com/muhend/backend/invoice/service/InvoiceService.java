@@ -11,6 +11,7 @@ import com.muhend.backend.auth.service.KeycloakAdminService;
 import com.muhend.backend.organization.dto.OrganizationDto;
 import com.muhend.backend.organization.dto.OrganizationUserDto;
 import com.muhend.backend.organization.service.OrganizationService;
+import com.muhend.backend.pricing.dto.PricingPlanDto;
 import com.muhend.backend.usage.model.UsageLog;
 import com.muhend.backend.usage.repository.UsageLogRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +26,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -731,6 +733,173 @@ public class InvoiceService {
             log.error("Erreur lors de l'envoi de l'email de rappel pour la facture en retard {}: {}",
                     invoice.getInvoiceNumber(), e.getMessage(), e);
         }
+    }
+    
+    /**
+     * Génère une facture de clôture pour un plan tarifaire lors d'un changement de plan.
+     * Cette facture crédite l'organisation pour la période non utilisée du plan actuel (prorata).
+     * 
+     * @param organizationId ID de l'organisation
+     * @param plan Le plan tarifaire qui est clôturé
+     * @param changeDate Date du changement de plan
+     * @return La facture de clôture générée (avec montant négatif = crédit)
+     */
+    @Transactional
+    public InvoiceDto generatePlanClosureInvoice(Long organizationId, PricingPlanDto plan, LocalDate changeDate) {
+        // Vérifier que l'organisation existe
+        OrganizationDto organization = organizationService.getOrganizationById(organizationId);
+        if (organization == null) {
+            throw new IllegalArgumentException("Organisation non trouvée avec l'ID: " + organizationId);
+        }
+        
+        // Calculer la période de facturation (du début du mois jusqu'à la date de changement)
+        LocalDate periodStart = changeDate.withDayOfMonth(1); // Début du mois
+        LocalDate periodEnd = changeDate.minusDays(1); // Jour avant le changement
+        
+        // Calculer le nombre de jours dans le mois
+        int daysInMonth = periodStart.lengthOfMonth();
+        // Calculer le nombre de jours utilisés (du début du mois jusqu'à la date de changement)
+        long daysUsed = ChronoUnit.DAYS.between(periodStart, changeDate);
+        // Calculer le nombre de jours non utilisés (crédit)
+        long daysUnused = daysInMonth - daysUsed;
+        
+        // Calculer le montant du crédit (prorata)
+        BigDecimal monthlyPrice = plan.getPricePerMonth();
+        BigDecimal dailyPrice = monthlyPrice.divide(BigDecimal.valueOf(daysInMonth), 6, RoundingMode.HALF_UP);
+        BigDecimal creditAmount = dailyPrice.multiply(BigDecimal.valueOf(daysUnused))
+                .setScale(2, RoundingMode.HALF_UP)
+                .negate(); // Montant négatif = crédit
+        
+        // Générer le numéro de facture
+        YearMonth yearMonth = YearMonth.from(periodStart);
+        String invoiceNumber = generateInvoiceNumber(organizationId, yearMonth.getYear(), yearMonth.getMonthValue()) + "-CLOSURE";
+        
+        // Vérifier l'unicité du numéro
+        int suffix = 1;
+        String finalInvoiceNumber = invoiceNumber;
+        while (invoiceRepository.findByInvoiceNumber(finalInvoiceNumber).isPresent()) {
+            finalInvoiceNumber = invoiceNumber + "-" + suffix;
+            suffix++;
+        }
+        
+        // Créer la facture de clôture
+        Invoice invoice = new Invoice();
+        invoice.setOrganizationId(organizationId);
+        invoice.setOrganizationName(organization.getName());
+        invoice.setOrganizationEmail(organization.getEmail());
+        invoice.setInvoiceNumber(finalInvoiceNumber);
+        invoice.setPeriodStart(periodStart);
+        invoice.setPeriodEnd(periodEnd);
+        invoice.setTotalAmount(creditAmount); // Montant négatif = crédit
+        invoice.setStatus(Invoice.InvoiceStatus.PENDING);
+        invoice.setDueDate(changeDate.plusDays(30));
+        invoice.setNotes(String.format("Facture de clôture - Crédit prorata pour le plan %s (%d jours non utilisés sur %d jours)", 
+            plan.getName(), daysUnused, daysInMonth));
+        
+        invoice = invoiceRepository.save(invoice);
+        
+        // Créer une ligne de facture pour le crédit
+        InvoiceItem item = new InvoiceItem();
+        item.setInvoice(invoice);
+        item.setDescription(String.format("Crédit prorata - Plan %s (%d jours non utilisés)", plan.getName(), daysUnused));
+        item.setQuantity(1);
+        item.setUnitPrice(creditAmount);
+        item.setTotalPrice(creditAmount);
+        item.setItemType("PLAN_CLOSURE_CREDIT");
+        
+        invoiceItemRepository.save(item);
+        
+        log.info("Facture de clôture générée: {} pour l'organisation {} (plan: {}, crédit: {} EUR)",
+                finalInvoiceNumber, organization.getName(), plan.getName(), creditAmount);
+        
+        InvoiceDto invoiceDto = toDto(invoice);
+        
+        // Envoyer un email de notification
+        sendInvoiceNotificationEmail(invoiceDto, organization);
+        
+        return invoiceDto;
+    }
+    
+    /**
+     * Génère une facture de démarrage pour un nouveau plan tarifaire lors d'un changement de plan.
+     * Cette facture facture l'organisation pour la période restante du mois (prorata).
+     * 
+     * @param organizationId ID de l'organisation
+     * @param plan Le nouveau plan tarifaire
+     * @param changeDate Date du changement de plan
+     * @return La facture de démarrage générée
+     */
+    @Transactional
+    public InvoiceDto generatePlanStartInvoice(Long organizationId, PricingPlanDto plan, LocalDate changeDate) {
+        // Vérifier que l'organisation existe
+        OrganizationDto organization = organizationService.getOrganizationById(organizationId);
+        if (organization == null) {
+            throw new IllegalArgumentException("Organisation non trouvée avec l'ID: " + organizationId);
+        }
+        
+        // Calculer la période de facturation (de la date de changement jusqu'à la fin du mois)
+        LocalDate periodStart = changeDate;
+        LocalDate periodEnd = changeDate.withDayOfMonth(changeDate.lengthOfMonth()); // Fin du mois
+        
+        // Calculer le nombre de jours dans le mois
+        int daysInMonth = periodStart.lengthOfMonth();
+        // Calculer le nombre de jours restants (de la date de changement jusqu'à la fin du mois)
+        long daysRemaining = ChronoUnit.DAYS.between(periodStart, periodEnd.plusDays(1));
+        
+        // Calculer le montant prorata
+        BigDecimal monthlyPrice = plan.getPricePerMonth();
+        BigDecimal dailyPrice = monthlyPrice.divide(BigDecimal.valueOf(daysInMonth), 6, RoundingMode.HALF_UP);
+        BigDecimal proratedAmount = dailyPrice.multiply(BigDecimal.valueOf(daysRemaining))
+                .setScale(2, RoundingMode.HALF_UP);
+        
+        // Générer le numéro de facture
+        YearMonth yearMonth = YearMonth.from(periodStart);
+        String invoiceNumber = generateInvoiceNumber(organizationId, yearMonth.getYear(), yearMonth.getMonthValue()) + "-START";
+        
+        // Vérifier l'unicité du numéro
+        int suffix = 1;
+        String finalInvoiceNumber = invoiceNumber;
+        while (invoiceRepository.findByInvoiceNumber(finalInvoiceNumber).isPresent()) {
+            finalInvoiceNumber = invoiceNumber + "-" + suffix;
+            suffix++;
+        }
+        
+        // Créer la facture de démarrage
+        Invoice invoice = new Invoice();
+        invoice.setOrganizationId(organizationId);
+        invoice.setOrganizationName(organization.getName());
+        invoice.setOrganizationEmail(organization.getEmail());
+        invoice.setInvoiceNumber(finalInvoiceNumber);
+        invoice.setPeriodStart(periodStart);
+        invoice.setPeriodEnd(periodEnd);
+        invoice.setTotalAmount(proratedAmount);
+        invoice.setStatus(Invoice.InvoiceStatus.PENDING);
+        invoice.setDueDate(periodEnd.plusDays(30));
+        invoice.setNotes(String.format("Facture de démarrage - Plan %s (prorata pour %d jours sur %d jours)", 
+            plan.getName(), daysRemaining, daysInMonth));
+        
+        invoice = invoiceRepository.save(invoice);
+        
+        // Créer une ligne de facture pour le plan
+        InvoiceItem item = new InvoiceItem();
+        item.setInvoice(invoice);
+        item.setDescription(String.format("Plan %s - Prorata (%d jours sur %d jours)", plan.getName(), daysRemaining, daysInMonth));
+        item.setQuantity(1);
+        item.setUnitPrice(proratedAmount);
+        item.setTotalPrice(proratedAmount);
+        item.setItemType("PLAN_START");
+        
+        invoiceItemRepository.save(item);
+        
+        log.info("Facture de démarrage générée: {} pour l'organisation {} (plan: {}, montant: {} EUR)",
+                finalInvoiceNumber, organization.getName(), plan.getName(), proratedAmount);
+        
+        InvoiceDto invoiceDto = toDto(invoice);
+        
+        // Envoyer un email de notification
+        sendInvoiceNotificationEmail(invoiceDto, organization);
+        
+        return invoiceDto;
     }
 }
 

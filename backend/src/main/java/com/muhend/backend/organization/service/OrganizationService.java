@@ -2,6 +2,7 @@ package com.muhend.backend.organization.service;
 
 import com.muhend.backend.auth.service.KeycloakAdminService;
 import com.muhend.backend.email.service.EmailService;
+import com.muhend.backend.invoice.service.InvoiceService;
 import com.muhend.backend.organization.dto.CreateOrganizationRequest;
 import com.muhend.backend.organization.dto.OrganizationDto;
 import com.muhend.backend.organization.dto.OrganizationUserDto;
@@ -17,6 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -35,19 +37,22 @@ public class OrganizationService {
     private final KeycloakAdminService keycloakAdminService;
     private final PricingPlanService pricingPlanService;
     private final EmailService emailService;
+    private final InvoiceService invoiceService;
     
     public OrganizationService(OrganizationRepository organizationRepository,
                               OrganizationUserRepository organizationUserRepository,
                               UsageLogRepository usageLogRepository,
                               KeycloakAdminService keycloakAdminService,
                               PricingPlanService pricingPlanService,
-                              EmailService emailService) {
+                              EmailService emailService,
+                              InvoiceService invoiceService) {
         this.organizationRepository = organizationRepository;
         this.organizationUserRepository = organizationUserRepository;
         this.usageLogRepository = usageLogRepository;
         this.keycloakAdminService = keycloakAdminService;
         this.pricingPlanService = pricingPlanService;
         this.emailService = emailService;
+        this.invoiceService = invoiceService;
     }
     
     /**
@@ -360,6 +365,40 @@ public class OrganizationService {
         organization = organizationRepository.save(organization);
         log.info("Plan tarifaire changé pour l'organisation {} (ID: {}): planId={}", 
             organization.getName(), organizationId, pricingPlanId);
+        
+        // Créer les factures pour le changement de plan
+        LocalDate changeDate = LocalDate.now();
+        try {
+            // 1. Créer une facture de clôture pour l'ancien plan (si un ancien plan existait)
+            if (oldPlan != null && oldPlan.getPricePerMonth() != null && oldPlan.getPricePerMonth().compareTo(java.math.BigDecimal.ZERO) > 0) {
+                try {
+                    invoiceService.generatePlanClosureInvoice(organizationId, oldPlan, changeDate);
+                    log.info("Facture de clôture créée pour l'ancien plan {} de l'organisation {}", 
+                        oldPlan.getName(), organization.getName());
+                } catch (Exception e) {
+                    log.error("Erreur lors de la création de la facture de clôture pour l'organisation {}: {}", 
+                        organizationId, e.getMessage(), e);
+                    // Ne pas faire échouer la transaction si la facture de clôture échoue
+                }
+            }
+            
+            // 2. Créer une facture de démarrage pour le nouveau plan (si un nouveau plan existe)
+            if (newPlan != null && newPlan.getPricePerMonth() != null && newPlan.getPricePerMonth().compareTo(java.math.BigDecimal.ZERO) > 0) {
+                try {
+                    invoiceService.generatePlanStartInvoice(organizationId, newPlan, changeDate);
+                    log.info("Facture de démarrage créée pour le nouveau plan {} de l'organisation {}", 
+                        newPlan.getName(), organization.getName());
+                } catch (Exception e) {
+                    log.error("Erreur lors de la création de la facture de démarrage pour l'organisation {}: {}", 
+                        organizationId, e.getMessage(), e);
+                    // Ne pas faire échouer la transaction si la facture de démarrage échoue
+                }
+            }
+        } catch (Exception e) {
+            log.error("Erreur lors de la création des factures pour le changement de plan de l'organisation {}: {}", 
+                organizationId, e.getMessage(), e);
+            // Ne pas faire échouer la transaction si les factures échouent
+        }
         
         // Envoyer l'email de notification
         try {
