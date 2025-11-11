@@ -1,6 +1,7 @@
 package com.muhend.backend.organization.service;
 
 import com.muhend.backend.auth.service.KeycloakAdminService;
+import com.muhend.backend.email.service.EmailService;
 import com.muhend.backend.organization.dto.CreateOrganizationRequest;
 import com.muhend.backend.organization.dto.OrganizationDto;
 import com.muhend.backend.organization.dto.OrganizationUserDto;
@@ -9,6 +10,7 @@ import com.muhend.backend.organization.model.Organization;
 import com.muhend.backend.organization.model.OrganizationUser;
 import com.muhend.backend.organization.repository.OrganizationRepository;
 import com.muhend.backend.organization.repository.OrganizationUserRepository;
+import com.muhend.backend.pricing.dto.PricingPlanDto;
 import com.muhend.backend.pricing.service.PricingPlanService;
 import com.muhend.backend.usage.repository.UsageLogRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -32,17 +34,20 @@ public class OrganizationService {
     private final UsageLogRepository usageLogRepository;
     private final KeycloakAdminService keycloakAdminService;
     private final PricingPlanService pricingPlanService;
+    private final EmailService emailService;
     
     public OrganizationService(OrganizationRepository organizationRepository,
                               OrganizationUserRepository organizationUserRepository,
                               UsageLogRepository usageLogRepository,
                               KeycloakAdminService keycloakAdminService,
-                              PricingPlanService pricingPlanService) {
+                              PricingPlanService pricingPlanService,
+                              EmailService emailService) {
         this.organizationRepository = organizationRepository;
         this.organizationUserRepository = organizationUserRepository;
         this.usageLogRepository = usageLogRepository;
         this.keycloakAdminService = keycloakAdminService;
         this.pricingPlanService = pricingPlanService;
+        this.emailService = emailService;
     }
     
     /**
@@ -308,23 +313,37 @@ public class OrganizationService {
         Organization organization = organizationRepository.findById(organizationId)
                 .orElseThrow(() -> new IllegalArgumentException("Organisation non trouvée avec l'ID: " + organizationId));
         
+        // Récupérer l'ancien plan pour la notification
+        PricingPlanDto oldPlan = null;
+        if (organization.getPricingPlanId() != null) {
+            try {
+                oldPlan = pricingPlanService.getPricingPlanById(organization.getPricingPlanId());
+            } catch (Exception e) {
+                log.warn("Impossible de récupérer l'ancien plan pour la notification: {}", e.getMessage());
+            }
+        }
+        
+        PricingPlanDto newPlan = null;
+        String trialExpiresAtStr = null;
+        
         // Valider le plan tarifaire
         if (pricingPlanId != null) {
             try {
-                var plan = pricingPlanService.getPricingPlanById(pricingPlanId);
+                newPlan = pricingPlanService.getPricingPlanById(pricingPlanId);
                 organization.setPricingPlanId(pricingPlanId);
                 // Mettre à jour le quota selon le plan
-                if (plan.getMonthlyQuota() != null) {
-                    organization.setMonthlyQuota(plan.getMonthlyQuota());
+                if (newPlan.getMonthlyQuota() != null) {
+                    organization.setMonthlyQuota(newPlan.getMonthlyQuota());
                 } else {
                     // Si le plan n'a pas de quota défini, garder le quota actuel ou le mettre à null
                     // (on peut décider de laisser le quota actuel)
                 }
                 // Si c'est un plan d'essai, définir la date d'expiration
-                if (plan.getTrialPeriodDays() != null && plan.getTrialPeriodDays() > 0) {
-                    organization.setTrialExpiresAt(LocalDateTime.now().plusDays(plan.getTrialPeriodDays()));
+                if (newPlan.getTrialPeriodDays() != null && newPlan.getTrialPeriodDays() > 0) {
+                    organization.setTrialExpiresAt(LocalDateTime.now().plusDays(newPlan.getTrialPeriodDays()));
+                    trialExpiresAtStr = organization.getTrialExpiresAt().toString();
                     log.info("Plan d'essai activé pour l'organisation {}: expiration dans {} jours", 
-                        organization.getName(), plan.getTrialPeriodDays());
+                        organization.getName(), newPlan.getTrialPeriodDays());
                 } else {
                     // Si ce n'est pas un plan d'essai, réinitialiser la date d'expiration
                     organization.setTrialExpiresAt(null);
@@ -342,7 +361,68 @@ public class OrganizationService {
         log.info("Plan tarifaire changé pour l'organisation {} (ID: {}): planId={}", 
             organization.getName(), organizationId, pricingPlanId);
         
+        // Envoyer l'email de notification
+        try {
+            sendPricingPlanChangeNotification(organization, oldPlan, newPlan, trialExpiresAtStr);
+        } catch (Exception e) {
+            log.error("Erreur lors de l'envoi de l'email de notification de changement de plan pour l'organisation {}: {}", 
+                    organizationId, e.getMessage(), e);
+            // Ne pas faire échouer la transaction si l'email échoue
+        }
+        
         return toDtoWithUserCount(organization);
+    }
+    
+    /**
+     * Envoie un email de notification de changement de plan tarifaire.
+     */
+    private void sendPricingPlanChangeNotification(Organization organization, PricingPlanDto oldPlan, 
+                                                   PricingPlanDto newPlan, String trialExpiresAtStr) {
+        // Liste des emails à notifier
+        List<String> userEmails = new java.util.ArrayList<>();
+        
+        // Ajouter l'email de l'organisation
+        if (organization.getEmail() != null && !organization.getEmail().trim().isEmpty()) {
+            userEmails.add(organization.getEmail());
+        }
+        
+        // TODO: Récupérer les emails des utilisateurs depuis Keycloak pour les notifier aussi
+        // Pour l'instant, on envoie seulement à l'email de l'organisation
+        
+        // Préparer les données pour l'email
+        String oldPlanName = oldPlan != null ? oldPlan.getName() : null;
+        java.math.BigDecimal oldPlanPricePerMonth = oldPlan != null ? oldPlan.getPricePerMonth() : null;
+        java.math.BigDecimal oldPlanPricePerRequest = oldPlan != null ? oldPlan.getPricePerRequest() : null;
+        Integer oldPlanQuota = oldPlan != null ? oldPlan.getMonthlyQuota() : null;
+        
+        String newPlanName = newPlan != null ? newPlan.getName() : null;
+        String newPlanDescription = newPlan != null ? newPlan.getDescription() : null;
+        java.math.BigDecimal newPlanPricePerMonth = newPlan != null ? newPlan.getPricePerMonth() : null;
+        java.math.BigDecimal newPlanPricePerRequest = newPlan != null ? newPlan.getPricePerRequest() : null;
+        Integer newPlanQuota = newPlan != null ? newPlan.getMonthlyQuota() : null;
+        Integer trialPeriodDays = newPlan != null ? newPlan.getTrialPeriodDays() : null;
+        
+        // Envoyer l'email à l'organisation
+        if (!userEmails.isEmpty()) {
+            emailService.sendPricingPlanChangedEmailToMultiple(
+                    userEmails,
+                    organization.getName(),
+                    oldPlanName,
+                    oldPlanPricePerMonth,
+                    oldPlanPricePerRequest,
+                    oldPlanQuota,
+                    newPlanName,
+                    newPlanDescription,
+                    newPlanPricePerMonth,
+                    newPlanPricePerRequest,
+                    newPlanQuota,
+                    trialPeriodDays,
+                    trialExpiresAtStr
+            );
+        } else {
+            log.warn("Aucun email trouvé pour envoyer la notification de changement de plan à l'organisation {}", 
+                    organization.getId());
+        }
     }
     
     /**

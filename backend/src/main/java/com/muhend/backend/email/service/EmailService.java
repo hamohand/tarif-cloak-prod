@@ -273,6 +273,116 @@ public class EmailService {
     }
 
     /**
+     * Envoie un email de notification de changement de plan tarifaire.
+     *
+     * @param toEmail Email du destinataire
+     * @param organizationName Nom de l'organisation
+     * @param oldPlanName Nom de l'ancien plan (peut être null)
+     * @param oldPlanPricePerMonth Prix mensuel de l'ancien plan (peut être null)
+     * @param oldPlanPricePerRequest Prix par requête de l'ancien plan (peut être null)
+     * @param oldPlanQuota Quota mensuel de l'ancien plan (peut être null)
+     * @param newPlanName Nom du nouveau plan (peut être null si le plan est retiré)
+     * @param newPlanDescription Description du nouveau plan (peut être null)
+     * @param newPlanPricePerMonth Prix mensuel du nouveau plan (peut être null)
+     * @param newPlanPricePerRequest Prix par requête du nouveau plan (peut être null)
+     * @param newPlanQuota Quota mensuel du nouveau plan (peut être null)
+     * @param trialPeriodDays Nombre de jours de période d'essai (peut être null)
+     * @param trialExpiresAt Date d'expiration de la période d'essai (peut être null)
+     */
+    public void sendPricingPlanChangedEmail(
+            String toEmail,
+            String organizationName,
+            String oldPlanName,
+            java.math.BigDecimal oldPlanPricePerMonth,
+            java.math.BigDecimal oldPlanPricePerRequest,
+            Integer oldPlanQuota,
+            String newPlanName,
+            String newPlanDescription,
+            java.math.BigDecimal newPlanPricePerMonth,
+            java.math.BigDecimal newPlanPricePerRequest,
+            Integer newPlanQuota,
+            Integer trialPeriodDays,
+            String trialExpiresAt) {
+        try {
+            Context context = new Context();
+            context.setVariable("organizationName", organizationName != null ? organizationName : "");
+            context.setVariable("oldPlanName", oldPlanName);
+            context.setVariable("oldPlanPricePerMonth", oldPlanPricePerMonth);
+            context.setVariable("oldPlanPricePerRequest", oldPlanPricePerRequest);
+            context.setVariable("oldPlanQuota", oldPlanQuota);
+            context.setVariable("newPlanName", newPlanName);
+            context.setVariable("newPlanDescription", newPlanDescription);
+            context.setVariable("newPlanPricePerMonth", newPlanPricePerMonth);
+            context.setVariable("newPlanPricePerRequest", newPlanPricePerRequest);
+            context.setVariable("newPlanQuota", newPlanQuota);
+            context.setVariable("trialPeriodDays", trialPeriodDays);
+            context.setVariable("trialExpiresAt", trialExpiresAt);
+            context.setVariable("frontendUrl", getFrontendUrl());
+
+            String htmlContent = templateEngine.process("pricing-plan-changed", context);
+            if (htmlContent == null || htmlContent.trim().isEmpty()) {
+                throw new RuntimeException("Le template d'email a généré un contenu vide");
+            }
+
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            String from = fromEmail != null ? fromEmail : "noreply@enclume-numerique.com";
+            String fromNameValue = fromName != null ? fromName : "Enclume Numérique";
+            
+            helper.setFrom(from, fromNameValue);
+            helper.setTo(toEmail != null ? toEmail : "");
+            helper.setSubject("Changement de plan tarifaire - " + (organizationName != null ? organizationName : ""));
+            helper.setText(htmlContent, true);
+
+            mailSender.send(message);
+            log.info("Email de notification de changement de plan envoyé à {} pour l'organisation {}", 
+                    toEmail, organizationName);
+        } catch (MessagingException e) {
+            log.error("Erreur lors de l'envoi de l'email de notification de changement de plan à {}: {}", 
+                    toEmail, e.getMessage(), e);
+            throw new RuntimeException("Erreur lors de l'envoi de l'email", e);
+        } catch (Exception e) {
+            log.error("Erreur inattendue lors de l'envoi de l'email de notification de changement de plan à {}: {}", 
+                    toEmail, e.getMessage(), e);
+            throw new RuntimeException("Erreur lors de l'envoi de l'email", e);
+        }
+    }
+
+    /**
+     * Envoie un email de notification de changement de plan tarifaire à plusieurs destinataires.
+     */
+    public void sendPricingPlanChangedEmailToMultiple(
+            List<String> toEmails,
+            String organizationName,
+            String oldPlanName,
+            java.math.BigDecimal oldPlanPricePerMonth,
+            java.math.BigDecimal oldPlanPricePerRequest,
+            Integer oldPlanQuota,
+            String newPlanName,
+            String newPlanDescription,
+            java.math.BigDecimal newPlanPricePerMonth,
+            java.math.BigDecimal newPlanPricePerRequest,
+            Integer newPlanQuota,
+            Integer trialPeriodDays,
+            String trialExpiresAt) {
+        for (String email : toEmails) {
+            if (email != null && !email.trim().isEmpty()) {
+                try {
+                    sendPricingPlanChangedEmail(email, organizationName, oldPlanName, 
+                            oldPlanPricePerMonth, oldPlanPricePerRequest, oldPlanQuota,
+                            newPlanName, newPlanDescription, newPlanPricePerMonth, 
+                            newPlanPricePerRequest, newPlanQuota, trialPeriodDays, trialExpiresAt);
+                } catch (Exception e) {
+                    log.error("Erreur lors de l'envoi de l'email de notification de changement de plan à {}: {}", 
+                            email, e.getMessage());
+                    // Continuer avec les autres emails même si un échoue
+                }
+            }
+        }
+    }
+
+    /**
      * Récupère l'URL du frontend depuis les variables d'environnement ou utilise une valeur par défaut.
      */
     private String getFrontendUrl() {

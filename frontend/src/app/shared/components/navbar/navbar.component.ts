@@ -21,7 +21,6 @@ import {AsyncPipe} from '@angular/common';
         <a routerLink="/" class="nav-link">Accueil</a>
         <a routerLink="/pricing" class="nav-link">Tarifs</a>
         @if (isAuthenticated$ | async) {
-          <a routerLink="/recherche" class="nav-link">Tariff</a>
           <a routerLink="/dashboard" class="nav-link">Tableau de bord</a>
           <a routerLink="/invoices" class="nav-link invoices-link">
             📄 Factures
