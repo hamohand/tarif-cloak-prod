@@ -1,5 +1,7 @@
 package com.muhend.backend.payment.service;
 
+import com.muhend.backend.invoice.dto.InvoiceDto;
+import com.muhend.backend.invoice.service.InvoiceService;
 import com.muhend.backend.organization.model.Organization;
 import com.muhend.backend.organization.repository.OrganizationRepository;
 import com.muhend.backend.organization.service.OrganizationService;
@@ -34,6 +36,7 @@ public class StripeService {
     private final OrganizationService organizationService;
     private final OrganizationRepository organizationRepository;
     private final SubscriptionRepository subscriptionRepository;
+    private final InvoiceService invoiceService;
     
     @Value("${app.base-url:https://www.hscode.enclume-numerique.com}")
     private String baseUrl;
@@ -43,12 +46,14 @@ public class StripeService {
             PricingPlanService pricingPlanService,
             OrganizationService organizationService,
             OrganizationRepository organizationRepository,
-            SubscriptionRepository subscriptionRepository) {
+            SubscriptionRepository subscriptionRepository,
+            InvoiceService invoiceService) {
         this.stripeConfig = stripeConfig;
         this.pricingPlanService = pricingPlanService;
         this.organizationService = organizationService;
         this.organizationRepository = organizationRepository;
         this.subscriptionRepository = subscriptionRepository;
+        this.invoiceService = invoiceService;
         
         // Initialiser Stripe avec la clé secrète
         if (stripeConfig.isConfigured()) {
@@ -167,7 +172,17 @@ public class StripeService {
         
         // Récupérer l'organisation et la facture
         var organization = organizationService.getOrganizationById(organizationId);
-        // TODO: Récupérer la facture depuis InvoiceService
+        InvoiceDto invoice = invoiceService.getInvoiceById(invoiceId);
+        
+        // Vérifier que la facture appartient à l'organisation
+        if (!invoice.getOrganizationId().equals(organizationId)) {
+            throw new IllegalArgumentException("La facture n'appartient pas à cette organisation");
+        }
+        
+        // Vérifier que la facture n'est pas déjà payée
+        if (invoice.getStatus() == com.muhend.backend.invoice.model.Invoice.InvoiceStatus.PAID) {
+            throw new IllegalStateException("Cette facture est déjà payée");
+        }
         
         // Créer ou récupérer le client Stripe
         String customerId = getOrCreateStripeCustomer(organizationId, organization.getEmail(), organization.getName());
@@ -183,13 +198,39 @@ public class StripeService {
         sessionParamsBuilder.putMetadata("organization_id", organizationId.toString());
         sessionParamsBuilder.putMetadata("invoice_id", invoiceId.toString());
         
-        // TODO: Ajouter les items de la facture comme line items
+        // Ajouter les items de la facture comme line items
+        List<SessionCreateParams.LineItem> lineItems = new ArrayList<>();
+        
+        // Créer un line item pour le montant total de la facture
+        SessionCreateParams.LineItem.PriceData priceData = SessionCreateParams.LineItem.PriceData.builder()
+                .setCurrency(stripeConfig.getCurrency().toLowerCase())
+                .setUnitAmount(invoice.getTotalAmount().multiply(BigDecimal.valueOf(100)).longValue()) // Convertir en centimes
+                .setProductData(
+                        SessionCreateParams.LineItem.PriceData.ProductData.builder()
+                                .setName("Facture " + invoice.getInvoiceNumber())
+                                .setDescription("Paiement de la facture " + invoice.getInvoiceNumber() + 
+                                        " pour la période du " + invoice.getPeriodStart() + " au " + invoice.getPeriodEnd())
+                                .build()
+                )
+                .build();
+        
+        SessionCreateParams.LineItem lineItem = SessionCreateParams.LineItem.builder()
+                .setPriceData(priceData)
+                .setQuantity(1L)
+                .build();
+        
+        lineItems.add(lineItem);
+        
+        // Ajouter les line items
+        for (SessionCreateParams.LineItem item : lineItems) {
+            sessionParamsBuilder.addLineItem(item);
+        }
         
         // Créer la session
         Session session = Session.create(sessionParamsBuilder.build());
         
-        log.info("Session de checkout Stripe créée pour facture: sessionId={}, organizationId={}, invoiceId={}",
-                session.getId(), organizationId, invoiceId);
+        log.info("Session de checkout Stripe créée pour facture: sessionId={}, organizationId={}, invoiceId={}, amount={}",
+                session.getId(), organizationId, invoiceId, invoice.getTotalAmount());
         
         return new CheckoutSessionResponse(
                 session.getId(),

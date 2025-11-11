@@ -90,6 +90,18 @@ public class PaymentService {
     }
     
     /**
+     * Récupère tous les paiements (admin uniquement).
+     */
+    @Transactional(readOnly = true)
+    public List<PaymentDto> getAllPayments() {
+        List<Payment> payments = paymentRepository.findAll();
+        return payments.stream()
+                .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
+                .map(this::toDto)
+                .collect(Collectors.toList());
+    }
+    
+    /**
      * Convertit un Payment en DTO.
      */
     private PaymentDto toDto(Payment payment) {

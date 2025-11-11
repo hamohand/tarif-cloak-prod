@@ -76,6 +76,18 @@ public class SubscriptionService {
     }
     
     /**
+     * Récupère tous les abonnements (admin uniquement).
+     */
+    @Transactional(readOnly = true)
+    public List<SubscriptionDto> getAllSubscriptions() {
+        List<Subscription> subscriptions = subscriptionRepository.findAll();
+        return subscriptions.stream()
+                .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
+                .map(this::toDto)
+                .collect(Collectors.toList());
+    }
+    
+    /**
      * Convertit un Subscription en DTO.
      */
     private SubscriptionDto toDto(Subscription subscription) {

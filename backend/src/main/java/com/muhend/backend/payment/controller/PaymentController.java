@@ -3,6 +3,7 @@ package com.muhend.backend.payment.controller;
 import com.muhend.backend.organization.service.OrganizationService;
 import com.muhend.backend.payment.dto.CheckoutSessionResponse;
 import com.muhend.backend.payment.dto.CreateCheckoutSessionRequest;
+import com.muhend.backend.payment.dto.PayInvoiceRequest;
 import com.muhend.backend.payment.dto.PaymentDto;
 import com.muhend.backend.payment.service.PaymentService;
 import com.muhend.backend.payment.service.StripeService;
@@ -175,6 +176,48 @@ public class PaymentController {
         } catch (StripeException e) {
             log.error("Erreur lors de la récupération de la session de checkout", e);
             return ResponseEntity.internalServerError().build();
+        }
+    }
+    
+    /**
+     * Crée une session de checkout pour payer une facture.
+     */
+    @PostMapping("/invoices/{invoiceId}/checkout")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Payer une facture",
+            description = "Crée une session de checkout Stripe pour payer une facture spécifique.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    public ResponseEntity<CheckoutSessionResponse> payInvoice(
+            @PathVariable Long invoiceId,
+            @Valid @RequestBody(required = false) PayInvoiceRequest request) {
+        try {
+            String userId = getCurrentUserId();
+            if (userId == null) {
+                return ResponseEntity.badRequest().build();
+            }
+            
+            Long organizationId = organizationService.getOrganizationIdByUserId(userId);
+            if (organizationId == null) {
+                return ResponseEntity.badRequest().build();
+            }
+            
+            String successUrl = request != null && request.getSuccessUrl() != null ? 
+                    request.getSuccessUrl() : null;
+            String cancelUrl = request != null && request.getCancelUrl() != null ? 
+                    request.getCancelUrl() : null;
+            
+            CheckoutSessionResponse response = stripeService.createInvoiceCheckoutSession(
+                    organizationId, invoiceId, successUrl, cancelUrl);
+            return ResponseEntity.ok(response);
+            
+        } catch (StripeException e) {
+            log.error("Erreur lors de la création de la session de checkout pour la facture", e);
+            return ResponseEntity.internalServerError().build();
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            log.error("Erreur de validation lors du paiement de la facture", e);
+            return ResponseEntity.badRequest().build();
         }
     }
 }
