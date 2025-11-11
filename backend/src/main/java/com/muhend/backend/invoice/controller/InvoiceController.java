@@ -5,6 +5,7 @@ import com.muhend.backend.invoice.dto.InvoiceDto;
 import com.muhend.backend.invoice.dto.UpdateInvoiceStatusRequest;
 import com.muhend.backend.invoice.service.InvoicePdfService;
 import com.muhend.backend.invoice.service.InvoiceService;
+import com.muhend.backend.organization.exception.UserNotAssociatedException;
 import com.muhend.backend.organization.service.OrganizationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -64,7 +65,8 @@ public class InvoiceController {
     @PreAuthorize("isAuthenticated()")
     @Operation(
             summary = "Récupérer mes factures",
-            description = "Retourne toutes les factures de l'organisation de l'utilisateur connecté.",
+            description = "Retourne toutes les factures de l'organisation de l'utilisateur connecté. " +
+                         "Un utilisateur doit toujours être associé à une organisation.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
     public ResponseEntity<List<InvoiceDto>> getMyInvoices() {
@@ -73,13 +75,15 @@ public class InvoiceController {
             return ResponseEntity.badRequest().build();
         }
         
-        Long organizationId = organizationService.getOrganizationIdByUserId(userId);
-        if (organizationId == null) {
-            return ResponseEntity.ok(List.of()); // Pas d'organisation, pas de factures
+        try {
+            Long organizationId = organizationService.getOrganizationIdByUserId(userId);
+            List<InvoiceDto> invoices = invoiceService.getInvoicesByOrganization(organizationId);
+            return ResponseEntity.ok(invoices);
+        } catch (UserNotAssociatedException e) {
+            log.error("Utilisateur {} non associé à une organisation", userId);
+            // L'exception sera gérée par le GlobalExceptionHandler qui retournera un 403
+            throw e;
         }
-        
-        List<InvoiceDto> invoices = invoiceService.getInvoicesByOrganization(organizationId);
-        return ResponseEntity.ok(invoices);
     }
     
     /**
@@ -90,7 +94,8 @@ public class InvoiceController {
     @PreAuthorize("isAuthenticated()")
     @Operation(
             summary = "Récupérer une de mes factures",
-            description = "Retourne une facture spécifique de l'organisation de l'utilisateur connecté et la marque comme consultée.",
+            description = "Retourne une facture spécifique de l'organisation de l'utilisateur connecté et la marque comme consultée. " +
+                         "Un utilisateur doit toujours être associé à une organisation.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
     public ResponseEntity<InvoiceDto> getMyInvoice(@PathVariable Long id) {
@@ -99,22 +104,24 @@ public class InvoiceController {
             return ResponseEntity.badRequest().build();
         }
         
-        Long organizationId = organizationService.getOrganizationIdByUserId(userId);
-        if (organizationId == null) {
-            return ResponseEntity.notFound().build();
+        try {
+            Long organizationId = organizationService.getOrganizationIdByUserId(userId);
+            
+            InvoiceDto invoice = invoiceService.getInvoiceById(id);
+            
+            // Vérifier que la facture appartient à l'organisation de l'utilisateur
+            if (!invoice.getOrganizationId().equals(organizationId)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+            
+            // Marquer automatiquement comme consultée
+            invoice = invoiceService.markInvoiceAsViewed(id);
+            
+            return ResponseEntity.ok(invoice);
+        } catch (UserNotAssociatedException e) {
+            log.error("Utilisateur {} non associé à une organisation", userId);
+            throw e;
         }
-        
-        InvoiceDto invoice = invoiceService.getInvoiceById(id);
-        
-        // Vérifier que la facture appartient à l'organisation de l'utilisateur
-        if (!invoice.getOrganizationId().equals(organizationId)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
-        
-        // Marquer automatiquement comme consultée
-        invoice = invoiceService.markInvoiceAsViewed(id);
-        
-        return ResponseEntity.ok(invoice);
     }
     
     /**
@@ -124,7 +131,8 @@ public class InvoiceController {
     @PreAuthorize("isAuthenticated()")
     @Operation(
             summary = "Compter les nouvelles factures",
-            description = "Retourne le nombre de nouvelles factures non consultées de l'organisation de l'utilisateur connecté.",
+            description = "Retourne le nombre de nouvelles factures non consultées de l'organisation de l'utilisateur connecté. " +
+                         "Un utilisateur doit toujours être associé à une organisation.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
     public ResponseEntity<Map<String, Object>> getNewInvoicesCount() {
@@ -133,13 +141,14 @@ public class InvoiceController {
             return ResponseEntity.badRequest().build();
         }
         
-        Long organizationId = organizationService.getOrganizationIdByUserId(userId);
-        if (organizationId == null) {
-            return ResponseEntity.ok(Map.of("count", 0L));
+        try {
+            Long organizationId = organizationService.getOrganizationIdByUserId(userId);
+            long count = invoiceService.countNewInvoices(organizationId);
+            return ResponseEntity.ok(Map.of("count", count));
+        } catch (UserNotAssociatedException e) {
+            log.error("Utilisateur {} non associé à une organisation", userId);
+            throw e;
         }
-        
-        long count = invoiceService.countNewInvoices(organizationId);
-        return ResponseEntity.ok(Map.of("count", count));
     }
     
     /**
@@ -149,7 +158,8 @@ public class InvoiceController {
     @PreAuthorize("isAuthenticated()")
     @Operation(
             summary = "Compter les factures en retard",
-            description = "Retourne le nombre de factures en retard (OVERDUE) de l'organisation de l'utilisateur connecté.",
+            description = "Retourne le nombre de factures en retard (OVERDUE) de l'organisation de l'utilisateur connecté. " +
+                         "Un utilisateur doit toujours être associé à une organisation.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
     public ResponseEntity<Map<String, Object>> getOverdueInvoicesCount() {
@@ -158,13 +168,14 @@ public class InvoiceController {
             return ResponseEntity.badRequest().build();
         }
         
-        Long organizationId = organizationService.getOrganizationIdByUserId(userId);
-        if (organizationId == null) {
-            return ResponseEntity.ok(Map.of("count", 0L));
+        try {
+            Long organizationId = organizationService.getOrganizationIdByUserId(userId);
+            long count = invoiceService.countOverdueInvoices(organizationId);
+            return ResponseEntity.ok(Map.of("count", count));
+        } catch (UserNotAssociatedException e) {
+            log.error("Utilisateur {} non associé à une organisation", userId);
+            throw e;
         }
-        
-        long count = invoiceService.countOverdueInvoices(organizationId);
-        return ResponseEntity.ok(Map.of("count", count));
     }
     
     /**
@@ -174,7 +185,8 @@ public class InvoiceController {
     @PreAuthorize("isAuthenticated()")
     @Operation(
             summary = "Marquer une facture comme consultée",
-            description = "Marque une facture comme consultée. Nécessite que la facture appartienne à l'organisation de l'utilisateur connecté.",
+            description = "Marque une facture comme consultée. Nécessite que la facture appartienne à l'organisation de l'utilisateur connecté. " +
+                         "Un utilisateur doit toujours être associé à une organisation.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
     public ResponseEntity<InvoiceDto> markInvoiceAsViewed(@PathVariable Long id) {
@@ -183,20 +195,22 @@ public class InvoiceController {
             return ResponseEntity.badRequest().build();
         }
         
-        Long organizationId = organizationService.getOrganizationIdByUserId(userId);
-        if (organizationId == null) {
-            return ResponseEntity.notFound().build();
+        try {
+            Long organizationId = organizationService.getOrganizationIdByUserId(userId);
+            
+            InvoiceDto invoice = invoiceService.getInvoiceById(id);
+            
+            // Vérifier que la facture appartient à l'organisation de l'utilisateur
+            if (!invoice.getOrganizationId().equals(organizationId)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+            
+            invoice = invoiceService.markInvoiceAsViewed(id);
+            return ResponseEntity.ok(invoice);
+        } catch (UserNotAssociatedException e) {
+            log.error("Utilisateur {} non associé à une organisation", userId);
+            throw e;
         }
-        
-        InvoiceDto invoice = invoiceService.getInvoiceById(id);
-        
-        // Vérifier que la facture appartient à l'organisation de l'utilisateur
-        if (!invoice.getOrganizationId().equals(organizationId)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
-        
-        invoice = invoiceService.markInvoiceAsViewed(id);
-        return ResponseEntity.ok(invoice);
     }
     
     /**
@@ -326,7 +340,8 @@ public class InvoiceController {
     @PreAuthorize("isAuthenticated()")
     @Operation(
             summary = "Télécharger le PDF d'une de mes factures",
-            description = "Télécharge le PDF d'une facture de l'organisation de l'utilisateur connecté.",
+            description = "Télécharge le PDF d'une facture de l'organisation de l'utilisateur connecté. " +
+                         "Un utilisateur doit toujours être associé à une organisation.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
     public ResponseEntity<byte[]> downloadMyInvoicePdf(@PathVariable Long id) {
@@ -335,19 +350,21 @@ public class InvoiceController {
             return ResponseEntity.badRequest().build();
         }
         
-        Long organizationId = organizationService.getOrganizationIdByUserId(userId);
-        if (organizationId == null) {
-            return ResponseEntity.notFound().build();
+        try {
+            Long organizationId = organizationService.getOrganizationIdByUserId(userId);
+            
+            InvoiceDto invoice = invoiceService.getInvoiceById(id);
+            
+            // Vérifier que la facture appartient à l'organisation de l'utilisateur
+            if (!invoice.getOrganizationId().equals(organizationId)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+            
+            return generatePdfResponse(invoice);
+        } catch (UserNotAssociatedException e) {
+            log.error("Utilisateur {} non associé à une organisation", userId);
+            throw e;
         }
-        
-        InvoiceDto invoice = invoiceService.getInvoiceById(id);
-        
-        // Vérifier que la facture appartient à l'organisation de l'utilisateur
-        if (!invoice.getOrganizationId().equals(organizationId)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
-        
-        return generatePdfResponse(invoice);
     }
     
     /**

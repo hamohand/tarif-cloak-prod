@@ -48,7 +48,9 @@ public class GlobalExceptionHandler {
         
         Map<String, Object> response = new HashMap<>();
         response.put("error", "USER_NOT_ASSOCIATED");
-        response.put("message", ex.getMessage());
+        response.put("message", "Vous devez être associé à une organisation pour accéder à cette ressource. " +
+                                "Veuillez contacter un administrateur pour être associé à une organisation.");
+        response.put("detail", ex.getMessage());
         response.put("status", HttpStatus.FORBIDDEN.value());
         
         return ResponseEntity

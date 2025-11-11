@@ -4,15 +4,23 @@ import com.muhend.backend.admin.service.EndpointDiscoveryService;
 import com.muhend.backend.auth.service.KeycloakAdminService;
 import com.muhend.backend.organization.dto.OrganizationDto;
 import com.muhend.backend.organization.service.OrganizationService;
+import com.muhend.backend.organization.repository.OrganizationUserRepository;
+import com.muhend.backend.organization.repository.OrganizationRepository;
+import com.muhend.backend.invoice.repository.InvoiceRepository;
+import com.muhend.backend.invoice.repository.InvoiceItemRepository;
+import com.muhend.backend.auth.repository.PendingRegistrationRepository;
 import com.muhend.backend.usage.model.UsageLog;
+import com.muhend.backend.usage.repository.UsageLogRepository;
 import com.muhend.backend.usage.service.UsageLogService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -28,6 +36,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/admin")
 @RequiredArgsConstructor
+@Slf4j
 @Tag(name = "Admin", description = "Endpoints d'administration (nécessite le rôle ADMIN)")
 public class AdminController {
 
@@ -35,6 +44,12 @@ public class AdminController {
     private final UsageLogService usageLogService;
     private final OrganizationService organizationService;
     private final KeycloakAdminService keycloakAdminService;
+    private final OrganizationUserRepository organizationUserRepository;
+    private final OrganizationRepository organizationRepository;
+    private final UsageLogRepository usageLogRepository;
+    private final InvoiceRepository invoiceRepository;
+    private final InvoiceItemRepository invoiceItemRepository;
+    private final PendingRegistrationRepository pendingRegistrationRepository;
 
     @GetMapping("/endpoints")
     @PreAuthorize("hasRole('ADMIN')")
@@ -321,6 +336,137 @@ public class AdminController {
         map.put("costUsd", log.getCostUsd() != null ? log.getCostUsd().doubleValue() : null);
         map.put("timestamp", log.getTimestamp());
         return map;
+    }
+    
+    /**
+     * Liste les utilisateurs qui ont des logs d'utilisation mais qui ne sont pas associés à une organisation.
+     * Utile pour identifier les utilisateurs à associer à une organisation.
+     */
+    @GetMapping("/users/without-organization")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(
+        summary = "Lister les utilisateurs sans organisation",
+        description = "Retourne la liste des utilisateurs qui ont des logs d'utilisation mais qui ne sont pas associés à une organisation. " +
+                     "Ces utilisateurs doivent être associés à une organisation pour fonctionner correctement. " +
+                     "Nécessite le rôle ADMIN.",
+        security = @SecurityRequirement(name = "bearerAuth")
+    )
+    public ResponseEntity<Map<String, Object>> getUsersWithoutOrganization() {
+        // Récupérer tous les utilisateurs qui ont des logs d'utilisation
+        List<UsageLog> allLogs = usageLogRepository.findAll();
+        Set<String> usersWithLogs = allLogs.stream()
+                .map(UsageLog::getKeycloakUserId)
+                .filter(userId -> userId != null && !userId.trim().isEmpty())
+                .collect(java.util.stream.Collectors.toSet());
+        
+        // Récupérer tous les utilisateurs qui sont associés à une organisation
+        List<com.muhend.backend.organization.model.OrganizationUser> allOrganizationUsers = 
+                organizationUserRepository.findAll();
+        Set<String> usersWithOrganization = allOrganizationUsers.stream()
+                .map(com.muhend.backend.organization.model.OrganizationUser::getKeycloakUserId)
+                .filter(userId -> userId != null && !userId.trim().isEmpty())
+                .collect(java.util.stream.Collectors.toSet());
+        
+        // Trouver les utilisateurs qui ont des logs mais pas d'organisation
+        List<Map<String, Object>> usersWithoutOrganization = usersWithLogs.stream()
+                .filter(userId -> !usersWithOrganization.contains(userId))
+                .map(userId -> {
+                    Map<String, Object> userInfo = new HashMap<>();
+                    userInfo.put("keycloakUserId", userId);
+                    try {
+                        String username = keycloakAdminService.getUsername(userId);
+                        String email = keycloakAdminService.getUserEmail(userId);
+                        userInfo.put("username", username != null ? username : "N/A");
+                        userInfo.put("email", email != null ? email : "N/A");
+                    } catch (Exception e) {
+                        userInfo.put("username", "N/A");
+                        userInfo.put("email", "N/A");
+                    }
+                    // Compter les logs de cet utilisateur
+                    long logCount = allLogs.stream()
+                            .filter(log -> userId.equals(log.getKeycloakUserId()))
+                            .count();
+                    userInfo.put("logCount", logCount);
+                    return userInfo;
+                })
+                .sorted((a, b) -> Long.compare((Long) b.get("logCount"), (Long) a.get("logCount")))
+                .collect(Collectors.toList());
+        
+        return ResponseEntity.ok(Map.of(
+            "total", usersWithoutOrganization.size(),
+            "users", usersWithoutOrganization,
+            "message", usersWithoutOrganization.isEmpty() 
+                ? "Tous les utilisateurs avec des logs d'utilisation sont associés à une organisation."
+                : "Ces utilisateurs doivent être associés à une organisation pour fonctionner correctement."
+        ));
+    }
+    
+    /**
+     * Réinitialise toutes les données de test (organisations, utilisateurs, factures, logs, inscriptions en attente).
+     * ATTENTION: Cette opération est irréversible et supprime toutes les données de test.
+     * Les plans tarifaires ne sont PAS supprimés.
+     * Utile pour la période de test.
+     */
+    @DeleteMapping("/reset-test-data")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(
+        summary = "Réinitialiser toutes les données de test",
+        description = "Supprime toutes les données de test : organisations, associations utilisateurs-organisations, " +
+                     "factures, logs d'utilisation, et inscriptions en attente. " +
+                     "ATTENTION: Cette opération est irréversible. Les plans tarifaires ne sont PAS supprimés. " +
+                     "Nécessite le rôle ADMIN.",
+        security = @SecurityRequirement(name = "bearerAuth")
+    )
+    public ResponseEntity<Map<String, Object>> resetTestData() {
+        try {
+            // Compter les données avant suppression
+            long organizationCount = organizationRepository.count();
+            long organizationUserCount = organizationUserRepository.count();
+            long invoiceCount = invoiceRepository.count();
+            long invoiceItemCount = invoiceItemRepository.count();
+            long usageLogCount = usageLogRepository.count();
+            long pendingRegistrationCount = pendingRegistrationRepository.count();
+            
+            // Supprimer dans l'ordre pour respecter les contraintes de clés étrangères
+            // 1. Supprimer les items de facture
+            invoiceItemRepository.deleteAll();
+            
+            // 2. Supprimer les factures
+            invoiceRepository.deleteAll();
+            
+            // 3. Supprimer les logs d'utilisation
+            usageLogRepository.deleteAll();
+            
+            // 4. Supprimer les associations utilisateurs-organisations
+            organizationUserRepository.deleteAll();
+            
+            // 5. Supprimer les organisations
+            organizationRepository.deleteAll();
+            
+            // 6. Supprimer les inscriptions en attente
+            pendingRegistrationRepository.deleteAll();
+            
+            return ResponseEntity.ok(Map.of(
+                "message", "Toutes les données de test ont été supprimées avec succès",
+                "deleted", Map.of(
+                    "organizations", organizationCount,
+                    "organizationUsers", organizationUserCount,
+                    "invoices", invoiceCount,
+                    "invoiceItems", invoiceItemCount,
+                    "usageLogs", usageLogCount,
+                    "pendingRegistrations", pendingRegistrationCount
+                ),
+                "note", "Les plans tarifaires n'ont pas été supprimés. " +
+                        "Vous devez également supprimer les utilisateurs Keycloak manuellement si nécessaire."
+            ));
+        } catch (Exception e) {
+            log.error("Erreur lors de la réinitialisation des données de test: {}", e.getMessage(), e);
+            return ResponseEntity.status(org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of(
+                    "error", "Erreur lors de la réinitialisation des données de test",
+                    "message", e.getMessage()
+                ));
+        }
     }
 }
 
