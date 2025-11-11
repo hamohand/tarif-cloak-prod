@@ -386,8 +386,31 @@ public class OrganizationService {
             userEmails.add(organization.getEmail());
         }
         
-        // TODO: Récupérer les emails des utilisateurs depuis Keycloak pour les notifier aussi
-        // Pour l'instant, on envoie seulement à l'email de l'organisation
+        // Récupérer les emails des utilisateurs de l'organisation depuis Keycloak
+        try {
+            List<OrganizationUser> organizationUsers = organizationUserRepository.findByOrganizationId(organization.getId());
+            List<String> keycloakUserIds = organizationUsers.stream()
+                    .map(OrganizationUser::getKeycloakUserId)
+                    .filter(id -> id != null && !id.trim().isEmpty())
+                    .collect(Collectors.toList());
+            
+            if (!keycloakUserIds.isEmpty()) {
+                List<String> userEmailsFromKeycloak = keycloakAdminService.getUserEmails(keycloakUserIds);
+                // Ajouter les emails des utilisateurs (éviter les doublons)
+                for (String email : userEmailsFromKeycloak) {
+                    if (email != null && !email.trim().isEmpty() && !userEmails.contains(email)) {
+                        userEmails.add(email);
+                    }
+                }
+                log.debug("Récupéré {} email(s) d'utilisateurs depuis Keycloak pour l'organisation {}", 
+                        userEmailsFromKeycloak.size(), organization.getId());
+            }
+        } catch (Exception e) {
+            log.warn("Erreur lors de la récupération des emails des utilisateurs depuis Keycloak pour l'organisation {}: {}. " +
+                    "L'email sera envoyé uniquement à l'adresse de l'organisation.", 
+                    organization.getId(), e.getMessage());
+            // Continuer avec l'email de l'organisation même si la récupération des emails utilisateurs échoue
+        }
         
         // Préparer les données pour l'email
         String oldPlanName = oldPlan != null ? oldPlan.getName() : null;
