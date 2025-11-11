@@ -29,10 +29,16 @@ public class PricingPlanService {
      */
     @Transactional(readOnly = true)
     public List<PricingPlanDto> getActivePricingPlans() {
-        List<PricingPlan> plans = pricingPlanRepository.findByIsActiveTrueOrderByDisplayOrderAsc();
-        return plans.stream()
-                .map(this::toDto)
-                .collect(Collectors.toList());
+        try {
+            List<PricingPlan> plans = pricingPlanRepository.findByIsActiveTrueOrderByDisplayOrderAsc();
+            log.debug("Récupération de {} plan(s) tarifaire(s) actif(s)", plans.size());
+            return plans.stream()
+                    .map(this::toDto)
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            log.error("Erreur lors de la récupération des plans tarifaires actifs depuis la base de données", e);
+            throw e; // Re-lancer l'exception pour que le controller puisse la gérer
+        }
     }
     
     /**

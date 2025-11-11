@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -19,6 +20,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/pricing-plans")
 @RequiredArgsConstructor
+@Slf4j
 @Tag(name = "Pricing Plans", description = "Endpoints pour consulter et gérer les plans tarifaires")
 public class PricingPlanController {
     
@@ -31,8 +33,15 @@ public class PricingPlanController {
                      "Accessible publiquement pour permettre aux utilisateurs de consulter les plans avant l'inscription."
     )
     public ResponseEntity<List<PricingPlanDto>> getActivePricingPlans() {
-        List<PricingPlanDto> plans = pricingPlanService.getActivePricingPlans();
-        return ResponseEntity.ok(plans);
+        try {
+            List<PricingPlanDto> plans = pricingPlanService.getActivePricingPlans();
+            return ResponseEntity.ok(plans);
+        } catch (Exception e) {
+            log.error("Erreur lors de la récupération des plans tarifaires actifs", e);
+            // Retourner une liste vide plutôt que de faire échouer la requête
+            // Cela permet au frontend de continuer à fonctionner même si la base de données a un problème
+            return ResponseEntity.ok(List.of());
+        }
     }
     
     @GetMapping("/{id}")
