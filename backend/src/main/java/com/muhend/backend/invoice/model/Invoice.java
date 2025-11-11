@@ -64,6 +64,25 @@ public class Invoice {
     @Column(name = "viewed_at")
     private LocalDateTime viewedAt;
     
+    // Colonnes pour l'intégration avec le système de paiement
+    @Column(name = "payment_id")
+    private Long paymentId; // Référence au paiement associé
+    
+    @Column(name = "subscription_id")
+    private Long subscriptionId; // Référence à l'abonnement associé (si applicable)
+    
+    @Column(name = "payment_provider", length = 50)
+    private String paymentProvider; // stripe, paypal, etc.
+    
+    @Column(name = "payment_provider_invoice_id", length = 255)
+    private String paymentProviderInvoiceId; // ID de la facture chez le processeur
+    
+    @Column(name = "payment_intent_id", length = 255)
+    private String paymentIntentId; // ID de l'intention de paiement (Stripe)
+    
+    @Column(name = "invoice_pdf_url", length = 500)
+    private String invoicePdfUrl; // URL vers le PDF (si stocké ailleurs)
+    
     @PrePersist
     protected void onCreate() {
         if (createdAt == null) {

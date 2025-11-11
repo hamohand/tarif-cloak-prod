@@ -116,6 +116,15 @@ pricing:
   base-request-price: ${BASE_REQUEST_PRICE_USD:0.01}
 
 # ===================================================
+# CONFIGURATION STRIPE (Paiement électronique)
+# ===================================================
+stripe:
+  secret-key: ${STRIPE_SECRET_KEY:}
+  publishable-key: ${STRIPE_PUBLISHABLE_KEY:}
+  webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
+  currency: ${STRIPE_CURRENCY:EUR}
+
+# ===================================================
 # CONFIGURATION CORS
 # ===================================================
 cors:
