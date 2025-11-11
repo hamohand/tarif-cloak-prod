@@ -128,6 +128,90 @@ import { CommonModule } from '@angular/common';
           </div>
 
           <div class="form-group">
+            <label for="organizationAddress">Adresse complète *</label>
+            <textarea
+              id="organizationAddress"
+              formControlName="organizationAddress"
+              class="form-control"
+              rows="3"
+              [class.error]="isFieldInvalid('organizationAddress')"
+              placeholder="Numéro, rue, code postal, ville, pays"></textarea>
+            @if (isFieldInvalid('organizationAddress')) {
+              <div class="error-message">
+                {{ getErrorMessage('organizationAddress') }}
+              </div>
+            }
+          </div>
+
+          <div class="form-row">
+            <div class="form-group half-width">
+              <label for="organizationCountry">Pays (code ISO) *</label>
+              <input
+                type="text"
+                id="organizationCountry"
+                formControlName="organizationCountry"
+                class="form-control"
+                maxlength="2"
+                [class.error]="isFieldInvalid('organizationCountry')"
+                placeholder="FR">
+              @if (isFieldInvalid('organizationCountry')) {
+                <div class="error-message">
+                  {{ getErrorMessage('organizationCountry') }}
+                </div>
+              }
+              <small class="form-hint">Utilisez le code ISO à 2 lettres (ex: FR, US, CA)</small>
+            </div>
+
+            <div class="form-group half-width">
+              <label for="organizationPhone">Téléphone (indicatif international) *</label>
+              <input
+                type="tel"
+                id="organizationPhone"
+                formControlName="organizationPhone"
+                class="form-control"
+                [class.error]="isFieldInvalid('organizationPhone')"
+                placeholder="+33 1 23 45 67 89">
+              @if (isFieldInvalid('organizationPhone')) {
+                <div class="error-message">
+                  {{ getErrorMessage('organizationPhone') }}
+                </div>
+              }
+              <small class="form-hint">Format international recommandé (ex: +33123456789)</small>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="organizationPassword">Mot de passe du compte organisation *</label>
+            <input
+              type="password"
+              id="organizationPassword"
+              formControlName="organizationPassword"
+              class="form-control"
+              [class.error]="isFieldInvalid('organizationPassword')">
+            @if (isFieldInvalid('organizationPassword')) {
+              <div class="error-message">
+                {{ getErrorMessage('organizationPassword') }}
+              </div>
+            }
+            <small class="form-hint">Ce mot de passe permettra à l'organisation de se connecter directement.</small>
+          </div>
+
+          <div class="form-group">
+            <label for="organizationConfirmPassword">Confirmer le mot de passe de l'organisation *</label>
+            <input
+              type="password"
+              id="organizationConfirmPassword"
+              formControlName="organizationConfirmPassword"
+              class="form-control"
+              [class.error]="isFieldInvalid('organizationConfirmPassword')">
+            @if (isFieldInvalid('organizationConfirmPassword')) {
+              <div class="error-message">
+                {{ getErrorMessage('organizationConfirmPassword') }}
+              </div>
+            }
+          </div>
+
+          <div class="form-group">
             <label for="organizationEmail">Email de l'organisation *</label>
             <input
               type="email"
@@ -266,6 +350,16 @@ import { CommonModule } from '@angular/common';
     .form-group {
       display: flex;
       flex-direction: column;
+    }
+
+    .form-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .half-width {
+      flex: 1 1 250px;
     }
 
     label {
@@ -413,9 +507,14 @@ export class RegisterComponent implements OnInit {
     confirmPassword: ['', [Validators.required]],
     organizationName: ['', [Validators.required, Validators.minLength(1), Validators.maxLength(255)]],
     organizationEmail: ['', [Validators.required, Validators.email, Validators.maxLength(255)]],
+    organizationAddress: ['', [Validators.required, Validators.minLength(5), Validators.maxLength(512)]],
+    organizationCountry: ['', [Validators.required, Validators.pattern(/^[A-Za-z]{2}$/)]],
+    organizationPhone: ['', [Validators.required, Validators.pattern(/^[+0-9\s().-]{5,32}$/)]],
+    organizationPassword: ['', [Validators.required, Validators.minLength(8)]],
+    organizationConfirmPassword: ['', [Validators.required]],
     pricingPlanId: [null]
   }, {
-    validators: [this.passwordMatchValidator, this.emailDifferenceValidator]
+    validators: [this.passwordMatchValidator, this.organizationPasswordMatchValidator, this.emailDifferenceValidator]
   });
 
   ngOnInit() {
@@ -452,6 +551,19 @@ export class RegisterComponent implements OnInit {
     if (password && confirmPassword && password.value !== confirmPassword.value) {
       confirmPassword.setErrors({ passwordMismatch: true });
       return { passwordMismatch: true };
+    }
+
+    confirmPassword?.setErrors(null);
+    return null;
+  }
+
+  organizationPasswordMatchValidator(form: FormGroup) {
+    const password = form.get('organizationPassword');
+    const confirmPassword = form.get('organizationConfirmPassword');
+
+    if (password && confirmPassword && password.value !== confirmPassword.value) {
+      confirmPassword.setErrors({ passwordMismatch: true });
+      return { organizationPasswordMismatch: true };
     }
 
     confirmPassword?.setErrors(null);
@@ -505,6 +617,14 @@ export class RegisterComponent implements OnInit {
       if (field.errors['sameAsOrganizationEmail']) {
         return 'L\'email utilisateur doit être différent de l\'email de l\'organisation';
       }
+      if (field.errors['pattern']) {
+        if (fieldName === 'organizationCountry') {
+          return 'Le pays doit être un code ISO à 2 lettres (ex: FR)';
+        }
+        if (fieldName === 'organizationPhone') {
+          return 'Le numéro doit être au format international (ex: +33123456789)';
+        }
+      }
     }
 
     return '';
@@ -516,7 +636,11 @@ export class RegisterComponent implements OnInit {
       this.errorMessage = '';
       this.successMessage = '';
 
-      const userData = this.registerForm.value;
+      const userData = {
+        ...this.registerForm.value,
+        organizationCountry: (this.registerForm.value.organizationCountry || '').toUpperCase(),
+        organizationEmail: (this.registerForm.value.organizationEmail || '').toLowerCase()
+      };
       
       // Log pour diagnostiquer le problème
       console.log('=== Données du formulaire avant envoi ===');
@@ -532,6 +656,10 @@ export class RegisterComponent implements OnInit {
         password: userData.password,
         organizationName: userData.organizationName,
         organizationEmail: userData.organizationEmail,
+        organizationAddress: userData.organizationAddress,
+        organizationCountry: userData.organizationCountry,
+        organizationPhone: userData.organizationPhone,
+        organizationPassword: userData.organizationPassword,
         pricingPlanId: userData.pricingPlanId || null
       }).subscribe({
         next: (response) => {
@@ -539,7 +667,9 @@ export class RegisterComponent implements OnInit {
           const orgEmail = response.organizationEmail || userData.organizationEmail;
           this.successMessage = response.message || `Un email de confirmation a été envoyé à ${orgEmail}. Veuillez vérifier votre boîte de réception et cliquer sur le lien de confirmation pour finaliser votre inscription.`;
           // Réinitialiser le formulaire
-          this.registerForm.reset();
+          this.registerForm.reset({
+            pricingPlanId: null
+          });
           // Ne pas rediriger automatiquement, l'utilisateur doit confirmer par email
         },
         error: (error) => {

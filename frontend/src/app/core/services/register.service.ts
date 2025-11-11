@@ -12,6 +12,10 @@ export interface RegisterUser {
   password: string;
   organizationName: string;
   organizationEmail: string; // Obligatoire
+  organizationAddress: string;
+  organizationCountry: string;
+  organizationPhone: string;
+  organizationPassword: string;
   pricingPlanId?: number | null; // ID du plan tarifaire sélectionné (optionnel)
 }
 
