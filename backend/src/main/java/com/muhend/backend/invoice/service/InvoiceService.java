@@ -15,6 +15,7 @@ import com.muhend.backend.pricing.dto.PricingPlanDto;
 import com.muhend.backend.usage.model.UsageLog;
 import com.muhend.backend.usage.repository.UsageLogRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -53,7 +54,7 @@ public class InvoiceService {
             InvoiceRepository invoiceRepository,
             InvoiceItemRepository invoiceItemRepository,
             UsageLogRepository usageLogRepository,
-            OrganizationService organizationService,
+            @Lazy OrganizationService organizationService,
             EmailService emailService,
             KeycloakAdminService keycloakAdminService) {
         this.invoiceRepository = invoiceRepository;
