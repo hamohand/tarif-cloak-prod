@@ -41,11 +41,23 @@ public class PendingRegistration {
     @Column(name = "password", nullable = false, length = 255)
     private String password; // Hashé ou en clair selon votre politique de sécurité
     
+    @Column(name = "organization_password", nullable = true, length = 255)
+    private String organizationPassword;
+    
     @Column(name = "organization_name", nullable = false, length = 255)
     private String organizationName;
     
     @Column(name = "organization_email", nullable = false, length = 255)
     private String organizationEmail;
+    
+    @Column(name = "organization_address", nullable = false, length = 512)
+    private String organizationAddress;
+    
+    @Column(name = "organization_country", nullable = false, length = 2)
+    private String organizationCountry;
+    
+    @Column(name = "organization_phone", nullable = false, length = 32)
+    private String organizationPhone;
     
     @Column(name = "pricing_plan_id", nullable = true)
     private Long pricingPlanId; // ID du plan tarifaire sélectionné (optionnel)

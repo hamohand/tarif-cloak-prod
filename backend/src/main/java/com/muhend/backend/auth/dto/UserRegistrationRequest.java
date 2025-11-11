@@ -32,5 +32,21 @@ public class UserRegistrationRequest {
     @Size(max = 255, message = "L'email de l'organisation doit contenir au maximum 255 caractères")
     private String organizationEmail; // Obligatoire et utilisé comme identifiant unique
     
+    @NotBlank(message = "L'adresse de l'organisation est obligatoire")
+    @Size(min = 5, max = 512, message = "L'adresse doit contenir entre 5 et 512 caractères")
+    private String organizationAddress;
+    
+    @NotBlank(message = "Le pays de l'organisation est obligatoire")
+    @Size(min = 2, max = 2, message = "Le pays doit être un code ISO 3166-1 alpha-2")
+    private String organizationCountry;
+    
+    @NotBlank(message = "Le numéro de téléphone de l'organisation est obligatoire")
+    @Size(min = 5, max = 32, message = "Le numéro de téléphone doit contenir entre 5 et 32 caractères")
+    private String organizationPhone;
+    
+    @NotBlank(message = "Le mot de passe de l'organisation est obligatoire")
+    @Size(min = 8, max = 128, message = "Le mot de passe de l'organisation doit contenir entre 8 et 128 caractères")
+    private String organizationPassword;
+    
     private Long pricingPlanId; // ID du plan tarifaire sélectionné (optionnel)
 }

@@ -33,5 +33,10 @@ public interface OrganizationRepository extends JpaRepository<Organization, Long
      * Trouve une organisation par son ID de client Stripe.
      */
     java.util.Optional<Organization> findByStripeCustomerId(String stripeCustomerId);
+
+    /**
+     * Trouve une organisation par l'identifiant Keycloak de son compte principal.
+     */
+    Optional<Organization> findByKeycloakUserId(String keycloakUserId);
 }
 

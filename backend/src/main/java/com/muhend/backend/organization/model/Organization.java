@@ -28,6 +28,18 @@ public class Organization {
     @Column(name = "email", nullable = false, unique = true, length = 255)
     private String email; // Email de l'organisation (identifiant unique)
     
+    @Column(name = "address", nullable = false, length = 512)
+    private String address; // Adresse complète de l'organisation
+    
+    @Column(name = "country", nullable = false, length = 2)
+    private String country; // Code pays ISO-3166 alpha-2
+    
+    @Column(name = "phone", nullable = false, length = 32)
+    private String phone; // Numéro de téléphone international (E.164)
+    
+    @Column(name = "keycloak_user_id", nullable = true, unique = true, length = 255)
+    private String keycloakUserId; // Identifiant Keycloak du compte organisation
+    
     @Column(name = "monthly_quota", nullable = true)
     private Integer monthlyQuota; // null = quota illimité (peut être défini par le plan tarifaire)
     

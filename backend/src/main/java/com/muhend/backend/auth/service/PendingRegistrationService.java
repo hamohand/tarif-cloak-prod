@@ -4,6 +4,7 @@ import com.muhend.backend.auth.dto.UserRegistrationRequest;
 import com.muhend.backend.auth.model.PendingRegistration;
 import com.muhend.backend.auth.repository.PendingRegistrationRepository;
 import com.muhend.backend.email.service.EmailService;
+import com.muhend.backend.organization.dto.CreateCollaboratorRequest;
 import com.muhend.backend.organization.model.Organization;
 import com.muhend.backend.organization.repository.OrganizationRepository;
 import com.muhend.backend.organization.service.OrganizationService;
@@ -59,6 +60,9 @@ public class PendingRegistrationService {
     public PendingRegistration createPendingRegistration(UserRegistrationRequest request) {
         // Vérifier si l'organisation existe déjà
         boolean organizationExists = organizationRepository.existsByEmail(request.getOrganizationEmail());
+        if (organizationExists) {
+            throw new IllegalArgumentException("Une organisation avec cet email existe déjà. Veuillez vous connecter ou contacter l'administrateur.");
+        }
         
         // Vérifier si une inscription en attente existe déjà pour cet email d'organisation
         List<PendingRegistration> existingPending = pendingRegistrationRepository
@@ -83,8 +87,12 @@ public class PendingRegistrationService {
         pending.setFirstName(request.getFirstName());
         pending.setLastName(request.getLastName());
         pending.setPassword(request.getPassword()); // TODO: Hasher le mot de passe si nécessaire
+        pending.setOrganizationPassword(request.getOrganizationPassword()); // TODO: Hasher si nécessaire
         pending.setOrganizationName(request.getOrganizationName());
         pending.setOrganizationEmail(request.getOrganizationEmail());
+        pending.setOrganizationAddress(request.getOrganizationAddress());
+        pending.setOrganizationCountry(request.getOrganizationCountry().toUpperCase());
+        pending.setOrganizationPhone(request.getOrganizationPhone());
         pending.setPricingPlanId(request.getPricingPlanId()); // Inclure le plan tarifaire sélectionné
         pending.setConfirmationToken(confirmationToken);
         pending.setExpiresAt(LocalDateTime.now().plusHours(tokenExpirationHours));
@@ -101,8 +109,50 @@ public class PendingRegistrationService {
             pending.getId(), pending.getOrganizationEmail(), confirmationToken);
         
         // Envoyer l'email de confirmation
-        sendConfirmationEmail(pending, organizationExists);
+        sendConfirmationEmail(pending, false);
         
+        return pending;
+    }
+    
+    /**
+     * Invite un collaborateur pour une organisation existante.
+     */
+    @Transactional
+    public PendingRegistration inviteCollaborator(String organizationKeycloakUserId,
+                                                  CreateCollaboratorRequest request) {
+        Organization organization = organizationRepository.findByKeycloakUserId(organizationKeycloakUserId)
+                .orElseThrow(() -> new IllegalArgumentException("Aucune organisation associée à ce compte."));
+        
+        if (pendingRegistrationRepository.existsByUsername(request.getUsername())) {
+            throw new IllegalArgumentException("Un utilisateur avec ce nom d'utilisateur est déjà en cours d'inscription.");
+        }
+        if (pendingRegistrationRepository.existsByEmail(request.getEmail())) {
+            throw new IllegalArgumentException("Un utilisateur avec cet email est déjà en cours d'inscription.");
+        }
+        
+        String confirmationToken = generateConfirmationToken();
+        String temporaryPassword = generateTemporaryPassword();
+        
+        PendingRegistration pending = new PendingRegistration();
+        pending.setUsername(request.getUsername());
+        pending.setEmail(request.getEmail());
+        pending.setFirstName(request.getFirstName());
+        pending.setLastName(request.getLastName());
+        pending.setPassword(temporaryPassword);
+        pending.setOrganizationName(organization.getName());
+        pending.setOrganizationEmail(organization.getEmail());
+        pending.setOrganizationAddress(organization.getAddress());
+        pending.setOrganizationCountry(organization.getCountry());
+        pending.setOrganizationPhone(organization.getPhone());
+        pending.setOrganizationPassword(null);
+        pending.setPricingPlanId(organization.getPricingPlanId());
+        pending.setConfirmationToken(confirmationToken);
+        pending.setExpiresAt(LocalDateTime.now().plusHours(tokenExpirationHours));
+        pending.setConfirmed(false);
+        
+        pending = pendingRegistrationRepository.save(pending);
+        
+        sendCollaboratorInvitationEmail(pending, organization);
         return pending;
     }
     
@@ -161,16 +211,22 @@ public class PendingRegistrationService {
             log.info("Email utilisateur depuis PendingRegistration: {}", pending.getEmail());
             log.info("Email organisation depuis PendingRegistration: {}", pending.getOrganizationEmail());
             
-            UserRegistrationRequest keycloakRequest = new UserRegistrationRequest();
-            keycloakRequest.setUsername(pending.getUsername());
-            keycloakRequest.setEmail(pending.getEmail());
-            keycloakRequest.setFirstName(pending.getFirstName());
-            keycloakRequest.setLastName(pending.getLastName());
-            keycloakRequest.setPassword(pending.getPassword());
+            log.info("Email utilisateur dans keycloakRequest: {}", pending.getEmail());
             
-            log.info("Email utilisateur dans keycloakRequest: {}", keycloakRequest.getEmail());
-            
-            jakarta.ws.rs.core.Response response = keycloakAdminService.createUser(keycloakRequest);
+            jakarta.ws.rs.core.Response response = keycloakAdminService.createUser(
+                    pending.getUsername(),
+                    pending.getEmail(),
+                    pending.getPassword(),
+                    pending.getFirstName(),
+                    pending.getLastName(),
+                    true,
+                    false,
+                    java.util.List.of("UPDATE_PASSWORD"),
+                    java.util.Map.of(
+                            "account_type", java.util.List.of("COLLABORATOR"),
+                            "organization_email", java.util.List.of(pending.getOrganizationEmail())
+                    )
+            );
             int status = response.getStatus();
             
             if (status != jakarta.ws.rs.core.Response.Status.CREATED.getStatusCode()) {
@@ -192,11 +248,46 @@ public class PendingRegistrationService {
             response.close();
             log.info("Utilisateur Keycloak créé: {}", keycloakUserId);
             
+            // 3. Créer le compte Keycloak de l'organisation
+            jakarta.ws.rs.core.Response orgResponse = keycloakAdminService.createUser(
+                    pending.getOrganizationEmail(),
+                    pending.getOrganizationEmail(),
+                    pending.getOrganizationPassword(),
+                    pending.getOrganizationName(),
+                    null,
+                    true,
+                    true,
+                    null,
+                    java.util.Map.of("account_type", java.util.List.of("ORGANIZATION"))
+            );
+            
+            int orgStatus = orgResponse.getStatus();
+            if (orgStatus != jakarta.ws.rs.core.Response.Status.CREATED.getStatusCode()) {
+                orgResponse.close();
+                throw new RuntimeException("Erreur lors de la création du compte organisation dans Keycloak (status=" + orgStatus + ")");
+            }
+            
+            String organizationKeycloakUserId = keycloakAdminService.getUserIdFromResponse(orgResponse);
+            if (organizationKeycloakUserId == null) {
+                organizationKeycloakUserId = keycloakAdminService.getUserIdByUsername(pending.getOrganizationEmail());
+            }
+            orgResponse.close();
+            
+            if (organizationKeycloakUserId == null) {
+                throw new RuntimeException("Impossible de récupérer l'ID Keycloak du compte organisation");
+            }
+            log.info("Compte Keycloak organisation créé: {}", organizationKeycloakUserId);
+            
             // 3. Créer l'organisation
             com.muhend.backend.organization.dto.CreateOrganizationRequest orgRequest = 
                 new com.muhend.backend.organization.dto.CreateOrganizationRequest();
             orgRequest.setName(pending.getOrganizationName());
             orgRequest.setEmail(pending.getOrganizationEmail());
+            orgRequest.setAddress(pending.getOrganizationAddress());
+            orgRequest.setCountry(pending.getOrganizationCountry());
+            orgRequest.setPhone(pending.getOrganizationPhone());
+            orgRequest.setOrganizationPassword(pending.getOrganizationPassword());
+            orgRequest.setKeycloakUserId(organizationKeycloakUserId);
             orgRequest.setPricingPlanId(pending.getPricingPlanId()); // Inclure le plan tarifaire sélectionné
             
             var organizationDto = organizationService.createOrganization(orgRequest);
@@ -222,16 +313,22 @@ public class PendingRegistrationService {
             log.info("Email utilisateur depuis PendingRegistration: {}", pending.getEmail());
             log.info("Email organisation depuis PendingRegistration: {}", pending.getOrganizationEmail());
             
-            UserRegistrationRequest keycloakRequest = new UserRegistrationRequest();
-            keycloakRequest.setUsername(pending.getUsername());
-            keycloakRequest.setEmail(pending.getEmail());
-            keycloakRequest.setFirstName(pending.getFirstName());
-            keycloakRequest.setLastName(pending.getLastName());
-            keycloakRequest.setPassword(pending.getPassword());
+            log.info("Email utilisateur dans keycloakRequest: {}", pending.getEmail());
             
-            log.info("Email utilisateur dans keycloakRequest: {}", keycloakRequest.getEmail());
-            
-            jakarta.ws.rs.core.Response response = keycloakAdminService.createUser(keycloakRequest);
+            jakarta.ws.rs.core.Response response = keycloakAdminService.createUser(
+                    pending.getUsername(),
+                    pending.getEmail(),
+                    pending.getPassword(),
+                    pending.getFirstName(),
+                    pending.getLastName(),
+                    true,
+                    false,
+                    java.util.List.of("UPDATE_PASSWORD"),
+                    java.util.Map.of(
+                            "account_type", java.util.List.of("COLLABORATOR"),
+                            "organization_email", java.util.List.of(pending.getOrganizationEmail())
+                    )
+            );
             int status = response.getStatus();
             
             if (status != jakarta.ws.rs.core.Response.Status.CREATED.getStatusCode()) {
@@ -270,6 +367,16 @@ public class PendingRegistrationService {
         byte[] randomBytes = new byte[32];
         secureRandom.nextBytes(randomBytes);
         return Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes);
+    }
+    
+    private String generateTemporaryPassword() {
+        final String characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_=+";
+        StringBuilder password = new StringBuilder(16);
+        for (int i = 0; i < 16; i++) {
+            int index = secureRandom.nextInt(characters.length());
+            password.append(characters.charAt(index));
+        }
+        return password.toString();
     }
     
     /**
@@ -322,6 +429,26 @@ public class PendingRegistrationService {
             // Ne pas faire échouer la création de l'inscription en attente si l'email échoue
             // mais lever une exception pour que l'utilisateur soit informé
             throw new RuntimeException("Impossible d'envoyer l'email de confirmation: " + e.getMessage(), e);
+        }
+    }
+    
+    private void sendCollaboratorInvitationEmail(PendingRegistration pending, Organization organization) {
+        try {
+            log.info("Envoi d'une invitation collaborateur pour l'organisation {} ({})", organization.getName(), organization.getEmail());
+            String confirmationUrl = frontendUrl + "/auth/confirm-registration?token=" + pending.getConfirmationToken();
+            emailService.sendCollaboratorInvitationEmail(
+                    pending.getEmail(),
+                    pending.getFirstName(),
+                    pending.getLastName(),
+                    pending.getUsername(),
+                    organization.getName(),
+                    organization.getEmail(),
+                    confirmationUrl,
+                    pending.getPassword()
+            );
+        } catch (Exception e) {
+            log.error("Erreur lors de l'envoi de l'invitation collaborateur à {}: {}", pending.getEmail(), e.getMessage(), e);
+            throw new RuntimeException("Impossible d'envoyer l'invitation collaborateur: " + e.getMessage(), e);
         }
     }
     

@@ -6,6 +6,7 @@ import com.muhend.backend.invoice.service.InvoiceService;
 import com.muhend.backend.organization.dto.CreateOrganizationRequest;
 import com.muhend.backend.organization.dto.OrganizationDto;
 import com.muhend.backend.organization.dto.OrganizationUserDto;
+import com.muhend.backend.organization.dto.UpdateOrganizationRequest;
 import com.muhend.backend.organization.exception.QuotaExceededException;
 import com.muhend.backend.organization.exception.UserNotAssociatedException;
 import com.muhend.backend.organization.model.Organization;
@@ -74,6 +75,12 @@ public class OrganizationService {
         Organization organization = new Organization();
         organization.setName(request.getName());
         organization.setEmail(request.getEmail().trim());
+        organization.setAddress(request.getAddress().trim());
+        organization.setCountry(request.getCountry().trim().toUpperCase());
+        organization.setPhone(request.getPhone().trim());
+        if (request.getKeycloakUserId() != null && !request.getKeycloakUserId().trim().isEmpty()) {
+            organization.setKeycloakUserId(request.getKeycloakUserId().trim());
+        }
         
         // Si un plan tarifaire est spécifié, le valider et l'associer
         if (request.getPricingPlanId() != null) {
@@ -107,11 +114,12 @@ public class OrganizationService {
      * Met à jour une organisation.
      */
     @Transactional
-    public OrganizationDto updateOrganization(Long id, String name, String email) {
+    public OrganizationDto updateOrganization(Long id, UpdateOrganizationRequest request) {
         Organization organization = organizationRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Organisation non trouvée avec l'ID: " + id));
         
         // Vérifier si le nom change et si le nouveau nom existe déjà
+        String name = request.getName();
         if (name != null && !name.trim().isEmpty() && !name.equals(organization.getName())) {
             if (organizationRepository.existsByName(name)) {
                 throw new IllegalArgumentException("Une organisation avec le nom '" + name + "' existe déjà");
@@ -120,6 +128,7 @@ public class OrganizationService {
         }
         
         // Vérifier si l'email change et si le nouvel email existe déjà
+        String email = request.getEmail();
         if (email != null && !email.trim().isEmpty()) {
             String trimmedEmail = email.trim();
             if (!trimmedEmail.equals(organization.getEmail())) {
@@ -131,6 +140,18 @@ public class OrganizationService {
         } else if (email != null && email.trim().isEmpty()) {
             // Permettre de mettre l'email à null en envoyant une chaîne vide
             organization.setEmail(null);
+        }
+        
+        if (request.getAddress() != null && !request.getAddress().trim().isEmpty()) {
+            organization.setAddress(request.getAddress().trim());
+        }
+        
+        if (request.getCountry() != null && !request.getCountry().trim().isEmpty()) {
+            organization.setCountry(request.getCountry().trim().toUpperCase());
+        }
+        
+        if (request.getPhone() != null && !request.getPhone().trim().isEmpty()) {
+            organization.setPhone(request.getPhone().trim());
         }
         
         organization = organizationRepository.save(organization);
@@ -153,6 +174,12 @@ public class OrganizationService {
     public OrganizationDto getOrganizationById(Long id) {
         Organization organization = organizationRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Organisation non trouvée avec l'ID: " + id));
+        return toDtoWithUserCount(organization);
+    }
+    
+    public OrganizationDto getOrganizationByKeycloakUserId(String keycloakUserId) {
+        Organization organization = organizationRepository.findByKeycloakUserId(keycloakUserId)
+                .orElseThrow(() -> new IllegalArgumentException("Organisation non trouvée pour cet identifiant utilisateur."));
         return toDtoWithUserCount(organization);
     }
     
@@ -504,6 +531,9 @@ public class OrganizationService {
         dto.setId(organization.getId());
         dto.setName(organization.getName());
         dto.setEmail(organization.getEmail());
+        dto.setAddress(organization.getAddress());
+        dto.setCountry(organization.getCountry());
+        dto.setPhone(organization.getPhone());
         dto.setMonthlyQuota(organization.getMonthlyQuota());
         dto.setPricingPlanId(organization.getPricingPlanId());
         dto.setTrialExpiresAt(organization.getTrialExpiresAt());

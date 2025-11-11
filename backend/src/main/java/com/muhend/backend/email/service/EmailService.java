@@ -272,6 +272,67 @@ public class EmailService {
         }
     }
 
+    public void sendCollaboratorInvitationEmail(
+            String collaboratorEmail,
+            String collaboratorFirstName,
+            String collaboratorLastName,
+            String collaboratorUsername,
+            String organizationName,
+            String organizationEmail,
+            String confirmationUrl,
+            String temporaryPassword) {
+        String smtpUsername = System.getenv("SMTP_USERNAME");
+        String smtpPassword = System.getenv("SMTP_PASSWORD");
+        if (smtpUsername == null || smtpUsername.trim().isEmpty() ||
+            smtpPassword == null || smtpPassword.trim().isEmpty()) {
+            log.error("Configuration SMTP incomplète : SMTP_USERNAME et/ou SMTP_PASSWORD ne sont pas définis.");
+            throw new IllegalStateException(
+                    "Configuration SMTP manquante. Les variables SMTP_USERNAME et SMTP_PASSWORD doivent être définies.");
+        }
+        if (collaboratorEmail == null || collaboratorEmail.trim().isEmpty()) {
+            throw new IllegalArgumentException("L'email du collaborateur est obligatoire pour envoyer une invitation.");
+        }
+
+        try {
+            Context context = new Context();
+            context.setVariable("collaboratorFirstName", collaboratorFirstName != null ? collaboratorFirstName : "");
+            context.setVariable("collaboratorLastName", collaboratorLastName != null ? collaboratorLastName : "");
+            context.setVariable("collaboratorUsername", collaboratorUsername != null ? collaboratorUsername : "");
+            context.setVariable("organizationName", organizationName != null ? organizationName : "");
+            context.setVariable("organizationEmail", organizationEmail != null ? organizationEmail : "");
+            context.setVariable("confirmationUrl", confirmationUrl != null ? confirmationUrl : "");
+            context.setVariable("frontendUrl", getFrontendUrl());
+            context.setVariable("temporaryPassword", temporaryPassword != null ? temporaryPassword : "");
+
+            String htmlContent = templateEngine.process("collaborator-invitation", context);
+            if (htmlContent == null || htmlContent.trim().isEmpty()) {
+                throw new RuntimeException("Le template d'invitation collaborateur a généré un contenu vide");
+            }
+
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            String from = fromEmail != null ? fromEmail : "noreply@enclume-numerique.com";
+            String fromNameValue = fromName != null ? fromName : "Enclume Numérique";
+
+            helper.setFrom(from, fromNameValue);
+            helper.setTo(collaboratorEmail);
+
+            String subject = "Invitation à rejoindre " + (organizationName != null ? organizationName : "votre organisation");
+            helper.setSubject(subject);
+            helper.setText(htmlContent, true);
+
+            mailSender.send(message);
+            log.info("Invitation collaborateur envoyée à {} pour l'organisation {}", collaboratorEmail, organizationName);
+        } catch (MessagingException e) {
+            log.error("Erreur lors de l'envoi de l'invitation collaborateur à {}: {}", collaboratorEmail, e.getMessage(), e);
+            throw new RuntimeException("Erreur lors de l'envoi de l'invitation collaborateur", e);
+        } catch (Exception e) {
+            log.error("Erreur inattendue lors de l'envoi de l'invitation collaborateur à {}: {}", collaboratorEmail, e.getMessage(), e);
+            throw new RuntimeException("Erreur lors de l'envoi de l'invitation collaborateur", e);
+        }
+    }
+
     /**
      * Envoie un email de notification de changement de plan tarifaire.
      *

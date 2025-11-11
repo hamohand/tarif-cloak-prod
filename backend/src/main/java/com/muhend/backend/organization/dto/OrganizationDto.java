@@ -17,6 +17,9 @@ public class OrganizationDto {
     private Long id;
     private String name;
     private String email; // Email de contact de l'organisation
+    private String address;
+    private String country;
+    private String phone;
     private Integer monthlyQuota; // null = quota illimité
     private Long pricingPlanId; // ID du plan tarifaire
     private LocalDateTime trialExpiresAt; // Date d'expiration du plan d'essai (null si pas un plan d'essai)

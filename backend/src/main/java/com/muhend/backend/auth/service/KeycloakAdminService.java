@@ -13,6 +13,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 @Service
 public class KeycloakAdminService {
@@ -31,8 +33,30 @@ public class KeycloakAdminService {
     }
 
     public Response createUser(UserRegistrationRequest registrationRequest) {
+        return createUser(
+                registrationRequest.getUsername(),
+                registrationRequest.getEmail(),
+                registrationRequest.getPassword(),
+                registrationRequest.getFirstName(),
+                registrationRequest.getLastName(),
+                true,
+                false,
+                null,
+                null
+        );
+    }
+
+    public Response createUser(String username,
+                               String email,
+                               String password,
+                               String firstName,
+                               String lastName,
+                               boolean enabled,
+                               boolean emailVerified,
+                               List<String> requiredActions,
+                               Map<String, List<String>> attributes) {
         logger.info("Creating user in Keycloak realm: {}", realm);
-        logger.info("Username: {}, Email: {}", registrationRequest.getUsername(), registrationRequest.getEmail());
+        logger.info("Username: {}, Email: {}", username, email);
 
         int attempt = 0;
         Exception lastException = null;
@@ -40,17 +64,23 @@ public class KeycloakAdminService {
         while (attempt < MAX_RETRIES) {
             try {
                 UserRepresentation user = new UserRepresentation();
-                user.setEnabled(true);
-                user.setUsername(registrationRequest.getUsername());
-                user.setFirstName(registrationRequest.getFirstName());
-                user.setLastName(registrationRequest.getLastName());
-                user.setEmail(registrationRequest.getEmail());
-                user.setEmailVerified(false);
+                user.setEnabled(enabled);
+                user.setUsername(username);
+                user.setFirstName(firstName);
+                user.setLastName(lastName);
+                user.setEmail(email);
+                user.setEmailVerified(emailVerified);
+                if (requiredActions != null && !requiredActions.isEmpty()) {
+                    user.setRequiredActions(requiredActions);
+                }
+                if (attributes != null && !attributes.isEmpty()) {
+                    user.setAttributes(attributes);
+                }
 
                 CredentialRepresentation passwordCred = new CredentialRepresentation();
                 passwordCred.setTemporary(false);
                 passwordCred.setType(CredentialRepresentation.PASSWORD);
-                passwordCred.setValue(registrationRequest.getPassword());
+                passwordCred.setValue(password);
                 user.setCredentials(Collections.singletonList(passwordCred));
 
                 RealmResource realmResource = keycloak.realm(realm);

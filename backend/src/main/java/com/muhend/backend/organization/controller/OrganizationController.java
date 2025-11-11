@@ -131,7 +131,7 @@ public class OrganizationController {
             @PathVariable Long id,
             @Valid @RequestBody UpdateOrganizationRequest request) {
         OrganizationDto organization = organizationService.updateOrganization(
-                id, request.getName(), request.getEmail());
+                id, request);
         return ResponseEntity.ok(organization);
     }
     
