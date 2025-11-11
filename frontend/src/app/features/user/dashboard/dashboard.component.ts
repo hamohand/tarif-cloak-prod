@@ -59,10 +59,10 @@ Chart.register(...registerables);
                       @if (currentPlan.pricePerMonth === 0) {
                         Gratuit
                       } @else {
-                        \${{ currentPlan.pricePerMonth }}/mois
+                        {{ currentPlan.pricePerMonth }} €/mois
                       }
                     } @else if (currentPlan.pricePerRequest !== null && currentPlan.pricePerRequest !== undefined) {
-                      \${{ currentPlan.pricePerRequest }}/requête
+                      {{ currentPlan.pricePerRequest }} €/requête
                     } @else {
                       Gratuit
                     }
@@ -92,10 +92,10 @@ Chart.register(...registerables);
                       @if (plan.pricePerMonth === 0) {
                         Gratuit
                       } @else {
-                        \${{ plan.pricePerMonth }}/mois
+                        {{ plan.pricePerMonth }} €/mois
                       }
                     } @else if (plan.pricePerRequest !== null && plan.pricePerRequest !== undefined) {
-                      \${{ plan.pricePerRequest }}/requête
+                      {{ plan.pricePerRequest }} €/requête
                     } @else {
                       Gratuit
                     }
@@ -883,7 +883,7 @@ export class UserDashboardComponent implements OnInit, AfterViewInit, OnDestroy 
         labels: labels,
         datasets: [
           {
-            label: 'Coût (USD)',
+            label: 'Coût (€)',
             data: costData,
             borderColor: 'rgba(52, 152, 219, 1)',
             backgroundColor: 'rgba(52, 152, 219, 0.1)',
@@ -926,7 +926,7 @@ export class UserDashboardComponent implements OnInit, AfterViewInit, OnDestroy 
                 const value = context.parsed.y;
                 if (value === null || value === undefined) {
                   if (label.includes('Coût')) {
-                    return `${label}: $0.000000`;
+                    return `${label}: 0,00 €`;
                   } else {
                     return `${label}: 0`;
                   }
@@ -954,11 +954,11 @@ export class UserDashboardComponent implements OnInit, AfterViewInit, OnDestroy 
             position: 'left',
             title: {
               display: true,
-              text: 'Coût (USD)'
+              text: 'Coût (€)'
             },
             ticks: {
               callback: (value) => {
-                return '$' + Number(value).toFixed(6);
+                return Number(value).toFixed(6) + ' €';
               }
             }
           },
@@ -994,7 +994,7 @@ export class UserDashboardComponent implements OnInit, AfterViewInit, OnDestroy 
   }
 
   formatCurrency(amount: number): string {
-    return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'USD' }).format(amount);
+    return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount);
   }
 
   formatNumber(num: number): string {

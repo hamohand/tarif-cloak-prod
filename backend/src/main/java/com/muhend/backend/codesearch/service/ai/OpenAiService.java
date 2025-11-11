@@ -157,13 +157,13 @@ public class OpenAiService {
 //            System.out.println("Completion Tokens (output), niveau "+ titre +" = " + completionTokens);
 //            log.info("Total Tokens, niveau "+ titre +" = " + totalTokens);
             // Log détaillé du calcul du coût
-            log.debug("Calcul du coût - Niveau: {}, Tokens: {}, Tarif de base: ${}, Coût tokens: ${}, Coût total: ${}", 
+            log.debug("Calcul du coût - Niveau: {}, Tokens: {}, Tarif de base: {} €, Coût tokens: {} €, Coût total: {} €", 
                 titre, totalTokens, String.format("%.6f", baseRequestPrice), 
                 String.format("%.6f", tokenCost), String.format("%.6f", prix_requete));
             System.out.println("Niveau "+ titre +"  -Total Tokens = " + totalTokens + " tokens" + 
-                "   -Tarif de base = $" + String.format("%.6f", baseRequestPrice) +
-                "   -Coût tokens = $" + String.format("%.6f", tokenCost) +
-                "   -Total Prix = $" + String.format("%.6f", prix_requete));
+                "   -Tarif de base = " + String.format("%.6f", baseRequestPrice) + " €" +
+                "   -Coût tokens = " + String.format("%.6f", tokenCost) + " €" +
+                "   -Total Prix = " + String.format("%.6f", prix_requete) + " €");
 
             /// //////////////////////////////////////////////////////////////
 

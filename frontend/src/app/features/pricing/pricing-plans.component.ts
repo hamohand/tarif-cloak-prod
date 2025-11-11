@@ -31,7 +31,7 @@ import { PricingPlanService, PricingPlan } from '../../core/services/pricing-pla
                   @if (plan.pricePerMonth === 0) {
                     <span class="amount">Gratuit</span>
                   } @else {
-                    <span class="currency">$</span>
+                    <span class="currency">€</span>
                     <span class="amount">{{ plan.pricePerMonth }}</span>
                     <span class="period">/mois</span>
                   }

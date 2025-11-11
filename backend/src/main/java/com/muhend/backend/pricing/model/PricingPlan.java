@@ -33,10 +33,10 @@ public class PricingPlan {
     private String description;
     
     @Column(name = "price_per_month", columnDefinition = "NUMERIC(10,2)")
-    private BigDecimal pricePerMonth; // Prix mensuel en USD (null pour les plans facturés à la requête)
+    private BigDecimal pricePerMonth; // Prix mensuel en EUR (null pour les plans facturés à la requête)
     
     @Column(name = "price_per_request", columnDefinition = "NUMERIC(10,2)")
-    private BigDecimal pricePerRequest; // Prix par requête en USD (null pour les plans mensuels)
+    private BigDecimal pricePerRequest; // Prix par requête en EUR (null pour les plans mensuels)
     
     @Column(name = "monthly_quota", nullable = true)
     private Integer monthlyQuota; // null = quota illimité ou plan facturé à la requête

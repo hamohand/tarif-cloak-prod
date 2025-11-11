@@ -58,7 +58,7 @@ public class UsageLogService {
             usageLog.setTimestamp(LocalDateTime.now());
             
             repository.save(usageLog);
-            log.debug("Usage log enregistré pour l'utilisateur: {}, endpoint: {}, coût: {} USD", 
+            log.debug("Usage log enregistré pour l'utilisateur: {}, endpoint: {}, coût: {} EUR", 
                      keycloakUserId, endpoint, costUsd != null ? costUsd : BigDecimal.ZERO);
         } catch (org.springframework.dao.DataAccessException e) {
             // Erreur de base de données (table absente, connexion, etc.) - non bloquant

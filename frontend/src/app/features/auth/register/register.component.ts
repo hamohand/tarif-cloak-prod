@@ -165,10 +165,10 @@ import { CommonModule } from '@angular/common';
                       @if (plan.pricePerMonth === 0) {
                         Gratuit
                       } @else {
-                        \${{ plan.pricePerMonth }}/mois
+                        {{ plan.pricePerMonth }} €/mois
                       }
                     } @else if (plan.pricePerRequest !== null && plan.pricePerRequest !== undefined) {
-                      \${{ plan.pricePerRequest }}/requête
+                      {{ plan.pricePerRequest }} €/requête
                     } @else {
                       Gratuit
                     }

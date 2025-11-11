@@ -75,7 +75,7 @@ Chart.register(...registerables);
               <tr>
                 <th>Entreprise</th>
                 <th>Requêtes</th>
-                <th>Coût (USD)</th>
+                <th>Coût (€)</th>
                 <th>Tokens</th>
               </tr>
             </thead>
@@ -110,7 +110,7 @@ Chart.register(...registerables);
                 <th>Utilisateur ID</th>
                 <th>Nom d'utilisateur</th>
                 <th>Requêtes</th>
-                <th>Coût (USD)</th>
+                <th>Coût (€)</th>
                 <th>Tokens</th>
               </tr>
             </thead>
@@ -142,7 +142,7 @@ Chart.register(...registerables);
                 <th>Nom d'utilisateur</th>
                 <th>Endpoint</th>
                 <th>Terme de recherche</th>
-                <th>Coût (USD)</th>
+                <th>Coût (€)</th>
                 <th>Tokens</th>
               </tr>
             </thead>
@@ -575,7 +575,7 @@ export class StatsComponent implements OnInit, AfterViewInit, OnDestroy {
       data: {
         labels: labels,
         datasets: [{
-          label: 'Coût (USD)',
+          label: 'Coût (€)',
           data: costData,
           backgroundColor: 'rgba(46, 204, 113, 0.6)',
           borderColor: 'rgba(46, 204, 113, 1)',
@@ -597,7 +597,7 @@ export class StatsComponent implements OnInit, AfterViewInit, OnDestroy {
               label: (context) => {
                 const value = context.parsed.y;
                 if (value === null || value === undefined) {
-                  return 'Coût: $0.000000';
+                  return 'Coût: 0,000000 €';
                 }
                 return `Coût: ${this.formatCurrency(value)}`;
               }
@@ -609,7 +609,7 @@ export class StatsComponent implements OnInit, AfterViewInit, OnDestroy {
             beginAtZero: true,
             ticks: {
               callback: (value) => {
-                return '$' + Number(value).toFixed(6);
+                return Number(value).toFixed(6) + ' €';
               }
             }
           }
@@ -683,7 +683,7 @@ export class StatsComponent implements OnInit, AfterViewInit, OnDestroy {
   formatCurrency(value: number): string {
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
-      currency: 'USD',
+      currency: 'EUR',
       minimumFractionDigits: 6,
       maximumFractionDigits: 6
     }).format(value);

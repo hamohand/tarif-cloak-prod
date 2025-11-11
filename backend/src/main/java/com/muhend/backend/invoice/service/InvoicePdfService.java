@@ -291,9 +291,9 @@ public class InvoicePdfService {
      */
     private String formatCurrency(BigDecimal amount) {
         if (amount == null) {
-            return "0,00 $";
+            return "0,00 €";
         }
-        return String.format("%.2f $", amount.doubleValue()).replace(".", ",");
+        return String.format("%.2f €", amount.doubleValue()).replace(".", ",");
     }
 }
 
