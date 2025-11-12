@@ -138,7 +138,12 @@ export class AuthService {
         this.stopTokenCheck();
         this.cleanupTokens();
         this.isAuthenticatedSubject.next(false);
-        this.accountContextService.setContext({ accountType: null, organizationEmail: null });
+        this.accountContextService.clear();
+        // Utiliser setTimeout pour éviter d'interrompre la navigation en cours
+        setTimeout(() => {
+          this.router.navigate(['/']);
+        }, 0);
+        return;
       } 
       // Mettre à jour le statut d'authentification pour les événements importants
       else if (event.type === 'token_received' || event.type === 'token_refreshed') {
@@ -179,14 +184,14 @@ export class AuthService {
             this.updateAccountContext(sessionToken);
           }
         } else {
-          this.accountContextService.setContext({ accountType: null, organizationEmail: null });
+          this.accountContextService.clear();
           this.stopTokenCheck();
         }
       }
       else if (event.type === 'logout') {
         this.stopTokenCheck();
         this.isAuthenticatedSubject.next(false);
-        this.accountContextService.setContext({ accountType: null, organizationEmail: null });
+        this.accountContextService.clear();
       }
       // Mettre à jour le statut d'authentification pour tous les autres événements
       else {
@@ -198,7 +203,7 @@ export class AuthService {
             this.updateAccountContext(currentToken);
           }
         } else {
-          this.accountContextService.setContext({ accountType: null, organizationEmail: null });
+          this.accountContextService.clear();
           this.stopTokenCheck();
         }
       }
@@ -362,7 +367,7 @@ export class AuthService {
     } finally {
       // Toujours nettoyer l'état local et rediriger
       this.isAuthenticatedSubject.next(false);
-      this.accountContextService.setContext({ accountType: null, organizationEmail: null });
+      this.accountContextService.clear();
       this.router.navigate(['/']);
     }
   }
@@ -453,7 +458,7 @@ export class AuthService {
     if (tokenToUse) {
       this.updateAccountContextWithToken(tokenToUse);
     } else {
-      this.accountContextService.setContext({ accountType: null, organizationEmail: null });
+      this.accountContextService.clear();
     }
   }
 
@@ -486,7 +491,7 @@ export class AuthService {
       });
     } catch (error) {
       console.warn('Impossible de décoder le token pour récupérer les informations du compte:', error);
-      this.accountContextService.setContext({ accountType: null, organizationEmail: null });
+      this.accountContextService.clear();
     }
   }
 }

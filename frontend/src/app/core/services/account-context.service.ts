@@ -12,6 +12,12 @@ export class AccountContextService {
     organizationEmail: null
   });
 
+  private readonly persistedKey = 'account_context';
+
+  constructor() {
+    this.loadFromStorage();
+  }
+
   get context$(): Observable<AccountContext> {
     return this.contextSubject.asObservable();
   }
@@ -34,6 +40,32 @@ export class AccountContextService {
 
   setContext(context: AccountContext): void {
     this.contextSubject.next(context);
+    this.saveToStorage(context);
+  }
+
+  private loadFromStorage(): void {
+    try {
+      const raw = localStorage.getItem(this.persistedKey);
+      if (raw) {
+        const parsed = JSON.parse(raw) as AccountContext;
+        this.contextSubject.next(parsed);
+      }
+    } catch (error) {
+      console.warn('Impossible de charger le contexte compte depuis le stockage:', error);
+    }
+  }
+
+  private saveToStorage(context: AccountContext): void {
+    try {
+      localStorage.setItem(this.persistedKey, JSON.stringify(context));
+    } catch (error) {
+      console.warn('Impossible de persister le contexte compte:', error);
+    }
+  }
+
+  clear(): void {
+    localStorage.removeItem(this.persistedKey);
+    this.contextSubject.next({ accountType: null, organizationEmail: null });
   }
 }
 

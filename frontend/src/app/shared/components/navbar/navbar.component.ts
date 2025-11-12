@@ -5,13 +5,13 @@ import { AuthService } from '../../../core/services/auth.service';
 import { AlertService } from '../../../core/services/alert.service';
 import { InvoiceService } from '../../../core/services/invoice.service';
 import { NotificationService } from '../../../core/services/notification.service';
-import {AsyncPipe} from '@angular/common';
+import { AsyncPipe, CommonModule } from '@angular/common';
 import { take } from 'rxjs/operators';
 
 @Component({
   selector: 'app-navbar',
   standalone: true,
-  imports: [RouterLink, AsyncPipe],
+  imports: [CommonModule, RouterLink, AsyncPipe],
   template: `
     <nav class="navbar">
       <div class="nav-brand">
