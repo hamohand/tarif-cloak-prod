@@ -6,6 +6,7 @@ import { AlertService } from '../../../core/services/alert.service';
 import { InvoiceService } from '../../../core/services/invoice.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import {AsyncPipe} from '@angular/common';
+import { take } from 'rxjs/operators';
 
 @Component({
   selector: 'app-navbar',
@@ -21,25 +22,29 @@ import {AsyncPipe} from '@angular/common';
         <a routerLink="/" class="nav-link">Accueil</a>
         <a routerLink="/pricing" class="nav-link">Tarifs</a>
         @if (isAuthenticated$ | async) {
-          <a routerLink="/dashboard" class="nav-link">Tableau de bord</a>
-          <a routerLink="/invoices" class="nav-link invoices-link">
-            📄 Factures
-            @if (newInvoicesCount > 0 || overdueInvoicesCount > 0) {
-              <span class="invoice-badge" [class.overdue-badge]="overdueInvoicesCount > 0">
-                @if (overdueInvoicesCount > 0) {
-                  ⚠️ {{ overdueInvoicesCount }}
-                } @else {
-                  {{ newInvoicesCount }}
-                }
-              </span>
-            }
-          </a>
-          <a routerLink="/alerts" class="nav-link alerts-link">
-            🔔 Alertes
-            @if (alertCount > 0) {
-              <span class="alert-badge">{{ alertCount }}</span>
-            }
-          </a>
+          @if (isOrganizationAccount$ | async) {
+            <a routerLink="/organization/account" class="nav-link">Mon organisation</a>
+          } @else if (isCollaboratorAccount$ | async) {
+            <a routerLink="/dashboard" class="nav-link">Tableau de bord</a>
+            <a routerLink="/invoices" class="nav-link invoices-link">
+              📄 Factures
+              @if (newInvoicesCount > 0 || overdueInvoicesCount > 0) {
+                <span class="invoice-badge" [class.overdue-badge]="overdueInvoicesCount > 0">
+                  @if (overdueInvoicesCount > 0) {
+                    ⚠️ {{ overdueInvoicesCount }}
+                  } @else {
+                    {{ newInvoicesCount }}
+                  }
+                </span>
+              }
+            </a>
+            <a routerLink="/alerts" class="nav-link alerts-link">
+              🔔 Alertes
+              @if (alertCount > 0) {
+                <span class="alert-badge">{{ alertCount }}</span>
+              }
+            </a>
+          }
         }
       </div>
 
@@ -52,6 +57,16 @@ import {AsyncPipe} from '@angular/common';
         }
       </div>
     </nav>
+    
+    @if ((isAuthenticated$ | async) && (isOrganizationAccount$ | async)) {
+      <nav class="organization-navbar">
+        <div class="org-nav-links">
+          <a routerLink="/organization/account" class="org-nav-link">👥 Collaborateurs</a>
+          <a routerLink="/pricing" class="org-nav-link">💳 Plan tarifaire</a>
+          <a routerLink="/dashboard" class="org-nav-link">📊 Statistiques globales</a>
+        </div>
+      </nav>
+    }
     
     @if (isAuthenticated$ | async) {
       @if (isAdmin()) {
@@ -308,6 +323,65 @@ import {AsyncPipe} from '@angular/common';
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     }
 
+    .organization-navbar {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 0.75rem 2rem;
+      background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+      color: white;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+      position: relative;
+      z-index: 999;
+    }
+
+    .organization-navbar::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, #3b82f6, #10b981, #6366f1);
+      background-size: 200% 100%;
+      animation: shimmer 4s linear infinite;
+    }
+
+    .org-nav-links {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .org-nav-link {
+      color: white;
+      text-decoration: none;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      transition: all 0.3s ease;
+      position: relative;
+      font-weight: 500;
+      font-size: 0.95rem;
+      background-color: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+    }
+
+    .org-nav-link:hover {
+      background-color: rgba(255, 255, 255, 0.18);
+      transform: translateY(-2px) scale(1.01);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+    }
+
+    .org-nav-link:active {
+      transform: translateY(0) scale(0.99);
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+    }
+
     @media (max-width: 768px) {
       .navbar {
         flex-wrap: wrap;
@@ -336,6 +410,19 @@ import {AsyncPipe} from '@angular/common';
         padding: 0.4rem 0.8rem;
         font-size: 0.85rem;
       }
+
+      .organization-navbar {
+        padding: 0.5rem 1rem;
+      }
+
+      .org-nav-links {
+        gap: 0.5rem;
+      }
+
+      .org-nav-link {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.85rem;
+      }
     }
   `]
 })
@@ -347,6 +434,8 @@ export class NavbarComponent implements OnInit, OnDestroy {
   private notificationService = inject(NotificationService);
 
   isAuthenticated$!: Observable<boolean>;
+  isOrganizationAccount$!: Observable<boolean>;
+  isCollaboratorAccount$!: Observable<boolean>;
   alertCount = 0;
   newInvoicesCount = 0;
   overdueInvoicesCount = 0;
@@ -356,6 +445,8 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.isAuthenticated$ = this.authService.isAuthenticated();
+    this.isOrganizationAccount$ = this.authService.isOrganizationAccount();
+    this.isCollaboratorAccount$ = this.authService.isCollaboratorAccount();
     this.loadAlertCount();
     this.loadNewInvoicesCount();
     this.loadOverdueInvoicesCount();
@@ -374,8 +465,8 @@ export class NavbarComponent implements OnInit, OnDestroy {
   }
 
   loadAlertCount() {
-    this.isAuthenticated$.subscribe(isAuthenticated => {
-      if (isAuthenticated) {
+    this.isCollaboratorAccount$.pipe(take(1)).subscribe(isCollaborator => {
+      if (isCollaborator) {
         this.alertService.getMyAlertsCount().subscribe({
           next: (response) => {
             this.alertCount = response.count;
@@ -392,8 +483,8 @@ export class NavbarComponent implements OnInit, OnDestroy {
   }
 
   loadNewInvoicesCount() {
-    this.isAuthenticated$.subscribe(isAuthenticated => {
-      if (isAuthenticated) {
+    this.isCollaboratorAccount$.pipe(take(1)).subscribe(isCollaborator => {
+      if (isCollaborator) {
         this.invoiceService.getNewInvoicesCount().subscribe({
           next: (response) => {
             const newCount = response.count;
@@ -432,8 +523,8 @@ export class NavbarComponent implements OnInit, OnDestroy {
   }
 
   loadOverdueInvoicesCount() {
-    this.isAuthenticated$.subscribe(isAuthenticated => {
-      if (isAuthenticated) {
+    this.isCollaboratorAccount$.pipe(take(1)).subscribe(isCollaborator => {
+      if (isCollaborator) {
         this.invoiceService.getOverdueInvoicesCount().subscribe({
           next: (response) => {
             const newCount = response.count;

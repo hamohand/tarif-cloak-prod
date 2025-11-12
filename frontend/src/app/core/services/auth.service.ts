@@ -3,6 +3,7 @@ import { OAuthService } from 'angular-oauth2-oidc';
 import { authConfig } from '../config/auth.config';
 import { BehaviorSubject, Observable, interval, Subscription } from 'rxjs';
 import {Router} from '@angular/router';
+import { map } from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root'
@@ -13,6 +14,8 @@ export class AuthService {
   private isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
   private configured = false;
   private tokenCheckInterval?: Subscription;
+  private accountTypeSubject = new BehaviorSubject<'ORGANIZATION' | 'COLLABORATOR' | null>(null);
+  private organizationEmailSubject = new BehaviorSubject<string | null>(null);
 
   constructor() {
     // Utiliser setTimeout pour s'assurer que l'injecteur Angular est prêt
@@ -87,6 +90,7 @@ export class AuthService {
           
           // Démarrer la vérification périodique de l'expiration du token
           this.startTokenCheck();
+          this.updateAccountContext(token);
         }
         
         this.isAuthenticatedSubject.next(isAuthenticated);
@@ -156,6 +160,10 @@ export class AuthService {
         }
         this.startTokenCheck();
         this.isAuthenticatedSubject.next(this.oauthService.hasValidAccessToken());
+        const token = this.oauthService.getAccessToken();
+        if (token) {
+          this.updateAccountContext(token);
+        }
       }
       else if (event.type === 'discovery_document_loaded' || 
                event.type === 'session_changed' || event.type === 'session_unchanged') {
@@ -163,19 +171,34 @@ export class AuthService {
         this.isAuthenticatedSubject.next(isValid);
         if (isValid) {
           this.startTokenCheck();
+          const token = this.oauthService.getAccessToken();
+          if (token) {
+            this.updateAccountContext(token);
+          }
         } else {
+          this.accountTypeSubject.next(null);
+          this.organizationEmailSubject.next(null);
           this.stopTokenCheck();
         }
       }
       else if (event.type === 'logout') {
         this.stopTokenCheck();
         this.isAuthenticatedSubject.next(false);
+        this.accountTypeSubject.next(null);
+        this.organizationEmailSubject.next(null);
       }
       // Mettre à jour le statut d'authentification pour tous les autres événements
       else {
         const isValid = this.oauthService.hasValidAccessToken();
         this.isAuthenticatedSubject.next(isValid);
-        if (!isValid) {
+        if (isValid) {
+          const token = this.oauthService.getAccessToken();
+          if (token) {
+            this.updateAccountContext(token);
+          }
+        } else {
+          this.accountTypeSubject.next(null);
+          this.organizationEmailSubject.next(null);
           this.stopTokenCheck();
         }
       }
@@ -239,6 +262,8 @@ export class AuthService {
         this.stopTokenCheck();
         this.cleanupTokens();
         this.isAuthenticatedSubject.next(false);
+        this.accountTypeSubject.next(null);
+        this.organizationEmailSubject.next(null);
         // Utiliser setTimeout pour éviter d'interrompre la navigation en cours
         setTimeout(() => {
           this.router.navigate(['/']);
@@ -256,6 +281,8 @@ export class AuthService {
           this.stopTokenCheck();
           this.cleanupTokens();
           this.isAuthenticatedSubject.next(false);
+          this.accountTypeSubject.next(null);
+          this.organizationEmailSubject.next(null);
           // Utiliser setTimeout pour éviter d'interrompre la navigation en cours
           setTimeout(() => {
             this.router.navigate(['/']);
@@ -274,6 +301,8 @@ export class AuthService {
       this.stopTokenCheck();
       this.cleanupTokens();
       this.isAuthenticatedSubject.next(false);
+      this.accountTypeSubject.next(null);
+      this.organizationEmailSubject.next(null);
       // Utiliser setTimeout pour éviter d'interrompre la navigation en cours
       setTimeout(() => {
         this.router.navigate(['/']);
@@ -336,6 +365,8 @@ export class AuthService {
     } finally {
       // Toujours nettoyer l'état local et rediriger
       this.isAuthenticatedSubject.next(false);
+      this.accountTypeSubject.next(null);
+      this.organizationEmailSubject.next(null);
       this.router.navigate(['/']);
     }
   }
@@ -383,6 +414,18 @@ export class AuthService {
     return this.oauthService.getIdentityClaims();
   }
 
+  public isOrganizationAccount(): Observable<boolean> {
+    return this.accountTypeSubject.asObservable().pipe(map(type => type === 'ORGANIZATION'));
+  }
+
+  public isCollaboratorAccount(): Observable<boolean> {
+    return this.accountTypeSubject.asObservable().pipe(map(type => type === 'COLLABORATOR'));
+  }
+
+  public getOrganizationEmail(): Observable<string | null> {
+    return this.organizationEmailSubject.asObservable();
+  }
+
   /**
    * Vérifie si l'utilisateur a un rôle spécifique
    * @param role Le nom du rôle à vérifier (ex: 'ADMIN', 'USER')
@@ -406,6 +449,49 @@ export class AuthService {
     } catch (e) {
       console.warn('Impossible de décoder le token pour vérifier les rôles:', e);
       return false;
+    }
+  }
+
+  private updateAccountContext(): void {
+    const token = this.oauthService.getAccessToken();
+    if (token) {
+      this.updateAccountContextWithToken(token);
+    } else {
+      this.accountTypeSubject.next(null);
+      this.organizationEmailSubject.next(null);
+    }
+  }
+
+  private updateAccountContextWithToken(token: string): void {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      let accountType: 'ORGANIZATION' | 'COLLABORATOR' | null = null;
+      const attributes = payload.attributes || {};
+
+      if (payload.account_type && typeof payload.account_type === 'string') {
+        if (payload.account_type === 'ORGANIZATION' || payload.account_type === 'COLLABORATOR') {
+          accountType = payload.account_type;
+        }
+      } else if (attributes.account_type && Array.isArray(attributes.account_type)) {
+        const value = attributes.account_type[0];
+        if (value === 'ORGANIZATION' || value === 'COLLABORATOR') {
+          accountType = value;
+        }
+      }
+
+      this.accountTypeSubject.next(accountType);
+
+      let organizationEmail: string | null = null;
+      if (payload.organization_email) {
+        organizationEmail = payload.organization_email;
+      } else if (attributes.organization_email && Array.isArray(attributes.organization_email)) {
+        organizationEmail = attributes.organization_email[0];
+      }
+      this.organizationEmailSubject.next(organizationEmail ?? null);
+    } catch (error) {
+      console.warn('Impossible de décoder le token pour récupérer les informations du compte:', error);
+      this.accountTypeSubject.next(null);
+      this.organizationEmailSubject.next(null);
     }
   }
 }

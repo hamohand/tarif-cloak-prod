@@ -129,6 +129,10 @@ public class PendingRegistrationService {
         if (pendingRegistrationRepository.existsByEmail(request.getEmail())) {
             throw new IllegalArgumentException("Un utilisateur avec cet email est déjà en cours d'inscription.");
         }
+        String organizationEmail = organization.getEmail();
+        if (organizationEmail != null && organizationEmail.equalsIgnoreCase(request.getEmail())) {
+            throw new IllegalArgumentException("L'email du collaborateur doit être différent de celui de l'organisation.");
+        }
         
         String confirmationToken = generateConfirmationToken();
         String temporaryPassword = generateTemporaryPassword();

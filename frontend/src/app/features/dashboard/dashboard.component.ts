@@ -1,13 +1,14 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { AuthService } from '../../core/services/auth.service';
-import { JsonPipe } from '@angular/common';
+import { JsonPipe, AsyncPipe } from '@angular/common';
+import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [JsonPipe],
+  imports: [JsonPipe, AsyncPipe, RouterLink],
   template: `
-    <div class="dashboard-container">
+    <div class="dashboard-container" *ngIf="!(isOrganizationAccount | async); else organizationNotice">
       <h2>Tableau de bord</h2>
 
       <div class="user-info-card">
@@ -35,6 +36,13 @@ import { JsonPipe } from '@angular/common';
         </div>
       </div>
     </div>
+
+    <ng-template #organizationNotice>
+      <div class="organization-notice">
+        <h2>Compte organisation</h2>
+        <p>Vous êtes connecté avec le compte de l'organisation. Utilisez la page <a routerLink="/organization/account">Mon organisation</a> pour gérer vos collaborateurs, suivre les statistiques globales et gérer votre plan tarifaire.</p>
+      </div>
+    </ng-template>
   `,
   styles: [`
     .dashboard-container {
@@ -84,11 +92,32 @@ import { JsonPipe } from '@angular/common';
       color: #2c3e50;
       margin-bottom: 0.5rem;
     }
+
+    .organization-notice {
+      padding: 3rem;
+      margin: 2rem;
+      background: linear-gradient(135deg, #2563eb 0%, #1e3a8a 100%);
+      color: white;
+      border-radius: 12px;
+      box-shadow: 0 8px 30px rgba(37, 99, 235, 0.35);
+      text-align: center;
+    }
+
+    .organization-notice a {
+      color: #facc15;
+      font-weight: 600;
+      text-decoration: underline;
+    }
+
+    .organization-notice a:hover {
+      color: #fde68a;
+    }
   `]
 })
 export class DashboardComponent implements OnInit {
   private authService = inject(AuthService);
   userInfo: any;
+  isOrganizationAccount = this.authService.isOrganizationAccount();
 
   ngOnInit() {
     this.userInfo = this.authService.getUserInfo();

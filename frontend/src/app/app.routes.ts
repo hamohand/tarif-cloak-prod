@@ -19,6 +19,8 @@ import { InvoicesAdminComponent } from './features/admin/invoices/invoices-admin
 import { InvoiceDetailAdminComponent } from './features/admin/invoices/invoice-detail-admin.component';
 import { PricingPlansComponent } from './features/pricing/pricing-plans.component';
 import { OrganizationAccountComponent } from './features/organization/organization-account.component';
+import { collaboratorGuard } from './core/guards/collaborator.guard';
+import { organizationGuard } from './core/guards/organization.guard';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -32,32 +34,32 @@ export const routes: Routes = [
     children: TARIF_ROUTES,
     component: TarifComponent,
     //component: DashboardComponent,
-    canActivate: [authGuard]
+    canActivate: [authGuard, collaboratorGuard]
   },
   {
     path: 'dashboard',
     component: UserDashboardComponent,
-    canActivate: [authGuard]
+    canActivate: [authGuard, collaboratorGuard]
   },
   {
     path: 'alerts',
     component: AlertsComponent,
-    canActivate: [authGuard]
-  },
-  {
-    path: 'organization/account',
-    component: OrganizationAccountComponent,
-    canActivate: [authGuard]
+    canActivate: [authGuard, collaboratorGuard]
   },
   {
     path: 'invoices',
     component: InvoicesComponent,
-    canActivate: [authGuard]
+    canActivate: [authGuard, collaboratorGuard]
   },
   {
     path: 'invoices/:id',
     component: InvoiceDetailComponent,
-    canActivate: [authGuard]
+    canActivate: [authGuard, collaboratorGuard]
+  },
+  {
+    path: 'organization/account',
+    component: OrganizationAccountComponent,
+    canActivate: [authGuard, organizationGuard]
   },
   {
     path: 'admin/stats',
