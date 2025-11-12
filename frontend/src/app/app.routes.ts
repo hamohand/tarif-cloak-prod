@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { RouterModule } from '@angular/router';
 
 import { HomeComponent } from './shared/home/home.component';
 import { DashboardComponent } from './features/dashboard/dashboard.component';
@@ -83,5 +84,10 @@ export const routes: Routes = [
   },
   { path: '**', redirectTo: '' }
 ];
+
+export const AppRoutingModule = RouterModule.forRoot(routes, {
+  onSameUrlNavigation: 'reload',
+  scrollPositionRestoration: 'enabled'
+});
 
 
