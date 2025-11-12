@@ -63,17 +63,17 @@ export class AuthService {
     this.oauthService.loadDiscoveryDocumentAndTryLogin()
       .then(() => {
         const isAuthenticated = this.oauthService.hasValidAccessToken();
-        const token = this.oauthService.getAccessToken();
+        const initialToken = this.oauthService.getAccessToken();
 
-        if (isAuthenticated && token) {
+        if (isAuthenticated && initialToken) {
           // Afficher le token dans la console après connexion réussie
           console.log('=== TOKEN JWT ===');
-          console.log('Token complet:', token);
-          console.log('Token (premiers 50 caractères):', token.substring(0, 50) + '...');
+          console.log('Token complet:', initialToken);
+          console.log('Token (premiers 50 caractères):', initialToken.substring(0, 50) + '...');
           
           // Décoder et afficher les informations du token (payload)
           try {
-            const payload = JSON.parse(atob(token.split('.')[1]));
+            const payload = JSON.parse(atob(initialToken.split('.')[1]));
             console.log('Informations du token:', payload);
             console.log('Rôles:', payload.realm_access?.roles || payload.resource_access?.['frontend-client']?.roles || 'Aucun rôle trouvé');
             console.log('Utilisateur:', payload.preferred_username || payload.email || payload.sub);
@@ -90,7 +90,7 @@ export class AuthService {
           
           // Démarrer la vérification périodique de l'expiration du token
           this.startTokenCheck();
-          this.updateAccountContext(token);
+          this.updateAccountContext(initialToken);
         }
         
         this.isAuthenticatedSubject.next(isAuthenticated);
@@ -140,15 +140,15 @@ export class AuthService {
       // Mettre à jour le statut d'authentification pour les événements importants
       else if (event.type === 'token_received' || event.type === 'token_refreshed') {
         // Afficher le token quand il est reçu
-        const token = this.oauthService.getAccessToken();
-        if (token) {
+        const eventToken = this.oauthService.getAccessToken();
+        if (eventToken) {
           console.log('=== TOKEN REÇU ===');
-          console.log('Token complet:', token);
-          console.log('Token (premiers 50 caractères):', token.substring(0, 50) + '...');
+          console.log('Token complet:', eventToken);
+          console.log('Token (premiers 50 caractères):', eventToken.substring(0, 50) + '...');
           
           // Décoder et afficher les informations du token
           try {
-            const payload = JSON.parse(atob(token.split('.')[1]));
+            const payload = JSON.parse(atob(eventToken.split('.')[1]));
             console.log('Informations du token:', payload);
             console.log('Rôles:', payload.realm_access?.roles || payload.resource_access?.['frontend-client']?.roles || 'Aucun rôle trouvé');
             console.log('Utilisateur:', payload.preferred_username || payload.email || payload.sub);
@@ -160,9 +160,9 @@ export class AuthService {
         }
         this.startTokenCheck();
         this.isAuthenticatedSubject.next(this.oauthService.hasValidAccessToken());
-        const token = this.oauthService.getAccessToken();
-        if (token) {
-          this.updateAccountContext(token);
+        const refreshedToken = this.oauthService.getAccessToken();
+        if (refreshedToken) {
+          this.updateAccountContext(refreshedToken);
         }
       }
       else if (event.type === 'discovery_document_loaded' || 
@@ -171,9 +171,9 @@ export class AuthService {
         this.isAuthenticatedSubject.next(isValid);
         if (isValid) {
           this.startTokenCheck();
-          const token = this.oauthService.getAccessToken();
-          if (token) {
-            this.updateAccountContext(token);
+          const sessionToken = this.oauthService.getAccessToken();
+          if (sessionToken) {
+            this.updateAccountContext(sessionToken);
           }
         } else {
           this.accountTypeSubject.next(null);
@@ -192,9 +192,9 @@ export class AuthService {
         const isValid = this.oauthService.hasValidAccessToken();
         this.isAuthenticatedSubject.next(isValid);
         if (isValid) {
-          const token = this.oauthService.getAccessToken();
-          if (token) {
-            this.updateAccountContext(token);
+          const currentToken = this.oauthService.getAccessToken();
+          if (currentToken) {
+            this.updateAccountContext(currentToken);
           }
         } else {
           this.accountTypeSubject.next(null);
@@ -452,10 +452,10 @@ export class AuthService {
     }
   }
 
-  private updateAccountContext(): void {
-    const token = this.oauthService.getAccessToken();
-    if (token) {
-      this.updateAccountContextWithToken(token);
+  private updateAccountContext(tokenOverride?: string): void {
+    const tokenToUse = tokenOverride ?? this.oauthService.getAccessToken();
+    if (tokenToUse) {
+      this.updateAccountContextWithToken(tokenToUse);
     } else {
       this.accountTypeSubject.next(null);
       this.organizationEmailSubject.next(null);

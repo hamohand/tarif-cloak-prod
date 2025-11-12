@@ -1,12 +1,12 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { AuthService } from '../../core/services/auth.service';
-import { JsonPipe, AsyncPipe } from '@angular/common';
+import { JsonPipe, AsyncPipe, CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [JsonPipe, AsyncPipe, RouterLink],
+  imports: [CommonModule, JsonPipe, AsyncPipe, RouterLink],
   template: `
     <div class="dashboard-container" *ngIf="!(isOrganizationAccount | async); else organizationNotice">
       <h2>Tableau de bord</h2>
