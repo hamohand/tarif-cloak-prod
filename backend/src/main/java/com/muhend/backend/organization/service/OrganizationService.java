@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -259,9 +260,21 @@ public class OrganizationService {
     public Long getOrganizationIdByUserId(String keycloakUserId) {
         List<OrganizationUser> organizationUsers = organizationUserRepository.findByKeycloakUserId(keycloakUserId);
         if (organizationUsers.isEmpty()) {
+            Optional<Organization> organizationByOwner = organizationRepository.findByKeycloakUserId(keycloakUserId);
+            if (organizationByOwner.isPresent()) {
+                Organization organization = organizationByOwner.get();
+                // S'assurer que le compte organisation est bien enregistré comme membre
+                if (!organizationUserRepository.existsByOrganizationIdAndKeycloakUserId(organization.getId(), keycloakUserId)) {
+                    OrganizationUser organizationUser = new OrganizationUser();
+                    organizationUser.setOrganization(organization);
+                    organizationUser.setKeycloakUserId(keycloakUserId);
+                    organizationUserRepository.save(organizationUser);
+                }
+                return organization.getId();
+            }
             throw new UserNotAssociatedException(
-                keycloakUserId, 
-                "L'utilisateur doit être associé à une organisation. Aucune organisation trouvée."
+                    keycloakUserId,
+                    "L'utilisateur doit être associé à une organisation. Aucune organisation trouvée."
             );
         }
         // Retourner la première organisation (on pourra améliorer cela plus tard)
