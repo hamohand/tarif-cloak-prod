@@ -2,8 +2,8 @@ import { Injectable, inject } from '@angular/core';
 import { OAuthService } from 'angular-oauth2-oidc';
 import { authConfig } from '../config/auth.config';
 import { BehaviorSubject, Observable, interval, Subscription } from 'rxjs';
-import {Router} from '@angular/router';
-import { map } from 'rxjs/operators';
+import { AccountContextService } from './account-context.service';
+import { Router } from '@angular/router';
 
 @Injectable({
   providedIn: 'root'
@@ -14,8 +14,7 @@ export class AuthService {
   private isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
   private configured = false;
   private tokenCheckInterval?: Subscription;
-  private accountTypeSubject = new BehaviorSubject<'ORGANIZATION' | 'COLLABORATOR' | null>(null);
-  private organizationEmailSubject = new BehaviorSubject<string | null>(null);
+  private accountContextService = inject(AccountContextService);
 
   constructor() {
     // Utiliser setTimeout pour s'assurer que l'injecteur Angular est prêt
@@ -94,6 +93,9 @@ export class AuthService {
         }
         
         this.isAuthenticatedSubject.next(isAuthenticated);
+        if (isAuthenticated) {
+          this.updateAccountContext(initialToken);
+        }
       })
       .catch((error) => {
         // Si c'est une erreur NG0200 (injecteur non prêt), réessayer après un court délai
@@ -136,6 +138,7 @@ export class AuthService {
         this.stopTokenCheck();
         this.cleanupTokens();
         this.isAuthenticatedSubject.next(false);
+        this.accountContextService.setContext({ accountType: null, organizationEmail: null });
       } 
       // Mettre à jour le statut d'authentification pour les événements importants
       else if (event.type === 'token_received' || event.type === 'token_refreshed') {
@@ -176,16 +179,14 @@ export class AuthService {
             this.updateAccountContext(sessionToken);
           }
         } else {
-          this.accountTypeSubject.next(null);
-          this.organizationEmailSubject.next(null);
+          this.accountContextService.setContext({ accountType: null, organizationEmail: null });
           this.stopTokenCheck();
         }
       }
       else if (event.type === 'logout') {
         this.stopTokenCheck();
         this.isAuthenticatedSubject.next(false);
-        this.accountTypeSubject.next(null);
-        this.organizationEmailSubject.next(null);
+        this.accountContextService.setContext({ accountType: null, organizationEmail: null });
       }
       // Mettre à jour le statut d'authentification pour tous les autres événements
       else {
@@ -197,8 +198,7 @@ export class AuthService {
             this.updateAccountContext(currentToken);
           }
         } else {
-          this.accountTypeSubject.next(null);
-          this.organizationEmailSubject.next(null);
+          this.accountContextService.setContext({ accountType: null, organizationEmail: null });
           this.stopTokenCheck();
         }
       }
@@ -262,8 +262,7 @@ export class AuthService {
         this.stopTokenCheck();
         this.cleanupTokens();
         this.isAuthenticatedSubject.next(false);
-        this.accountTypeSubject.next(null);
-        this.organizationEmailSubject.next(null);
+        this.accountContextService.setContext({ accountType: null, organizationEmail: null });
         // Utiliser setTimeout pour éviter d'interrompre la navigation en cours
         setTimeout(() => {
           this.router.navigate(['/']);
@@ -281,8 +280,7 @@ export class AuthService {
           this.stopTokenCheck();
           this.cleanupTokens();
           this.isAuthenticatedSubject.next(false);
-          this.accountTypeSubject.next(null);
-          this.organizationEmailSubject.next(null);
+          this.accountContextService.setContext({ accountType: null, organizationEmail: null });
           // Utiliser setTimeout pour éviter d'interrompre la navigation en cours
           setTimeout(() => {
             this.router.navigate(['/']);
@@ -301,8 +299,7 @@ export class AuthService {
       this.stopTokenCheck();
       this.cleanupTokens();
       this.isAuthenticatedSubject.next(false);
-      this.accountTypeSubject.next(null);
-      this.organizationEmailSubject.next(null);
+      this.accountContextService.setContext({ accountType: null, organizationEmail: null });
       // Utiliser setTimeout pour éviter d'interrompre la navigation en cours
       setTimeout(() => {
         this.router.navigate(['/']);
@@ -365,8 +362,7 @@ export class AuthService {
     } finally {
       // Toujours nettoyer l'état local et rediriger
       this.isAuthenticatedSubject.next(false);
-      this.accountTypeSubject.next(null);
-      this.organizationEmailSubject.next(null);
+      this.accountContextService.setContext({ accountType: null, organizationEmail: null });
       this.router.navigate(['/']);
     }
   }
@@ -415,15 +411,15 @@ export class AuthService {
   }
 
   public isOrganizationAccount(): Observable<boolean> {
-    return this.accountTypeSubject.asObservable().pipe(map(type => type === 'ORGANIZATION'));
+    return this.accountContextService.isOrganizationAccount$;
   }
 
   public isCollaboratorAccount(): Observable<boolean> {
-    return this.accountTypeSubject.asObservable().pipe(map(type => type === 'COLLABORATOR'));
+    return this.accountContextService.isCollaboratorAccount$;
   }
 
   public getOrganizationEmail(): Observable<string | null> {
-    return this.organizationEmailSubject.asObservable();
+    return this.accountContextService.organizationEmail$;
   }
 
   /**
@@ -457,8 +453,7 @@ export class AuthService {
     if (tokenToUse) {
       this.updateAccountContextWithToken(tokenToUse);
     } else {
-      this.accountTypeSubject.next(null);
-      this.organizationEmailSubject.next(null);
+      this.accountContextService.setContext({ accountType: null, organizationEmail: null });
     }
   }
 
@@ -479,19 +474,19 @@ export class AuthService {
         }
       }
 
-      this.accountTypeSubject.next(accountType);
-
       let organizationEmail: string | null = null;
       if (payload.organization_email) {
         organizationEmail = payload.organization_email;
       } else if (attributes.organization_email && Array.isArray(attributes.organization_email)) {
         organizationEmail = attributes.organization_email[0];
       }
-      this.organizationEmailSubject.next(organizationEmail ?? null);
+      this.accountContextService.setContext({
+        accountType,
+        organizationEmail: organizationEmail ?? null
+      });
     } catch (error) {
       console.warn('Impossible de décoder le token pour récupérer les informations du compte:', error);
-      this.accountTypeSubject.next(null);
-      this.organizationEmailSubject.next(null);
+      this.accountContextService.setContext({ accountType: null, organizationEmail: null });
     }
   }
 }
