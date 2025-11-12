@@ -1,7 +1,6 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { Router, RouterLink, ActivatedRoute } from '@angular/router';
-import { AuthService } from '../../../core/services/auth.service';
+import { RouterLink, ActivatedRoute } from '@angular/router';
 import { RegisterService } from '../../../core/services/register.service';
 import { PricingPlanService, PricingPlan } from '../../../core/services/pricing-plan.service';
 import { CommonModule } from '@angular/common';
@@ -13,300 +12,182 @@ import { CommonModule } from '@angular/common';
   template: `
     <div class="register-container">
       <div class="register-card">
-        <h2>Créer un compte</h2>
-        <p>Rejoignez notre plateforme SaaS</p>
+        <h2>Créer un compte organisation</h2>
+        <p>Ce compte administrateur gérera l'ensemble de vos collaborateurs.</p>
 
         <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="register-form">
-          <div class="form-group">
-            <label for="username">Nom d'utilisateur *</label>
-            <input
-              type="text"
-              id="username"
-              formControlName="username"
-              class="form-control"
-              [class.error]="isFieldInvalid('username')">
-            @if (isFieldInvalid('username')) {
-              <div class="error-message">
-                {{ getErrorMessage('username') }}
-              </div>
-            }
-          </div>
-
-          <div class="form-group">
-            <label for="email">Email *</label>
-            <input
-              type="email"
-              id="email"
-              formControlName="email"
-              class="form-control"
-              [class.error]="isFieldInvalid('email')">
-            @if (isFieldInvalid('email')) {
-              <div class="error-message">
-                {{ getErrorMessage('email') }}
-              </div>
-            }
-          </div>
-
-          <div class="form-group">
-            <label for="firstName">Prénom *</label>
-            <input
-              type="text"
-              id="firstName"
-              formControlName="firstName"
-              class="form-control"
-              [class.error]="isFieldInvalid('firstName')">
-            @if (isFieldInvalid('firstName')) {
-              <div class="error-message">
-                {{ getErrorMessage('firstName') }}
-              </div>
-            }
-          </div>
-
-          <div class="form-group">
-            <label for="lastName">Nom *</label>
-            <input
-              type="text"
-              id="lastName"
-              formControlName="lastName"
-              class="form-control"
-              [class.error]="isFieldInvalid('lastName')">
-            @if (isFieldInvalid('lastName')) {
-              <div class="error-message">
-                {{ getErrorMessage('lastName') }}
-              </div>
-            }
-          </div>
-
-          <div class="form-group">
-            <label for="password">Mot de passe *</label>
-            <input
-              type="password"
-              id="password"
-              formControlName="password"
-              class="form-control"
-              [class.error]="isFieldInvalid('password')">
-            @if (isFieldInvalid('password')) {
-              <div class="error-message">
-                {{ getErrorMessage('password') }}
-              </div>
-            }
-          </div>
-
-          <div class="form-group">
-            <label for="confirmPassword">Confirmer le mot de passe *</label>
-            <input
-              type="password"
-              id="confirmPassword"
-              formControlName="confirmPassword"
-              class="form-control"
-              [class.error]="isFieldInvalid('confirmPassword')">
-            @if (isFieldInvalid('confirmPassword')) {
-              <div class="error-message">
-                {{ getErrorMessage('confirmPassword') }}
-              </div>
-            }
-          </div>
-
-          <div class="form-section-divider">
+          <div class="form-section">
             <h3>Informations de l'organisation</h3>
-          </div>
 
-          <div class="form-group">
-            <label for="organizationName">Nom de l'organisation *</label>
-            <input
-              type="text"
-              id="organizationName"
-              formControlName="organizationName"
-              class="form-control"
-              [class.error]="isFieldInvalid('organizationName')"
-              placeholder="Ex: Mon Entreprise">
-            @if (isFieldInvalid('organizationName')) {
-              <div class="error-message">
+            <div class="form-group">
+              <label for="organizationName">Nom de l'organisation *</label>
+              <input
+                id="organizationName"
+                type="text"
+                formControlName="organizationName"
+                class="form-control"
+                [class.error]="isFieldInvalid('organizationName')"
+                placeholder="Ex: Enclume Numérique">
+              <div class="error-message" *ngIf="isFieldInvalid('organizationName')">
                 {{ getErrorMessage('organizationName') }}
               </div>
-            }
-          </div>
-
-          <div class="form-group">
-            <label for="organizationAddress">Adresse complète *</label>
-            <textarea
-              id="organizationAddress"
-              formControlName="organizationAddress"
-              class="form-control"
-              rows="3"
-              [class.error]="isFieldInvalid('organizationAddress')"
-              placeholder="Numéro, rue, code postal, ville, pays"></textarea>
-            @if (isFieldInvalid('organizationAddress')) {
-              <div class="error-message">
-                {{ getErrorMessage('organizationAddress') }}
-              </div>
-            }
-          </div>
-
-          <div class="form-row">
-            <div class="form-group half-width">
-              <label for="organizationCountry">Pays (code ISO) *</label>
-              <input
-                type="text"
-                id="organizationCountry"
-                formControlName="organizationCountry"
-                class="form-control"
-                maxlength="2"
-                [class.error]="isFieldInvalid('organizationCountry')"
-                placeholder="FR">
-              @if (isFieldInvalid('organizationCountry')) {
-                <div class="error-message">
-                  {{ getErrorMessage('organizationCountry') }}
-                </div>
-              }
-              <small class="form-hint">Utilisez le code ISO à 2 lettres (ex: FR, US, CA)</small>
             </div>
 
-            <div class="form-group half-width">
-              <label for="organizationPhone">Téléphone (indicatif international) *</label>
+            <div class="form-group">
+              <label for="organizationEmail">Email de l'organisation *</label>
               <input
-                type="tel"
-                id="organizationPhone"
-                formControlName="organizationPhone"
+                id="organizationEmail"
+                type="email"
+                formControlName="organizationEmail"
                 class="form-control"
-                [class.error]="isFieldInvalid('organizationPhone')"
-                placeholder="+33 1 23 45 67 89">
-              @if (isFieldInvalid('organizationPhone')) {
-                <div class="error-message">
-                  {{ getErrorMessage('organizationPhone') }}
-                </div>
-              }
-              <small class="form-hint">Format international recommandé (ex: +33123456789)</small>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="organizationPassword">Mot de passe du compte organisation *</label>
-            <input
-              type="password"
-              id="organizationPassword"
-              formControlName="organizationPassword"
-              class="form-control"
-              [class.error]="isFieldInvalid('organizationPassword')">
-            @if (isFieldInvalid('organizationPassword')) {
-              <div class="error-message">
-                {{ getErrorMessage('organizationPassword') }}
-              </div>
-            }
-            <small class="form-hint">Ce mot de passe permettra à l'organisation de se connecter directement.</small>
-          </div>
-
-          <div class="form-group">
-            <label for="organizationConfirmPassword">Confirmer le mot de passe de l'organisation *</label>
-            <input
-              type="password"
-              id="organizationConfirmPassword"
-              formControlName="organizationConfirmPassword"
-              class="form-control"
-              [class.error]="isFieldInvalid('organizationConfirmPassword')">
-            @if (isFieldInvalid('organizationConfirmPassword')) {
-              <div class="error-message">
-                {{ getErrorMessage('organizationConfirmPassword') }}
-              </div>
-            }
-          </div>
-
-          <div class="form-group">
-            <label for="organizationEmail">Email de l'organisation *</label>
-            <input
-              type="email"
-              id="organizationEmail"
-              formControlName="organizationEmail"
-              class="form-control"
-              [class.error]="isFieldInvalid('organizationEmail')"
-              placeholder="contact@mon-entreprise.com">
-            @if (isFieldInvalid('organizationEmail')) {
-              <div class="error-message">
+                [class.error]="isFieldInvalid('organizationEmail')"
+                placeholder="contact@mon-entreprise.com">
+              <div class="error-message" *ngIf="isFieldInvalid('organizationEmail')">
                 {{ getErrorMessage('organizationEmail') }}
               </div>
-            }
-            <small class="form-hint">Un email de confirmation sera envoyé à cette adresse pour valider l'inscription</small>
-          </div>
+              <small class="form-hint">Cet email servira d'identifiant pour accéder à l'espace organisation.</small>
+            </div>
 
-          <div class="form-section-divider">
-            <h3>Plan tarifaire</h3>
-          </div>
-
-          <div class="form-group">
-            <label for="pricingPlanId">Sélectionner un plan tarifaire (optionnel)</label>
-            @if (loadingPlans) {
-              <div class="loading-plans">Chargement des plans...</div>
-            } @else if (pricingPlans.length > 0) {
-              <select
-                id="pricingPlanId"
-                formControlName="pricingPlanId"
-                class="form-control">
-                <option [value]="null">Aucun plan (gratuit)</option>
-                @for (plan of pricingPlans; track plan.id) {
-                  <option [value]="plan.id">
-                    {{ plan.name }} - 
-                    @if (plan.pricePerMonth !== null && plan.pricePerMonth !== undefined) {
-                      @if (plan.pricePerMonth === 0) {
-                        Gratuit
-                      } @else {
-                        {{ plan.pricePerMonth }} €/mois
-                      }
-                    } @else if (plan.pricePerRequest !== null && plan.pricePerRequest !== undefined) {
-                      {{ plan.pricePerRequest }} €/requête
-                    } @else {
-                      Gratuit
-                    }
-                    @if (plan.trialPeriodDays) {
-                      ({{ plan.trialPeriodDays }} jours)
-                    } @else if (plan.monthlyQuota) {
-                      ({{ plan.monthlyQuota | number }} requêtes/mois)
-                    } @else if (plan.pricePerRequest !== null && plan.pricePerRequest !== undefined) {
-                      (Facturation à la requête)
-                    } @else {
-                      (Quota illimité)
-                    }
-                  </option>
-                }
-              </select>
-              <small class="form-hint">
-                <a routerLink="/pricing" target="_blank">Voir tous les plans tarifaires</a>
-              </small>
-            } @else {
-              <div class="no-plans">
-                <p>Aucun plan tarifaire disponible. <a routerLink="/pricing">Voir les plans</a></p>
+            <div class="form-group">
+              <label for="organizationAddress">Adresse complète *</label>
+              <textarea
+                id="organizationAddress"
+                rows="3"
+                formControlName="organizationAddress"
+                class="form-control"
+                [class.error]="isFieldInvalid('organizationAddress')"
+                placeholder="Numéro, rue, code postal, ville, pays"></textarea>
+              <div class="error-message" *ngIf="isFieldInvalid('organizationAddress')">
+                {{ getErrorMessage('organizationAddress') }}
               </div>
-            }
+            </div>
+
+            <div class="form-row">
+              <div class="form-group half-width">
+                <label for="organizationCountry">Pays (code ISO) *</label>
+                <input
+                  id="organizationCountry"
+                  type="text"
+                  maxlength="2"
+                  formControlName="organizationCountry"
+                  class="form-control"
+                  [class.error]="isFieldInvalid('organizationCountry')"
+                  placeholder="FR">
+                <div class="error-message" *ngIf="isFieldInvalid('organizationCountry')">
+                  {{ getErrorMessage('organizationCountry') }}
+                </div>
+                <small class="form-hint">Code pays ISO à 2 lettres (ex : FR, BE, CA).</small>
+              </div>
+
+              <div class="form-group half-width">
+                <label for="organizationPhone">Téléphone (indicatif international) *</label>
+                <input
+                  id="organizationPhone"
+                  type="tel"
+                  formControlName="organizationPhone"
+                  class="form-control"
+                  [class.error]="isFieldInvalid('organizationPhone')"
+                  placeholder="+33 1 23 45 67 89">
+                <div class="error-message" *ngIf="isFieldInvalid('organizationPhone')">
+                  {{ getErrorMessage('organizationPhone') }}
+                </div>
+                <small class="form-hint">Format international recommandé (ex : +33123456789).</small>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h3>Authentification du compte organisation</h3>
+
+            <div class="form-group">
+              <label for="organizationPassword">Mot de passe *</label>
+              <input
+                id="organizationPassword"
+                type="password"
+                formControlName="organizationPassword"
+                class="form-control"
+                [class.error]="isFieldInvalid('organizationPassword')">
+              <div class="error-message" *ngIf="isFieldInvalid('organizationPassword')">
+                {{ getErrorMessage('organizationPassword') }}
+              </div>
+              <small class="form-hint">Ce mot de passe sera utilisé pour vous connecter à l'espace organisation.</small>
+            </div>
+
+            <div class="form-group">
+              <label for="organizationConfirmPassword">Confirmer le mot de passe *</label>
+              <input
+                id="organizationConfirmPassword"
+                type="password"
+                formControlName="organizationConfirmPassword"
+                class="form-control"
+                [class.error]="isFieldInvalid('organizationConfirmPassword')">
+              <div class="error-message" *ngIf="isFieldInvalid('organizationConfirmPassword')">
+                {{ getErrorMessage('organizationConfirmPassword') }}
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h3>Plan tarifaire</h3>
+            <div class="form-group">
+              <label for="pricingPlanId">Sélectionner un plan</label>
+              <ng-container *ngIf="loadingPlans; else plansLoaded">
+                <div class="loading-plans">Chargement des plans...</div>
+              </ng-container>
+              <ng-template #plansLoaded>
+                <select id="pricingPlanId" formControlName="pricingPlanId" class="form-control">
+                  <option [value]="null">Plan gratuit (limité)</option>
+                  <option *ngFor="let plan of pricingPlans" [value]="plan.id">
+                    {{ plan.name }} -
+                    <ng-container *ngIf="plan.pricePerMonth !== null; else pricePerRequest">
+                      <ng-container *ngIf="plan.pricePerMonth === 0; else paidPlan">
+                        Gratuit
+                      </ng-container>
+                      <ng-template #paidPlan>{{ plan.pricePerMonth }} €/mois</ng-template>
+                    </ng-container>
+                    <ng-template #pricePerRequest>
+                      <ng-container *ngIf="plan.pricePerRequest !== null; else unlimited">
+                        {{ plan.pricePerRequest }} €/requête
+                      </ng-container>
+                      <ng-template #unlimited>Quota illimité</ng-template>
+                    </ng-template>
+                    <ng-container *ngIf="plan.monthlyQuota">
+                      ({{ plan.monthlyQuota | number }} requêtes/mois)
+                    </ng-container>
+                    <ng-container *ngIf="!plan.monthlyQuota && plan.trialPeriodDays">
+                      ({{ plan.trialPeriodDays }} jours d'essai)
+                    </ng-container>
+                  </option>
+                </select>
+                <small class="form-hint">
+                  <a routerLink="/pricing" target="_blank">Voir le détail des plans</a>
+                </small>
+              </ng-template>
+            </div>
           </div>
 
           <div class="form-actions">
-            <button
-              type="submit"
-              class="btn btn-primary"
-              [disabled]="registerForm.invalid || isLoading">
-              @if (isLoading) {
-                <span>Création en cours...</span>
-              }
-              @if (!isLoading) {
-                <span>Créer mon compte</span>
-              }
+            <button type="submit" class="btn btn-primary" [disabled]="registerForm.invalid || isLoading">
+              <ng-container *ngIf="isLoading; else createAccount">
+                Création en cours...
+              </ng-container>
+              <ng-template #createAccount>
+                Créer mon compte organisation
+              </ng-template>
             </button>
           </div>
 
           <div class="form-footer">
-            <p>Déjà un compte ? <a routerLink="/auth/login">Se connecter</a></p>
+            <p>Déjà administrateur ? <a routerLink="/auth/login">Se connecter</a></p>
           </div>
 
-          @if (errorMessage) {
-            <div class="error-message">
-              {{ errorMessage }}
-            </div>
-          }
+          <div class="error-message" *ngIf="errorMessage">
+            {{ errorMessage }}
+          </div>
 
-          @if (successMessage) {
-            <div class="success-message">
-              {{ successMessage }}
-            </div>
-          }
+          <div class="success-message" *ngIf="successMessage">
+            {{ successMessage }}
+          </div>
         </form>
       </div>
     </div>
@@ -326,7 +207,7 @@ import { CommonModule } from '@angular/common';
       border-radius: 12px;
       box-shadow: 0 4px 20px rgba(0,0,0,0.1);
       width: 100%;
-      max-width: 600px;
+      max-width: 680px;
     }
 
     h2 {
@@ -344,12 +225,26 @@ import { CommonModule } from '@angular/common';
     .register-form {
       display: flex;
       flex-direction: column;
-      gap: 1rem;
+      gap: 1.5rem;
+    }
+
+    .form-section {
+      border: 1px solid #e1e8ed;
+      border-radius: 10px;
+      padding: 1.5rem;
+      background: #fafbfc;
+    }
+
+    .form-section h3 {
+      margin: 0 0 1rem 0;
+      color: #2c3e50;
+      font-size: 1.2rem;
     }
 
     .form-group {
       display: flex;
       flex-direction: column;
+      gap: 0.5rem;
     }
 
     .form-row {
@@ -359,11 +254,10 @@ import { CommonModule } from '@angular/common';
     }
 
     .half-width {
-      flex: 1 1 250px;
+      flex: 1 1 240px;
     }
 
     label {
-      margin-bottom: 0.5rem;
       font-weight: 500;
       color: #2c3e50;
     }
@@ -388,18 +282,24 @@ import { CommonModule } from '@angular/common';
     .error-message {
       color: #e74c3c;
       font-size: 0.875rem;
-      margin-top: 0.25rem;
+      margin-top: -0.25rem;
     }
 
     .success-message {
       color: #27ae60;
-      font-size: 0.875rem;
-      margin-top: 0.25rem;
+      font-size: 0.95rem;
       text-align: center;
+      font-weight: 600;
+    }
+
+    .form-hint {
+      color: #95a5a6;
+      font-size: 0.85rem;
     }
 
     .form-actions {
-      margin-top: 1rem;
+      text-align: center;
+      margin-top: 0.5rem;
     }
 
     .btn {
@@ -428,7 +328,7 @@ import { CommonModule } from '@angular/common';
 
     .form-footer {
       text-align: center;
-      margin-top: 1rem;
+      margin-top: 0.5rem;
     }
 
     .form-footer a {
@@ -439,56 +339,11 @@ import { CommonModule } from '@angular/common';
     .form-footer a:hover {
       text-decoration: underline;
     }
-
-    .form-section-divider {
-      margin: 2rem 0 1rem 0;
-      padding-top: 1.5rem;
-      border-top: 2px solid #e1e8ed;
-    }
-
-    .form-section-divider h3 {
-      color: #2c3e50;
-      font-size: 1.1rem;
-      margin: 0 0 1rem 0;
-      font-weight: 600;
-    }
-
-    .form-hint {
-      color: #7f8c8d;
-      font-size: 0.875rem;
-      margin-top: 0.25rem;
-      display: block;
-    }
-
-    .form-hint a {
-      color: #3498db;
-      text-decoration: none;
-    }
-
-    .form-hint a:hover {
-      text-decoration: underline;
-    }
-
-    .loading-plans, .no-plans {
-      padding: 1rem;
-      text-align: center;
-      color: #7f8c8d;
-    }
-
-    .no-plans a {
-      color: #3498db;
-      text-decoration: none;
-    }
-
-    .no-plans a:hover {
-      text-decoration: underline;
-    }
   `]
 })
 export class RegisterComponent implements OnInit {
   private fb = inject(FormBuilder);
   private registerService = inject(RegisterService);
-  private router = inject(Router);
   private route = inject(ActivatedRoute);
   private pricingPlanService = inject(PricingPlanService);
 
@@ -499,12 +354,6 @@ export class RegisterComponent implements OnInit {
   loadingPlans = false;
 
   registerForm: FormGroup = this.fb.group({
-    username: ['', [Validators.required, Validators.minLength(3)]],
-    email: ['', [Validators.required, Validators.email]],
-    firstName: ['', [Validators.required, Validators.minLength(2)]],
-    lastName: ['', [Validators.required, Validators.minLength(2)]],
-    password: ['', [Validators.required, Validators.minLength(6)]],
-    confirmPassword: ['', [Validators.required]],
     organizationName: ['', [Validators.required, Validators.minLength(1), Validators.maxLength(255)]],
     organizationEmail: ['', [Validators.required, Validators.email, Validators.maxLength(255)]],
     organizationAddress: ['', [Validators.required, Validators.minLength(5), Validators.maxLength(512)]],
@@ -514,11 +363,10 @@ export class RegisterComponent implements OnInit {
     organizationConfirmPassword: ['', [Validators.required]],
     pricingPlanId: [null]
   }, {
-    validators: [this.passwordMatchValidator, this.organizationPasswordMatchValidator, this.emailDifferenceValidator]
+    validators: [this.organizationPasswordMatchValidator]
   });
 
   ngOnInit() {
-    // Récupérer le planId depuis les query params si présent
     this.route.queryParams.subscribe(params => {
       const planId = params['planId'];
       if (planId) {
@@ -526,7 +374,6 @@ export class RegisterComponent implements OnInit {
       }
     });
 
-    // Charger les plans tarifaires
     this.loadPricingPlans();
   }
 
@@ -544,19 +391,6 @@ export class RegisterComponent implements OnInit {
     });
   }
 
-  passwordMatchValidator(form: FormGroup) {
-    const password = form.get('password');
-    const confirmPassword = form.get('confirmPassword');
-
-    if (password && confirmPassword && password.value !== confirmPassword.value) {
-      confirmPassword.setErrors({ passwordMismatch: true });
-      return { passwordMismatch: true };
-    }
-
-    confirmPassword?.setErrors(null);
-    return null;
-  }
-
   organizationPasswordMatchValidator(form: FormGroup) {
     const password = form.get('organizationPassword');
     const confirmPassword = form.get('organizationConfirmPassword');
@@ -566,24 +400,10 @@ export class RegisterComponent implements OnInit {
       return { organizationPasswordMismatch: true };
     }
 
-    confirmPassword?.setErrors(null);
-    return null;
-  }
-
-  emailDifferenceValidator(form: FormGroup) {
-    const email = form.get('email');
-    const organizationEmail = form.get('organizationEmail');
-
-    if (email && organizationEmail && email.value && organizationEmail.value && 
-        email.value.toLowerCase() === organizationEmail.value.toLowerCase()) {
-      email.setErrors({ sameAsOrganizationEmail: true });
-      return { sameAsOrganizationEmail: true };
-    }
-
-    if (email?.errors?.['sameAsOrganizationEmail']) {
-      const errors = { ...email.errors };
-      delete errors['sameAsOrganizationEmail'];
-      email.setErrors(Object.keys(errors).length > 0 ? errors : null);
+    if (confirmPassword?.hasError('passwordMismatch')) {
+      const errors = { ...confirmPassword.errors };
+      delete errors['passwordMismatch'];
+      confirmPassword.setErrors(Object.keys(errors).length > 0 ? errors : null);
     }
     return null;
   }
@@ -611,19 +431,16 @@ export class RegisterComponent implements OnInit {
         const maxLength = field.errors['maxlength'].requiredLength;
         return `Maximum ${maxLength} caractères autorisés`;
       }
-      if (field.errors['passwordMismatch']) {
-        return 'Les mots de passe ne correspondent pas';
-      }
-      if (field.errors['sameAsOrganizationEmail']) {
-        return 'L\'email utilisateur doit être différent de l\'email de l\'organisation';
-      }
       if (field.errors['pattern']) {
         if (fieldName === 'organizationCountry') {
-          return 'Le pays doit être un code ISO à 2 lettres (ex: FR)';
+          return 'Le pays doit être un code ISO à 2 lettres (ex : FR)';
         }
         if (fieldName === 'organizationPhone') {
-          return 'Le numéro doit être au format international (ex: +33123456789)';
+          return 'Le numéro doit être au format international (ex : +33123456789)';
         }
+      }
+      if (field.errors['passwordMismatch']) {
+        return 'Les mots de passe ne correspondent pas';
       }
     }
 
@@ -631,70 +448,58 @@ export class RegisterComponent implements OnInit {
   }
 
   onSubmit() {
-    if (this.registerForm.valid) {
-      this.isLoading = true;
-      this.errorMessage = '';
-      this.successMessage = '';
-
-      const userData = {
-        ...this.registerForm.value,
-        organizationCountry: (this.registerForm.value.organizationCountry || '').toUpperCase(),
-        organizationEmail: (this.registerForm.value.organizationEmail || '').toLowerCase()
-      };
-      
-      // Log pour diagnostiquer le problème
-      console.log('=== Données du formulaire avant envoi ===');
-      console.log('Email utilisateur:', userData.email);
-      console.log('Email organisation:', userData.organizationEmail);
-      console.log('Username:', userData.username);
-
-      this.registerService.registerUser({
-        username: userData.username,
-        email: userData.email,
-        firstName: userData.firstName,
-        lastName: userData.lastName,
-        password: userData.password,
-        organizationName: userData.organizationName,
-        organizationEmail: userData.organizationEmail,
-        organizationAddress: userData.organizationAddress,
-        organizationCountry: userData.organizationCountry,
-        organizationPhone: userData.organizationPhone,
-        organizationPassword: userData.organizationPassword,
-        pricingPlanId: userData.pricingPlanId || null
-      }).subscribe({
-        next: (response) => {
-          this.isLoading = false;
-          const orgEmail = response.organizationEmail || userData.organizationEmail;
-          this.successMessage = response.message || `Un email de confirmation a été envoyé à ${orgEmail}. Veuillez vérifier votre boîte de réception et cliquer sur le lien de confirmation pour finaliser votre inscription.`;
-          // Réinitialiser le formulaire
-          this.registerForm.reset({
-            pricingPlanId: null
-          });
-          // Ne pas rediriger automatiquement, l'utilisateur doit confirmer par email
-        },
-        error: (error) => {
-          this.isLoading = false;
-          this.errorMessage = this.handleError(error);
-        }
-      });
-    } else {
-      // Marquer tous les champs comme touchés pour afficher les erreurs
-      Object.keys(this.registerForm.controls).forEach(key => {
-        const control = this.registerForm.get(key);
-        control?.markAsTouched();
-      });
+    if (this.registerForm.invalid) {
+      Object.values(this.registerForm.controls).forEach(control => control.markAsTouched());
+      return;
     }
+
+    this.isLoading = true;
+    this.errorMessage = '';
+    this.successMessage = '';
+
+    const formValue = this.registerForm.value;
+    const organizationEmail = (formValue.organizationEmail || '').toLowerCase();
+    const organizationCountry = (formValue.organizationCountry || '').toUpperCase();
+    const organizationPassword = formValue.organizationPassword || '';
+
+    const payload = {
+      username: organizationEmail,
+      email: organizationEmail,
+      password: organizationPassword,
+      firstName: formValue.organizationName || '',
+      lastName: '',
+      organizationName: formValue.organizationName,
+      organizationEmail,
+      organizationAddress: formValue.organizationAddress,
+      organizationCountry,
+      organizationPhone: formValue.organizationPhone,
+      organizationPassword,
+      pricingPlanId: formValue.pricingPlanId || null
+    };
+
+    this.registerService.registerUser(payload).subscribe({
+      next: (response) => {
+        this.isLoading = false;
+        const orgEmail = response.organizationEmail || organizationEmail;
+        this.successMessage = response.message || `Un email de confirmation a été envoyé à ${orgEmail}.`;
+        this.registerForm.reset({ pricingPlanId: null });
+      },
+      error: (error) => {
+        this.isLoading = false;
+        this.errorMessage = this.handleError(error);
+      }
+    });
   }
 
   private handleError(error: any): string {
     if (error.status === 409) {
-      return 'Ce nom d\'utilisateur ou cet email existe déjà';
+      return 'Un compte existe déjà avec cet email.';
     } else if (error.status === 400) {
-      return 'Données de formulaire invalides';
+      return error.error?.error || 'Données invalides. Vérifiez les informations saisies.';
     } else if (error.status === 0) {
       return 'Impossible de joindre le serveur. Vérifiez votre connexion.';
     } else {
-      return 'Une erreur est survenue lors de la création du compte';
+      return 'Une erreur est survenue lors de la création du compte organisation.';
     }
   }
 }

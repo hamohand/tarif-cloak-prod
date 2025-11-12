@@ -221,53 +221,7 @@ public class PendingRegistrationService {
      */
     private void createOrganizationAndUser(PendingRegistration pending) {
         try {
-            // 1. Créer l'utilisateur dans Keycloak
-            log.info("=== Création utilisateur pour nouvelle organisation ===");
-            log.info("Email utilisateur depuis PendingRegistration: {}", pending.getEmail());
-            log.info("Email organisation depuis PendingRegistration: {}", pending.getOrganizationEmail());
-            
-            log.info("Email utilisateur dans keycloakRequest: {}", pending.getEmail());
-            
-            jakarta.ws.rs.core.Response response = keycloakAdminService.createUser(
-                    pending.getUsername(),
-                    pending.getEmail(),
-                    pending.getPassword(),
-                    pending.getFirstName(),
-                    pending.getLastName(),
-                    true,
-                    false,
-                    java.util.List.of("UPDATE_PASSWORD"),
-                    java.util.Map.of(
-                            "account_type", java.util.List.of("COLLABORATOR"),
-                            "organization_email", java.util.List.of(pending.getOrganizationEmail())
-                    )
-            );
-            int status = response.getStatus();
-            String keycloakUserId = null;
-            if (status == jakarta.ws.rs.core.Response.Status.CREATED.getStatusCode()) {
-                keycloakUserId = keycloakAdminService.getUserIdFromResponse(response);
-                if (keycloakUserId == null) {
-                    keycloakUserId = keycloakAdminService.getUserIdByUsername(pending.getUsername());
-                }
-                response.close();
-            } else if (status == jakarta.ws.rs.core.Response.Status.CONFLICT.getStatusCode()) {
-                log.warn("Utilisateur Keycloak déjà existant pour le username {}", pending.getUsername());
-                response.close();
-                keycloakUserId = keycloakAdminService.getUserIdByUsername(pending.getUsername());
-            } else {
-                String errorBody = response.hasEntity() ? response.readEntity(String.class) : "N/A";
-                response.close();
-                throw new RuntimeException("Erreur lors de la création de l'utilisateur dans Keycloak (status="
-                        + status + ", body=" + errorBody + ")");
-            }
-            
-            if (keycloakUserId == null) {
-                throw new RuntimeException("Impossible de récupérer l'ID Keycloak de l'utilisateur créé");
-            }
-            
-            log.info("Utilisateur Keycloak créé: {}", keycloakUserId);
-            
-            // 3. Créer le compte Keycloak de l'organisation
+            log.info("=== Création du compte organisation ===");
             jakarta.ws.rs.core.Response orgResponse = keycloakAdminService.createUser(
                     pending.getOrganizationEmail(),
                     pending.getOrganizationEmail(),
@@ -276,10 +230,10 @@ public class PendingRegistrationService {
                     null,
                     true,
                     true,
-                    null,
+                    java.util.List.of("UPDATE_PASSWORD"),
                     java.util.Map.of("account_type", java.util.List.of("ORGANIZATION"))
             );
-            
+
             int orgStatus = orgResponse.getStatus();
             String organizationKeycloakUserId = null;
             if (orgStatus == jakarta.ws.rs.core.Response.Status.CREATED.getStatusCode()) {
@@ -298,15 +252,18 @@ public class PendingRegistrationService {
                 throw new RuntimeException("Erreur lors de la création du compte organisation dans Keycloak (status="
                         + orgStatus + ", body=" + errorBody + ")");
             }
-            
+
             if (organizationKeycloakUserId == null) {
                 throw new RuntimeException("Impossible de récupérer l'ID Keycloak du compte organisation");
             }
-            log.info("Compte Keycloak organisation créé: {}", organizationKeycloakUserId);
-            
-            // 3. Créer l'organisation
-            com.muhend.backend.organization.dto.CreateOrganizationRequest orgRequest = 
-                new com.muhend.backend.organization.dto.CreateOrganizationRequest();
+            log.info("Compte Keycloak organisation créé/retourné: {}", organizationKeycloakUserId);
+
+            // Assigner les rôles organisation à l'utilisateur
+            keycloakAdminService.assignRealmRoles(organizationKeycloakUserId, java.util.List.of("ORGANIZATION", "USER"));
+
+            // Créer l'organisation dans l'application
+            com.muhend.backend.organization.dto.CreateOrganizationRequest orgRequest =
+                    new com.muhend.backend.organization.dto.CreateOrganizationRequest();
             orgRequest.setName(pending.getOrganizationName());
             orgRequest.setEmail(pending.getOrganizationEmail());
             orgRequest.setAddress(pending.getOrganizationAddress());
@@ -314,17 +271,17 @@ public class PendingRegistrationService {
             orgRequest.setPhone(pending.getOrganizationPhone());
             orgRequest.setOrganizationPassword(pending.getOrganizationPassword());
             orgRequest.setKeycloakUserId(organizationKeycloakUserId);
-            orgRequest.setPricingPlanId(pending.getPricingPlanId()); // Inclure le plan tarifaire sélectionné
-            
+            orgRequest.setPricingPlanId(pending.getPricingPlanId());
+
             var organizationDto = organizationService.createOrganization(orgRequest);
             log.info("Organisation créée: id={}, name={}", organizationDto.getId(), organizationDto.getName());
-            
-            // 4. Associer l'utilisateur à l'organisation
-            organizationService.addUserToOrganization(organizationDto.getId(), keycloakUserId);
-            log.info("Utilisateur {} associé à l'organisation {}", keycloakUserId, organizationDto.getId());
-            
+
+            // Associer le compte organisation à l'entité Organisation (pour les quotas/reporting)
+            organizationService.addUserToOrganization(organizationDto.getId(), organizationKeycloakUserId);
+            log.info("Compte organisation {} associé à l'organisation {}", organizationKeycloakUserId, organizationDto.getId());
+
         } catch (Exception e) {
-            log.error("Erreur lors de la création de l'organisation et de l'utilisateur: {}", e.getMessage(), e);
+            log.error("Erreur lors de la création de l'organisation: {}", e.getMessage(), e);
             throw new RuntimeException("Erreur lors de la création: " + e.getMessage(), e);
         }
     }
@@ -379,6 +336,8 @@ public class PendingRegistrationService {
             }
             
             log.info("Utilisateur Keycloak créé: {}", keycloakUserId);
+
+            keycloakAdminService.assignRealmRoles(keycloakUserId, java.util.List.of("COLLABORATOR", "USER"));
             
             // 3. Associer l'utilisateur à l'organisation existante
             organizationService.addUserToOrganization(organizationId, keycloakUserId);

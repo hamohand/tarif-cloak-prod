@@ -4,8 +4,10 @@ import com.muhend.backend.auth.dto.UserRegistrationRequest;
 import jakarta.ws.rs.core.Response;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.RealmResource;
+import org.keycloak.admin.client.resource.RolesResource;
 import org.keycloak.admin.client.resource.UsersResource;
 import org.keycloak.representations.idm.CredentialRepresentation;
+import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,6 +17,8 @@ import org.springframework.stereotype.Service;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Service
 public class KeycloakAdminService {
@@ -248,6 +252,39 @@ public class KeycloakAdminService {
         } catch (Exception e) {
             logger.error("Erreur lors de la récupération de l'utilisateur {}: {}", keycloakUserId, e.getMessage());
             return null;
+        }
+    }
+
+    public void assignRealmRoles(String keycloakUserId, List<String> roleNames) {
+        if (roleNames == null || roleNames.isEmpty()) {
+            return;
+        }
+        try {
+            RealmResource realmResource = keycloak.realm(realm);
+            RolesResource rolesResource = realmResource.roles();
+
+            List<RoleRepresentation> roles = roleNames.stream()
+                    .map(roleName -> {
+                        try {
+                            return rolesResource.get(roleName).toRepresentation();
+                        } catch (Exception e) {
+                            logger.warn("Rôle {} introuvable dans le realm {}", roleName, realm);
+                            return null;
+                        }
+                    })
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+
+            if (roles.isEmpty()) {
+                logger.warn("Aucun rôle valide à assigner pour l'utilisateur {}", keycloakUserId);
+                return;
+            }
+
+            realmResource.users().get(keycloakUserId).roles().realmLevel().add(roles);
+            logger.info("Rôles {} assignés à l'utilisateur {}", roles.stream().map(RoleRepresentation::getName).toList(), keycloakUserId);
+        } catch (Exception e) {
+            logger.error("Erreur lors de l'assignation des rôles {} à l'utilisateur {}: {}", roleNames, keycloakUserId, e.getMessage(), e);
+            throw new RuntimeException("Erreur lors de l'assignation des rôles: " + e.getMessage(), e);
         }
     }
 }
