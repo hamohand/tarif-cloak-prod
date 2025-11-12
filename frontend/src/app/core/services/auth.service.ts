@@ -9,16 +9,15 @@ import { Router } from '@angular/router';
   providedIn: 'root'
 })
 export class AuthService {
-  private oauthService = inject(OAuthService);
-  private router = inject(Router);
   private isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
   private configured = false;
   private tokenCheckInterval?: Subscription;
-  private accountContextService = inject(AccountContextService);
 
-  constructor() {
-    // Utiliser setTimeout pour s'assurer que l'injecteur Angular est prêt
-    // Cela évite l'erreur NG0200 lors du callback OAuth
+  constructor(
+    private oauthService: OAuthService,
+    private router: Router,
+    private accountContextService: AccountContextService
+  ) {
     setTimeout(() => {
       this.configure();
     }, 0);
@@ -465,26 +464,26 @@ export class AuthService {
   private updateAccountContextWithToken(token: string): void {
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
-      let accountType: 'ORGANIZATION' | 'COLLABORATOR' | null = null;
-      const attributes = payload.attributes || {};
 
-      if (payload.account_type && typeof payload.account_type === 'string') {
-        if (payload.account_type === 'ORGANIZATION' || payload.account_type === 'COLLABORATOR') {
-          accountType = payload.account_type;
-        }
-      } else if (attributes.account_type && Array.isArray(attributes.account_type)) {
-        const value = attributes.account_type[0];
-        if (value === 'ORGANIZATION' || value === 'COLLABORATOR') {
-          accountType = value;
-        }
+      const realmRoles: string[] = payload.realm_access?.roles || [];
+      const clientRoles: string[] = payload.resource_access?.['frontend-client']?.roles || [];
+      const combinedRoles = [...realmRoles, ...clientRoles];
+
+      let accountType: 'ORGANIZATION' | 'COLLABORATOR' | null = null;
+      if (combinedRoles.includes('ORGANIZATION')) {
+        accountType = 'ORGANIZATION';
+      } else if (combinedRoles.includes('COLLABORATOR')) {
+        accountType = 'COLLABORATOR';
       }
 
       let organizationEmail: string | null = null;
+      const attributes = payload.attributes || {};
       if (payload.organization_email) {
         organizationEmail = payload.organization_email;
       } else if (attributes.organization_email && Array.isArray(attributes.organization_email)) {
         organizationEmail = attributes.organization_email[0];
       }
+
       this.accountContextService.setContext({
         accountType,
         organizationEmail: organizationEmail ?? null
