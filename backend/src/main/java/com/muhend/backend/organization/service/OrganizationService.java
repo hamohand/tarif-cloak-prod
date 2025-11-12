@@ -579,11 +579,21 @@ public class OrganizationService {
         dto.setKeycloakUserId(organizationUser.getKeycloakUserId());
         
         // Récupérer le nom d'utilisateur depuis Keycloak
+        dto.setEmail(null);
+        dto.setFirstName(null);
+        dto.setLastName(null);
         try {
-            String username = keycloakAdminService.getUsername(organizationUser.getKeycloakUserId());
-            dto.setUsername(username != null ? username : "N/A");
+            var userRepresentation = keycloakAdminService.getUserRepresentation(organizationUser.getKeycloakUserId());
+            if (userRepresentation != null) {
+                dto.setUsername(userRepresentation.getUsername());
+                dto.setEmail(userRepresentation.getEmail());
+                dto.setFirstName(userRepresentation.getFirstName());
+                dto.setLastName(userRepresentation.getLastName());
+            } else {
+                dto.setUsername("N/A");
+            }
         } catch (Exception e) {
-            log.warn("Impossible de récupérer le nom d'utilisateur pour {}: {}", 
+            log.warn("Impossible de récupérer les informations utilisateur pour {}: {}", 
                 organizationUser.getKeycloakUserId(), e.getMessage());
             dto.setUsername("N/A");
         }

@@ -105,6 +105,9 @@ import {
             <thead>
             <tr>
               <th>Nom d'utilisateur</th>
+              <th>Prénom</th>
+              <th>Nom</th>
+              <th>Email</th>
               <th>Keycloak ID</th>
               <th>Date d'ajout</th>
             </tr>
@@ -112,6 +115,9 @@ import {
             <tbody>
             <tr *ngFor="let collaborator of collaborators">
               <td>{{ collaborator.username }}</td>
+              <td>{{ collaborator.firstName || '-' }}</td>
+              <td>{{ collaborator.lastName || '-' }}</td>
+              <td>{{ collaborator.email || '-' }}</td>
               <td>{{ collaborator.keycloakUserId }}</td>
               <td>{{ collaborator.joinedAt ? (collaborator.joinedAt | date:'short') : '-' }}</td>
             </tr>

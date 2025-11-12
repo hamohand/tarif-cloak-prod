@@ -24,6 +24,9 @@ export interface OrganizationCollaborator {
   organizationName: string;
   keycloakUserId: string;
   username: string;
+  email?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
   joinedAt?: string | null;
 }
 
