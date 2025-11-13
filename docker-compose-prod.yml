@@ -238,7 +238,7 @@ services:
       SMTP_FROM: "${SMTP_FROM:-noreply@enclume-numerique.com}"
       SMTP_FROM_NAME: "${SMTP_FROM_NAME:-Enclume Numérique}"
       # Configuration Tarification
-      BASE_REQUEST_PRICE_USD: "${BASE_REQUEST_PRICE_USD:-0.01}"
+      BASE_REQUEST_PRICE_EUR: "${BASE_REQUEST_PRICE_EUR:-0.01}"
     labels:
       <<: *traefik-backend-labels
     restart: unless-stopped

@@ -56,7 +56,7 @@ public class OrganizationAccountController {
     private final UsageLogRepository usageLogRepository;
     private final KeycloakAdminService keycloakAdminService;
     
-    @Value("${pricing.base-request-price:0.01}")
+    @Value("${BASE_REQUEST_PRICE_EUR:0.01}")
     private double baseRequestPrice;
 
     @GetMapping("/me")
