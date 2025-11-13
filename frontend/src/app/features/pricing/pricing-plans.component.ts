@@ -306,7 +306,7 @@ export class PricingPlansComponent implements OnInit {
     this.loading = true;
     this.error = '';
     // Utiliser la version de marché depuis l'environnement
-    const marketVersion = environment.marketVersion;
+    const marketVersion = (environment as any).marketVersion as string | undefined;
     this.pricingPlanService.getActivePricingPlans(marketVersion).subscribe({
       next: (plans) => {
         this.plans = plans;

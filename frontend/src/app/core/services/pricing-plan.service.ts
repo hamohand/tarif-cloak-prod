@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
@@ -37,7 +37,10 @@ export class PricingPlanService {
    * @param marketVersion Version de marché (ex: 'DZ', 'DEFAULT'). Si non fourni, récupère tous les plans.
    */
   getActivePricingPlans(marketVersion?: string): Observable<PricingPlan[]> {
-    const params = marketVersion ? { marketVersion } : {};
+    let params = new HttpParams();
+    if (marketVersion) {
+      params = params.set('marketVersion', marketVersion);
+    }
     return this.http.get<PricingPlan[]>(this.apiUrl, { params });
   }
 
