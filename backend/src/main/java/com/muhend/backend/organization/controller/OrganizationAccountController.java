@@ -283,28 +283,28 @@ public class OrganizationAccountController {
             // Convertir les logs en Map avec les noms des collaborateurs
             List<Map<String, Object>> usageLogsWithNames = logs.stream()
                     .sorted((a, b) -> b.getTimestamp().compareTo(a.getTimestamp()))
-                    .map(log -> {
+                    .map(usageLog -> {
                         Map<String, Object> logMap = new LinkedHashMap<>();
-                        logMap.put("id", log.getId());
-                        logMap.put("keycloakUserId", log.getKeycloakUserId());
-                        logMap.put("collaboratorName", userNamesMap.getOrDefault(log.getKeycloakUserId(), "Utilisateur inconnu"));
-                        logMap.put("endpoint", log.getEndpoint());
-                        logMap.put("searchTerm", log.getSearchTerm());
-                        logMap.put("tokensUsed", log.getTokensUsed());
+                        logMap.put("id", usageLog.getId());
+                        logMap.put("keycloakUserId", usageLog.getKeycloakUserId());
+                        logMap.put("collaboratorName", userNamesMap.getOrDefault(usageLog.getKeycloakUserId(), "Utilisateur inconnu"));
+                        logMap.put("endpoint", usageLog.getEndpoint());
+                        logMap.put("searchTerm", usageLog.getSearchTerm());
+                        logMap.put("tokensUsed", usageLog.getTokensUsed());
                         
                         // Calculer le coût des tokens et le coût total
-                        BigDecimal totalCost = log.getCostUsd() != null ? log.getCostUsd() : BigDecimal.ZERO;
+                        BigDecimal totalCost = usageLog.getCostUsd() != null ? usageLog.getCostUsd() : BigDecimal.ZERO;
                         BigDecimal baseCost = BigDecimal.valueOf(baseRequestPrice);
                         BigDecimal tokenCost = totalCost.subtract(baseCost);
                         
                         // Log pour diagnostic
                         log.debug("Calcul coût pour log ID {}: totalCost={}, baseCost={}, tokenCost={}, tokensUsed={}", 
-                            log.getId(), totalCost, baseCost, tokenCost, log.getTokensUsed());
+                            usageLog.getId(), totalCost, baseCost, tokenCost, usageLog.getTokensUsed());
                         
                         // S'assurer que le coût des tokens n'est pas négatif
                         if (tokenCost.compareTo(BigDecimal.ZERO) < 0) {
                             log.warn("Coût des tokens négatif pour log ID {}: tokenCost={}, totalCost={}, baseCost={}", 
-                                log.getId(), tokenCost, totalCost, baseCost);
+                                usageLog.getId(), tokenCost, totalCost, baseCost);
                             tokenCost = BigDecimal.ZERO;
                         }
                         
@@ -315,7 +315,7 @@ public class OrganizationAccountController {
                         logMap.put("tokenCostUsd", tokenCostRounded.doubleValue());
                         logMap.put("totalCostUsd", totalCostRounded.doubleValue());
                         logMap.put("baseCostUsd", baseCost.setScale(3, RoundingMode.HALF_UP).doubleValue());
-                        logMap.put("timestamp", log.getTimestamp().toString());
+                        logMap.put("timestamp", usageLog.getTimestamp().toString());
                         return logMap;
                     })
                     .collect(Collectors.toList());
