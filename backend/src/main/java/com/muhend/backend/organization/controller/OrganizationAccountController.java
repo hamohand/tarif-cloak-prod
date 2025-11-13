@@ -57,7 +57,27 @@ public class OrganizationAccountController {
     private final KeycloakAdminService keycloakAdminService;
     
     @Value("${BASE_REQUEST_PRICE_EUR:0.01}")
+    private String baseRequestPriceStr;
+    
     private double baseRequestPrice;
+    
+    @jakarta.annotation.PostConstruct
+    private void initBaseRequestPrice() {
+        try {
+            // Nettoyer la valeur pour éviter les problèmes de concaténation dans le fichier .env
+            String cleaned = baseRequestPriceStr != null ? baseRequestPriceStr.trim().split("\\s+")[0] : "0.01";
+            // Extraire seulement la partie numérique (avant tout caractère non numérique)
+            cleaned = cleaned.replaceAll("[^0-9.]", "").split("\\s+")[0];
+            if (cleaned.isEmpty()) {
+                cleaned = "0.01";
+            }
+            baseRequestPrice = Double.parseDouble(cleaned);
+            log.info("Tarif de base par requête configuré: {} EUR", baseRequestPrice);
+        } catch (NumberFormatException e) {
+            log.error("Erreur lors du parsing de BASE_REQUEST_PRICE_EUR: '{}'. Utilisation de la valeur par défaut 0.01", baseRequestPriceStr, e);
+            baseRequestPrice = 0.01;
+        }
+    }
 
     @GetMapping("/me")
     @PreAuthorize("isAuthenticated()")

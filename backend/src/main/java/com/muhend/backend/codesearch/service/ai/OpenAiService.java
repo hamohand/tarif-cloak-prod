@@ -20,14 +20,27 @@ import java.util.Map;
 public class OpenAiService {
     private final AiPrompts aiPrompts;
     private final String aiKey;
-    private final double baseRequestPrice;
+    private double baseRequestPrice;
 
     public OpenAiService(AiPrompts aiPrompts, 
                         @Value("${OPENAI_API_KEY}") String aiKey,
-                        @Value("${BASE_REQUEST_PRICE_EUR:0.01}") double baseRequestPrice) {
+                        @Value("${BASE_REQUEST_PRICE_EUR:0.01}") String baseRequestPriceStr) {
         this.aiPrompts = aiPrompts;
         this.aiKey = aiKey;
-        this.baseRequestPrice = baseRequestPrice;
+        // Nettoyer la valeur pour éviter les problèmes de concaténation dans le fichier .env
+        try {
+            String cleaned = baseRequestPriceStr != null ? baseRequestPriceStr.trim().split("\\s+")[0] : "0.01";
+            // Extraire seulement la partie numérique (avant tout caractère non numérique)
+            cleaned = cleaned.replaceAll("[^0-9.]", "").split("\\s+")[0];
+            if (cleaned.isEmpty()) {
+                cleaned = "0.01";
+            }
+            this.baseRequestPrice = Double.parseDouble(cleaned);
+            log.info("Tarif de base par requête configuré: {} EUR", this.baseRequestPrice);
+        } catch (NumberFormatException e) {
+            log.error("Erreur lors du parsing de BASE_REQUEST_PRICE_EUR: '{}'. Utilisation de la valeur par défaut 0.01", baseRequestPriceStr, e);
+            this.baseRequestPrice = 0.01;
+        }
     }
     /**
      * Pour utiliser GPT-4o ou toute autre API d'OpenAI, vous devez d'abord intégrer leur SDK ou utiliser un client HTTP pour appeler l'API.
