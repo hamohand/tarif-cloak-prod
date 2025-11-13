@@ -1,7 +1,7 @@
 -- Migration pour créer le plan tarifaire DZ "Pay-per-Request" à 50 DA la requête
 
 INSERT INTO pricing_plan (name, description, price_per_request, monthly_quota, features, is_active, display_order, market_version, currency, is_custom, created_at)
-VALUES (
+SELECT 
     'Pay-per-Request',
     'Plan facturé à la requête - 50 DA par requête',
     50.00,
@@ -13,5 +13,9 @@ VALUES (
     'DZD',
     false,
     CURRENT_TIMESTAMP
+WHERE NOT EXISTS (
+    SELECT 1 FROM pricing_plan 
+    WHERE name = 'Pay-per-Request' 
+    AND market_version = 'DZ'
 );
 
