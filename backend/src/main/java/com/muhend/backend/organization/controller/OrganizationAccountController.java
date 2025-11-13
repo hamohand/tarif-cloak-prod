@@ -64,17 +64,20 @@ public class OrganizationAccountController {
     @jakarta.annotation.PostConstruct
     private void initBaseRequestPrice() {
         try {
+            log.info("Valeur brute de BASE_REQUEST_PRICE_EUR reçue: '{}'", baseRequestPriceStr);
             // Nettoyer la valeur pour éviter les problèmes de concaténation dans le fichier .env
-            String cleaned = baseRequestPriceStr != null ? baseRequestPriceStr.trim().split("\\s+")[0] : "0.01";
-            // Extraire seulement la partie numérique (avant tout caractère non numérique)
-            cleaned = cleaned.replaceAll("[^0-9.]", "").split("\\s+")[0];
-            if (cleaned.isEmpty()) {
+            String cleaned = baseRequestPriceStr != null ? baseRequestPriceStr.trim() : "0.01";
+            // Extraire seulement la partie numérique (avant tout caractère non numérique ou espace)
+            cleaned = cleaned.split("\\s+")[0]; // Prendre le premier mot
+            cleaned = cleaned.replaceAll("[^0-9.]", ""); // Enlever tout sauf chiffres et point
+            if (cleaned.isEmpty() || cleaned.equals(".")) {
                 cleaned = "0.01";
+                log.warn("Valeur nettoyée vide ou invalide, utilisation de la valeur par défaut: {}", cleaned);
             }
             baseRequestPrice = Double.parseDouble(cleaned);
-            log.info("Tarif de base par requête configuré: {} EUR", baseRequestPrice);
+            log.info("✅ Tarif de base par requête configuré avec succès: {} EUR (valeur originale: '{}')", baseRequestPrice, baseRequestPriceStr);
         } catch (NumberFormatException e) {
-            log.error("Erreur lors du parsing de BASE_REQUEST_PRICE_EUR: '{}'. Utilisation de la valeur par défaut 0.01", baseRequestPriceStr, e);
+            log.error("❌ Erreur lors du parsing de BASE_REQUEST_PRICE_EUR: '{}'. Utilisation de la valeur par défaut 0.01", baseRequestPriceStr, e);
             baseRequestPrice = 0.01;
         }
     }
@@ -299,8 +302,8 @@ public class OrganizationAccountController {
                             tokenCost = BigDecimal.ZERO;
                         }
                         
-                        // Arrondir à 3 décimales
-                        BigDecimal tokenCostRounded = tokenCost.setScale(3, RoundingMode.HALF_UP);
+                        // Arrondir à 5 décimales pour le coût des tokens, 3 décimales pour le coût total
+                        BigDecimal tokenCostRounded = tokenCost.setScale(5, RoundingMode.HALF_UP);
                         BigDecimal totalCostRounded = totalCost.setScale(3, RoundingMode.HALF_UP);
                         
                         logMap.put("tokenCostUsd", tokenCostRounded.doubleValue());

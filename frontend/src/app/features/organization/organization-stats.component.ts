@@ -936,10 +936,10 @@ export class OrganizationStatsComponent implements OnInit {
   }
 
   formatCost(amount: number): string {
-    if (amount == null || isNaN(amount)) return '0.000';
+    if (amount == null || isNaN(amount)) return '0.00000';
     return new Intl.NumberFormat('fr-FR', { 
-      minimumFractionDigits: 3, 
-      maximumFractionDigits: 3 
+      minimumFractionDigits: 5, 
+      maximumFractionDigits: 5 
     }).format(amount);
   }
 

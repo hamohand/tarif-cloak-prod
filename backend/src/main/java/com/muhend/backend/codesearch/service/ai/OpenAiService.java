@@ -29,16 +29,19 @@ public class OpenAiService {
         this.aiKey = aiKey;
         // Nettoyer la valeur pour éviter les problèmes de concaténation dans le fichier .env
         try {
-            String cleaned = baseRequestPriceStr != null ? baseRequestPriceStr.trim().split("\\s+")[0] : "0.01";
-            // Extraire seulement la partie numérique (avant tout caractère non numérique)
-            cleaned = cleaned.replaceAll("[^0-9.]", "").split("\\s+")[0];
-            if (cleaned.isEmpty()) {
+            log.info("Valeur brute de BASE_REQUEST_PRICE_EUR reçue: '{}'", baseRequestPriceStr);
+            String cleaned = baseRequestPriceStr != null ? baseRequestPriceStr.trim() : "0.01";
+            // Extraire seulement la partie numérique (avant tout caractère non numérique ou espace)
+            cleaned = cleaned.split("\\s+")[0]; // Prendre le premier mot
+            cleaned = cleaned.replaceAll("[^0-9.]", ""); // Enlever tout sauf chiffres et point
+            if (cleaned.isEmpty() || cleaned.equals(".")) {
                 cleaned = "0.01";
+                log.warn("Valeur nettoyée vide ou invalide, utilisation de la valeur par défaut: {}", cleaned);
             }
             this.baseRequestPrice = Double.parseDouble(cleaned);
-            log.info("Tarif de base par requête configuré: {} EUR", this.baseRequestPrice);
+            log.info("✅ Tarif de base par requête configuré avec succès: {} EUR (valeur originale: '{}')", this.baseRequestPrice, baseRequestPriceStr);
         } catch (NumberFormatException e) {
-            log.error("Erreur lors du parsing de BASE_REQUEST_PRICE_EUR: '{}'. Utilisation de la valeur par défaut 0.01", baseRequestPriceStr, e);
+            log.error("❌ Erreur lors du parsing de BASE_REQUEST_PRICE_EUR: '{}'. Utilisation de la valeur par défaut 0.01", baseRequestPriceStr, e);
             this.baseRequestPrice = 0.01;
         }
     }
