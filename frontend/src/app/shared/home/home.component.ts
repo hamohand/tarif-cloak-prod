@@ -12,6 +12,96 @@ import { AuthService } from '../../core/services/auth.service';
       <h1>Bienvenue sur Enclume-Numérique</h1>
       <p>Votre solution complète pour la conformité tarifaire.</p>
 
+      <!-- Présentation de l'API Recherche HS-code -->
+      <section class="api-presentation">
+        <div class="api-header">
+          <h2>🔍 API Recherche de HS-Code</h2>
+          <p class="api-subtitle">Recherche intelligente et multilingue dans le système harmonisé douanier</p>
+        </div>
+        
+        <div class="api-content">
+          <div class="api-features-grid">
+            <div class="api-feature">
+              <div class="api-icon">🌍</div>
+              <h3>Recherche Multilingue</h3>
+              <p>Recherchez des codes HS dans plusieurs langues : français, anglais, chinois, arabe et plus encore.</p>
+            </div>
+            
+            <div class="api-feature">
+              <div class="api-icon">🤖</div>
+              <h3>Intelligence Artificielle</h3>
+              <p>Moteur de recherche alimenté par l'IA pour des résultats précis et pertinents basés sur vos descriptions de produits.</p>
+            </div>
+            
+            <div class="api-feature">
+              <div class="api-icon">📊</div>
+              <h3>Hiérarchie Complète</h3>
+              <p>Accédez à tous les niveaux : Sections, Chapitres, Positions 4 chiffres et Positions 6 chiffres.</p>
+            </div>
+            
+            <div class="api-feature">
+              <div class="api-icon">⚡</div>
+              <h3>Recherche en Cascade</h3>
+              <p>Algorithme intelligent qui explore automatiquement les différents niveaux de classification pour trouver le code le plus précis.</p>
+            </div>
+            
+            <div class="api-feature">
+              <div class="api-icon">📋</div>
+              <h3>Recherche par Lots</h3>
+              <p>Traitez plusieurs produits simultanément avec l'outil de recherche par lots pour optimiser votre workflow.</p>
+            </div>
+            
+            <div class="api-feature">
+              <div class="api-icon">🔒</div>
+              <h3>Sécurisé et Fiable</h3>
+              <p>API sécurisée avec authentification OAuth2 et suivi détaillé de l'utilisation pour une conformité totale.</p>
+            </div>
+          </div>
+          
+          <div class="api-endpoints">
+            <h3>Endpoints Disponibles</h3>
+            <div class="endpoint-list">
+              <div class="endpoint-item">
+                <code class="endpoint-method">GET</code>
+                <code class="endpoint-path">/recherche/sections</code>
+                <span class="endpoint-desc">Recherche au niveau des sections</span>
+              </div>
+              <div class="endpoint-item">
+                <code class="endpoint-method">GET</code>
+                <code class="endpoint-path">/recherche/chapitres</code>
+                <span class="endpoint-desc">Recherche au niveau des chapitres</span>
+              </div>
+              <div class="endpoint-item">
+                <code class="endpoint-method">GET</code>
+                <code class="endpoint-path">/recherche/positions4</code>
+                <span class="endpoint-desc">Recherche au niveau des positions 4 chiffres</span>
+              </div>
+              <div class="endpoint-item">
+                <code class="endpoint-method">GET</code>
+                <code class="endpoint-path">/recherche/positions6</code>
+                <span class="endpoint-desc">Recherche au niveau des positions 6 chiffres (le plus précis)</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="api-example">
+            <h3>Exemple d'utilisation</h3>
+            <div class="code-block">
+              <pre><code>GET /recherche/positions6?termeRecherche=ordinateur portable
+
+Response:
+[
+  {
+    "code": "8471.30",
+    "description": "Ordinateurs portables",
+    "justification": "..."
+  }
+]</code></pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <div class="features primary" *ngIf="isCollaboratorAccount$ | async; else restrictedAccess">
         <div class="feature-card">
           <a [routerLink]="['/recherche']" class="cta-button">
@@ -167,9 +257,201 @@ import { AuthService } from '../../core/services/auth.service';
       background-color: rgba(250, 204, 21, 0.1);
     }
 
+    /* Styles pour la présentation de l'API */
+    .api-presentation {
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      border-radius: 16px;
+      padding: 3rem 2rem;
+      margin: 3rem 0;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+      max-width: 1200px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .api-header {
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+
+    .api-header h2 {
+      color: #1e3c72;
+      font-size: 2.2rem;
+      margin-bottom: 0.5rem;
+      font-weight: 700;
+    }
+
+    .api-subtitle {
+      color: #6b7280;
+      font-size: 1.1rem;
+      margin: 0;
+    }
+
+    .api-content {
+      display: flex;
+      flex-direction: column;
+      gap: 3rem;
+    }
+
+    .api-features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .api-feature {
+      background: white;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      text-align: center;
+    }
+
+    .api-feature:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+    }
+
+    .api-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+    }
+
+    .api-feature h3 {
+      color: #1e3c72;
+      font-size: 1.3rem;
+      margin-bottom: 0.75rem;
+      font-weight: 600;
+    }
+
+    .api-feature p {
+      color: #4b5563;
+      font-size: 0.95rem;
+      line-height: 1.6;
+      margin: 0;
+    }
+
+    .api-endpoints {
+      background: white;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    .api-endpoints h3 {
+      color: #1e3c72;
+      font-size: 1.5rem;
+      margin-bottom: 1.5rem;
+      font-weight: 600;
+    }
+
+    .endpoint-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .endpoint-item {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem;
+      background: #f8f9fa;
+      border-radius: 8px;
+      border-left: 4px solid #3498db;
+      transition: background-color 0.2s ease;
+    }
+
+    .endpoint-item:hover {
+      background: #e9ecef;
+    }
+
+    .endpoint-method {
+      background: #3498db;
+      color: white;
+      padding: 0.4rem 0.8rem;
+      border-radius: 4px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      min-width: 60px;
+      text-align: center;
+    }
+
+    .endpoint-path {
+      color: #1e3c72;
+      font-weight: 600;
+      font-family: 'Courier New', monospace;
+      font-size: 0.95rem;
+      flex: 0 0 auto;
+    }
+
+    .endpoint-desc {
+      color: #6b7280;
+      font-size: 0.9rem;
+      flex: 1;
+    }
+
+    .api-example {
+      background: white;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    .api-example h3 {
+      color: #1e3c72;
+      font-size: 1.5rem;
+      margin-bottom: 1.5rem;
+      font-weight: 600;
+    }
+
+    .code-block {
+      background: #1e293b;
+      border-radius: 8px;
+      padding: 1.5rem;
+      overflow-x: auto;
+    }
+
+    .code-block pre {
+      margin: 0;
+      color: #e2e8f0;
+      font-family: 'Courier New', monospace;
+      font-size: 0.9rem;
+      line-height: 1.6;
+    }
+
+    .code-block code {
+      color: #e2e8f0;
+    }
+
     @media (max-width: 768px) {
       .feature-card {
         width: 100%;
+      }
+
+      .api-presentation {
+        padding: 2rem 1rem;
+        margin: 2rem 0;
+      }
+
+      .api-header h2 {
+        font-size: 1.8rem;
+      }
+
+      .api-features-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .endpoint-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+      }
+
+      .endpoint-path {
+        width: 100%;
+        word-break: break-all;
       }
     }
   `]
