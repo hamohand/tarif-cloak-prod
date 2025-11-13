@@ -1,5 +1,5 @@
 import { Component, OnInit, inject, OnDestroy } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { Observable, interval, Subscription } from 'rxjs';
 import { AuthService } from '../../../core/services/auth.service';
 import { AlertService } from '../../../core/services/alert.service';
@@ -11,7 +11,7 @@ import { take } from 'rxjs/operators';
 @Component({
   selector: 'app-navbar',
   standalone: true,
-  imports: [CommonModule, RouterLink, AsyncPipe],
+  imports: [CommonModule, RouterLink, RouterLinkActive, AsyncPipe],
   template: `
     <nav class="navbar">
       <div class="nav-brand">
@@ -61,9 +61,9 @@ import { take } from 'rxjs/operators';
     @if ((isAuthenticated$ | async) && (isOrganizationAccount$ | async)) {
       <nav class="organization-navbar">
         <div class="org-nav-links">
-          <a routerLink="/organization/account" class="org-nav-link">👥 Collaborateurs</a>
-          <a routerLink="/pricing" class="org-nav-link">💳 Plan tarifaire</a>
-          <a routerLink="/organization/stats" class="org-nav-link">📊 Statistiques globales</a>
+          <a routerLink="/organization/account" routerLinkActive="router-link-active" class="org-nav-link">👥 Collaborateurs</a>
+          <a routerLink="/pricing" routerLinkActive="router-link-active" class="org-nav-link">💳 Plan tarifaire</a>
+          <a routerLink="/organization/stats" routerLinkActive="router-link-active" class="org-nav-link">📊 Statistiques globales</a>
         </div>
       </nav>
     }
@@ -324,24 +324,27 @@ import { take } from 'rxjs/operators';
     }
 
     .organization-navbar {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 0.75rem 2rem;
-      background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 220px;
+      height: 100vh;
+      padding: 1rem 0;
+      background: linear-gradient(180deg, #1f2937 0%, #111827 100%);
       color: white;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
-      position: relative;
-      z-index: 999;
+      box-shadow: 4px 0 12px rgba(0, 0, 0, 0.15);
+      z-index: 998;
+      overflow-y: auto;
+      padding-top: 80px; /* Espace pour la navbar principale */
     }
 
-    .organization-navbar::after {
+    .organization-navbar::before {
       content: '';
       position: absolute;
-      bottom: 0;
+      top: 0;
       left: 0;
       right: 0;
-      height: 2px;
+      height: 3px;
       background: linear-gradient(90deg, #3b82f6, #10b981, #6366f1);
       background-size: 200% 100%;
       animation: shimmer 4s linear infinite;
@@ -349,16 +352,16 @@ import { take } from 'rxjs/operators';
 
     .org-nav-links {
       display: flex;
-      gap: 1rem;
-      flex-wrap: wrap;
-      justify-content: center;
+      flex-direction: column;
+      gap: 0.5rem;
+      padding: 0 1rem;
     }
 
     .org-nav-link {
       color: white;
       text-decoration: none;
-      padding: 0.5rem 1rem;
-      border-radius: 6px;
+      padding: 1rem 1.25rem;
+      border-radius: 8px;
       transition: all 0.3s ease;
       position: relative;
       font-weight: 500;
@@ -367,19 +370,26 @@ import { take } from 'rxjs/operators';
       border: 1px solid rgba(255, 255, 255, 0.15);
       display: flex;
       align-items: center;
-      gap: 0.5rem;
+      gap: 0.75rem;
       box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+      width: 100%;
+      box-sizing: border-box;
     }
 
     .org-nav-link:hover {
       background-color: rgba(255, 255, 255, 0.18);
-      transform: translateY(-2px) scale(1.01);
+      transform: translateX(4px);
       box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
     }
 
     .org-nav-link:active {
-      transform: translateY(0) scale(0.99);
+      transform: translateX(2px);
       box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .org-nav-link.router-link-active {
+      background-color: rgba(59, 130, 246, 0.3);
+      border-color: rgba(59, 130, 246, 0.5);
     }
 
     @media (max-width: 768px) {
@@ -412,15 +422,17 @@ import { take } from 'rxjs/operators';
       }
 
       .organization-navbar {
-        padding: 0.5rem 1rem;
+        width: 180px;
+        padding-top: 70px;
       }
 
       .org-nav-links {
-        gap: 0.5rem;
+        gap: 0.4rem;
+        padding: 0 0.75rem;
       }
 
       .org-nav-link {
-        padding: 0.4rem 0.8rem;
+        padding: 0.75rem 1rem;
         font-size: 0.85rem;
       }
     }
