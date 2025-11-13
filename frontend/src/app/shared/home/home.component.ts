@@ -91,11 +91,11 @@ import { AuthService } from '../../core/services/auth.service';
 
 Response:
 [
-  {
+  {{ '{' }}
     "code": "8471.30",
     "description": "Ordinateurs portables",
     "justification": "..."
-  }
+  {{ '}' }}
 ]</code></pre>
             </div>
           </div>
