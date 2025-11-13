@@ -54,7 +54,9 @@ export interface OrganizationUsageLog {
   endpoint: string;
   searchTerm: string;
   tokensUsed: number | null;
-  costUsd: number | null;
+  tokenCostUsd: number | null;
+  totalCostUsd: number | null;
+  baseCostUsd: number | null;
   timestamp: string;
 }
 

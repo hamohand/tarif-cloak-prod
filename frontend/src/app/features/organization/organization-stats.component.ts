@@ -270,7 +270,8 @@ Chart.register(...registerables);
                 <th>Endpoint</th>
                 <th>Recherche</th>
                 <th>Tokens</th>
-                <th>Coût</th>
+                <th>Coût tokens</th>
+                <th>Coût total</th>
               </tr>
             </thead>
             <tbody>
@@ -281,7 +282,8 @@ Chart.register(...registerables);
                   <td>{{ log.endpoint }}</td>
                   <td class="search-term">{{ truncateSearchTerm(log.searchTerm) }}</td>
                   <td>{{ formatNumber(log.tokensUsed || 0) }}</td>
-                  <td>{{ formatCurrency(log.costUsd || 0) }}</td>
+                  <td>{{ formatCost(log.tokenCostUsd || 0) }} €</td>
+                  <td><strong>{{ formatCost(log.totalCostUsd || 0) }} €</strong></td>
                 </tr>
               }
             </tbody>
@@ -929,10 +931,20 @@ export class OrganizationStatsComponent implements OnInit {
   }
 
   formatCurrency(amount: number): string {
+    if (amount == null || isNaN(amount)) return '0.00';
     return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount);
   }
 
+  formatCost(amount: number): string {
+    if (amount == null || isNaN(amount)) return '0.000';
+    return new Intl.NumberFormat('fr-FR', { 
+      minimumFractionDigits: 3, 
+      maximumFractionDigits: 3 
+    }).format(amount);
+  }
+
   formatNumber(num: number): string {
+    if (num == null || isNaN(num)) return '0';
     return new Intl.NumberFormat('fr-FR').format(num);
   }
 

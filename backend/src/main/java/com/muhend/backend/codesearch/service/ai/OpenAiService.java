@@ -24,7 +24,7 @@ public class OpenAiService {
 
     public OpenAiService(AiPrompts aiPrompts, 
                         @Value("${OPENAI_API_KEY}") String aiKey,
-                        @Value("${pricing.base-request-price:0.01}") double baseRequestPrice) {
+                        @Value("${BASE_REQUEST_PRICE_EUR:0.01}") double baseRequestPrice) {
         this.aiPrompts = aiPrompts;
         this.aiKey = aiKey;
         this.baseRequestPrice = baseRequestPrice;

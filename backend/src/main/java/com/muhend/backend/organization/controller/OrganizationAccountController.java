@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -33,6 +34,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.keycloak.representations.idm.UserRepresentation;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -52,6 +55,9 @@ public class OrganizationAccountController {
     private final OrganizationService organizationService;
     private final UsageLogRepository usageLogRepository;
     private final KeycloakAdminService keycloakAdminService;
+    
+    @Value("${pricing.base-request-price:0.01}")
+    private double baseRequestPrice;
 
     @GetMapping("/me")
     @PreAuthorize("isAuthenticated()")
@@ -262,7 +268,24 @@ public class OrganizationAccountController {
                         logMap.put("endpoint", log.getEndpoint());
                         logMap.put("searchTerm", log.getSearchTerm());
                         logMap.put("tokensUsed", log.getTokensUsed());
-                        logMap.put("costUsd", log.getCostUsd() != null ? log.getCostUsd().doubleValue() : null);
+                        
+                        // Calculer le coût des tokens et le coût total
+                        BigDecimal totalCost = log.getCostUsd() != null ? log.getCostUsd() : BigDecimal.ZERO;
+                        BigDecimal baseCost = BigDecimal.valueOf(baseRequestPrice);
+                        BigDecimal tokenCost = totalCost.subtract(baseCost);
+                        
+                        // S'assurer que le coût des tokens n'est pas négatif
+                        if (tokenCost.compareTo(BigDecimal.ZERO) < 0) {
+                            tokenCost = BigDecimal.ZERO;
+                        }
+                        
+                        // Arrondir à 3 décimales
+                        BigDecimal tokenCostRounded = tokenCost.setScale(3, RoundingMode.HALF_UP);
+                        BigDecimal totalCostRounded = totalCost.setScale(3, RoundingMode.HALF_UP);
+                        
+                        logMap.put("tokenCostUsd", tokenCostRounded.doubleValue());
+                        logMap.put("totalCostUsd", totalCostRounded.doubleValue());
+                        logMap.put("baseCostUsd", baseCost.setScale(3, RoundingMode.HALF_UP).doubleValue());
                         logMap.put("timestamp", log.getTimestamp().toString());
                         return logMap;
                     })
