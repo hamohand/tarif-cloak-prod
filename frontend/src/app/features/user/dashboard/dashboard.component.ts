@@ -1,7 +1,6 @@
 import { Component, OnInit, inject, ViewChild, ElementRef, AfterViewInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import { UserService, UserUsageStats, UserQuota, Organization } from '../../../core/services/user.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { Chart, ChartConfiguration, registerables } from 'chart.js';
@@ -11,7 +10,7 @@ Chart.register(...registerables);
 @Component({
   selector: 'app-user-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule],
   template: `
     <div class="dashboard-container">
       <h2>📊 Mon Tableau de Bord</h2>

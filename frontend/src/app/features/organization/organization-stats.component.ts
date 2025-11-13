@@ -827,17 +827,17 @@ export class OrganizationStatsComponent implements OnInit {
       return;
     }
 
-    const logs = this.organizationUsageLogs.usageLogs;
+    const logs: OrganizationUsageLog[] = this.organizationUsageLogs.usageLogs;
     
     // Calculer les statistiques globales
     const totalRequests = logs.length;
-    const totalCostUsd = logs.reduce((sum, log) => sum + (log.totalCostUsd || 0), 0);
-    const totalTokens = logs.reduce((sum, log) => sum + (log.tokensUsed || 0), 0);
+    const totalCostUsd = logs.reduce((sum: number, log: OrganizationUsageLog) => sum + (log.totalCostUsd || 0), 0);
+    const totalTokens = logs.reduce((sum: number, log: OrganizationUsageLog) => sum + (log.tokensUsed || 0), 0);
     
     // Calculer les requêtes du mois en cours
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const monthlyRequests = logs.filter(log => {
+    const monthlyRequests = logs.filter((log: OrganizationUsageLog) => {
       const logDate = new Date(log.timestamp);
       return logDate >= startOfMonth;
     }).length;
@@ -845,9 +845,9 @@ export class OrganizationStatsComponent implements OnInit {
     // Utilisations récentes (10 dernières)
     const recentUsage = logs
       .slice()
-      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+      .sort((a: OrganizationUsageLog, b: OrganizationUsageLog) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
       .slice(0, 10)
-      .map(log => ({
+      .map((log: OrganizationUsageLog) => ({
         id: log.id,
         endpoint: log.endpoint,
         searchTerm: log.searchTerm,
