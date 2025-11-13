@@ -63,7 +63,7 @@ import { take } from 'rxjs/operators';
         <div class="org-nav-links">
           <a routerLink="/organization/account" class="org-nav-link">👥 Collaborateurs</a>
           <a routerLink="/pricing" class="org-nav-link">💳 Plan tarifaire</a>
-          <a routerLink="/dashboard" class="org-nav-link">📊 Statistiques globales</a>
+          <a routerLink="/organization/stats" class="org-nav-link">📊 Statistiques globales</a>
         </div>
       </nav>
     }

@@ -65,5 +65,13 @@ export class OrganizationAccountService {
   inviteCollaborator(request: InviteCollaboratorRequest): Observable<InviteCollaboratorResponse> {
     return this.http.post<InviteCollaboratorResponse>(`${this.baseUrl}/collaborators`, request);
   }
+
+  disableCollaborator(keycloakUserId: string): Observable<{ message: string }> {
+    return this.http.put<{ message: string }>(`${this.baseUrl}/collaborators/${keycloakUserId}/disable`, {});
+  }
+
+  deleteCollaborator(keycloakUserId: string): Observable<{ message: string }> {
+    return this.http.delete<{ message: string }>(`${this.baseUrl}/collaborators/${keycloakUserId}`);
+  }
 }
 

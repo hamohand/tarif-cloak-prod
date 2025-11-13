@@ -231,6 +231,65 @@ public class OrganizationService {
     }
     
     /**
+     * Désactive un collaborateur (désactive son compte Keycloak).
+     */
+    @Transactional
+    public void disableCollaborator(Long organizationId, String keycloakUserId) {
+        // Vérifier que le collaborateur appartient à l'organisation
+        if (!organizationUserRepository.existsByOrganizationIdAndKeycloakUserId(organizationId, keycloakUserId)) {
+            throw new IllegalArgumentException("Le collaborateur n'est pas membre de cette organisation");
+        }
+        
+        // Vérifier que ce n'est pas le compte organisation lui-même
+        Organization organization = organizationRepository.findById(organizationId)
+                .orElseThrow(() -> new IllegalArgumentException("Organisation non trouvée avec l'ID: " + organizationId));
+        if (keycloakUserId.equals(organization.getKeycloakUserId())) {
+            throw new IllegalArgumentException("Impossible de désactiver le compte organisation lui-même");
+        }
+        
+        // Désactiver le compte Keycloak
+        try {
+            keycloakAdminService.disableUser(keycloakUserId);
+            log.info("Collaborateur {} désactivé dans Keycloak pour l'organisation {}", keycloakUserId, organizationId);
+        } catch (Exception e) {
+            log.error("Erreur lors de la désactivation du collaborateur {} dans Keycloak: {}", keycloakUserId, e.getMessage(), e);
+            throw new RuntimeException("Erreur lors de la désactivation du collaborateur: " + e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * Supprime un collaborateur (retire de l'organisation et supprime son compte Keycloak).
+     */
+    @Transactional
+    public void deleteCollaborator(Long organizationId, String keycloakUserId) {
+        // Vérifier que le collaborateur appartient à l'organisation
+        if (!organizationUserRepository.existsByOrganizationIdAndKeycloakUserId(organizationId, keycloakUserId)) {
+            throw new IllegalArgumentException("Le collaborateur n'est pas membre de cette organisation");
+        }
+        
+        // Vérifier que ce n'est pas le compte organisation lui-même
+        Organization organization = organizationRepository.findById(organizationId)
+                .orElseThrow(() -> new IllegalArgumentException("Organisation non trouvée avec l'ID: " + organizationId));
+        if (keycloakUserId.equals(organization.getKeycloakUserId())) {
+            throw new IllegalArgumentException("Impossible de supprimer le compte organisation lui-même");
+        }
+        
+        // Retirer de l'organisation
+        organizationUserRepository.deleteByOrganizationIdAndKeycloakUserId(organizationId, keycloakUserId);
+        log.info("Collaborateur {} retiré de l'organisation {}", keycloakUserId, organizationId);
+        
+        // Supprimer le compte Keycloak (optionnel, selon la politique de l'application)
+        // Pour l'instant, on désactive plutôt que de supprimer pour garder l'historique
+        try {
+            keycloakAdminService.disableUser(keycloakUserId);
+            log.info("Compte Keycloak {} désactivé après suppression de l'organisation", keycloakUserId);
+        } catch (Exception e) {
+            log.warn("Erreur lors de la désactivation du compte Keycloak {}: {}", keycloakUserId, e.getMessage());
+            // Ne pas faire échouer la transaction si la désactivation Keycloak échoue
+        }
+    }
+    
+    /**
      * Récupère toutes les organisations d'un utilisateur.
      */
     public List<OrganizationDto> getOrganizationsByUser(String keycloakUserId) {

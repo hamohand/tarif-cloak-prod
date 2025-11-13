@@ -122,8 +122,8 @@ import { Observable } from 'rxjs';
                 <th>Prénom</th>
                 <th>Nom</th>
                 <th>Email</th>
-                <th>Keycloak ID</th>
                 <th>Date d'ajout</th>
+                <th>Actions</th>
               </tr>
               </thead>
               <tbody>
@@ -132,8 +132,21 @@ import { Observable } from 'rxjs';
                 <td>{{ collaborator.firstName || '-' }}</td>
                 <td>{{ collaborator.lastName || '-' }}</td>
                 <td>{{ collaborator.email || '-' }}</td>
-                <td>{{ collaborator.keycloakUserId }}</td>
                 <td>{{ collaborator.joinedAt ? (collaborator.joinedAt | date:'short') : '-' }}</td>
+                <td class="actions-cell">
+                  <button 
+                    class="btn btn-warning" 
+                    (click)="disableCollaborator(collaborator.keycloakUserId)"
+                    [disabled]="disabling === collaborator.keycloakUserId || deleting === collaborator.keycloakUserId">
+                    Désactiver
+                  </button>
+                  <button 
+                    class="btn btn-danger" 
+                    (click)="deleteCollaborator(collaborator.keycloakUserId)"
+                    [disabled]="disabling === collaborator.keycloakUserId || deleting === collaborator.keycloakUserId">
+                    Supprimer
+                  </button>
+                </td>
               </tr>
               </tbody>
             </table>
@@ -332,6 +345,52 @@ import { Observable } from 'rxjs';
       margin: 0;
     }
 
+    .actions-cell {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    .btn-warning {
+      background-color: #f59e0b;
+      color: white;
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.875rem;
+      transition: background-color 0.2s ease;
+    }
+
+    .btn-warning:hover:not(:disabled) {
+      background-color: #d97706;
+    }
+
+    .btn-warning:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .btn-danger {
+      background-color: #dc2626;
+      color: white;
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.875rem;
+      transition: background-color 0.2s ease;
+    }
+
+    .btn-danger:hover:not(:disabled) {
+      background-color: #b91c1c;
+    }
+
+    .btn-danger:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
     @media (max-width: 768px) {
       .card-header {
         flex-direction: column;
@@ -363,6 +422,8 @@ export class OrganizationAccountComponent implements OnInit {
   inviting = false;
   inviteSuccess = '';
   inviteError = '';
+  disabling: string | null = null;
+  deleting: string | null = null;
   isOrganizationAccount$: Observable<boolean> = this.authService.isOrganizationAccount();
 
   ngOnInit(): void {
@@ -464,6 +525,46 @@ export class OrganizationAccountComponent implements OnInit {
     const emailValue = emailControl?.value?.toLowerCase();
     const organizationEmail = this.organization.email?.toLowerCase();
     return !!emailValue && !!organizationEmail && emailValue === organizationEmail;
+  }
+
+  disableCollaborator(keycloakUserId: string): void {
+    if (!confirm('Êtes-vous sûr de vouloir désactiver ce collaborateur ?')) {
+      return;
+    }
+    this.disabling = keycloakUserId;
+    this.inviteError = '';
+    this.organizationAccountService.disableCollaborator(keycloakUserId).subscribe({
+      next: () => {
+        this.disabling = null;
+        this.loadCollaborators();
+        alert('Collaborateur désactivé avec succès');
+      },
+      error: (error) => {
+        this.disabling = null;
+        const message = error?.error?.message || 'Impossible de désactiver le collaborateur.';
+        alert('Erreur: ' + message);
+      }
+    });
+  }
+
+  deleteCollaborator(keycloakUserId: string): void {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer ce collaborateur ? Cette action est irréversible.')) {
+      return;
+    }
+    this.deleting = keycloakUserId;
+    this.inviteError = '';
+    this.organizationAccountService.deleteCollaborator(keycloakUserId).subscribe({
+      next: () => {
+        this.deleting = null;
+        this.loadCollaborators();
+        alert('Collaborateur supprimé avec succès');
+      },
+      error: (error) => {
+        this.deleting = null;
+        const message = error?.error?.message || 'Impossible de supprimer le collaborateur.';
+        alert('Erreur: ' + message);
+      }
+    });
   }
 }
 

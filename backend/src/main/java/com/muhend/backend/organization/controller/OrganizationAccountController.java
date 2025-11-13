@@ -18,8 +18,11 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -114,6 +117,60 @@ public class OrganizationAccountController {
             log.error("Erreur lors de l'invitation d'un collaborateur: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "INVITATION_ERROR", "message", e.getMessage()));
+        }
+    }
+
+    @PutMapping("/collaborators/{keycloakUserId}/disable")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Désactiver un collaborateur",
+            description = "Désactive le compte Keycloak d'un collaborateur de l'organisation.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    public ResponseEntity<Map<String, Object>> disableCollaborator(@PathVariable String keycloakUserId) {
+        String organizationUserId = getCurrentUserId();
+        if (organizationUserId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "AUTH_REQUIRED", "message", "Authentification requise"));
+        }
+        try {
+            OrganizationDto organization = organizationService.getOrganizationByKeycloakUserId(organizationUserId);
+            organizationService.disableCollaborator(organization.getId(), keycloakUserId);
+            return ResponseEntity.ok(Map.of("message", "Collaborateur désactivé avec succès"));
+        } catch (IllegalArgumentException e) {
+            log.warn("Erreur lors de la désactivation du collaborateur: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("error", "DISABLE_ERROR", "message", e.getMessage()));
+        } catch (RuntimeException e) {
+            log.error("Erreur lors de la désactivation d'un collaborateur: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "DISABLE_ERROR", "message", e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/collaborators/{keycloakUserId}")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Supprimer un collaborateur",
+            description = "Retire un collaborateur de l'organisation et supprime son compte Keycloak.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    public ResponseEntity<Map<String, Object>> deleteCollaborator(@PathVariable String keycloakUserId) {
+        String organizationUserId = getCurrentUserId();
+        if (organizationUserId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "AUTH_REQUIRED", "message", "Authentification requise"));
+        }
+        try {
+            OrganizationDto organization = organizationService.getOrganizationByKeycloakUserId(organizationUserId);
+            organizationService.deleteCollaborator(organization.getId(), keycloakUserId);
+            return ResponseEntity.ok(Map.of("message", "Collaborateur supprimé avec succès"));
+        } catch (IllegalArgumentException e) {
+            log.warn("Erreur lors de la suppression du collaborateur: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("error", "DELETE_ERROR", "message", e.getMessage()));
+        } catch (RuntimeException e) {
+            log.error("Erreur lors de la suppression d'un collaborateur: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "DELETE_ERROR", "message", e.getMessage()));
         }
     }
 
