@@ -716,8 +716,8 @@ export class OrganizationStatsComponent implements OnInit {
   ngOnInit() {
     this.loadOrganization();
     this.loadQuota();
-    this.loadStats();
     this.loadPricingPlans();
+    // Charger les logs d'utilisation qui recalculeront automatiquement les stats
     this.loadOrganizationUsageLogs();
   }
 
@@ -808,21 +808,65 @@ export class OrganizationStatsComponent implements OnInit {
   loadStats() {
     this.loadingStats = true;
     this.errorMessage = '';
-    const startDate = this.startDate || undefined;
-    const endDate = this.endDate || undefined;
-    this.userService.getMyUsageStats(startDate, endDate).subscribe({
-      next: (stats) => {
-        this.stats = stats;
-        this.loadingStats = false;
-        setTimeout(() => {
-          this.updateUsageChart();
-        }, 100);
-      },
-      error: (err) => {
-        this.errorMessage = 'Erreur lors du chargement des statistiques: ' + (err.error?.message || err.message);
-        this.loadingStats = false;
-      }
-    });
+    // Pour les statistiques de l'organisation, on calcule à partir des logs d'utilisation
+    // qui sont déjà chargés dans loadOrganizationUsageLogs()
+    // On recalcule les stats à partir des logs existants
+    this.calculateStatsFromLogs();
+    this.loadingStats = false;
+  }
+
+  private calculateStatsFromLogs() {
+    if (!this.organizationUsageLogs || !this.organizationUsageLogs.usageLogs) {
+      this.stats = {
+        totalRequests: 0,
+        totalCostUsd: 0,
+        totalTokens: 0,
+        monthlyRequests: 0,
+        recentUsage: []
+      };
+      return;
+    }
+
+    const logs = this.organizationUsageLogs.usageLogs;
+    
+    // Calculer les statistiques globales
+    const totalRequests = logs.length;
+    const totalCostUsd = logs.reduce((sum, log) => sum + (log.totalCostUsd || 0), 0);
+    const totalTokens = logs.reduce((sum, log) => sum + (log.tokensUsed || 0), 0);
+    
+    // Calculer les requêtes du mois en cours
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthlyRequests = logs.filter(log => {
+      const logDate = new Date(log.timestamp);
+      return logDate >= startOfMonth;
+    }).length;
+
+    // Utilisations récentes (10 dernières)
+    const recentUsage = logs
+      .slice()
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+      .slice(0, 10)
+      .map(log => ({
+        id: log.id,
+        endpoint: log.endpoint,
+        searchTerm: log.searchTerm,
+        tokensUsed: log.tokensUsed || 0,
+        costUsd: log.totalCostUsd || 0,
+        timestamp: log.timestamp
+      }));
+
+    this.stats = {
+      totalRequests,
+      totalCostUsd,
+      totalTokens,
+      monthlyRequests,
+      recentUsage
+    };
+
+    setTimeout(() => {
+      this.updateUsageChart();
+    }, 100);
   }
 
   loadOrganizationUsageLogs() {
@@ -833,10 +877,14 @@ export class OrganizationStatsComponent implements OnInit {
       next: (logs) => {
         this.organizationUsageLogs = logs;
         this.loadingUsageLogs = false;
+        // Recalculer les statistiques après le chargement des logs
+        this.calculateStatsFromLogs();
       },
       error: (err) => {
         console.error('Erreur lors du chargement des logs d\'utilisation de l\'organisation:', err);
         this.loadingUsageLogs = false;
+        // Réinitialiser les stats en cas d'erreur
+        this.calculateStatsFromLogs();
       }
     });
   }
@@ -913,14 +961,14 @@ export class OrganizationStatsComponent implements OnInit {
   }
 
   onFilterChange() {
-    this.loadStats();
+    // Recharger les logs d'utilisation qui recalculeront automatiquement les stats
     this.loadOrganizationUsageLogs();
   }
 
   resetFilters() {
     this.startDate = '';
     this.endDate = '';
-    this.loadStats();
+    // Recharger les logs d'utilisation qui recalculeront automatiquement les stats
     this.loadOrganizationUsageLogs();
   }
 

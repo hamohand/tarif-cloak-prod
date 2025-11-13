@@ -148,14 +148,20 @@ public class OpenAiService {
                     .path("total_tokens")
                     .asInt();
 
-            // 💰 Tarifs GPT-4o mini (au 1er sept 2025)
-            final double PRICE_INPUT = 0.15 / 1_000_000;   // $ par token input
-            final double PRICE_OUTPUT = 0.60 / 1_000_000;  // $ par token output
-            final double PRICE_TOTAL = PRICE_INPUT + PRICE_OUTPUT;
-            // Coût des tokens
-            double tokenCost = totalTokens * PRICE_TOTAL;
-            // Coût total = tarif de base + coût des tokens
-            prix_requete = baseRequestPrice + tokenCost;
+            // 💰 Tarifs GPT-4o mini (au 1er sept 2025) - en USD
+            final double PRICE_INPUT_USD = 0.15 / 1_000_000;   // $ par token input
+            final double PRICE_OUTPUT_USD = 0.60 / 1_000_000;  // $ par token output
+            // Taux de change USD vers EUR (approximatif, peut être configuré via variable d'environnement)
+            final double USD_TO_EUR_RATE = 0.92; // 1 USD = 0.92 EUR
+            
+            // Calculer le coût des tokens en USD (en utilisant promptTokens et completionTokens séparément)
+            double tokenCostUsd = (promptTokens * PRICE_INPUT_USD) + (completionTokens * PRICE_OUTPUT_USD);
+            
+            // Convertir le coût des tokens en EUR
+            double tokenCostEur = tokenCostUsd * USD_TO_EUR_RATE;
+            
+            // Coût total en EUR = tarif de base (EUR) + coût des tokens (EUR)
+            prix_requete = baseRequestPrice + tokenCostEur;
 
             // Stocker les informations d'utilisation dans le ThreadLocal pour le tracking
             UsageInfo usageInfo = new UsageInfo(
@@ -173,12 +179,13 @@ public class OpenAiService {
 //            System.out.println("Completion Tokens (output), niveau "+ titre +" = " + completionTokens);
 //            log.info("Total Tokens, niveau "+ titre +" = " + totalTokens);
             // Log détaillé du calcul du coût
-            log.debug("Calcul du coût - Niveau: {}, Tokens: {}, Tarif de base: {} €, Coût tokens: {} €, Coût total: {} €", 
-                titre, totalTokens, String.format("%.6f", baseRequestPrice), 
-                String.format("%.6f", tokenCost), String.format("%.6f", prix_requete));
-            System.out.println("Niveau "+ titre +"  -Total Tokens = " + totalTokens + " tokens" + 
+            log.debug("Calcul du coût - Niveau: {}, Prompt tokens: {}, Completion tokens: {}, Total tokens: {}, Tarif de base: {} €, Coût tokens USD: {} $, Coût tokens EUR: {} €, Coût total: {} €", 
+                titre, promptTokens, completionTokens, totalTokens, String.format("%.6f", baseRequestPrice), 
+                String.format("%.10f", tokenCostUsd), String.format("%.10f", tokenCostEur), String.format("%.6f", prix_requete));
+            System.out.println("Niveau "+ titre +"  -Prompt Tokens = " + promptTokens + ", Completion Tokens = " + completionTokens + ", Total Tokens = " + totalTokens + 
                 "   -Tarif de base = " + String.format("%.6f", baseRequestPrice) + " €" +
-                "   -Coût tokens = " + String.format("%.6f", tokenCost) + " €" +
+                "   -Coût tokens USD = " + String.format("%.10f", tokenCostUsd) + " $" +
+                "   -Coût tokens EUR = " + String.format("%.10f", tokenCostEur) + " €" +
                 "   -Total Prix = " + String.format("%.6f", prix_requete) + " €");
 
             /// //////////////////////////////////////////////////////////////

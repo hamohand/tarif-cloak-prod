@@ -297,8 +297,14 @@ public class OrganizationAccountController {
                         BigDecimal baseCost = BigDecimal.valueOf(baseRequestPrice);
                         BigDecimal tokenCost = totalCost.subtract(baseCost);
                         
+                        // Log pour diagnostic
+                        log.debug("Calcul coût pour log ID {}: totalCost={}, baseCost={}, tokenCost={}, tokensUsed={}", 
+                            log.getId(), totalCost, baseCost, tokenCost, log.getTokensUsed());
+                        
                         // S'assurer que le coût des tokens n'est pas négatif
                         if (tokenCost.compareTo(BigDecimal.ZERO) < 0) {
+                            log.warn("Coût des tokens négatif pour log ID {}: tokenCost={}, totalCost={}, baseCost={}", 
+                                log.getId(), tokenCost, totalCost, baseCost);
                             tokenCost = BigDecimal.ZERO;
                         }
                         
