@@ -47,6 +47,26 @@ export interface InviteCollaboratorResponse {
   tokenExpiresAt: string;
 }
 
+export interface OrganizationUsageLog {
+  id: number;
+  keycloakUserId: string;
+  collaboratorName: string;
+  endpoint: string;
+  searchTerm: string;
+  tokensUsed: number | null;
+  costUsd: number | null;
+  timestamp: string;
+}
+
+export interface OrganizationUsageLogsResponse {
+  organizationId: number;
+  organizationName: string;
+  startDate: string;
+  endDate: string;
+  totalRequests: number;
+  usageLogs: OrganizationUsageLog[];
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -72,6 +92,21 @@ export class OrganizationAccountService {
 
   deleteCollaborator(keycloakUserId: string): Observable<{ message: string }> {
     return this.http.delete<{ message: string }>(`${this.baseUrl}/collaborators/${keycloakUserId}`);
+  }
+
+  getOrganizationUsageLogs(startDate?: string, endDate?: string): Observable<OrganizationUsageLogsResponse> {
+    let url = `${this.baseUrl}/usage-logs`;
+    const params: string[] = [];
+    if (startDate) {
+      params.push(`startDate=${encodeURIComponent(startDate)}`);
+    }
+    if (endDate) {
+      params.push(`endDate=${encodeURIComponent(endDate)}`);
+    }
+    if (params.length > 0) {
+      url += '?' + params.join('&');
+    }
+    return this.http.get<OrganizationUsageLogsResponse>(url);
   }
 }
 

@@ -1,17 +1,21 @@
 package com.muhend.backend.organization.controller;
 
 import com.muhend.backend.auth.model.PendingRegistration;
+import com.muhend.backend.auth.service.KeycloakAdminService;
 import com.muhend.backend.auth.service.PendingRegistrationService;
 import com.muhend.backend.organization.dto.CreateCollaboratorRequest;
 import com.muhend.backend.organization.dto.OrganizationDto;
 import com.muhend.backend.organization.dto.OrganizationUserDto;
 import com.muhend.backend.organization.service.OrganizationService;
+import com.muhend.backend.usage.model.UsageLog;
+import com.muhend.backend.usage.repository.UsageLogRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -25,9 +29,17 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.keycloak.representations.idm.UserRepresentation;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/organization/account")
@@ -38,6 +50,8 @@ public class OrganizationAccountController {
 
     private final PendingRegistrationService pendingRegistrationService;
     private final OrganizationService organizationService;
+    private final UsageLogRepository usageLogRepository;
+    private final KeycloakAdminService keycloakAdminService;
 
     @GetMapping("/me")
     @PreAuthorize("isAuthenticated()")
@@ -171,6 +185,106 @@ public class OrganizationAccountController {
             log.error("Erreur lors de la suppression d'un collaborateur: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "DELETE_ERROR", "message", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/usage-logs")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Récupérer toutes les requêtes de l'organisation",
+            description = "Retourne la liste de toutes les requêtes effectuées par les collaborateurs de l'organisation, " +
+                         "avec les noms des collaborateurs. Paramètres optionnels: ?startDate=... et ?endDate=... pour filtrer par période (format: yyyy-MM-dd).",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    public ResponseEntity<?> getOrganizationUsageLogs(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        String organizationUserId = getCurrentUserId();
+        if (organizationUserId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "AUTH_REQUIRED", "message", "Authentification requise"));
+        }
+        try {
+            OrganizationDto organization = organizationService.getOrganizationByKeycloakUserId(organizationUserId);
+            
+            // Déterminer la période
+            LocalDateTime startDateTime;
+            LocalDateTime endDateTime;
+            
+            if (startDate != null && endDate != null) {
+                startDateTime = startDate.atStartOfDay();
+                endDateTime = endDate.atTime(LocalTime.MAX);
+            } else {
+                // Par défaut, ce mois en cours
+                LocalDateTime now = LocalDateTime.now();
+                startDateTime = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+                endDateTime = now.withDayOfMonth(now.toLocalDate().lengthOfMonth())
+                        .withHour(23).withMinute(59).withSecond(59).withNano(999999999);
+            }
+            
+            // Récupérer tous les logs de l'organisation
+            List<UsageLog> logs = usageLogRepository.findByOrganizationIdAndTimestampBetween(
+                    organization.getId(), startDateTime, endDateTime);
+            
+            // Récupérer les informations des collaborateurs depuis Keycloak
+            Map<String, String> userNamesMap = new LinkedHashMap<>();
+            for (UsageLog usageLog : logs) {
+                String keycloakUserId = usageLog.getKeycloakUserId();
+                if (!userNamesMap.containsKey(keycloakUserId)) {
+                    try {
+                        UserRepresentation user = keycloakAdminService.getUserRepresentation(keycloakUserId);
+                        if (user != null) {
+                            String firstName = user.getFirstName();
+                            String lastName = user.getLastName();
+                            String username = user.getUsername();
+                            String fullName = (firstName != null && lastName != null) 
+                                    ? firstName + " " + lastName 
+                                    : (firstName != null ? firstName : (lastName != null ? lastName : username));
+                            userNamesMap.put(keycloakUserId, fullName);
+                        } else {
+                            userNamesMap.put(keycloakUserId, "Utilisateur inconnu");
+                        }
+                    } catch (Exception e) {
+                        log.warn("Impossible de récupérer les informations de l'utilisateur {}: {}", keycloakUserId, e.getMessage());
+                        userNamesMap.put(keycloakUserId, "Utilisateur inconnu");
+                    }
+                }
+            }
+            
+            // Convertir les logs en Map avec les noms des collaborateurs
+            List<Map<String, Object>> usageLogsWithNames = logs.stream()
+                    .sorted((a, b) -> b.getTimestamp().compareTo(a.getTimestamp()))
+                    .map(log -> {
+                        Map<String, Object> logMap = new LinkedHashMap<>();
+                        logMap.put("id", log.getId());
+                        logMap.put("keycloakUserId", log.getKeycloakUserId());
+                        logMap.put("collaboratorName", userNamesMap.getOrDefault(log.getKeycloakUserId(), "Utilisateur inconnu"));
+                        logMap.put("endpoint", log.getEndpoint());
+                        logMap.put("searchTerm", log.getSearchTerm());
+                        logMap.put("tokensUsed", log.getTokensUsed());
+                        logMap.put("costUsd", log.getCostUsd() != null ? log.getCostUsd().doubleValue() : null);
+                        logMap.put("timestamp", log.getTimestamp().toString());
+                        return logMap;
+                    })
+                    .collect(Collectors.toList());
+            
+            Map<String, Object> response = new LinkedHashMap<>();
+            response.put("organizationId", organization.getId());
+            response.put("organizationName", organization.getName());
+            response.put("startDate", startDateTime.toString());
+            response.put("endDate", endDateTime.toString());
+            response.put("totalRequests", usageLogsWithNames.size());
+            response.put("usageLogs", usageLogsWithNames);
+            
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            log.warn("Erreur lors de la récupération des logs d'utilisation: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("error", "ORGANIZATION_NOT_FOUND", "message", e.getMessage()));
+        } catch (Exception e) {
+            log.error("Erreur lors de la récupération des logs d'utilisation: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "INTERNAL_ERROR", "message", "Erreur lors de la récupération des logs d'utilisation"));
         }
     }
 

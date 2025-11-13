@@ -6,6 +6,7 @@ import { UserService, UserUsageStats, UserQuota, Organization } from '../../core
 import { AuthService } from '../../core/services/auth.service';
 import { PricingPlanService, PricingPlan } from '../../core/services/pricing-plan.service';
 import { NotificationService } from '../../core/services/notification.service';
+import { OrganizationAccountService, OrganizationUsageLog } from '../../core/services/organization-account.service';
 import { Chart, ChartConfiguration, registerables } from 'chart.js';
 
 Chart.register(...registerables);
@@ -199,11 +200,11 @@ Chart.register(...registerables);
           <div class="filters">
             <div class="filter-group">
               <label for="startDate">Date de début:</label>
-              <input type="date" id="startDate" [(ngModel)]="startDate" (change)="loadStats()" />
+              <input type="date" id="startDate" [(ngModel)]="startDate" (change)="onFilterChange()" />
             </div>
             <div class="filter-group">
               <label for="endDate">Date de fin:</label>
-              <input type="date" id="endDate" [(ngModel)]="endDate" (change)="loadStats()" />
+              <input type="date" id="endDate" [(ngModel)]="endDate" (change)="onFilterChange()" />
             </div>
             <button class="btn btn-secondary" (click)="resetFilters()">Réinitialiser</button>
           </div>
@@ -248,6 +249,45 @@ Chart.register(...registerables);
           } @else {
             <p class="empty-message">Aucune utilisation récente.</p>
           }
+        }
+      </div>
+
+      <!-- Liste de toutes les requêtes de l'organisation -->
+      <div class="usage-logs-card" *ngIf="organizationUsageLogs || loadingUsageLogs">
+        <h3>📋 Toutes les Requêtes de l'Organisation</h3>
+        @if (loadingUsageLogs) {
+          <p>Chargement...</p>
+        } @else if (organizationUsageLogs && organizationUsageLogs.usageLogs.length > 0) {
+          <div class="usage-logs-info">
+            <p><strong>Période:</strong> {{ formatDate(organizationUsageLogs.startDate) }} - {{ formatDate(organizationUsageLogs.endDate) }}</p>
+            <p><strong>Total:</strong> {{ organizationUsageLogs.totalRequests }} requête(s)</p>
+          </div>
+          <table class="usage-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Collaborateur</th>
+                <th>Endpoint</th>
+                <th>Recherche</th>
+                <th>Tokens</th>
+                <th>Coût</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (log of organizationUsageLogs.usageLogs; track log.id) {
+                <tr>
+                  <td>{{ formatDate(log.timestamp) }}</td>
+                  <td><strong>{{ log.collaboratorName }}</strong></td>
+                  <td>{{ log.endpoint }}</td>
+                  <td class="search-term">{{ truncateSearchTerm(log.searchTerm) }}</td>
+                  <td>{{ formatNumber(log.tokensUsed || 0) }}</td>
+                  <td>{{ formatCurrency(log.costUsd || 0) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        } @else {
+          <p class="empty-message">Aucune requête pour cette période.</p>
         }
       </div>
 
@@ -618,6 +658,26 @@ Chart.register(...registerables);
     .view-all-plans-link:hover {
       text-decoration: underline;
     }
+
+    .usage-logs-card {
+      background: #e0e0e0;
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .usage-logs-info {
+      margin-bottom: 1rem;
+      padding: 0.75rem;
+      background: #f8f9fa;
+      border-radius: 4px;
+    }
+
+    .usage-logs-info p {
+      margin: 0.25rem 0;
+      color: #555;
+    }
   `]
 })
 export class OrganizationStatsComponent implements OnInit {
@@ -625,14 +685,17 @@ export class OrganizationStatsComponent implements OnInit {
   private authService = inject(AuthService);
   private pricingPlanService = inject(PricingPlanService);
   private notificationService = inject(NotificationService);
+  private organizationAccountService = inject(OrganizationAccountService);
 
   organization: Organization | null = null;
   quota: UserQuota | null = null;
   stats: UserUsageStats | null = null;
+  organizationUsageLogs: any = null;
 
   loadingOrg = false;
   loadingQuota = false;
   loadingStats = false;
+  loadingUsageLogs = false;
   errorMessage = '';
 
   startDate = '';
@@ -653,6 +716,7 @@ export class OrganizationStatsComponent implements OnInit {
     this.loadQuota();
     this.loadStats();
     this.loadPricingPlans();
+    this.loadOrganizationUsageLogs();
   }
 
   loadOrganization() {
@@ -759,6 +823,22 @@ export class OrganizationStatsComponent implements OnInit {
     });
   }
 
+  loadOrganizationUsageLogs() {
+    this.loadingUsageLogs = true;
+    const startDate = this.startDate || undefined;
+    const endDate = this.endDate || undefined;
+    this.organizationAccountService.getOrganizationUsageLogs(startDate, endDate).subscribe({
+      next: (logs) => {
+        this.organizationUsageLogs = logs;
+        this.loadingUsageLogs = false;
+      },
+      error: (err) => {
+        console.error('Erreur lors du chargement des logs d\'utilisation de l\'organisation:', err);
+        this.loadingUsageLogs = false;
+      }
+    });
+  }
+
   updateQuotaChart() {
     if (!this.quota || !this.quota.hasOrganization || this.quota.isUnlimited) {
       return;
@@ -830,10 +910,16 @@ export class OrganizationStatsComponent implements OnInit {
     // Similar to UserDashboardComponent
   }
 
+  onFilterChange() {
+    this.loadStats();
+    this.loadOrganizationUsageLogs();
+  }
+
   resetFilters() {
     this.startDate = '';
     this.endDate = '';
     this.loadStats();
+    this.loadOrganizationUsageLogs();
   }
 
   formatDate(dateString: string): string {
