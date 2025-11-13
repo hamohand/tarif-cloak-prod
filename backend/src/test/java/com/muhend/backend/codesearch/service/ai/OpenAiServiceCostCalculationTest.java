@@ -23,7 +23,8 @@ class OpenAiServiceCostCalculationTest {
     @BeforeEach
     void setUp() {
         // Créer une instance du service avec un tarif de base de test
-        openAiService = new OpenAiService(aiPrompts, "test-api-key", 0.01);
+        // Le constructeur attend maintenant une String qui sera parsée en double
+        openAiService = new OpenAiService(aiPrompts, "test-api-key", "0.01");
     }
 
     @Test
