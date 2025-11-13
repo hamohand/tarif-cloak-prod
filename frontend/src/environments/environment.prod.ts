@@ -6,5 +6,6 @@ export const environment = {
     clientId: 'frontend-client',
     redirectUri: window.location.origin + '/'
   },
-  apiUrl: '/api'
+  apiUrl: '/api',
+  marketVersion: 'DEFAULT' // DEFAULT, DZ, etc. - À configurer selon le déploiement
 };

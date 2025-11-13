@@ -6,5 +6,6 @@ export const environment = {
     clientId: 'frontend-client',
     redirectUri: 'http://localhost:4200/'
   },
-  apiUrl: 'http://localhost:8081/api'
+  apiUrl: 'http://localhost:8081/api',
+  marketVersion: 'DEFAULT' // DEFAULT, DZ, etc.
 };

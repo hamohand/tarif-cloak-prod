@@ -30,11 +30,13 @@ public class PricingPlanController {
     @Operation(
         summary = "Récupérer tous les plans tarifaires actifs",
         description = "Retourne la liste de tous les plans tarifaires actifs, triés par ordre d'affichage. " +
+                     "Si marketVersion est fourni, filtre par version de marché. " +
                      "Accessible publiquement pour permettre aux utilisateurs de consulter les plans avant l'inscription."
     )
-    public ResponseEntity<List<PricingPlanDto>> getActivePricingPlans() {
+    public ResponseEntity<List<PricingPlanDto>> getActivePricingPlans(
+            @RequestParam(required = false) String marketVersion) {
         try {
-            List<PricingPlanDto> plans = pricingPlanService.getActivePricingPlans();
+            List<PricingPlanDto> plans = pricingPlanService.getActivePricingPlans(marketVersion);
             return ResponseEntity.ok(plans);
         } catch (Exception e) {
             log.error("Erreur lors de la récupération des plans tarifaires actifs", e);

@@ -53,6 +53,18 @@ public class PricingPlan {
     @Column(name = "display_order", nullable = false)
     private Integer displayOrder; // Ordre d'affichage
     
+    @Column(name = "market_version", length = 10)
+    private String marketVersion = "DEFAULT"; // DEFAULT, DZ, etc.
+    
+    @Column(name = "currency", length = 3)
+    private String currency = "EUR"; // EUR, DZD, etc.
+    
+    @Column(name = "is_custom", nullable = false)
+    private Boolean isCustom = false; // true pour les plans créés via devis
+    
+    @Column(name = "organization_id", nullable = true)
+    private Long organizationId; // Pour les plans personnalisés par organisation
+    
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
     

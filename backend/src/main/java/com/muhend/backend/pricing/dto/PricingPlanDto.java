@@ -24,5 +24,9 @@ public class PricingPlanDto {
     private String features;
     private Boolean isActive;
     private Integer displayOrder;
+    private String marketVersion;
+    private String currency;
+    private Boolean isCustom;
+    private Long organizationId;
 }
 

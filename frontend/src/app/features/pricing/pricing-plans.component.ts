@@ -2,6 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { PricingPlanService, PricingPlan } from '../../core/services/pricing-plan.service';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-pricing-plans',
@@ -31,12 +32,12 @@ import { PricingPlanService, PricingPlan } from '../../core/services/pricing-pla
                   @if (plan.pricePerMonth === 0) {
                     <span class="amount">Gratuit</span>
                   } @else {
-                    <span class="currency">€</span>
+                    <span class="currency">{{ getCurrencySymbol(plan.currency) }}</span>
                     <span class="amount">{{ plan.pricePerMonth }}</span>
                     <span class="period">/mois</span>
                   }
                 } @else if (plan.pricePerRequest !== null && plan.pricePerRequest !== undefined) {
-                  <span class="currency">€</span>
+                  <span class="currency">{{ getCurrencySymbol(plan.currency) }}</span>
                   <span class="amount">{{ plan.pricePerRequest }}</span>
                   <span class="period">/requête</span>
                 } @else {
@@ -304,7 +305,9 @@ export class PricingPlansComponent implements OnInit {
   loadPricingPlans() {
     this.loading = true;
     this.error = '';
-    this.pricingPlanService.getActivePricingPlans().subscribe({
+    // Utiliser la version de marché depuis l'environnement
+    const marketVersion = environment.marketVersion;
+    this.pricingPlanService.getActivePricingPlans(marketVersion).subscribe({
       next: (plans) => {
         this.plans = plans;
         this.loading = false;
@@ -318,6 +321,17 @@ export class PricingPlansComponent implements OnInit {
         console.error('Erreur:', err);
       }
     });
+  }
+
+  getCurrencySymbol(currency?: string): string {
+    if (!currency) return '€'; // Par défaut EUR
+    const currencyMap: { [key: string]: string } = {
+      'EUR': '€',
+      'DZD': 'DA',
+      'USD': '$',
+      'GBP': '£'
+    };
+    return currencyMap[currency] || currency;
   }
 
   parseFeatures(features: string): string[] {

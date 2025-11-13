@@ -26,12 +26,21 @@ public class PricingPlanService {
     
     /**
      * Récupère tous les plans tarifaires actifs, triés par ordre d'affichage.
+     * Si marketVersion est fourni, filtre par version de marché.
      */
     @Transactional(readOnly = true)
-    public List<PricingPlanDto> getActivePricingPlans() {
+    public List<PricingPlanDto> getActivePricingPlans(String marketVersion) {
         try {
-            List<PricingPlan> plans = pricingPlanRepository.findByIsActiveTrueOrderByDisplayOrderAsc();
-            log.debug("Récupération de {} plan(s) tarifaire(s) actif(s)", plans.size());
+            List<PricingPlan> plans;
+            if (marketVersion != null && !marketVersion.isEmpty()) {
+                // Filtrer par version de marché (plans standards uniquement, pas les plans personnalisés)
+                plans = pricingPlanRepository.findByMarketVersionAndIsActiveTrueAndIsCustomFalseOrderByDisplayOrderAsc(marketVersion);
+                log.debug("Récupération de {} plan(s) tarifaire(s) actif(s) pour la version de marché: {}", plans.size(), marketVersion);
+            } else {
+                // Par défaut, récupérer tous les plans actifs (comportement existant)
+                plans = pricingPlanRepository.findByIsActiveTrueOrderByDisplayOrderAsc();
+                log.debug("Récupération de {} plan(s) tarifaire(s) actif(s)", plans.size());
+            }
             return plans.stream()
                     .map(this::toDto)
                     .collect(Collectors.toList());
@@ -39,6 +48,17 @@ public class PricingPlanService {
             log.error("Erreur lors de la récupération des plans tarifaires actifs depuis la base de données", e);
             throw e; // Re-lancer l'exception pour que le controller puisse la gérer
         }
+    }
+    
+    /**
+     * Récupère les plans personnalisés d'une organisation.
+     */
+    @Transactional(readOnly = true)
+    public List<PricingPlanDto> getCustomPricingPlansForOrganization(Long organizationId) {
+        List<PricingPlan> plans = pricingPlanRepository.findByOrganizationIdAndIsActiveTrueOrderByDisplayOrderAsc(organizationId);
+        return plans.stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
     }
     
     /**
@@ -139,6 +159,10 @@ public class PricingPlanService {
         dto.setFeatures(plan.getFeatures());
         dto.setIsActive(plan.getIsActive());
         dto.setDisplayOrder(plan.getDisplayOrder());
+        dto.setMarketVersion(plan.getMarketVersion());
+        dto.setCurrency(plan.getCurrency());
+        dto.setIsCustom(plan.getIsCustom());
+        dto.setOrganizationId(plan.getOrganizationId());
         return dto;
     }
 }

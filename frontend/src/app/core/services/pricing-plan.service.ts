@@ -14,6 +14,10 @@ export interface PricingPlan {
   features?: string;
   isActive: boolean;
   displayOrder: number;
+  marketVersion?: string; // DEFAULT, DZ, etc.
+  currency?: string; // EUR, DZD, etc.
+  isCustom?: boolean; // true pour les plans créés via devis
+  organizationId?: number | null; // Pour les plans personnalisés
 }
 
 export interface ChangePricingPlanRequest {
@@ -30,9 +34,11 @@ export class PricingPlanService {
 
   /**
    * Récupère tous les plans tarifaires actifs.
+   * @param marketVersion Version de marché (ex: 'DZ', 'DEFAULT'). Si non fourni, récupère tous les plans.
    */
-  getActivePricingPlans(): Observable<PricingPlan[]> {
-    return this.http.get<PricingPlan[]>(this.apiUrl);
+  getActivePricingPlans(marketVersion?: string): Observable<PricingPlan[]> {
+    const params = marketVersion ? { marketVersion } : {};
+    return this.http.get<PricingPlan[]>(this.apiUrl, { params });
   }
 
   /**
