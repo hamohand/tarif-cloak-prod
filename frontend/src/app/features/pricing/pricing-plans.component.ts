@@ -3,11 +3,13 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { PricingPlanService, PricingPlan } from '../../core/services/pricing-plan.service';
 import { environment } from '../../../environments/environment';
+import { QuoteRequestFormComponent } from './quote-request-form.component';
+import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-pricing-plans',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, QuoteRequestFormComponent],
   template: `
     <div class="pricing-container">
       <div class="pricing-header">
@@ -78,9 +80,20 @@ import { environment } from '../../../environments/environment';
 
       <div class="pricing-footer">
         <p>Vous pouvez changer de plan à tout moment après votre inscription.</p>
-        <a routerLink="/auth/login" class="link">Déjà un compte ? Connectez-vous</a>
+        <div class="footer-actions">
+          <button class="btn btn-secondary" (click)="openQuoteRequestForm()" *ngIf="isAuthenticated">
+            Demander un devis personnalisé
+          </button>
+          <a routerLink="/auth/login" class="link">Déjà un compte ? Connectez-vous</a>
+        </div>
       </div>
     </div>
+
+    <app-quote-request-form
+      [showForm]="showQuoteForm"
+      (formClosed)="closeQuoteForm()"
+      (quoteSubmitted)="onQuoteSubmitted()">
+    </app-quote-request-form>
   `,
   styles: [`
     .pricing-container {
@@ -260,6 +273,31 @@ import { environment } from '../../../environments/environment';
       margin-bottom: 1rem;
     }
 
+    .footer-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      align-items: center;
+    }
+
+    .btn-secondary {
+      background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
+      color: white;
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .btn-secondary:hover {
+      background: linear-gradient(135deg, #7f8c8d 0%, #6c7a7a 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(149, 165, 166, 0.3);
+    }
+
     .link {
       color: #3498db;
       text-decoration: none;
@@ -293,13 +331,20 @@ import { environment } from '../../../environments/environment';
 })
 export class PricingPlansComponent implements OnInit {
   private pricingPlanService = inject(PricingPlanService);
+  private authService = inject(AuthService);
 
   plans: PricingPlan[] = [];
   loading = true;
   error = '';
+  showQuoteForm = false;
+  isAuthenticated = false;
 
   ngOnInit() {
     this.loadPricingPlans();
+    // Vérifier si l'utilisateur est authentifié
+    this.authService.isAuthenticated$.subscribe(isAuth => {
+      this.isAuthenticated = isAuth;
+    });
   }
 
   loadPricingPlans() {
@@ -346,6 +391,24 @@ export class PricingPlansComponent implements OnInit {
       return features.split('\n').filter(f => f.trim().length > 0);
     }
     return [];
+  }
+
+  openQuoteRequestForm() {
+    if (!this.isAuthenticated) {
+      // Rediriger vers la page de connexion si non authentifié
+      // L'utilisateur pourra revenir après connexion
+      return;
+    }
+    this.showQuoteForm = true;
+  }
+
+  closeQuoteForm() {
+    this.showQuoteForm = false;
+  }
+
+  onQuoteSubmitted() {
+    // Le formulaire se ferme automatiquement après soumission réussie
+    // On pourrait aussi recharger les plans ou afficher un message
   }
 }
 

@@ -21,6 +21,7 @@ import { InvoiceDetailAdminComponent } from './features/admin/invoices/invoice-d
 import { PricingPlansComponent } from './features/pricing/pricing-plans.component';
 import { OrganizationAccountComponent } from './features/organization/organization-account.component';
 import { OrganizationStatsComponent } from './features/organization/organization-stats.component';
+import { QuoteRequestsComponent } from './features/organization/quote-requests.component';
 import { collaboratorGuard } from './core/guards/collaborator.guard';
 import { organizationGuard } from './core/guards/organization.guard';
 
@@ -66,6 +67,11 @@ export const routes: Routes = [
   {
     path: 'organization/stats',
     component: OrganizationStatsComponent,
+    canActivate: [authGuard, organizationGuard]
+  },
+  {
+    path: 'organization/quote-requests',
+    component: QuoteRequestsComponent,
     canActivate: [authGuard, organizationGuard]
   },
   {

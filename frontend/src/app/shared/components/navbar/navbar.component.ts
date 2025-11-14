@@ -64,6 +64,7 @@ import { take } from 'rxjs/operators';
           <a routerLink="/organization/account" routerLinkActive="router-link-active" class="org-nav-link">👥 Collaborateurs</a>
           <a routerLink="/pricing" routerLinkActive="router-link-active" class="org-nav-link">💳 Plan tarifaire</a>
           <a routerLink="/organization/stats" routerLinkActive="router-link-active" class="org-nav-link">📊 Statistiques globales</a>
+          <a routerLink="/organization/quote-requests" routerLinkActive="router-link-active" class="org-nav-link">💼 Demandes de devis</a>
         </div>
       </nav>
     }

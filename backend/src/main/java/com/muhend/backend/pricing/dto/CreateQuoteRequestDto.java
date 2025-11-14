@@ -15,7 +15,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class CreateQuoteRequestDto {
     
-    @NotNull(message = "L'ID de l'organisation est requis")
+    // Note: organizationId est maintenant récupéré automatiquement depuis le token dans le contrôleur
+    // Il est toujours présent dans le DTO pour le service, mais n'est plus requis dans la validation
     private Long organizationId;
     
     @NotBlank(message = "Le nom du contact est requis")
