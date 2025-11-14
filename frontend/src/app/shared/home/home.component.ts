@@ -142,7 +142,7 @@ Response:
         </div>
       </ng-template>
 
-      <div class="features secondary">
+      <div class="features secondary" *ngIf="!(isAuthenticated$ | async)">
         <div class="feature-card">
           <h3>🔐 Sécurité</h3>
           <p>Authentification et gestion fine des rôles.</p>

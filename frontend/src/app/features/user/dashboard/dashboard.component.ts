@@ -135,16 +135,6 @@ Chart.register(...registerables);
             <button class="btn btn-secondary" (click)="resetFilters()">Réinitialiser</button>
           </div>
 
-          <!-- Graphique d'utilisation récente -->
-          @if (stats.recentUsage && stats.recentUsage.length > 0) {
-            <div class="chart-section">
-              <h4>📊 Évolution de Mon Utilisation</h4>
-              <div class="chart-wrapper">
-                <canvas #usageChart></canvas>
-              </div>
-            </div>
-          }
-
           <!-- Utilisations récentes -->
           @if (stats.recentUsage && stats.recentUsage.length > 0) {
             <div class="recent-usage">
@@ -539,7 +529,6 @@ export class UserDashboardComponent implements OnInit, AfterViewInit, OnDestroy 
   private authService = inject(AuthService);
 
   @ViewChild('quotaChart', { static: false }) quotaChartRef!: ElementRef<HTMLCanvasElement>;
-  @ViewChild('usageChart', { static: false }) usageChartRef!: ElementRef<HTMLCanvasElement>;
 
   userInfo: any;
   organization: Organization | null = null;
@@ -555,7 +544,6 @@ export class UserDashboardComponent implements OnInit, AfterViewInit, OnDestroy 
   endDate = '';
 
   private quotaChart: Chart | null = null;
-  private usageChart: Chart | null = null;
 
   ngOnInit() {
     this.userInfo = this.authService.getUserInfo();
@@ -606,10 +594,6 @@ export class UserDashboardComponent implements OnInit, AfterViewInit, OnDestroy 
       next: (stats) => {
         this.stats = stats;
         this.loadingStats = false;
-        // Mettre à jour le graphique d'utilisation
-        setTimeout(() => {
-          this.updateUsageChart();
-        }, 100);
       },
       error: (err) => {
         this.errorMessage = 'Erreur lors du chargement des statistiques: ' + (err.error?.message || err.message);
@@ -626,9 +610,6 @@ export class UserDashboardComponent implements OnInit, AfterViewInit, OnDestroy 
     // Détruire les graphiques pour éviter les fuites mémoire
     if (this.quotaChart) {
       this.quotaChart.destroy();
-    }
-    if (this.usageChart) {
-      this.usageChart.destroy();
     }
   }
 
@@ -702,131 +683,6 @@ export class UserDashboardComponent implements OnInit, AfterViewInit, OnDestroy 
     this.quotaChart = new Chart(this.quotaChartRef.nativeElement, config);
   }
 
-  updateUsageChart() {
-    if (!this.stats || !this.stats.recentUsage || this.stats.recentUsage.length === 0 || !this.usageChartRef) {
-      return;
-    }
-
-    // Prendre les 10 dernières utilisations et les trier par date
-    const recentUsage = [...this.stats.recentUsage]
-      .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
-      .slice(-10);
-
-    const labels = recentUsage.map(usage => {
-      const date = new Date(usage.timestamp);
-      return date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
-    });
-
-    const costData = recentUsage.map(usage => usage.costUsd || 0);
-    const tokensData = recentUsage.map(usage => usage.tokensUsed || 0);
-
-    if (this.usageChart) {
-      this.usageChart.destroy();
-    }
-
-    const config: ChartConfiguration = {
-      type: 'line',
-      data: {
-        labels: labels,
-        datasets: [
-          {
-            label: 'Coût (€)',
-            data: costData,
-            borderColor: 'rgba(52, 152, 219, 1)',
-            backgroundColor: 'rgba(52, 152, 219, 0.1)',
-            tension: 0.4,
-            fill: true,
-            yAxisID: 'y'
-          },
-          {
-            label: 'Tokens',
-            data: tokensData,
-            borderColor: 'rgba(46, 204, 113, 1)',
-            backgroundColor: 'rgba(46, 204, 113, 0.1)',
-            tension: 0.4,
-            fill: true,
-            yAxisID: 'y1'
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        interaction: {
-          mode: 'index',
-          intersect: false
-        },
-        plugins: {
-          legend: {
-            position: 'top',
-            labels: {
-              padding: 15,
-              font: {
-                size: 12
-              }
-            }
-          },
-          tooltip: {
-            callbacks: {
-              label: (context) => {
-                const label = context.dataset.label || '';
-                const value = context.parsed.y;
-                if (value === null || value === undefined) {
-                  if (label.includes('Coût')) {
-                    return `${label}: 0,00 €`;
-                  } else {
-                    return `${label}: 0`;
-                  }
-                }
-                if (label.includes('Coût')) {
-                  return `${label}: ${this.formatCurrency(value)}`;
-                } else {
-                  return `${label}: ${this.formatNumber(value)}`;
-                }
-              }
-            }
-          }
-        },
-        scales: {
-          x: {
-            display: true,
-            title: {
-              display: true,
-              text: 'Date'
-            }
-          },
-          y: {
-            type: 'linear',
-            display: true,
-            position: 'left',
-            title: {
-              display: true,
-              text: 'Coût (€)'
-            },
-            ticks: {
-              callback: (value) => {
-                return Number(value).toFixed(6) + ' €';
-              }
-            }
-          },
-          y1: {
-            type: 'linear',
-            display: true,
-            position: 'right',
-            title: {
-              display: true,
-              text: 'Tokens'
-            },
-            grid: {
-              drawOnChartArea: false
-            }
-          }
-        }
-      }
-    };
-
-    this.usageChart = new Chart(this.usageChartRef.nativeElement, config);
-  }
 
   resetFilters() {
     this.startDate = '';

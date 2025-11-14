@@ -209,16 +209,6 @@ Chart.register(...registerables);
             <button class="btn btn-secondary" (click)="resetFilters()">Réinitialiser</button>
           </div>
 
-          <!-- Graphique d'utilisation récente -->
-          @if (stats.recentUsage && stats.recentUsage.length > 0) {
-            <div class="chart-section">
-              <h4>📊 Évolution de l'Utilisation</h4>
-              <div class="chart-wrapper">
-                <canvas #usageChart></canvas>
-              </div>
-            </div>
-          }
-
           <!-- Utilisations récentes -->
           @if (stats.recentUsage && stats.recentUsage.length > 0) {
             <div class="recent-usage">
@@ -711,7 +701,6 @@ export class OrganizationStatsComponent implements OnInit {
   isChangingPlan = false;
 
   private quotaChart: Chart | null = null;
-  private usageChart: Chart | null = null;
 
   ngOnInit() {
     this.loadOrganization();
@@ -863,10 +852,6 @@ export class OrganizationStatsComponent implements OnInit {
       monthlyRequests,
       recentUsage
     };
-
-    setTimeout(() => {
-      this.updateUsageChart();
-    }, 100);
   }
 
   loadOrganizationUsageLogs() {
@@ -949,15 +934,6 @@ export class OrganizationStatsComponent implements OnInit {
 
     // Note: quotaChartRef would need to be added with @ViewChild
     // For now, we'll skip the chart rendering
-  }
-
-  updateUsageChart() {
-    if (!this.stats || !this.stats.recentUsage || this.stats.recentUsage.length === 0) {
-      return;
-    }
-
-    // Chart implementation would go here
-    // Similar to UserDashboardComponent
   }
 
   onFilterChange() {
