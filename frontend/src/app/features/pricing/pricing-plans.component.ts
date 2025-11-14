@@ -342,7 +342,7 @@ export class PricingPlansComponent implements OnInit {
   ngOnInit() {
     this.loadPricingPlans();
     // Vérifier si l'utilisateur est authentifié
-    this.authService.isAuthenticated$.subscribe(isAuth => {
+    this.authService.isAuthenticated().subscribe((isAuth: boolean) => {
       this.isAuthenticated = isAuth;
     });
   }
