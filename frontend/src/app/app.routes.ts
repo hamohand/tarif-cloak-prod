@@ -51,16 +51,6 @@ export const routes: Routes = [
     canActivate: [authGuard, collaboratorGuard]
   },
   {
-    path: 'invoices',
-    component: InvoicesComponent,
-    canActivate: [authGuard, collaboratorGuard]
-  },
-  {
-    path: 'invoices/:id',
-    component: InvoiceDetailComponent,
-    canActivate: [authGuard, collaboratorGuard]
-  },
-  {
     path: 'organization/account',
     component: OrganizationAccountComponent,
     canActivate: [authGuard, organizationGuard]
@@ -68,6 +58,16 @@ export const routes: Routes = [
   {
     path: 'organization/stats',
     component: OrganizationStatsComponent,
+    canActivate: [authGuard, organizationGuard]
+  },
+  {
+    path: 'organization/invoices',
+    component: InvoicesComponent,
+    canActivate: [authGuard, organizationGuard]
+  },
+  {
+    path: 'organization/invoices/:id',
+    component: InvoiceDetailComponent,
     canActivate: [authGuard, organizationGuard]
   },
   {

@@ -26,18 +26,6 @@ import { take } from 'rxjs/operators';
             <a routerLink="/organization/account" class="nav-link">Mon organisation</a>
           } @else if (isCollaboratorAccount$ | async) {
             <a routerLink="/dashboard" class="nav-link">Tableau de bord</a>
-            <a routerLink="/invoices" class="nav-link invoices-link">
-              📄 Factures
-              @if (newInvoicesCount > 0 || overdueInvoicesCount > 0) {
-                <span class="invoice-badge" [class.overdue-badge]="overdueInvoicesCount > 0">
-                  @if (overdueInvoicesCount > 0) {
-                    ⚠️ {{ overdueInvoicesCount }}
-                  } @else {
-                    {{ newInvoicesCount }}
-                  }
-                </span>
-              }
-            </a>
             <a routerLink="/alerts" class="nav-link alerts-link">
               🔔 Alertes
               @if (alertCount > 0) {
@@ -64,6 +52,18 @@ import { take } from 'rxjs/operators';
           <a routerLink="/organization/account" routerLinkActive="router-link-active" class="org-nav-link">👥 Collaborateurs</a>
           <a routerLink="/pricing" routerLinkActive="router-link-active" class="org-nav-link">💳 Plan tarifaire</a>
           <a routerLink="/organization/stats" routerLinkActive="router-link-active" class="org-nav-link">📊 Statistiques globales</a>
+          <a routerLink="/organization/invoices" routerLinkActive="router-link-active" class="org-nav-link invoices-link">
+            📄 Factures
+            @if (newInvoicesCount > 0 || overdueInvoicesCount > 0) {
+              <span class="invoice-badge" [class.overdue-badge]="overdueInvoicesCount > 0">
+                @if (overdueInvoicesCount > 0) {
+                  ⚠️ {{ overdueInvoicesCount }}
+                } @else {
+                  {{ newInvoicesCount }}
+                }
+              </span>
+            }
+          </a>
           <a routerLink="/organization/quote-requests" routerLinkActive="router-link-active" class="org-nav-link">💼 Demandes de devis</a>
         </div>
       </nav>
@@ -404,6 +404,33 @@ import { take } from 'rxjs/operators';
       background-color: rgba(255, 255, 255, 0.2);
     }
 
+    .org-nav-link.invoices-link {
+      position: relative;
+    }
+
+    .org-nav-link .invoice-badge {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      background: #3498db;
+      color: white;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      font-weight: 700;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      animation: pulse 2s infinite;
+    }
+
+    .org-nav-link .invoice-badge.overdue-badge {
+      background: #e74c3c;
+      animation: pulse-red 2s infinite;
+    }
+
     @media (max-width: 768px) {
       .navbar {
         flex-wrap: wrap;
@@ -507,8 +534,8 @@ export class NavbarComponent implements OnInit, OnDestroy {
   }
 
   loadNewInvoicesCount() {
-    this.isCollaboratorAccount$.pipe(take(1)).subscribe(isCollaborator => {
-      if (isCollaborator) {
+    this.isOrganizationAccount$.pipe(take(1)).subscribe(isOrganization => {
+      if (isOrganization) {
         this.invoiceService.getNewInvoicesCount().subscribe({
           next: (response) => {
             const newCount = response.count;
@@ -547,8 +574,8 @@ export class NavbarComponent implements OnInit, OnDestroy {
   }
 
   loadOverdueInvoicesCount() {
-    this.isCollaboratorAccount$.pipe(take(1)).subscribe(isCollaborator => {
-      if (isCollaborator) {
+    this.isOrganizationAccount$.pipe(take(1)).subscribe(isOrganization => {
+      if (isOrganization) {
         this.invoiceService.getOverdueInvoicesCount().subscribe({
           next: (response) => {
             const newCount = response.count;
