@@ -38,8 +38,11 @@ export class PricingPlanService {
    */
   getActivePricingPlans(marketVersion?: string): Observable<PricingPlan[]> {
     let params = new HttpParams();
-    if (marketVersion) {
-      params = params.set('marketVersion', marketVersion);
+    if (marketVersion && marketVersion.trim() !== '') {
+      params = params.set('marketVersion', marketVersion.trim());
+      console.log('📤 Envoi de la requête avec marketVersion:', marketVersion.trim());
+    } else {
+      console.log('📤 Envoi de la requête sans marketVersion (récupération de tous les plans)');
     }
     return this.http.get<PricingPlan[]>(this.apiUrl, { params });
   }

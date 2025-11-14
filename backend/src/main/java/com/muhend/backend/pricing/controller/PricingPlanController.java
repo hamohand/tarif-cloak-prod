@@ -36,7 +36,9 @@ public class PricingPlanController {
     public ResponseEntity<List<PricingPlanDto>> getActivePricingPlans(
             @RequestParam(required = false) String marketVersion) {
         try {
+            log.info("📥 Requête GET /pricing-plans - marketVersion paramètre: '{}'", marketVersion);
             List<PricingPlanDto> plans = pricingPlanService.getActivePricingPlans(marketVersion);
+            log.info("📤 Réponse: {} plan(s) retourné(s)", plans.size());
             return ResponseEntity.ok(plans);
         } catch (Exception e) {
             log.error("Erreur lors de la récupération des plans tarifaires actifs", e);

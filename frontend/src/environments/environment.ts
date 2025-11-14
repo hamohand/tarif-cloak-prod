@@ -1,4 +1,6 @@
-export const environment = {
+import { Environment } from './environment.interface';
+
+export const environment: Environment = {
   production: false,
   keycloak: {
     issuer: 'http://localhost:8080/realms/hscode-realm',

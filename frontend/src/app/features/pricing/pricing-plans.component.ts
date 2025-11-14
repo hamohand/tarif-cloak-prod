@@ -351,11 +351,13 @@ export class PricingPlansComponent implements OnInit {
     this.loading = true;
     this.error = '';
     // Utiliser la version de marché depuis l'environnement
-    const marketVersion = (environment as any).marketVersion as string | undefined;
+    const marketVersion = environment.marketVersion;
+    console.log('🔍 Market version utilisée:', marketVersion);
     this.pricingPlanService.getActivePricingPlans(marketVersion).subscribe({
       next: (plans) => {
         this.plans = plans;
         this.loading = false;
+        console.log('✅ Plans reçus:', plans.length, plans);
         if (plans.length === 0) {
           this.error = 'Aucun plan tarifaire disponible pour le moment.';
         }

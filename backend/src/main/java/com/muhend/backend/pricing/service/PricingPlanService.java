@@ -32,14 +32,18 @@ public class PricingPlanService {
     public List<PricingPlanDto> getActivePricingPlans(String marketVersion) {
         try {
             List<PricingPlan> plans;
-            if (marketVersion != null && !marketVersion.isEmpty()) {
+            log.info("🔍 Récupération des plans tarifaires - marketVersion reçu: '{}'", marketVersion);
+            if (marketVersion != null && !marketVersion.isEmpty() && !marketVersion.trim().isEmpty()) {
                 // Filtrer par version de marché (plans standards uniquement, pas les plans personnalisés)
-                plans = pricingPlanRepository.findByMarketVersionAndIsActiveTrueAndIsCustomFalseOrderByDisplayOrderAsc(marketVersion);
-                log.debug("Récupération de {} plan(s) tarifaire(s) actif(s) pour la version de marché: {}", plans.size(), marketVersion);
+                plans = pricingPlanRepository.findByMarketVersionAndIsActiveTrueAndIsCustomFalseOrderByDisplayOrderAsc(marketVersion.trim());
+                log.info("✅ {} plan(s) trouvé(s) pour marketVersion='{}'", plans.size(), marketVersion);
+                if (plans.isEmpty()) {
+                    log.warn("⚠️ Aucun plan trouvé pour marketVersion='{}'. Vérifiez que les plans ont bien market_version='{}' en base de données.", marketVersion, marketVersion);
+                }
             } else {
                 // Par défaut, récupérer tous les plans actifs (comportement existant)
                 plans = pricingPlanRepository.findByIsActiveTrueOrderByDisplayOrderAsc();
-                log.debug("Récupération de {} plan(s) tarifaire(s) actif(s)", plans.size());
+                log.warn("⚠️ marketVersion non fourni ou vide - Récupération de tous les plans actifs: {}", plans.size());
             }
             return plans.stream()
                     .map(this::toDto)
