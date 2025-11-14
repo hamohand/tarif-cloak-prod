@@ -7,6 +7,6 @@ export const environment = {
     redirectUri: window.location.origin + '/'
   },
   apiUrl: '/api',
-  marketVersion: 'DEFAULT' // DEFAULT, DZ, etc. - À configurer selon le déploiement
-//  marketVersion: 'DZ' // Au lieu de 'DEFAULT'
+//  marketVersion: 'DEFAULT' // DEFAULT, DZ, etc. - À configurer selon le déploiement
+  marketVersion: 'DZ' // Au lieu de 'DEFAULT'
 };
