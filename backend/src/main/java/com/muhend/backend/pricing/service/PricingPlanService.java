@@ -34,11 +34,27 @@ public class PricingPlanService {
             List<PricingPlan> plans;
             log.info("🔍 Récupération des plans tarifaires - marketVersion reçu: '{}'", marketVersion);
             if (marketVersion != null && !marketVersion.isEmpty() && !marketVersion.trim().isEmpty()) {
+                String trimmedVersion = marketVersion.trim();
+                log.info("🔍 Utilisation de marketVersion trim: '{}'", trimmedVersion);
+                
                 // Filtrer par version de marché (plans standards uniquement, pas les plans personnalisés)
-                plans = pricingPlanRepository.findByMarketVersionAndIsActiveTrueAndIsCustomFalseOrderByDisplayOrderAsc(marketVersion.trim());
-                log.info("✅ {} plan(s) trouvé(s) pour marketVersion='{}'", plans.size(), marketVersion);
+                plans = pricingPlanRepository.findByMarketVersionAndIsActiveTrueAndIsCustomFalseOrderByDisplayOrderAsc(trimmedVersion);
+                log.info("✅ {} plan(s) trouvé(s) pour marketVersion='{}'", plans.size(), trimmedVersion);
+                
                 if (plans.isEmpty()) {
-                    log.warn("⚠️ Aucun plan trouvé pour marketVersion='{}'. Vérifiez que les plans ont bien market_version='{}' en base de données.", marketVersion, marketVersion);
+                    log.warn("⚠️ Aucun plan trouvé pour marketVersion='{}'. Vérifiez que les plans ont bien market_version='{}' en base de données.", trimmedVersion, trimmedVersion);
+                    // Log tous les plans actifs pour déboguer
+                    List<PricingPlan> allActivePlans = pricingPlanRepository.findByIsActiveTrueOrderByDisplayOrderAsc();
+                    log.warn("⚠️ Plans actifs disponibles en base: {}", 
+                        allActivePlans.stream()
+                            .map(p -> String.format("%s (market_version='%s', is_custom=%s)", 
+                                p.getName(), p.getMarketVersion(), p.getIsCustom()))
+                            .collect(Collectors.joining(", ")));
+                } else {
+                    log.info("✅ Plans trouvés: {}", 
+                        plans.stream()
+                            .map(p -> String.format("%s (market_version='%s')", p.getName(), p.getMarketVersion()))
+                            .collect(Collectors.joining(", ")));
                 }
             } else {
                 // Par défaut, récupérer tous les plans actifs (comportement existant)

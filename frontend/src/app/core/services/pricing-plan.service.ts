@@ -38,11 +38,16 @@ export class PricingPlanService {
    */
   getActivePricingPlans(marketVersion?: string): Observable<PricingPlan[]> {
     let params = new HttpParams();
-    if (marketVersion && marketVersion.trim() !== '') {
-      params = params.set('marketVersion', marketVersion.trim());
-      console.log('📤 Envoi de la requête avec marketVersion:', marketVersion.trim());
+    // Vérification plus stricte
+    if (marketVersion != null && marketVersion !== undefined && marketVersion.trim() !== '') {
+      const trimmedVersion = marketVersion.trim();
+      params = params.set('marketVersion', trimmedVersion);
+      console.log('📤 Envoi de la requête avec marketVersion:', trimmedVersion);
+      console.log('🌐 URL complète:', `${this.apiUrl}?marketVersion=${trimmedVersion}`);
     } else {
+      console.warn('⚠️ marketVersion est undefined/null/vide - Récupération de tous les plans');
       console.log('📤 Envoi de la requête sans marketVersion (récupération de tous les plans)');
+      console.log('🌐 URL complète:', this.apiUrl);
     }
     return this.http.get<PricingPlan[]>(this.apiUrl, { params });
   }

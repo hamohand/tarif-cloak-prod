@@ -352,12 +352,20 @@ export class PricingPlansComponent implements OnInit {
     this.error = '';
     // Utiliser la version de marché depuis l'environnement
     const marketVersion = (environment as any).marketVersion as string | undefined;
-    console.log('🔍 Market version utilisée:', marketVersion);
+    console.log('🔍 Market version depuis environment:', marketVersion);
+    console.log('🔍 Type de marketVersion:', typeof marketVersion);
+    console.log('🔍 Environment complet:', environment);
+    
+    if (!marketVersion) {
+      console.error('❌ ERREUR: marketVersion est undefined ou null dans environment!');
+    }
+    
     this.pricingPlanService.getActivePricingPlans(marketVersion).subscribe({
       next: (plans) => {
         this.plans = plans;
         this.loading = false;
         console.log('✅ Plans reçus:', plans.length, plans);
+        console.log('✅ Market versions des plans reçus:', plans.map(p => ({ name: p.name, marketVersion: p.marketVersion })));
         if (plans.length === 0) {
           this.error = 'Aucun plan tarifaire disponible pour le moment.';
         }
