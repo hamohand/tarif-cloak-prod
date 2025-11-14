@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { PricingPlanService, PricingPlan } from '../../core/services/pricing-plan.service';
 import { environment } from '../../../environments/environment';
+import { Environment } from '../../../environments/environment.interface';
 import { QuoteRequestFormComponent } from './quote-request-form.component';
 import { AuthService } from '../../core/services/auth.service';
 
@@ -351,7 +352,8 @@ export class PricingPlansComponent implements OnInit {
     this.loading = true;
     this.error = '';
     // Utiliser la version de marché depuis l'environnement
-    const marketVersion = environment.marketVersion;
+    const env = environment as Environment;
+    const marketVersion = env.marketVersion;
     console.log('🔍 Market version utilisée:', marketVersion);
     this.pricingPlanService.getActivePricingPlans(marketVersion).subscribe({
       next: (plans) => {
