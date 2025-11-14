@@ -20,7 +20,12 @@ import { take } from 'rxjs/operators';
 
       <div class="nav-links">
         <a routerLink="/" class="nav-link">Accueil</a>
-        <a routerLink="/pricing" class="nav-link">Tarifs</a>
+        @if (!(isCollaboratorAccount$ | async)) {
+          <a routerLink="/pricing" class="nav-link pricing-link">
+            💳 Tarifs
+            <span class="quote-badge">💼 Devis personnalisé</span>
+          </a>
+        }
         @if (isAuthenticated$ | async) {
           @if (isOrganizationAccount$ | async) {
             <a routerLink="/organization/account" class="nav-link">Mon organisation</a>
@@ -238,8 +243,27 @@ import { take } from 'rxjs/operators';
       transform: translateY(0);
     }
 
-    .alerts-link, .invoices-link {
+    .alerts-link, .invoices-link, .pricing-link {
       position: relative;
+    }
+
+    .pricing-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .quote-badge {
+      font-size: 0.65rem;
+      font-weight: 600;
+      color: #facc15;
+      background: rgba(250, 204, 21, 0.2);
+      padding: 0.25rem 0.6rem;
+      border-radius: 12px;
+      white-space: nowrap;
+      border: 1px solid rgba(250, 204, 21, 0.4);
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 2px 4px rgba(250, 204, 21, 0.2);
     }
 
     .alert-badge, .invoice-badge {

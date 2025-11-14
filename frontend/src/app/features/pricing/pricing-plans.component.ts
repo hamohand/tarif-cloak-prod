@@ -15,6 +15,11 @@ import { AuthService } from '../../core/services/auth.service';
       <div class="pricing-header">
         <h1>Choisissez votre plan tarifaire</h1>
         <p>Sélectionnez le plan qui correspond le mieux à vos besoins</p>
+        @if (isAuthenticated) {
+          <div class="quote-notice">
+            💼 <strong>Vous pouvez demander un devis personnalisé</strong> adapté à vos besoins spécifiques.
+          </div>
+        }
       </div>
 
       @if (loading) {
@@ -117,6 +122,23 @@ import { AuthService } from '../../core/services/auth.service';
     .pricing-header p {
       font-size: 1.2rem;
       color: #7f8c8d;
+    }
+
+    .quote-notice {
+      margin-top: 1.5rem;
+      padding: 1rem 1.5rem;
+      background: linear-gradient(135deg, rgba(250, 204, 21, 0.15) 0%, rgba(250, 204, 21, 0.05) 100%);
+      border: 2px solid rgba(250, 204, 21, 0.4);
+      border-radius: 12px;
+      color: #1f2937;
+      font-size: 1rem;
+      display: inline-block;
+      box-shadow: 0 4px 12px rgba(250, 204, 21, 0.2);
+    }
+
+    .quote-notice strong {
+      color: #facc15;
+      font-weight: 700;
     }
 
     .pricing-plans-grid {
