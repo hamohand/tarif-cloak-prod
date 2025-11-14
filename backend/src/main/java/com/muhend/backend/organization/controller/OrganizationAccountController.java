@@ -190,6 +190,33 @@ public class OrganizationAccountController {
         }
     }
 
+    @PutMapping("/collaborators/{keycloakUserId}/enable")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Activer un collaborateur",
+            description = "Active le compte Keycloak d'un collaborateur de l'organisation.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    public ResponseEntity<Map<String, Object>> enableCollaborator(@PathVariable String keycloakUserId) {
+        String organizationUserId = getCurrentUserId();
+        if (organizationUserId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "AUTH_REQUIRED", "message", "Authentification requise"));
+        }
+        try {
+            OrganizationDto organization = organizationService.getOrganizationByKeycloakUserId(organizationUserId);
+            organizationService.enableCollaborator(organization.getId(), keycloakUserId);
+            return ResponseEntity.ok(Map.of("message", "Collaborateur activé avec succès"));
+        } catch (IllegalArgumentException e) {
+            log.warn("Erreur lors de l'activation du collaborateur: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("error", "ENABLE_ERROR", "message", e.getMessage()));
+        } catch (RuntimeException e) {
+            log.error("Erreur lors de l'activation d'un collaborateur: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "ENABLE_ERROR", "message", e.getMessage()));
+        }
+    }
+
     @DeleteMapping("/collaborators/{keycloakUserId}")
     @PreAuthorize("isAuthenticated()")
     @Operation(

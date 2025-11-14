@@ -245,6 +245,42 @@ public class KeycloakAdminService {
         }
     }
 
+    /**
+     * Active un utilisateur dans Keycloak.
+     *
+     * @param keycloakUserId ID de l'utilisateur Keycloak
+     */
+    public void enableUser(String keycloakUserId) {
+        try {
+            RealmResource realmResource = keycloak.realm(realm);
+            UsersResource usersResource = realmResource.users();
+            UserRepresentation user = usersResource.get(keycloakUserId).toRepresentation();
+            user.setEnabled(true);
+            usersResource.get(keycloakUserId).update(user);
+            logger.info("Utilisateur {} activé dans Keycloak", keycloakUserId);
+        } catch (Exception e) {
+            logger.error("Erreur lors de l'activation de l'utilisateur {}: {}", keycloakUserId, e.getMessage(), e);
+            throw new RuntimeException("Erreur lors de l'activation de l'utilisateur: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Vérifie si un utilisateur est activé dans Keycloak.
+     *
+     * @param keycloakUserId ID de l'utilisateur Keycloak
+     * @return true si l'utilisateur est activé, false sinon
+     */
+    public boolean isUserEnabled(String keycloakUserId) {
+        try {
+            RealmResource realmResource = keycloak.realm(realm);
+            UserRepresentation user = realmResource.users().get(keycloakUserId).toRepresentation();
+            return user.isEnabled() != null && user.isEnabled();
+        } catch (Exception e) {
+            logger.error("Erreur lors de la vérification du statut de l'utilisateur {}: {}", keycloakUserId, e.getMessage(), e);
+            return false;
+        }
+    }
+
     public UserRepresentation getUserRepresentation(String keycloakUserId) {
         try {
             RealmResource realmResource = keycloak.realm(realm);

@@ -28,6 +28,7 @@ export interface OrganizationCollaborator {
   firstName?: string | null;
   lastName?: string | null;
   joinedAt?: string | null;
+  enabled?: boolean | null;
 }
 
 export interface CollaboratorsResponse {
@@ -90,6 +91,10 @@ export class OrganizationAccountService {
 
   disableCollaborator(keycloakUserId: string): Observable<{ message: string }> {
     return this.http.put<{ message: string }>(`${this.baseUrl}/collaborators/${keycloakUserId}/disable`, {});
+  }
+
+  enableCollaborator(keycloakUserId: string): Observable<{ message: string }> {
+    return this.http.put<{ message: string }>(`${this.baseUrl}/collaborators/${keycloakUserId}/enable`, {});
   }
 
   deleteCollaborator(keycloakUserId: string): Observable<{ message: string }> {

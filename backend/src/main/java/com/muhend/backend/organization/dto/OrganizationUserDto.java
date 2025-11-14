@@ -23,5 +23,6 @@ public class OrganizationUserDto {
     private String firstName;
     private String lastName;
     private LocalDateTime joinedAt;
+    private Boolean enabled; // Statut d'activation du compte Keycloak
 }
 

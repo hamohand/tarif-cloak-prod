@@ -123,6 +123,7 @@ import { Observable } from 'rxjs';
                 <th>Nom</th>
                 <th>Email</th>
                 <th>Date d'ajout</th>
+                <th>Statut</th>
                 <th>Actions</th>
               </tr>
               </thead>
@@ -133,17 +134,24 @@ import { Observable } from 'rxjs';
                 <td>{{ collaborator.lastName || '-' }}</td>
                 <td>{{ collaborator.email || '-' }}</td>
                 <td>{{ collaborator.joinedAt ? (collaborator.joinedAt | date:'short') : '-' }}</td>
+                <td>
+                  <span class="status-badge" [class.status-active]="collaborator.enabled === true" [class.status-inactive]="collaborator.enabled === false">
+                    {{ collaborator.enabled === true ? 'Actif' : (collaborator.enabled === false ? 'Désactivé' : 'Inconnu') }}
+                  </span>
+                </td>
                 <td class="actions-cell">
-                  <button 
-                    class="btn btn-warning" 
-                    (click)="disableCollaborator(collaborator.keycloakUserId)"
-                    [disabled]="disabling === collaborator.keycloakUserId || deleting === collaborator.keycloakUserId">
-                    Désactiver
-                  </button>
+                  <label class="toggle-switch">
+                    <input 
+                      type="checkbox" 
+                      [checked]="collaborator.enabled === true"
+                      (change)="toggleCollaboratorStatus(collaborator)"
+                      [disabled]="toggling === collaborator.keycloakUserId || deleting === collaborator.keycloakUserId">
+                    <span class="toggle-slider"></span>
+                  </label>
                   <button 
                     class="btn btn-danger" 
                     (click)="deleteCollaborator(collaborator.keycloakUserId)"
-                    [disabled]="disabling === collaborator.keycloakUserId || deleting === collaborator.keycloakUserId">
+                    [disabled]="toggling === collaborator.keycloakUserId || deleting === collaborator.keycloakUserId">
                     Supprimer
                   </button>
                 </td>
@@ -391,6 +399,75 @@ import { Observable } from 'rxjs';
       cursor: not-allowed;
     }
 
+    .status-badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 12px;
+      font-size: 0.875rem;
+      font-weight: 600;
+    }
+
+    .status-active {
+      background-color: #d1fae5;
+      color: #065f46;
+    }
+
+    .status-inactive {
+      background-color: #fee2e2;
+      color: #991b1b;
+    }
+
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 24px;
+      margin-right: 0.5rem;
+    }
+
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: 0.3s;
+      border-radius: 24px;
+    }
+
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: 0.3s;
+      border-radius: 50%;
+    }
+
+    .toggle-switch input:checked + .toggle-slider {
+      background-color: #16a34a;
+    }
+
+    .toggle-switch input:checked + .toggle-slider:before {
+      transform: translateX(26px);
+    }
+
+    .toggle-switch input:disabled + .toggle-slider {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
     @media (max-width: 768px) {
       .card-header {
         flex-direction: column;
@@ -422,7 +499,7 @@ export class OrganizationAccountComponent implements OnInit {
   inviting = false;
   inviteSuccess = '';
   inviteError = '';
-  disabling: string | null = null;
+  toggling: string | null = null;
   deleting: string | null = null;
   isOrganizationAccount$: Observable<boolean> = this.authService.isOrganizationAccount();
 
@@ -527,22 +604,38 @@ export class OrganizationAccountComponent implements OnInit {
     return !!emailValue && !!organizationEmail && emailValue === organizationEmail;
   }
 
-  disableCollaborator(keycloakUserId: string): void {
-    if (!confirm('Êtes-vous sûr de vouloir désactiver ce collaborateur ?')) {
+  toggleCollaboratorStatus(collaborator: OrganizationCollaborator): void {
+    const isCurrentlyEnabled = collaborator.enabled === true;
+    const action = isCurrentlyEnabled ? 'désactiver' : 'activer';
+    
+    if (!confirm(`Êtes-vous sûr de vouloir ${action} ce collaborateur ?`)) {
+      // Recharger les collaborateurs pour réinitialiser l'état du toggle
+      this.loadCollaborators();
       return;
     }
-    this.disabling = keycloakUserId;
+    
+    this.toggling = collaborator.keycloakUserId;
     this.inviteError = '';
-    this.organizationAccountService.disableCollaborator(keycloakUserId).subscribe({
+    
+    const operation = isCurrentlyEnabled
+      ? this.organizationAccountService.disableCollaborator(collaborator.keycloakUserId)
+      : this.organizationAccountService.enableCollaborator(collaborator.keycloakUserId);
+    
+    operation.subscribe({
       next: () => {
-        this.disabling = null;
+        this.toggling = null;
         this.loadCollaborators();
-        alert('Collaborateur désactivé avec succès');
+        const successMessage = isCurrentlyEnabled 
+          ? 'Collaborateur désactivé avec succès' 
+          : 'Collaborateur activé avec succès';
+        alert(successMessage);
       },
       error: (error) => {
-        this.disabling = null;
-        const message = error?.error?.message || 'Impossible de désactiver le collaborateur.';
+        this.toggling = null;
+        const message = error?.error?.message || `Impossible de ${action} le collaborateur.`;
         alert('Erreur: ' + message);
+        // Recharger pour réinitialiser l'état du toggle en cas d'erreur
+        this.loadCollaborators();
       }
     });
   }

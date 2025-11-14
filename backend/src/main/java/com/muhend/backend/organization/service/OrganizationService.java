@@ -256,6 +256,33 @@ public class OrganizationService {
             throw new RuntimeException("Erreur lors de la désactivation du collaborateur: " + e.getMessage(), e);
         }
     }
+
+    /**
+     * Active un collaborateur (active son compte Keycloak).
+     */
+    @Transactional
+    public void enableCollaborator(Long organizationId, String keycloakUserId) {
+        // Vérifier que le collaborateur appartient à l'organisation
+        if (!organizationUserRepository.existsByOrganizationIdAndKeycloakUserId(organizationId, keycloakUserId)) {
+            throw new IllegalArgumentException("Le collaborateur n'est pas membre de cette organisation");
+        }
+        
+        // Vérifier que ce n'est pas le compte organisation lui-même
+        Organization organization = organizationRepository.findById(organizationId)
+                .orElseThrow(() -> new IllegalArgumentException("Organisation non trouvée avec l'ID: " + organizationId));
+        if (keycloakUserId.equals(organization.getKeycloakUserId())) {
+            throw new IllegalArgumentException("Impossible d'activer le compte organisation lui-même (déjà actif)");
+        }
+        
+        // Activer le compte Keycloak
+        try {
+            keycloakAdminService.enableUser(keycloakUserId);
+            log.info("Collaborateur {} activé dans Keycloak pour l'organisation {}", keycloakUserId, organizationId);
+        } catch (Exception e) {
+            log.error("Erreur lors de l'activation du collaborateur {} dans Keycloak: {}", keycloakUserId, e.getMessage(), e);
+            throw new RuntimeException("Erreur lors de l'activation du collaborateur: " + e.getMessage(), e);
+        }
+    }
     
     /**
      * Supprime un collaborateur (retire de l'organisation et supprime son compte Keycloak).
@@ -654,6 +681,7 @@ public class OrganizationService {
         dto.setEmail(null);
         dto.setFirstName(null);
         dto.setLastName(null);
+        dto.setEnabled(null);
         try {
             var userRepresentation = keycloakAdminService.getUserRepresentation(organizationUser.getKeycloakUserId());
             if (userRepresentation != null) {
@@ -661,13 +689,16 @@ public class OrganizationService {
                 dto.setEmail(userRepresentation.getEmail());
                 dto.setFirstName(userRepresentation.getFirstName());
                 dto.setLastName(userRepresentation.getLastName());
+                dto.setEnabled(userRepresentation.isEnabled() != null && userRepresentation.isEnabled());
             } else {
                 dto.setUsername("N/A");
+                dto.setEnabled(false);
             }
         } catch (Exception e) {
             log.warn("Impossible de récupérer les informations utilisateur pour {}: {}", 
                 organizationUser.getKeycloakUserId(), e.getMessage());
             dto.setUsername("N/A");
+            dto.setEnabled(false);
         }
         
         dto.setJoinedAt(organizationUser.getJoinedAt());
