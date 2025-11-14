@@ -459,7 +459,7 @@ export class QuoteRequestsAdminComponent implements OnInit {
   updateRequest(id: number) {
     const update = this.requestUpdates[id];
     if (!update.status && !update.adminNotes) {
-      this.notificationService.showError('Veuillez modifier au moins un champ');
+      this.notificationService.error('Veuillez modifier au moins un champ');
       return;
     }
 
@@ -484,11 +484,11 @@ export class QuoteRequestsAdminComponent implements OnInit {
         // Réinitialiser les champs de mise à jour
         this.requestUpdates[id] = { status: undefined, adminNotes: '' };
         this.isUpdating[id] = false;
-        this.notificationService.showSuccess('Demande mise à jour avec succès');
+        this.notificationService.success('Demande mise à jour avec succès');
       },
       error: (err) => {
         this.isUpdating[id] = false;
-        this.notificationService.showError('Erreur lors de la mise à jour: ' + (err.error?.message || err.message || 'Erreur inconnue'));
+        this.notificationService.error('Erreur lors de la mise à jour: ' + (err.error?.message || err.message || 'Erreur inconnue'));
         console.error('Erreur:', err);
       }
     });
