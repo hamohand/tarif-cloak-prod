@@ -14,12 +14,14 @@ ARG KEYCLOAK_EXTERNAL_URL
 ARG KEYCLOAK_REALM
 ARG KEYCLOAK_FRONTEND_CLIENT
 ARG API_URL
+ARG MARKET_VERSION=DEFAULT
 
 # Les rendre disponibles comme variables d'environnement pour le script generate-env.js
 ENV KEYCLOAK_EXTERNAL_URL=${KEYCLOAK_EXTERNAL_URL}
 ENV KEYCLOAK_REALM=${KEYCLOAK_REALM}
 ENV KEYCLOAK_FRONTEND_CLIENT=${KEYCLOAK_FRONTEND_CLIENT}
 ENV API_URL=${API_URL}
+ENV MARKET_VERSION=${MARKET_VERSION}
 
 # Construire l'application en mode production
 # Le résultat sera dans /app/dist/frontend... (ou un nom similaire)

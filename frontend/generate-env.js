@@ -8,13 +8,15 @@ const keycloakRealm = process.env.KEYCLOAK_REALM || 'hscode-realm';
 const keycloakClient = process.env.KEYCLOAK_FRONTEND_CLIENT || 'frontend-client';
 const keycloakUrl = process.env.KEYCLOAK_EXTERNAL_URL || 'http://localhost:8080';
 const apiUrl = process.env.API_URL || '/api';
+const marketVersion = process.env.MARKET_VERSION || 'DEFAULT';
 
 // Affichage des valeurs pour debug
 console.log('📋 Variables de configuration :');
 console.log(`   - KEYCLOAK_REALM: ${keycloakRealm}`);
 console.log(`   - KEYCLOAK_FRONTEND_CLIENT: ${keycloakClient}`);
 console.log(`   - KEYCLOAK_EXTERNAL_URL: ${keycloakUrl}`);
-console.log(`   - API_URL: ${apiUrl}\n`);
+console.log(`   - API_URL: ${apiUrl}`);
+console.log(`   - MARKET_VERSION: ${marketVersion}\n`);
 
 // Validation basique
 if (!keycloakRealm || !keycloakClient || !keycloakUrl) {
@@ -27,21 +29,19 @@ const envConfig = `// ⚠️ FICHIER GÉNÉRÉ AUTOMATIQUEMENT - NE PAS MODIFIER
 // Généré le : ${new Date().toISOString()}
 // Configuré via : generate-env.js
 
-export const environment = {
+import { Environment } from './environment.interface';
+
+export const environment: Environment = {
   production: true,
   keycloak: {
     issuer: '${keycloakUrl}/realms/${keycloakRealm}',
     realm: '${keycloakRealm}',
     clientId: '${keycloakClient}',
-    redirectUri: window.location.origin + '/',
-    responseType: 'code',
-    scope: 'openid profile email',
-    requireHttps: false,
-    showDebugInformation: false,
-    disablePKCE: false
+    redirectUri: window.location.origin + '/'
   },
-  apiUrl: '${apiUrl}'
-};
+  apiUrl: '${apiUrl}',
+  marketVersion: '${marketVersion}' // DEFAULT, DZ, etc. - Configuré via MARKET_VERSION
+} as Environment;
 `;
 
 try {
