@@ -76,6 +76,42 @@ public class QuoteRequestService {
     }
     
     /**
+     * Récupère une demande de devis par ID.
+     */
+    @Transactional(readOnly = true)
+    public QuoteRequestDto getQuoteRequestById(Long id) {
+        QuoteRequest quoteRequest = quoteRequestRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Demande de devis non trouvée: " + id));
+        return toDto(quoteRequest);
+    }
+    
+    /**
+     * Met à jour une demande de devis (admin uniquement).
+     */
+    @Transactional
+    public QuoteRequestDto updateQuoteRequest(Long id, com.muhend.backend.pricing.dto.UpdateQuoteRequestDto dto) {
+        QuoteRequest quoteRequest = quoteRequestRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Demande de devis non trouvée: " + id));
+        
+        if (dto.getStatus() != null) {
+            quoteRequest.setStatus(dto.getStatus());
+            // Si le statut passe à RESPONDED, mettre à jour respondedAt
+            if (dto.getStatus() == QuoteRequest.QuoteStatus.RESPONDED && quoteRequest.getRespondedAt() == null) {
+                quoteRequest.setRespondedAt(java.time.LocalDateTime.now());
+            }
+        }
+        
+        if (dto.getAdminNotes() != null) {
+            quoteRequest.setAdminNotes(dto.getAdminNotes());
+        }
+        
+        QuoteRequest saved = quoteRequestRepository.save(quoteRequest);
+        log.info("Demande de devis mise à jour: id={}, status={}", saved.getId(), saved.getStatus());
+        
+        return toDto(saved);
+    }
+    
+    /**
      * Convertit un QuoteRequest en DTO.
      */
     private QuoteRequestDto toDto(QuoteRequest quoteRequest) {

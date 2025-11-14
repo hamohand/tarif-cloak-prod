@@ -16,11 +16,16 @@ export interface QuoteRequestDto {
   contactName: string;
   contactEmail: string;
   message?: string;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'COMPLETED';
+  status: 'PENDING' | 'IN_REVIEW' | 'RESPONDED' | 'CLOSED';
   adminNotes?: string;
   createdAt: string;
   updatedAt: string;
   respondedAt?: string;
+}
+
+export interface UpdateQuoteRequestDto {
+  status?: 'PENDING' | 'IN_REVIEW' | 'RESPONDED' | 'CLOSED';
+  adminNotes?: string;
 }
 
 @Injectable({
@@ -64,6 +69,20 @@ export class QuoteRequestService {
    */
   getQuoteRequestsByStatus(status: string): Observable<QuoteRequestDto[]> {
     return this.http.get<QuoteRequestDto[]>(`${this.baseUrl}/status/${status}`);
+  }
+
+  /**
+   * Récupère une demande de devis par ID (admin uniquement).
+   */
+  getQuoteRequestById(id: number): Observable<QuoteRequestDto> {
+    return this.http.get<QuoteRequestDto>(`${this.baseUrl}/${id}`);
+  }
+
+  /**
+   * Met à jour une demande de devis (admin uniquement).
+   */
+  updateQuoteRequest(id: number, dto: UpdateQuoteRequestDto): Observable<QuoteRequestDto> {
+    return this.http.put<QuoteRequestDto>(`${this.baseUrl}/${id}`, dto);
   }
 }
 

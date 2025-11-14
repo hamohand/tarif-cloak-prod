@@ -4,6 +4,7 @@ import com.muhend.backend.organization.dto.OrganizationDto;
 import com.muhend.backend.organization.service.OrganizationService;
 import com.muhend.backend.pricing.dto.CreateQuoteRequestDto;
 import com.muhend.backend.pricing.dto.QuoteRequestDto;
+import com.muhend.backend.pricing.dto.UpdateQuoteRequestDto;
 import com.muhend.backend.pricing.model.QuoteRequest;
 import com.muhend.backend.pricing.service.QuoteRequestService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -128,18 +129,60 @@ public class QuoteRequestController {
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(
         summary = "Récupérer toutes les demandes de devis",
-        description = "Retourne toutes les demandes de devis. Réservé aux administrateurs."
+        description = "Retourne toutes les demandes de devis. Réservé aux administrateurs.",
+        security = @SecurityRequirement(name = "bearerAuth")
     )
     public ResponseEntity<List<QuoteRequestDto>> getAllQuoteRequests() {
         List<QuoteRequestDto> requests = quoteRequestService.getAllQuoteRequests();
         return ResponseEntity.ok(requests);
     }
     
+    @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(
+        summary = "Récupérer une demande de devis par ID",
+        description = "Retourne une demande de devis spécifique. Réservé aux administrateurs.",
+        security = @SecurityRequirement(name = "bearerAuth")
+    )
+    public ResponseEntity<?> getQuoteRequestById(@PathVariable Long id) {
+        try {
+            QuoteRequestDto request = quoteRequestService.getQuoteRequestById(id);
+            return ResponseEntity.ok(request);
+        } catch (IllegalArgumentException e) {
+            log.error("Demande de devis non trouvée: {}", id);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "NOT_FOUND", "message", e.getMessage()));
+        }
+    }
+    
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(
+        summary = "Mettre à jour une demande de devis",
+        description = "Met à jour le statut et/ou les notes d'une demande de devis. Réservé aux administrateurs.",
+        security = @SecurityRequirement(name = "bearerAuth")
+    )
+    public ResponseEntity<?> updateQuoteRequest(@PathVariable Long id, @Valid @RequestBody UpdateQuoteRequestDto dto) {
+        try {
+            QuoteRequestDto updated = quoteRequestService.updateQuoteRequest(id, dto);
+            return ResponseEntity.ok(updated);
+        } catch (IllegalArgumentException e) {
+            log.error("Erreur lors de la mise à jour de la demande de devis: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "NOT_FOUND", "message", e.getMessage()));
+        } catch (Exception e) {
+            log.error("Erreur lors de la mise à jour de la demande de devis: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "INTERNAL_ERROR", "message", "Erreur lors de la mise à jour de la demande de devis"));
+        }
+    }
+    
     @GetMapping("/status/{status}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(
         summary = "Récupérer les demandes de devis par statut",
-        description = "Retourne les demandes de devis filtrées par statut. Réservé aux administrateurs."
+        description = "Retourne les demandes de devis filtrées par statut. Réservé aux administrateurs.",
+        security = @SecurityRequirement(name = "bearerAuth")
     )
     public ResponseEntity<List<QuoteRequestDto>> getQuoteRequestsByStatus(@PathVariable String status) {
         try {

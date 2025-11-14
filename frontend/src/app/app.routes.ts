@@ -18,6 +18,7 @@ import { InvoicesComponent } from './features/user/invoices/invoices.component';
 import { InvoiceDetailComponent } from './features/user/invoices/invoice-detail.component';
 import { InvoicesAdminComponent } from './features/admin/invoices/invoices-admin.component';
 import { InvoiceDetailAdminComponent } from './features/admin/invoices/invoice-detail-admin.component';
+import { QuoteRequestsAdminComponent } from './features/admin/quote-requests/quote-requests-admin.component';
 import { PricingPlansComponent } from './features/pricing/pricing-plans.component';
 import { OrganizationAccountComponent } from './features/organization/organization-account.component';
 import { OrganizationStatsComponent } from './features/organization/organization-stats.component';
@@ -92,6 +93,11 @@ export const routes: Routes = [
   {
     path: 'admin/invoices/:id',
     component: InvoiceDetailAdminComponent,
+    canActivate: [authGuard]
+  },
+  {
+    path: 'admin/quote-requests',
+    component: QuoteRequestsAdminComponent,
     canActivate: [authGuard]
   },
   { path: '**', redirectTo: '' }

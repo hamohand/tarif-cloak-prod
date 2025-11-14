@@ -76,6 +76,7 @@ import { take } from 'rxjs/operators';
             <a routerLink="/admin/stats" class="admin-nav-link">📊 Stats</a>
             <a routerLink="/admin/organizations" class="admin-nav-link">🏢 Organisations</a>
             <a routerLink="/admin/invoices" class="admin-nav-link">📄 Factures (Admin)</a>
+            <a routerLink="/admin/quote-requests" routerLinkActive="router-link-active" class="admin-nav-link">💼 Demandes de devis</a>
           </div>
         </nav>
       }

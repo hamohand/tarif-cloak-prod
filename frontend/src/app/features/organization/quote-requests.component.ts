@@ -165,16 +165,16 @@ import { QuoteRequestFormComponent } from '../pricing/quote-request-form.compone
       border-left-color: #f39c12;
     }
 
-    .quote-request-card.status-approved {
+    .quote-request-card.status-in_review {
+      border-left-color: #3498db;
+    }
+
+    .quote-request-card.status-responded {
       border-left-color: #27ae60;
     }
 
-    .quote-request-card.status-rejected {
-      border-left-color: #e74c3c;
-    }
-
-    .quote-request-card.status-completed {
-      border-left-color: #3498db;
+    .quote-request-card.status-closed {
+      border-left-color: #95a5a6;
     }
 
     .card-header {
@@ -211,19 +211,19 @@ import { QuoteRequestFormComponent } from '../pricing/quote-request-form.compone
       color: #856404;
     }
 
-    .status-badge.status-approved {
+    .status-badge.status-in_review {
+      background: #d1ecf1;
+      color: #0c5460;
+    }
+
+    .status-badge.status-responded {
       background: #d4edda;
       color: #155724;
     }
 
-    .status-badge.status-rejected {
-      background: #f8d7da;
-      color: #721c24;
-    }
-
-    .status-badge.status-completed {
-      background: #d1ecf1;
-      color: #0c5460;
+    .status-badge.status-closed {
+      background: #e2e3e5;
+      color: #383d41;
     }
 
     .card-body {
@@ -349,9 +349,9 @@ export class QuoteRequestsComponent implements OnInit {
   getStatusLabel(status: string): string {
     const statusMap: { [key: string]: string } = {
       'PENDING': 'En attente',
-      'APPROVED': 'Approuvée',
-      'REJECTED': 'Rejetée',
-      'COMPLETED': 'Terminée'
+      'IN_REVIEW': 'En cours d\'examen',
+      'RESPONDED': 'Répondu',
+      'CLOSED': 'Fermée'
     };
     return statusMap[status] || status;
   }
