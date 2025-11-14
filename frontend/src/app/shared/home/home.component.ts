@@ -12,8 +12,8 @@ import { AuthService } from '../../core/services/auth.service';
       <h1>Bienvenue sur Enclume-Numérique</h1>
       <p>Votre solution complète pour la conformité tarifaire.</p>
 
-      <!-- Présentation de l'API Recherche HS-code -->
-      <section class="api-presentation">
+      <!-- Présentation de l'API Recherche HS-code - Affichée uniquement pour les utilisateurs non connectés -->
+      <section class="api-presentation" *ngIf="!(isAuthenticated$ | async)">
         <div class="api-header">
           <h2>🔍 API Recherche de HS-Code</h2>
           <p class="api-subtitle">Recherche intelligente et multilingue dans le système harmonisé douanier</p>
