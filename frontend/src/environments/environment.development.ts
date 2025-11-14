@@ -10,4 +10,5 @@ export const environment: Environment = {
   },
   apiUrl: 'http://localhost:8081/api',
   marketVersion: 'DEFAULT' // DEFAULT, DZ, etc.
-} as Environment;
+};
+

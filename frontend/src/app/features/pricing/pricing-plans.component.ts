@@ -351,14 +351,37 @@ export class PricingPlansComponent implements OnInit {
     this.loading = true;
     this.error = '';
     // Utiliser la version de marché depuis l'environnement
-    const marketVersion = (environment as any).marketVersion as string | undefined;
-    console.log('🔍 Market version depuis environment:', marketVersion);
+    // Vérifier plusieurs façons d'accéder à marketVersion
+    let marketVersion: string | undefined = undefined;
+    
+    // Essayer plusieurs méthodes d'accès
+    if ((environment as any).marketVersion) {
+      marketVersion = (environment as any).marketVersion;
+    } else if ((environment as any)['marketVersion']) {
+      marketVersion = (environment as any)['marketVersion'];
+    }
+    
+    // Si toujours undefined, utiliser une valeur par défaut basée sur l'URL ou la configuration
+    if (!marketVersion) {
+      // En production, détecter depuis l'URL ou utiliser 'DZ' par défaut
+      const isProduction = (environment as any).production === true;
+      const hostname = window.location.hostname;
+      
+      // Si on est en production et que marketVersion n'est pas défini, utiliser 'DZ' par défaut
+      if (isProduction) {
+        marketVersion = 'DZ';
+        console.warn('⚠️ marketVersion non trouvé dans environment, utilisation de la valeur par défaut: DZ (production)');
+      } else {
+        marketVersion = 'DEFAULT';
+        console.warn('⚠️ marketVersion non trouvé dans environment, utilisation de la valeur par défaut: DEFAULT (développement)');
+      }
+    }
+    
+    console.log('🔍 Market version utilisée:', marketVersion);
     console.log('🔍 Type de marketVersion:', typeof marketVersion);
     console.log('🔍 Environment complet:', environment);
-    
-    if (!marketVersion) {
-      console.error('❌ ERREUR: marketVersion est undefined ou null dans environment!');
-    }
+    console.log('🔍 Clés de environment:', Object.keys(environment));
+    console.log('🔍 environment.production:', (environment as any).production);
     
     this.pricingPlanService.getActivePricingPlans(marketVersion).subscribe({
       next: (plans) => {
