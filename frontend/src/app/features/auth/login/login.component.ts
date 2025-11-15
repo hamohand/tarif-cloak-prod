@@ -25,12 +25,12 @@ import { OAuthService } from 'angular-oauth2-oidc';
           @if (isLoading) {
             Chargement...
           } @else {
-            Se connecter avec Keycloak
+            Se connecter
           }
         </button>
 
         <div class="login-footer">
-          <p>Pas encore de compte ? <a routerLink="/auth/register">Créer un compte</a></p>
+          <p>Pas encore de compte ? <a routerLink="/auth/register" class="login-button>Créer un compte</a></p>
         </div>
       </div>
     </div>

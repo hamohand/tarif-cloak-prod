@@ -133,8 +133,11 @@ services:
       KC_HTTP_ENABLED: "true"
       KC_HEALTH_ENABLED: "true"
       # Configuration des thèmes personnalisés
+      # KC_THEME_STATIC_MAX_AGE: Durée de cache en secondes (30 jours = 2592000)
       KC_THEME_STATIC_MAX_AGE: "2592000"
+      # KC_THEME_CACHE_THEMES: Activer le cache des thèmes (true/false)
       KC_THEME_CACHE_THEMES: "true"
+      # KC_THEME_CACHE_TEMPLATES: Activer le cache des templates (true/false)
       KC_THEME_CACHE_TEMPLATES: "true"
     labels:
       #Labels pour exposer Keycloak via Traefik
