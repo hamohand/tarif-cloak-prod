@@ -5,6 +5,7 @@
             <h1>Bienvenue sur Enclume-Numérique</h1>
             <p>Connectez-vous à votre compte</p>
         </div>
+        <script src="${url.resourcesPath}/js/password-toggle.js"></script>
     <#elseif section = "form">
         <div class="custom-login-container">
             <form id="kc-form-login" onsubmit="login.disabled = true; return true;" action="${url.loginAction}" method="post">
@@ -26,9 +27,14 @@
 
                 <div class="form-group">
                     <label for="password" class="custom-label">Mot de passe</label>
-                    <input tabindex="2" id="password" class="custom-input" name="password" type="password" autocomplete="off"
-                           aria-invalid="<#if messagesPerField.existsError('username','password')>true</#if>"
-                           placeholder="Entrez votre mot de passe" />
+                    <div class="password-input-wrapper">
+                        <input tabindex="2" id="password" class="custom-input password-input" name="password" type="password" autocomplete="off"
+                               aria-invalid="<#if messagesPerField.existsError('username','password')>true</#if>"
+                               placeholder="Entrez votre mot de passe" />
+                        <button type="button" class="password-toggle" id="password-toggle" aria-label="Afficher le mot de passe">
+                            <span class="password-toggle-icon">👁️</span>
+                        </button>
+                    </div>
                 </div>
 
                 <div class="form-options">
