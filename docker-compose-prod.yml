@@ -132,6 +132,10 @@ services:
       KC_HOSTNAME: "${KC_HOSTNAME:-${KEYCLOAK_DOMAIN}}"
       KC_HTTP_ENABLED: "true"
       KC_HEALTH_ENABLED: "true"
+      # Configuration des thèmes personnalisés
+      KC_THEME_STATIC_MAX_AGE: "2592000"
+      KC_THEME_CACHE_THEMES: "true"
+      KC_THEME_CACHE_TEMPLATES: "true"
     labels:
       #Labels pour exposer Keycloak via Traefik
       - "traefik.enable=true"
@@ -162,6 +166,8 @@ services:
       - "traefik.http.services.hscode-keycloak.loadbalancer.server.port=${KEYCLOAK_INTERNAL_PORT:-8080}"
     volumes:
       - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
+      # Montage du thème personnalisé
+      - ./keycloak/themes:/opt/keycloak/themes
     command:
       - start
       - --import-realm
