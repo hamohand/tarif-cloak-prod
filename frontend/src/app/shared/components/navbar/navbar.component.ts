@@ -46,6 +46,7 @@ import { take } from 'rxjs/operators';
           <span class="user-info">Bienvenue {{ getUserInfo()?.preferred_username }}</span>
           <button (click)="logout()" class="btn btn-outline">Déconnexion</button>
         } @else {
+          <button (click)="goToRegister()" class="btn btn-secondary">Créer un compte</button>
           <button (click)="login()" class="btn btn-primary">Connexion</button>
         }
       </div>
@@ -237,6 +238,19 @@ import { take } from 'rxjs/operators';
       background-color: rgba(255, 255, 255, 0.15);
       transform: translateY(-2px);
       box-shadow: 0 6px 16px rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-secondary {
+      background-color: transparent;
+      border: 2px solid white;
+      color: white;
+      box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
+    }
+
+    .btn-secondary:hover {
+      background-color: rgba(255, 255, 255, 0.2);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(255, 255, 255, 0.25);
     }
 
     .btn:active {
@@ -635,6 +649,10 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   login() {
     this.router.navigate(['/auth/login']);
+  }
+
+  goToRegister() {
+    this.router.navigate(['/auth/register']);
   }
 
   logout() {

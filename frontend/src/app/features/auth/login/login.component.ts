@@ -1,13 +1,12 @@
 // features/auth/login/login.component.ts
 import { Component, inject, OnInit } from '@angular/core';
 import { AuthService } from '../../../core/services/auth.service';
-import { RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { OAuthService } from 'angular-oauth2-oidc';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [RouterLink],
   template: `
     <div class="login-container">
       <div class="login-card">
@@ -30,7 +29,12 @@ import { OAuthService } from 'angular-oauth2-oidc';
         </button>
 
         <div class="login-footer">
-          <p>Pas encore de compte ? <a routerLink="/auth/register">Créer un compte</a></p>
+          <p>Pas encore de compte ?</p>
+          <button 
+            (click)="goToRegister()" 
+            class="register-button">
+            Créer un compte
+          </button>
         </div>
       </div>
     </div>
@@ -96,21 +100,37 @@ import { OAuthService } from 'angular-oauth2-oidc';
 
     .login-footer {
       margin-top: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      align-items: center;
     }
 
-    .login-footer a {
+    .register-button {
+      background-color: transparent;
       color: #3498db;
+      padding: 0.75rem 1.5rem;
+      font-size: 0.95rem;
+      border: 2px solid #3498db;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.3s;
       text-decoration: none;
+      display: inline-block;
     }
 
-    .login-footer a:hover {
-      text-decoration: underline;
+    .register-button:hover {
+      background-color: #3498db;
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(52, 152, 219, 0.3);
     }
   `]
 })
 export class LoginComponent implements OnInit {
   private authService = inject(AuthService);
   private oauthService = inject(OAuthService);
+  private router = inject(Router);
   
   isLoading = false;
   isReady = false;
@@ -155,5 +175,9 @@ export class LoginComponent implements OnInit {
       console.error('Erreur lors de la connexion:', error);
       this.errorMessage = 'Une erreur est survenue lors de la connexion. Veuillez réessayer.';
     }
+  }
+
+  goToRegister() {
+    this.router.navigate(['/auth/register']);
   }
 }
