@@ -29,6 +29,13 @@ import { take } from 'rxjs/operators';
         @if (isAuthenticated$ | async) {
           @if (isOrganizationAccount$ | async) {
             <a routerLink="/organization/account" class="nav-link">Mon organisation</a>
+            <a routerLink="/dashboard" class="nav-link">Tableau de bord</a>
+            <a routerLink="/alerts" class="nav-link alerts-link">
+              🔔 Alertes
+              @if (alertCount > 0) {
+                <span class="alert-badge">{{ alertCount }}</span>
+              }
+            </a>
           } @else if (isCollaboratorAccount$ | async) {
             <a routerLink="/dashboard" class="nav-link">Tableau de bord</a>
             <a routerLink="/alerts" class="nav-link alerts-link">

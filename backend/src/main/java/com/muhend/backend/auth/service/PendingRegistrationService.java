@@ -258,8 +258,9 @@ public class PendingRegistrationService {
             }
             log.info("Compte Keycloak organisation créé/retourné: {}", organizationKeycloakUserId);
 
-            // Assigner les rôles organisation à l'utilisateur
-            keycloakAdminService.assignRealmRoles(organizationKeycloakUserId, java.util.List.of("ORGANIZATION", "USER"));
+            // Assigner les rôles organisation à l'utilisateur (ORGANIZATION, USER, COLLABORATOR)
+            // Les utilisateurs ORGANISATION ont aussi le rôle COLLABORATOR pour accéder aux fonctionnalités collaborateur
+            keycloakAdminService.assignRealmRoles(organizationKeycloakUserId, java.util.List.of("ORGANIZATION", "USER", "COLLABORATOR"));
 
             // Créer l'organisation dans l'application
             com.muhend.backend.organization.dto.CreateOrganizationRequest orgRequest =

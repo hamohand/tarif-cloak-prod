@@ -35,7 +35,8 @@ export class AccountContextService {
   }
 
   get isCollaboratorAccount$(): Observable<boolean> {
-    return this.accountType$.pipe(map(type => type === 'COLLABORATOR'));
+    // Les utilisateurs ORGANISATION ont aussi accès aux fonctionnalités collaborateur
+    return this.accountType$.pipe(map(type => type === 'COLLABORATOR' || type === 'ORGANIZATION'));
   }
 
   setContext(context: AccountContext): void {
