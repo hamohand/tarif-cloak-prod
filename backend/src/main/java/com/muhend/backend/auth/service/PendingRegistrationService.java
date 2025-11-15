@@ -10,6 +10,7 @@ import com.muhend.backend.organization.repository.OrganizationRepository;
 import com.muhend.backend.organization.service.OrganizationService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -451,6 +452,37 @@ public class PendingRegistrationService {
         List<PendingRegistration> expired = pendingRegistrationRepository.findExpiredUnconfirmed(now);
         log.info("Nettoyage de {} inscriptions expirées", expired.size());
         pendingRegistrationRepository.deleteExpiredUnconfirmed(now);
+    }
+    
+    /**
+     * Tâche planifiée pour nettoyer automatiquement les inscriptions expirées.
+     * Exécutée tous les jours à 2h du matin.
+     */
+    @Scheduled(cron = "0 0 2 * * ?") // Tous les jours à 2h du matin
+    @Transactional
+    public void scheduledCleanupExpiredRegistrations() {
+        log.info("=== Nettoyage automatique des inscriptions expirées ===");
+        try {
+            cleanupExpiredRegistrations();
+            log.info("✓ Nettoyage automatique terminé avec succès");
+        } catch (Exception e) {
+            log.error("✗ Erreur lors du nettoyage automatique des inscriptions expirées", e);
+        }
+    }
+    
+    /**
+     * Supprime toutes les inscriptions en attente (non confirmées).
+     * Méthode utilisée pour vider manuellement la liste des inscriptions en attente.
+     * 
+     * @return Le nombre d'inscriptions supprimées
+     */
+    @Transactional
+    public long deleteAllPendingRegistrations() {
+        long count = pendingRegistrationRepository.count();
+        log.info("Suppression de toutes les inscriptions en attente ({} inscriptions)", count);
+        pendingRegistrationRepository.deleteAll();
+        log.info("✓ Toutes les inscriptions en attente ont été supprimées");
+        return count;
     }
 }
 

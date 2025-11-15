@@ -152,6 +152,14 @@ FRONTEND_URL=https://hscode.enclume-numerique.com
 
 **Note** : Pour Gmail, vous devez utiliser un "Mot de passe d'application" au lieu de votre mot de passe habituel. Consultez [la documentation Gmail](https://support.google.com/accounts/answer/185833) pour plus d'informations.
 
+### Configuration Inscription
+
+```env
+# Délai d'expiration du token de confirmation d'inscription (en heures)
+# Les inscriptions non confirmées après ce délai seront automatiquement supprimées
+REGISTRATION_TOKEN_EXPIRATION_HOURS=24
+```
+
 ### Configuration Spring Boot
 
 ```env

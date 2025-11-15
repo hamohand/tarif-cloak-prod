@@ -2,6 +2,7 @@ package com.muhend.backend.admin.controller;
 
 import com.muhend.backend.admin.service.EndpointDiscoveryService;
 import com.muhend.backend.auth.service.KeycloakAdminService;
+import com.muhend.backend.auth.service.PendingRegistrationService;
 import com.muhend.backend.organization.dto.OrganizationDto;
 import com.muhend.backend.organization.service.OrganizationService;
 import com.muhend.backend.organization.repository.OrganizationUserRepository;
@@ -50,6 +51,7 @@ public class AdminController {
     private final InvoiceRepository invoiceRepository;
     private final InvoiceItemRepository invoiceItemRepository;
     private final PendingRegistrationRepository pendingRegistrationRepository;
+    private final PendingRegistrationService pendingRegistrationService;
 
     @GetMapping("/endpoints")
     @PreAuthorize("hasRole('ADMIN')")
@@ -464,6 +466,71 @@ public class AdminController {
             return ResponseEntity.status(org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of(
                     "error", "Erreur lors de la réinitialisation des données de test",
+                    "message", e.getMessage()
+                ));
+        }
+    }
+    
+    /**
+     * Nettoie les inscriptions expirées (non confirmées depuis plus de 24h).
+     * Nécessite le rôle ADMIN.
+     */
+    @DeleteMapping("/pending-registrations/cleanup-expired")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(
+        summary = "Nettoyer les inscriptions expirées",
+        description = "Supprime toutes les inscriptions en attente qui ont expiré (non confirmées depuis plus de 24h). " +
+                     "Nécessite le rôle ADMIN.",
+        security = @SecurityRequirement(name = "bearerAuth")
+    )
+    public ResponseEntity<Map<String, Object>> cleanupExpiredPendingRegistrations() {
+        try {
+            long countBefore = pendingRegistrationRepository.count();
+            pendingRegistrationService.cleanupExpiredRegistrations();
+            long countAfter = pendingRegistrationRepository.count();
+            long deletedCount = countBefore - countAfter;
+            
+            return ResponseEntity.ok(Map.of(
+                "message", "Inscriptions expirées supprimées avec succès",
+                "deletedCount", deletedCount,
+                "remainingCount", countAfter
+            ));
+        } catch (Exception e) {
+            log.error("Erreur lors du nettoyage des inscriptions expirées: {}", e.getMessage(), e);
+            return ResponseEntity.status(org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of(
+                    "error", "Erreur lors du nettoyage des inscriptions expirées",
+                    "message", e.getMessage()
+                ));
+        }
+    }
+    
+    /**
+     * Supprime toutes les inscriptions en attente (expirées ou non).
+     * ATTENTION: Cette opération est irréversible.
+     * Nécessite le rôle ADMIN.
+     */
+    @DeleteMapping("/pending-registrations/cleanup-all")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(
+        summary = "Supprimer toutes les inscriptions en attente",
+        description = "Supprime toutes les inscriptions en attente, qu'elles soient expirées ou non. " +
+                     "ATTENTION: Cette opération est irréversible. Nécessite le rôle ADMIN.",
+        security = @SecurityRequirement(name = "bearerAuth")
+    )
+    public ResponseEntity<Map<String, Object>> cleanupAllPendingRegistrations() {
+        try {
+            long deletedCount = pendingRegistrationService.deleteAllPendingRegistrations();
+            
+            return ResponseEntity.ok(Map.of(
+                "message", "Toutes les inscriptions en attente ont été supprimées",
+                "deletedCount", deletedCount
+            ));
+        } catch (Exception e) {
+            log.error("Erreur lors de la suppression de toutes les inscriptions en attente: {}", e.getMessage(), e);
+            return ResponseEntity.status(org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of(
+                    "error", "Erreur lors de la suppression des inscriptions en attente",
                     "message", e.getMessage()
                 ));
         }
