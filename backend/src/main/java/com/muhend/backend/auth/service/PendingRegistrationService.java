@@ -230,7 +230,7 @@ public class PendingRegistrationService {
                     null,
                     true,
                     true,
-                    java.util.List.of("UPDATE_PASSWORD"),
+                    null,  // Pas d'action requise - l'utilisateur peut utiliser le mot de passe envoyé par email
                     java.util.Map.of("account_type", java.util.List.of("ORGANIZATION"))
             );
 
@@ -307,7 +307,7 @@ public class PendingRegistrationService {
                     pending.getLastName(),
                     true,
                     false,
-                    java.util.List.of("UPDATE_PASSWORD"),
+                    null,  // Pas d'action requise - l'utilisateur peut utiliser le mot de passe envoyé par email
                     java.util.Map.of(
                             "account_type", java.util.List.of("COLLABORATOR"),
                             "organization_email", java.util.List.of(pending.getOrganizationEmail())
