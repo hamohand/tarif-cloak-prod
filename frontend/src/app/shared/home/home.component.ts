@@ -371,6 +371,7 @@ import { AuthService } from '../../core/services/auth.service';
     }
 
     .endpoint-desc {
+      text-align: left;
       color: #6b7280;
       font-size: 0.9rem;
       flex: 1;
