@@ -65,60 +65,30 @@ import { AuthService } from '../../core/services/auth.service';
               <div class="endpoint-item">
                 <code class="endpoint-method">Produit recherché</code>
                 <code class="endpoint-path">سيارة كهربائية</code>
-                <span class="endpoint-desc">"code": "8703 80" <br>
-                "description": "Véhicules, équipés uniquement d’un moteur électrique pour la propulsion"</span>
-              </div>
-              <div class="endpoint-item">
-                <code class="endpoint-method">GET</code>
-                <code class="endpoint-path">dattes</code>
-                <span class="endpoint-desc">"code": "0804 10" <br>
-                "description": "Dattes"</span>
-              </div>
-              <div class="endpoint-item">
-                <code class="endpoint-method">GET</code>
-                <code class="endpoint-path">Smart phone</code>
-                <span class="endpoint-desc">code": "8517 13" <br>
-                  "description": "Postes téléphoniques d’usagers, y compris les téléphones intelligents et autres téléphones pour réseaux cellulaires et pour autres réseaux sans fil: - Téléphones intelligents"</span>
+                <span class="endpoint-desc"><b>code</b>: "8703 80" <br>
+                <b>description</b>: "Véhicules, équipés uniquement d’un moteur électrique pour la propulsion"</span>
               </div>
               <div class="endpoint-item">
                 <code class="endpoint-method">Produit recherché</code>
-                <code class="endpoint-path">ordinateur portable</code>
-                <span class="endpoint-desc">"code": "8471.30" <br>
-                "description": "Ordinateurs portables ..."</span>
+                <code class="endpoint-path">dattes</code>
+                <span class="endpoint-desc"><b>code</b>: "0804 10" <br>
+                <b>description</b>: "Dattes"</span>
+              </div>
+              <div class="endpoint-item">
+                <code class="endpoint-method">Produit recherché</code>
+                <code class="endpoint-path">Smart phone</code>
+                <span class="endpoint-desc"><b>code</b>: "8517 13" <br>
+                  <b>description</b>: "Postes téléphoniques d’usagers, y compris les téléphones intelligents et autres téléphones pour réseaux cellulaires et pour autres réseaux sans fil: - Téléphones intelligents"</span>
+              </div>
+              <div class="endpoint-item">
+                <code class="endpoint-method">Produit recherché</code>
+                <code class="endpoint-path">笔记本电脑</code>
+                <span class="endpoint-desc"><b>code</b>: "8471.30" <br>
+                <b>description</b>: "Ordinateurs portables ..."</span>
               </div>
             </div>
           </div>
           
-          <div class="api-example">
-            <h3>Exemple d'utilisation</h3>
-            <div class="code-block">
-              <pre><code>GET /recherche/positions6?termeRecherche=ordinateur portable
-
-Response:
-[
-  {{ '{' }}
-    "code": "8471.30",
-    "description": "Ordinateurs portables",
-    "justification": "..."
-  {{ '}' }}
-]</code></pre>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <div class="features primary" *ngIf="isCollaboratorAccount$ | async; else restrictedAccess">
-        <div class="feature-card">
-          <a [routerLink]="['/recherche']" class="cta-button">
-            Accéder à Tariff - recherche
-          </a>
-        </div>
-        <div class="feature-card">
-          <a [routerLink]="['/recherche','searchListLots']" class="cta-button">
-            Accéder à Tariff - multi-recherche
-          </a>
-        </div>
-      </div>
 
       <ng-template #restrictedAccess>
         <div class="features primary" *ngIf="isOrganizationAccount$ | async; else guestAccess">
