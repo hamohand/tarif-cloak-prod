@@ -65,8 +65,11 @@ import { AuthService } from '../../core/services/auth.service';
               <div class="endpoint-item">
                 <code class="endpoint-method">Produit recherché</code>
                 <code class="endpoint-path">سيارة كهربائية</code>
-                <span class="endpoint-desc"><b>code</b>: "8703 80" <br>
-                <b>description</b>: "Véhicules, équipés uniquement d’un moteur électrique pour la propulsion"</span>
+                <span class="endpoint-desc">
+                <code class="endpoint-path">Réponse HS-Code:</code>
+                <b>code</b>: "8703 80" <br>
+                <b>description</b>: "Véhicules, équipés uniquement d’un moteur électrique pour la propulsion"
+                </span>
               </div>
               <div class="endpoint-item">
                 <code class="endpoint-method">Produit recherché</code>
