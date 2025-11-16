@@ -59,27 +59,32 @@ import { AuthService } from '../../core/services/auth.service';
           </div>
           
           <div class="api-endpoints">
-            <h3>Endpoints Disponibles</h3>
+            <h3>Exemples d'utilisation</h3>
             <div class="endpoint-list">
+
               <div class="endpoint-item">
-                <code class="endpoint-method">GET</code>
-                <code class="endpoint-path">/recherche/sections</code>
-                <span class="endpoint-desc">Recherche au niveau des sections</span>
+                <code class="endpoint-method">Produit recherché</code>
+                <code class="endpoint-path">سيارة كهربائية</code>
+                <span class="endpoint-desc">"code": "8703 80" <br>
+                "description": "Véhicules, équipés uniquement d’un moteur électrique pour la propulsion"</span>
               </div>
               <div class="endpoint-item">
                 <code class="endpoint-method">GET</code>
-                <code class="endpoint-path">/recherche/chapitres</code>
-                <span class="endpoint-desc">Recherche au niveau des chapitres</span>
+                <code class="endpoint-path">dattes</code>
+                <span class="endpoint-desc">"code": "0804 10" <br>
+                "description": "Dattes"</span>
               </div>
               <div class="endpoint-item">
                 <code class="endpoint-method">GET</code>
-                <code class="endpoint-path">/recherche/positions4</code>
-                <span class="endpoint-desc">Recherche au niveau des positions 4 chiffres</span>
+                <code class="endpoint-path">Smart phone</code>
+                <span class="endpoint-desc">code": "8517 13" <br>
+                  "description": "Postes téléphoniques d’usagers, y compris les téléphones intelligents et autres téléphones pour réseaux cellulaires et pour autres réseaux sans fil: - Téléphones intelligents"</span>
               </div>
               <div class="endpoint-item">
-                <code class="endpoint-method">GET</code>
-                <code class="endpoint-path">/recherche/positions6</code>
-                <span class="endpoint-desc">Recherche au niveau des positions 6 chiffres (le plus précis)</span>
+                <code class="endpoint-method">Produit recherché</code>
+                <code class="endpoint-path">ordinateur portable</code>
+                <span class="endpoint-desc">"code": "8471.30" <br>
+                "description": "Ordinateurs portables ..."</span>
               </div>
             </div>
           </div>
