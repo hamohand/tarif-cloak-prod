@@ -62,12 +62,6 @@ import { AuthService } from '../../core/services/auth.service';
             <h3>Exemples d'utilisation</h3>
             <div class="endpoint-list">
 
-          <div class="endpoint-item">
-                <code class="endpoint-method">Produit recherché</code>
-                
-                <code class="endpoint-method">Réponse HS-Code</code>
-                
-              </div>
               <div class="endpoint-item">
                 <code class="endpoint-method">Produit recherché</code>
                 <code class="endpoint-path">سيارة كهربائية</code>
@@ -80,18 +74,21 @@ import { AuthService } from '../../core/services/auth.service';
               <div class="endpoint-item">
                 <code class="endpoint-method">Produit recherché</code>
                 <code class="endpoint-path">dattes</code>
+                <code class="endpoint-method">Réponse HS-Code</code>
                 <span class="endpoint-desc"><b>code</b>: "0804 10" <br>
                 <b>description</b>: "Dattes"</span>
               </div>
               <div class="endpoint-item">
                 <code class="endpoint-method">Produit recherché</code>
                 <code class="endpoint-path">Smart phone</code>
+                <code class="endpoint-method">Réponse HS-Code</code>
                 <span class="endpoint-desc"><b>code</b>: "8517 13" <br>
                   <b>description</b>: "Postes téléphoniques d’usagers, y compris les téléphones intelligents et autres téléphones pour réseaux cellulaires et pour autres réseaux sans fil: - Téléphones intelligents"</span>
               </div>
               <div class="endpoint-item">
                 <code class="endpoint-method">Produit recherché</code>
                 <code class="endpoint-path">笔记本电脑</code>
+                <code class="endpoint-method">Réponse HS-Code</code>
                 <span class="endpoint-desc"><b>code</b>: "8471.30" <br>
                 <b>description</b>: "Ordinateurs portables ..."</span>
               </div>
