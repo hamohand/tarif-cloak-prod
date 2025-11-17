@@ -49,4 +49,6 @@ public class UserRegistrationRequest {
     private String organizationPassword;
     
     private Long pricingPlanId; // ID du plan tarifaire sélectionné (optionnel)
+    
+    private String marketVersion; // Version du marché (ex: DEFAULT, DZ) - optionnel, utilisé pour pré-remplir les champs
 }

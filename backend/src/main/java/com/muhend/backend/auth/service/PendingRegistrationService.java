@@ -95,6 +95,9 @@ public class PendingRegistrationService {
         pending.setOrganizationCountry(request.getOrganizationCountry().toUpperCase());
         pending.setOrganizationPhone(request.getOrganizationPhone());
         pending.setPricingPlanId(request.getPricingPlanId()); // Inclure le plan tarifaire sélectionné
+        if (request.getMarketVersion() != null && !request.getMarketVersion().trim().isEmpty()) {
+            pending.setMarketVersion(request.getMarketVersion().trim());
+        }
         pending.setConfirmationToken(confirmationToken);
         pending.setExpiresAt(LocalDateTime.now().plusHours(tokenExpirationHours));
         pending.setConfirmed(false);
@@ -274,6 +277,9 @@ public class PendingRegistrationService {
             orgRequest.setOrganizationPassword(pending.getOrganizationPassword());
             orgRequest.setKeycloakUserId(organizationKeycloakUserId);
             orgRequest.setPricingPlanId(pending.getPricingPlanId());
+            if (pending.getMarketVersion() != null && !pending.getMarketVersion().trim().isEmpty()) {
+                orgRequest.setMarketVersion(pending.getMarketVersion().trim());
+            }
 
             var organizationDto = organizationService.createOrganization(orgRequest);
             log.info("Organisation créée: id={}, name={}", organizationDto.getId(), organizationDto.getName());

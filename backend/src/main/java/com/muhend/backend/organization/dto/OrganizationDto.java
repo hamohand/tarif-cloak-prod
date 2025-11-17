@@ -22,6 +22,7 @@ public class OrganizationDto {
     private String phone;
     private Integer monthlyQuota; // null = quota illimité
     private Long pricingPlanId; // ID du plan tarifaire
+    private String marketVersion; // Version du marché (ex: DEFAULT, DZ)
     private LocalDateTime trialExpiresAt; // Date d'expiration du plan d'essai (null si pas un plan d'essai)
     private LocalDateTime createdAt;
     

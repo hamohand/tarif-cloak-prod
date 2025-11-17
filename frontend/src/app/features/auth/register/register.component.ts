@@ -3,7 +3,9 @@ import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angula
 import { RouterLink, ActivatedRoute } from '@angular/router';
 import { RegisterService } from '../../../core/services/register.service';
 import { PricingPlanService, PricingPlan } from '../../../core/services/pricing-plan.service';
+import { MarketProfileService, MarketProfile } from '../../../core/services/market-profile.service';
 import { CommonModule } from '@angular/common';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-register',
@@ -16,6 +18,25 @@ import { CommonModule } from '@angular/common';
         <p>Ce compte administrateur gérera l'ensemble de vos collaborateurs.</p>
 
         <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="register-form">
+          <div class="form-section">
+            <h3>Profil de marché</h3>
+            <div class="form-group">
+              <label for="marketVersion">Sélectionner votre marché *</label>
+              <ng-container *ngIf="loadingProfiles; else profilesLoaded">
+                <div class="loading-plans">Chargement des profils...</div>
+              </ng-container>
+              <ng-template #profilesLoaded>
+                <select id="marketVersion" formControlName="marketVersion" class="form-control" (change)="onMarketProfileChange()">
+                  <option [value]="null">Sélectionner un marché</option>
+                  <option *ngFor="let profile of marketProfiles" [value]="profile.marketVersion">
+                    {{ profile.countryName }} ({{ profile.currencyCode }})
+                  </option>
+                </select>
+                <small class="form-hint">Le profil sélectionné pré-remplira automatiquement certains champs.</small>
+              </ng-template>
+            </div>
+          </div>
+
           <div class="form-section">
             <h3>Informations de l'organisation</h3>
 
@@ -346,14 +367,19 @@ export class RegisterComponent implements OnInit {
   private registerService = inject(RegisterService);
   private route = inject(ActivatedRoute);
   private pricingPlanService = inject(PricingPlanService);
+  private marketProfileService = inject(MarketProfileService);
 
   isLoading = false;
   errorMessage = '';
   successMessage = '';
   pricingPlans: PricingPlan[] = [];
   loadingPlans = false;
+  marketProfiles: MarketProfile[] = [];
+  loadingProfiles = false;
+  selectedMarketProfile: MarketProfile | null = null;
 
   registerForm: FormGroup = this.fb.group({
+    marketVersion: [null, [Validators.required]],
     organizationName: ['', [Validators.required, Validators.minLength(1), Validators.maxLength(255)]],
     organizationEmail: ['', [Validators.required, Validators.email, Validators.maxLength(255)]],
     organizationAddress: ['', [Validators.required, Validators.minLength(5), Validators.maxLength(512)]],
@@ -374,12 +400,52 @@ export class RegisterComponent implements OnInit {
       }
     });
 
-    this.loadPricingPlans();
+    this.loadMarketProfiles();
   }
 
-  loadPricingPlans() {
+  loadMarketProfiles() {
+    this.loadingProfiles = true;
+    this.marketProfileService.getActiveMarketProfiles().subscribe({
+      next: (profiles) => {
+        this.marketProfiles = profiles;
+        this.loadingProfiles = false;
+      },
+      error: (err) => {
+        console.error('Erreur lors du chargement des profils de marché:', err);
+        this.loadingProfiles = false;
+      }
+    });
+  }
+
+  onMarketProfileChange() {
+    const marketVersion = this.registerForm.get('marketVersion')?.value;
+    if (!marketVersion) {
+      this.selectedMarketProfile = null;
+      return;
+    }
+
+    const profile = this.marketProfiles.find(p => p.marketVersion === marketVersion);
+    if (profile) {
+      this.selectedMarketProfile = profile;
+      // Pré-remplir les champs avec les valeurs du profil
+      this.registerForm.patchValue({
+        organizationCountry: profile.countryCodeIsoAlpha2,
+        organizationPhone: profile.phonePrefix + ' '
+      }, { emitEvent: false });
+      
+      // Charger les plans tarifaires pour ce marché
+      this.loadPricingPlans(marketVersion);
+    }
+  }
+
+  loadPricingPlans(marketVersion?: string) {
     this.loadingPlans = true;
-    this.pricingPlanService.getActivePricingPlans().subscribe({
+    const marketVersionToUse = marketVersion || (this.registerForm.get('marketVersion')?.value);
+    
+    // Utiliser marketVersion si disponible, sinon utiliser environment.marketVersion
+    const planMarketVersion = marketVersionToUse || (environment as any).marketVersion || undefined;
+    
+    this.pricingPlanService.getActivePricingPlans(planMarketVersion).subscribe({
       next: (plans) => {
         this.pricingPlans = plans;
         this.loadingPlans = false;
@@ -474,7 +540,8 @@ export class RegisterComponent implements OnInit {
       organizationCountry,
       organizationPhone: formValue.organizationPhone,
       organizationPassword,
-      pricingPlanId: formValue.pricingPlanId || null
+      pricingPlanId: formValue.pricingPlanId || null,
+      marketVersion: formValue.marketVersion || null
     };
 
     this.registerService.registerUser(payload).subscribe({

@@ -62,6 +62,9 @@ public class PendingRegistration {
     @Column(name = "pricing_plan_id", nullable = true)
     private Long pricingPlanId; // ID du plan tarifaire sélectionné (optionnel)
     
+    @Column(name = "market_version", length = 10)
+    private String marketVersion; // Version du marché (ex: DEFAULT, DZ) - optionnel
+    
     @Column(name = "confirmation_token", nullable = false, unique = true, length = 64)
     private String confirmationToken;
     

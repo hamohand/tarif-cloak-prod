@@ -82,6 +82,9 @@ public class OrganizationService {
         if (request.getKeycloakUserId() != null && !request.getKeycloakUserId().trim().isEmpty()) {
             organization.setKeycloakUserId(request.getKeycloakUserId().trim());
         }
+        if (request.getMarketVersion() != null && !request.getMarketVersion().trim().isEmpty()) {
+            organization.setMarketVersion(request.getMarketVersion().trim());
+        }
         
         // Si un plan tarifaire est spécifié, le valider et l'associer
         if (request.getPricingPlanId() != null) {
@@ -643,6 +646,7 @@ public class OrganizationService {
         dto.setPhone(organization.getPhone());
         dto.setMonthlyQuota(organization.getMonthlyQuota());
         dto.setPricingPlanId(organization.getPricingPlanId());
+        dto.setMarketVersion(organization.getMarketVersion());
         dto.setTrialExpiresAt(organization.getTrialExpiresAt());
         dto.setCreatedAt(organization.getCreatedAt());
         return dto;

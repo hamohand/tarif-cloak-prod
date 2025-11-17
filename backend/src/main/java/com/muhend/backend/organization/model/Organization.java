@@ -52,6 +52,9 @@ public class Organization {
     @Column(name = "stripe_customer_id", length = 255)
     private String stripeCustomerId; // ID du client Stripe (pour éviter de créer plusieurs clients)
     
+    @Column(name = "market_version", length = 10)
+    private String marketVersion; // Version du marché (ex: DEFAULT, DZ) - référence à market_profile
+    
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
     
