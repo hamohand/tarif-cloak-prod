@@ -99,11 +99,26 @@ public class SecurityConfig {
         List<String> origins = Arrays.asList(allowedOrigins.split("\\s*,\\s*"));
         configuration.setAllowedOriginPatterns(origins);
 
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+        // Méthodes HTTP autorisées (ajouter HEAD pour Swagger UI)
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"));
+        
+        // Headers autorisés (tous les headers sont autorisés)
         configuration.setAllowedHeaders(List.of("*"));
+        
         configuration.setAllowCredentials(true);
-        // Important : exposer les headers de réponse pour que le frontend puisse les lire
-        configuration.setExposedHeaders(List.of("Authorization", "Content-Type"));
+        
+        // Headers exposés (ajouter plus de headers pour Swagger UI)
+        configuration.setExposedHeaders(Arrays.asList(
+            "Authorization", 
+            "Content-Type", 
+            "Content-Disposition",
+            "X-Total-Count",
+            "Access-Control-Allow-Origin",
+            "Access-Control-Allow-Credentials"
+        ));
+        
+        // Max age pour le cache des requêtes preflight (1 heure)
+        configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
