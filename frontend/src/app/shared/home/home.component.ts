@@ -179,7 +179,7 @@ import { map } from 'rxjs/operators';
       <!-- Pied de page -->
       <footer class="home-footer">
         <p>Micro-entreprise de développement d'applications pour les entreprises<br>
-        Contact : med@forge-numerique.com <br>
+        Contact : med&#64;forge-numerique.com <br>
         <a href="https://www.forge-numerique.com">Enclume-Numérique</a></p>
       </footer>
     </div>
