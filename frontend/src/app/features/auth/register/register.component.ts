@@ -5,7 +5,7 @@ import { RegisterService } from '../../../core/services/register.service';
 import { PricingPlanService, PricingPlan } from '../../../core/services/pricing-plan.service';
 import { MarketProfileService, MarketProfile } from '../../../core/services/market-profile.service';
 import { CommonModule } from '@angular/common';
-import { environment } from '../../../environments/environment';
+import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-register',
