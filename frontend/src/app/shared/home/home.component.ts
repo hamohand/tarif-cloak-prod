@@ -96,6 +96,7 @@ import { map } from 'rxjs/operators';
               </div>
             </div>
           </div>
+        </div>
       </section>
 
       <!-- Section pour les utilisateurs connectés avec rôle ORGANIZATION ou COLLABORATOR -->
