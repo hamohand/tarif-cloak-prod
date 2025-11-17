@@ -178,7 +178,7 @@ import { map } from 'rxjs/operators';
 
       <!-- Pied de page -->
       <footer class="home-footer">
-        <p>Micro-entreprise n° 105601030000224940</p>
+        <p>Micro-entreprise développement d'applications pour les entreprises</p>
       </footer>
     </div>
   `,
@@ -515,6 +515,10 @@ import { map } from 'rxjs/operators';
     .home-footer p {
       margin: 0;
       font-size: 0.9rem;
+      background-color: #1e293b;
+      color: white;
+      padding: 1rem;
+      border-radius: 8px;
     }
 
     @media (max-width: 768px) {
