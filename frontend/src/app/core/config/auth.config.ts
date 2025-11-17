@@ -27,6 +27,8 @@ export const authConfig: AuthConfig = {
   clearHashAfterLogin: true,
   // Désactiver d'autres validations qui pourraient causer des problèmes
   disablePKCE: false, // Garder PKCE activé pour la sécurité
+  // Configuration pour le logout - utiliser l'URL de base sans chemin spécifique
+  postLogoutRedirectUri: window.location.origin + '/',
   // Configuration supplémentaire pour éviter les erreurs de validation
   customQueryParams: {}
 } as AuthConfig;
