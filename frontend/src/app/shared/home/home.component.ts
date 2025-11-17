@@ -96,6 +96,40 @@ import { AuthService } from '../../core/services/auth.service';
           </div>
           
 
+      <!-- Section pour les utilisateurs connectés avec rôle ORGANIZATION ou COLLABORATOR -->
+      <section class="user-actions" *ngIf="(isAuthenticated$ | async) && ((isOrganizationAccount$ | async) || (isCollaboratorAccount$ | async))">
+        <div class="features primary">
+          <div class="feature-card request-card">
+            <div class="request-icon">🔍</div>
+            <h3>Recherche d'article unique</h3>
+            <p>Recherchez le code HS d'un produit spécifique en quelques secondes.</p>
+            <a [routerLink]="['/recherche/search']" class="cta-button secondary">
+              Rechercher un article
+            </a>
+          </div>
+          
+          <div class="feature-card request-card">
+            <div class="request-icon">📋</div>
+            <h3>Recherche par lots</h3>
+            <p>Traitez plusieurs produits simultanément avec l'outil de recherche par lots.</p>
+            <a [routerLink]="['/recherche/searchListLots']" class="cta-button secondary">
+              Rechercher par lots
+            </a>
+          </div>
+        </div>
+        
+        <!-- Section supplémentaire pour les organisations -->
+        <div class="features primary" *ngIf="isOrganizationAccount$ | async">
+          <div class="feature-card advise">
+            <h3>👥 Gestion d'organisation</h3>
+            <p>Utilisez l'espace <strong>Mon organisation</strong> pour inviter vos collaborateurs et suivre les statistiques globales.</p>
+            <a [routerLink]="['/organization/account']" class="cta-button secondary">
+              Ouvrir l'espace organisation
+            </a>
+          </div>
+        </div>
+      </section>
+
       <ng-template #restrictedAccess>
         <div class="features primary" *ngIf="isOrganizationAccount$ | async; else guestAccess">
           <div class="feature-card advise">
@@ -236,6 +270,49 @@ import { AuthService } from '../../core/services/auth.service';
 
     .cta-button.ghost:hover {
       background-color: rgba(250, 204, 21, 0.1);
+    }
+
+    /* Styles pour les boutons d'utilisation de requêtes */
+    .user-actions {
+      margin: 3rem 0;
+    }
+
+    .request-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      text-align: center;
+      min-width: 280px;
+      max-width: 350px;
+    }
+
+    .request-card h3 {
+      color: white;
+      margin-bottom: 0.75rem;
+    }
+
+    .request-card p {
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .request-icon {
+      font-size: 3.5rem;
+      margin-bottom: 1rem;
+      display: block;
+    }
+
+    .request-card .cta-button.secondary {
+      background-color: white;
+      color: #667eea;
+      font-weight: 600;
+      margin-top: auto;
+    }
+
+    .request-card .cta-button.secondary:hover {
+      background-color: #f9fafb;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     }
 
     /* Styles pour la présentation de l'API */
