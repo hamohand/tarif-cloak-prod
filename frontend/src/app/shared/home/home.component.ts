@@ -175,6 +175,11 @@ import { map } from 'rxjs/operators';
           <p>Une interface adaptée à tous les usages.</p>
         </div>
       </div>
+
+      <!-- Pied de page -->
+      <footer class="home-footer">
+        <p>Micro-entreprise n° 105601030000224940</p>
+      </footer>
     </div>
   `,
   styles: [`
@@ -497,6 +502,21 @@ import { map } from 'rxjs/operators';
       color: #e2e8f0;
     }
 
+    /* Styles pour le pied de page */
+    .home-footer {
+      margin-top: 4rem;
+      padding-top: 2rem;
+      border-top: 1px solid #e1e8ed;
+      text-align: center;
+      color: #7f8c8d;
+      font-size: 0.9rem;
+    }
+
+    .home-footer p {
+      margin: 0;
+      font-size: 0.9rem;
+    }
+
     @media (max-width: 768px) {
       .feature-card {
         width: 100%;
@@ -524,6 +544,11 @@ import { map } from 'rxjs/operators';
       .endpoint-path {
         width: 100%;
         word-break: break-all;
+      }
+
+      .home-footer {
+        margin-top: 2rem;
+        padding-top: 1.5rem;
       }
     }
   `]
