@@ -3,6 +3,8 @@
 # ===================================================
 server:
   port: ${BACKEND_INTERNAL_PORT:8081}
+  # Configuration pour détecter HTTPS via les headers X-Forwarded-* de Traefik
+  forward-headers-strategy: framework
 
   # ===================================================
   # CONFIGURATION BASE DE DONNÉES APPLICATION
@@ -159,6 +161,8 @@ springdoc:
     enabled: true
     # URL complète pour charger la spécification (nécessaire avec Traefik)
     url: ${SPRINGDOC_SWAGGER_UI_URL:https://hscode.enclume-numerique.com/api/v3/api-docs}
+    # Forcer HTTPS dans les URLs générées (nécessaire derrière Traefik)
+    use-root-path: false
     operations-sorter: method  # Trier par méthode HTTP
     tags-sorter: alpha  # Trier les tags alphabétiquement
     doc-expansion: none  # Ne pas développer les endpoints par défaut
