@@ -649,6 +649,30 @@ public class OrganizationService {
     }
     
     /**
+     * Récupère toutes les organisations avec un plan Pay-per-Request.
+     * Un plan Pay-per-Request a pricePerRequest != null et monthlyQuota == null.
+     */
+    @Transactional(readOnly = true)
+    public List<OrganizationDto> getOrganizationsWithPayPerRequestPlan() {
+        List<Organization> organizations = organizationRepository.findAll();
+        
+        return organizations.stream()
+                .filter(org -> org.getPricingPlanId() != null)
+                .filter(org -> {
+                    try {
+                        PricingPlanDto plan = pricingPlanService.getPricingPlanById(org.getPricingPlanId());
+                        return plan.getPricePerRequest() != null && plan.getMonthlyQuota() == null;
+                    } catch (Exception e) {
+                        log.warn("Impossible de récupérer le plan pour l'organisation {}: {}", 
+                                org.getId(), e.getMessage());
+                        return false;
+                    }
+                })
+                .map(this::toDto)
+                .collect(Collectors.toList());
+    }
+    
+    /**
      * Convertit une Organisation en DTO avec le nombre d'utilisateurs et l'utilisation du mois.
      */
     private OrganizationDto toDtoWithUserCount(Organization organization) {

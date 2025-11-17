@@ -226,6 +226,87 @@ public class InvoiceService {
     }
     
     /**
+     * Génère une facture bihebdomadaire (14 jours) pour une organisation avec un plan Pay-per-Request.
+     * 
+     * @param organizationId ID de l'organisation
+     * @param periodStart Date de début de la période (14 jours avant aujourd'hui)
+     * @param periodEnd Date de fin de la période (hier)
+     * @return La facture générée, ou null si aucune facture n'a été générée (déjà existante ou aucune utilisation)
+     */
+    @Transactional
+    public InvoiceDto generateBiweeklyInvoice(Long organizationId, LocalDate periodStart, LocalDate periodEnd) {
+        // Vérifier que l'organisation existe
+        OrganizationDto organization = organizationService.getOrganizationById(organizationId);
+        if (organization == null) {
+            throw new IllegalArgumentException("Organisation non trouvée avec l'ID: " + organizationId);
+        }
+        
+        // Vérifier si une facture existe déjà pour cette période
+        if (invoiceRepository.existsByOrganizationIdAndPeriodStartAndPeriodEnd(
+                organizationId, periodStart, periodEnd)) {
+            log.info("Une facture existe déjà pour l'organisation {} pour la période {} - {}. Facture non générée.",
+                    organizationId, periodStart, periodEnd);
+            return null; // Retourner null au lieu de lever une exception pour permettre le scheduler de continuer
+        }
+        
+        // Récupérer les logs d'utilisation pour la période
+        LocalDateTime startDateTime = periodStart.atStartOfDay();
+        LocalDateTime endDateTime = periodEnd.atTime(LocalTime.MAX);
+        
+        List<UsageLog> usageLogs = usageLogRepository.findByOrganizationIdAndTimestampBetween(
+                organizationId, startDateTime, endDateTime);
+        
+        // Si aucune utilisation, ne pas générer de facture
+        if (usageLogs.isEmpty()) {
+            log.info("Aucune utilisation trouvée pour l'organisation {} sur la période {} - {}. Facture non générée.",
+                    organizationId, periodStart, periodEnd);
+            return null;
+        }
+        
+        // Calculer le total
+        BigDecimal totalAmount = usageLogs.stream()
+                .filter(log -> log.getCostUsd() != null)
+                .map(UsageLog::getCostUsd)
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .setScale(2, RoundingMode.HALF_UP);
+        
+        // Générer le numéro de facture (format: ORG-YYYYMMDD-BIWEEKLY)
+        String invoiceNumber = String.format("ORG-%d-%s-BIWEEKLY",
+                organizationId,
+                periodStart.format(DateTimeFormatter.ofPattern("yyyyMMdd")));
+        
+        // Créer la facture
+        Invoice invoice = new Invoice();
+        invoice.setOrganizationId(organizationId);
+        invoice.setOrganizationName(organization.getName());
+        invoice.setOrganizationEmail(organization.getEmail());
+        invoice.setInvoiceNumber(invoiceNumber);
+        invoice.setPeriodStart(periodStart);
+        invoice.setPeriodEnd(periodEnd);
+        invoice.setTotalAmount(totalAmount);
+        invoice.setStatus(Invoice.InvoiceStatus.PENDING);
+        invoice.setDueDate(periodEnd.plusDays(14)); // Échéance dans 14 jours
+        
+        invoice = invoiceRepository.save(invoice);
+        
+        // Créer les lignes de facture
+        List<InvoiceItem> items = createInvoiceItems(invoice, usageLogs);
+        if (!items.isEmpty()) {
+            invoiceItemRepository.saveAll(items);
+        }
+        
+        log.info("Facture bihebdomadaire générée: {} pour l'organisation {} (période: {} - {})",
+                invoiceNumber, organization.getName(), periodStart, periodEnd);
+        
+        InvoiceDto invoiceDto = toDto(invoice);
+        
+        // Envoyer un email de notification
+        sendInvoiceNotificationEmail(invoiceDto, organization);
+        
+        return invoiceDto;
+    }
+    
+    /**
      * Crée les lignes de facture à partir des logs d'utilisation.
      */
     private List<InvoiceItem> createInvoiceItems(Invoice invoice, List<UsageLog> usageLogs) {
@@ -669,6 +750,69 @@ public class InvoiceService {
         }
         
         log.info("Vérification des factures en retard terminée. {} facture(s) traitée(s).", overdueInvoices.size());
+    }
+    
+    /**
+     * Tâche planifiée pour générer automatiquement les factures bihebdomadaires
+     * pour les organisations avec un plan Pay-per-Request.
+     * Exécutée tous les lundis à 8h00 (toutes les deux semaines).
+     */
+    @Scheduled(cron = "0 0 8 * * MON") // Tous les lundis à 8h00
+    @Transactional
+    public void generateBiweeklyInvoicesForPayPerRequestPlans() {
+        log.info("=== Démarrage de la génération des factures bihebdomadaires pour les plans Pay-per-Request ===");
+        
+        try {
+            // Récupérer toutes les organisations avec un plan Pay-per-Request
+            List<OrganizationDto> organizations = organizationService.getOrganizationsWithPayPerRequestPlan();
+            
+            if (organizations.isEmpty()) {
+                log.info("Aucune organisation avec un plan Pay-per-Request trouvée.");
+                return;
+            }
+            
+            log.info("{} organisation(s) avec un plan Pay-per-Request trouvée(s).", organizations.size());
+            
+            // Calculer la période : 14 derniers jours (du lundi il y a 2 semaines au dimanche dernier)
+            LocalDate today = LocalDate.now();
+            LocalDate periodEnd = today.minusDays(1); // Hier (dimanche)
+            LocalDate periodStart = periodEnd.minusDays(13); // 14 jours avant (lundi il y a 2 semaines)
+            
+            int invoicesGenerated = 0;
+            int invoicesSkipped = 0;
+            int errors = 0;
+            
+            for (OrganizationDto organization : organizations) {
+                try {
+                    InvoiceDto invoice = generateBiweeklyInvoice(
+                            organization.getId(),
+                            periodStart,
+                            periodEnd);
+                    
+                    if (invoice != null) {
+                        invoicesGenerated++;
+                        log.info("✓ Facture bihebdomadaire générée pour l'organisation {} (ID: {})",
+                                organization.getName(), organization.getId());
+                    } else {
+                        invoicesSkipped++;
+                        log.debug("Facture non générée pour l'organisation {} (ID: {}) - déjà existante ou aucune utilisation",
+                                organization.getName(), organization.getId());
+                    }
+                } catch (Exception e) {
+                    errors++;
+                    log.error("✗ Erreur lors de la génération de la facture bihebdomadaire pour l'organisation {} (ID: {}): {}",
+                            organization.getName(), organization.getId(), e.getMessage(), e);
+                }
+            }
+            
+            log.info("=== Génération des factures bihebdomadaires terminée ===");
+            log.info("Résumé: {} facture(s) générée(s), {} facture(s) ignorée(s), {} erreur(s)",
+                    invoicesGenerated, invoicesSkipped, errors);
+            
+        } catch (Exception e) {
+            log.error("Erreur critique lors de la génération des factures bihebdomadaires: {}", 
+                    e.getMessage(), e);
+        }
     }
     
     /**
