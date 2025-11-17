@@ -2,6 +2,8 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { combineLatest } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 @Component({
   selector: 'app-home',
@@ -94,10 +96,11 @@ import { AuthService } from '../../core/services/auth.service';
               </div>
             </div>
           </div>
-          
+      </section>
 
       <!-- Section pour les utilisateurs connectés avec rôle ORGANIZATION ou COLLABORATOR -->
-      <section class="user-actions" *ngIf="(isAuthenticated$ | async) && ((isOrganizationAccount$ | async) || (isCollaboratorAccount$ | async))">
+      <section class="user-actions" *ngIf="showRequestButtons$ | async">
+        <h2 class="section-title">Outils de recherche HS-Code</h2>
         <div class="features primary">
           <div class="feature-card request-card">
             <div class="request-icon">🔍</div>
@@ -275,6 +278,15 @@ import { AuthService } from '../../core/services/auth.service';
     /* Styles pour les boutons d'utilisation de requêtes */
     .user-actions {
       margin: 3rem 0;
+      padding: 2rem 0;
+    }
+
+    .section-title {
+      color: #1e3c72;
+      font-size: 2rem;
+      margin-bottom: 2rem;
+      font-weight: 700;
+      text-align: center;
     }
 
     .request-card {
@@ -521,4 +533,15 @@ export class HomeComponent {
   isAuthenticated$ = this.authService.isAuthenticated();
   isOrganizationAccount$ = this.authService.isOrganizationAccount();
   isCollaboratorAccount$ = this.authService.isCollaboratorAccount();
+
+  // Observable combiné pour afficher les boutons d'utilisation de requêtes
+  showRequestButtons$ = combineLatest([
+    this.isAuthenticated$,
+    this.isOrganizationAccount$,
+    this.isCollaboratorAccount$
+  ]).pipe(
+    map(([isAuthenticated, isOrganization, isCollaborator]) => 
+      isAuthenticated && (isOrganization || isCollaborator)
+    )
+  );
 }
