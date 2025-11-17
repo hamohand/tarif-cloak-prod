@@ -358,23 +358,33 @@ export class AuthService {
     oauthSessionKeys.forEach(key => sessionStorage.removeItem(key));
     
     // Essayer de déconnecter de Keycloak si un token est disponible
-    // Si la session est déjà expirée ou invalide, cela peut échouer, mais ce n'est pas grave
+    // Utiliser un iframe pour faire le logout en arrière-plan sans redirection
+    // Cela évite les erreurs de validation Keycloak avec post_logout_redirect_uri
     try {
       const idToken = this.oauthService.getIdToken();
       if (idToken) {
-        // Construire manuellement l'URL de logout avec id_token_hint pour Keycloak 18+
-        // Utiliser l'issuer depuis la configuration
+        // Construire l'URL de logout avec id_token_hint uniquement (sans post_logout_redirect_uri)
         const issuer = authConfig.issuer;
-        const postLogoutRedirectUri = encodeURIComponent(window.location.origin + '/');
         const idTokenHint = encodeURIComponent(idToken);
-        const logoutUrl = `${issuer}/protocol/openid-connect/logout?post_logout_redirect_uri=${postLogoutRedirectUri}&id_token_hint=${idTokenHint}`;
+        const logoutUrl = `${issuer}/protocol/openid-connect/logout?id_token_hint=${idTokenHint}`;
         
-        // Rediriger vers l'URL de logout Keycloak
-        window.location.href = logoutUrl;
-        return; // Ne pas continuer, la redirection va se faire
-      } else {
-        // Pas de token, utiliser la méthode standard (qui peut échouer silencieusement)
-        this.oauthService.logOut(false); // false = ne pas rediriger automatiquement
+        // Utiliser un iframe invisible pour faire le logout en arrière-plan
+        // Cela évite les problèmes de validation Keycloak
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.style.width = '0';
+        iframe.style.height = '0';
+        iframe.src = logoutUrl;
+        document.body.appendChild(iframe);
+        
+        // Supprimer l'iframe après un court délai
+        setTimeout(() => {
+          try {
+            document.body.removeChild(iframe);
+          } catch (e) {
+            // Ignorer si l'iframe a déjà été supprimé
+          }
+        }, 1000);
       }
     } catch (error) {
       // Ignorer les erreurs de logout Keycloak (session peut être déjà expirée)
