@@ -148,6 +148,30 @@ registration:
         hours: ${REGISTRATION_TOKEN_EXPIRATION_HOURS:24}  # Délai d'expiration du token de confirmation (24h)
 
 # ===================================================
+# CONFIGURATION SWAGGER/OPENAPI
+# ===================================================
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+    enabled: true
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+    # URL complète pour charger la spécification (nécessaire avec Traefik)
+    url: ${SPRINGDOC_SWAGGER_UI_URL:https://hscode.enclume-numerique.com/api/v3/api-docs}
+    operations-sorter: method  # Trier par méthode HTTP
+    tags-sorter: alpha  # Trier les tags alphabétiquement
+    doc-expansion: none  # Ne pas développer les endpoints par défaut
+    display-request-duration: true  # Afficher la durée des requêtes
+    filter: true  # Activer le filtre de recherche
+    show-extensions: true
+    show-common-extensions: true
+    try-it-out-enabled: true  # Activer "Try it out" par défaut
+  show-actuator: false  # Ne pas afficher les endpoints Actuator
+  default-consumes-media-type: application/json
+  default-produces-media-type: application/json
+
+# ===================================================
 # PROFILS SPRING
 # ===================================================
 ---
