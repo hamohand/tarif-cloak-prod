@@ -312,12 +312,7 @@ export class AuthService {
   }
 
   private cleanupTokens() {
-    try {
-      this.oauthService.logOut();
-    } catch (error) {
-      // Ignorer les erreurs de logout
-    }
-    // Nettoyer aussi manuellement les clés OAuth restantes
+    // Nettoyer les tokens localement sans appeler Keycloak (pour éviter les erreurs)
     const oauthKeys = Object.keys(localStorage).filter(key => 
       key.startsWith('oauth') || key.startsWith('angular-oauth2-oidc')
     );
@@ -326,6 +321,13 @@ export class AuthService {
       key.startsWith('oauth') || key.startsWith('angular-oauth2-oidc')
     );
     oauthSessionKeys.forEach(key => sessionStorage.removeItem(key));
+    
+    // Essayer de déconnecter de Keycloak silencieusement (peut échouer si session expirée)
+    try {
+      this.oauthService.logOut(false); // false = ne pas rediriger automatiquement
+    } catch (error) {
+      // Ignorer les erreurs de logout (session probablement expirée)
+    }
   }
 
   public login(): void {
@@ -339,36 +341,48 @@ export class AuthService {
 
   public logout(): void {
     this.stopTokenCheck();
+    
+    // Nettoyer l'état local immédiatement
+    this.isAuthenticatedSubject.next(false);
+    this.accountContextService.clear();
+    
+    // Nettoyer les clés OAuth du localStorage et sessionStorage
+    const oauthKeys = Object.keys(localStorage).filter(key => 
+      key.startsWith('oauth') || key.startsWith('angular-oauth2-oidc')
+    );
+    oauthKeys.forEach(key => localStorage.removeItem(key));
+    
+    const oauthSessionKeys = Object.keys(sessionStorage).filter(key => 
+      key.startsWith('oauth') || key.startsWith('angular-oauth2-oidc')
+    );
+    oauthSessionKeys.forEach(key => sessionStorage.removeItem(key));
+    
+    // Essayer de déconnecter de Keycloak si un token est disponible
+    // Si la session est déjà expirée ou invalide, cela peut échouer, mais ce n'est pas grave
     try {
-      // Nettoyer le token localement d'abord
-      this.oauthService.logOut();
-      // Nettoyer les clés OAuth du localStorage (angular-oauth2-oidc utilise des clés spécifiques)
-      const oauthKeys = Object.keys(localStorage).filter(key => 
-        key.startsWith('oauth') || key.startsWith('angular-oauth2-oidc')
-      );
-      oauthKeys.forEach(key => localStorage.removeItem(key));
-      // Nettoyer aussi sessionStorage pour les clés OAuth
-      const oauthSessionKeys = Object.keys(sessionStorage).filter(key => 
-        key.startsWith('oauth') || key.startsWith('angular-oauth2-oidc')
-      );
-      oauthSessionKeys.forEach(key => sessionStorage.removeItem(key));
+      const idToken = this.oauthService.getIdToken();
+      if (idToken) {
+        // Construire manuellement l'URL de logout avec id_token_hint pour Keycloak 18+
+        // Utiliser l'issuer depuis la configuration
+        const issuer = authConfig.issuer;
+        const postLogoutRedirectUri = encodeURIComponent(window.location.origin + '/');
+        const idTokenHint = encodeURIComponent(idToken);
+        const logoutUrl = `${issuer}/protocol/openid-connect/logout?post_logout_redirect_uri=${postLogoutRedirectUri}&id_token_hint=${idTokenHint}`;
+        
+        // Rediriger vers l'URL de logout Keycloak
+        window.location.href = logoutUrl;
+        return; // Ne pas continuer, la redirection va se faire
+      } else {
+        // Pas de token, utiliser la méthode standard (qui peut échouer silencieusement)
+        this.oauthService.logOut(false); // false = ne pas rediriger automatiquement
+      }
     } catch (error) {
-      console.warn('Erreur lors du logout Keycloak (probablement session expirée):', error);
-      // Même en cas d'erreur, nettoyer les clés OAuth
-      const oauthKeys = Object.keys(localStorage).filter(key => 
-        key.startsWith('oauth') || key.startsWith('angular-oauth2-oidc')
-      );
-      oauthKeys.forEach(key => localStorage.removeItem(key));
-      const oauthSessionKeys = Object.keys(sessionStorage).filter(key => 
-        key.startsWith('oauth') || key.startsWith('angular-oauth2-oidc')
-      );
-      oauthSessionKeys.forEach(key => sessionStorage.removeItem(key));
-    } finally {
-      // Toujours nettoyer l'état local et rediriger
-      this.isAuthenticatedSubject.next(false);
-      this.accountContextService.clear();
-      this.router.navigate(['/']);
+      // Ignorer les erreurs de logout Keycloak (session peut être déjà expirée)
+      console.debug('Logout Keycloak ignoré (session probablement expirée):', error);
     }
+    
+    // Rediriger vers la page d'accueil si on n'a pas été redirigé par Keycloak
+    this.router.navigate(['/']);
   }
 
   public isAuthenticated(): Observable<boolean> {
