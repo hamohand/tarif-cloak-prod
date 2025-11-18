@@ -430,11 +430,15 @@ export class RegisterComponent implements OnInit {
     if (profile) {
       this.selectedMarketProfile = profile;
       // Pré-remplir les champs avec les valeurs du profil
+      console.log('Profil sélectionné:', profile.countryCodeIsoAlpha2);
+      console.log('Préfixe téléphonique:', profile.phonePrefix);
+      console.log('Code pays ISO:', profile.countryName);
+      
       this.registerForm.patchValue({
         organizationCountry: profile.countryCodeIsoAlpha2,
         organizationPhone: profile.phonePrefix + ' '
       }, { emitEvent: false });
-      
+
       // Charger les plans tarifaires pour ce marché
       this.loadPricingPlans(marketVersion);
     }
