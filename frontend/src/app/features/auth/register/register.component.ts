@@ -77,7 +77,7 @@ import { environment } from '../../../../environments/environment';
                 formControlName="organizationAddress"
                 class="form-control"
                 [class.error]="isFieldInvalid('organizationAddress')"
-                placeholder="Numéro, rue, code postal, ville, pays"></textarea>
+                placeholder="Numéro, rue, code postal, ville {{ selectedMarketProfile?.countryName }}"></textarea>
               <div class="error-message" *ngIf="isFieldInvalid('organizationAddress')">
                 {{ getErrorMessage('organizationAddress') }}
               </div>
@@ -89,15 +89,16 @@ import { environment } from '../../../../environments/environment';
                 <input
                   id="organizationCountry"
                   type="text"
+                  readonly
                   maxlength="2"
                   formControlName="organizationCountry"
                   class="form-control"
                   [class.error]="isFieldInvalid('organizationCountry')"
-                  placeholder="FR">
+                  placeholder="{{ selectedMarketProfile?.countryCodeIsoAlpha2 }}">
                 <div class="error-message" *ngIf="isFieldInvalid('organizationCountry')">
                   {{ getErrorMessage('organizationCountry') }}
                 </div>
-                <small class="form-hint">Code pays ISO à 2 lettres (ex : FR, BE, CA).</small>
+                <small class="form-hint">Code pays ISO à 2 lettres.</small>
               </div>
 
               <div class="form-group half-width">
@@ -108,7 +109,7 @@ import { environment } from '../../../../environments/environment';
                   formControlName="organizationPhone"
                   class="form-control"
                   [class.error]="isFieldInvalid('organizationPhone')"
-                  placeholder="+33 1 23 45 67 89">
+                  placeholder="{{ selectedMarketProfile?.phonePrefix }} 123456789">
                 <div class="error-message" *ngIf="isFieldInvalid('organizationPhone')">
                   {{ getErrorMessage('organizationPhone') }}
                 </div>
@@ -409,6 +410,7 @@ export class RegisterComponent implements OnInit {
       next: (profiles) => {
         this.marketProfiles = profiles;
         this.loadingProfiles = false;
+        console.log('Profils de marché chargés:', this.marketProfiles);
       },
       error: (err) => {
         console.error('Erreur lors du chargement des profils de marché:', err);
