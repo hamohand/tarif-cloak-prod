@@ -217,17 +217,16 @@ import { of } from 'rxjs';
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      min-width: 32px;
-      height: 24px;
-      padding: 0 0.5rem;
-      background: rgba(250, 204, 21, 0.2);
-      border: 1px solid rgba(250, 204, 21, 0.4);
-      border-radius: 4px;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: white;
       font-weight: 700;
       font-size: 0.75rem;
-      color: #facc15;
+      color: #1e3c72;
       text-transform: uppercase;
       letter-spacing: 0.5px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
 
     .btn {
