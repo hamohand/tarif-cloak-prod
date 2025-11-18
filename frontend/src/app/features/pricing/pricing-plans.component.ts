@@ -29,6 +29,9 @@ import { AuthService } from '../../core/services/auth.service';
       } @else if (error) {
         <div class="error">{{ error }}</div>
       } @else {
+        <div class="pricing-info-bar">
+          Possibilité de changer de plan tarifaire et demande de devis personnalisé à tout moment.
+        </div>
         <div class="pricing-plans-grid">
           @for (plan of plans; track plan.id) {
             <div class="pricing-plan-card" [class.featured]="plan.displayOrder === 2">
@@ -150,13 +153,30 @@ import { AuthService } from '../../core/services/auth.service';
       margin-bottom: 3rem;
     }
 
+    .pricing-info-bar {
+      text-align: center;
+      padding: 0.75rem 1rem;
+      margin-bottom: 2rem;
+      background-color: #f8f9fa;
+      border: 1px solid #e1e8ed;
+      border-radius: 6px;
+      color: #495057;
+      font-size: 0.9rem;
+      font-style: italic;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
     .pricing-plan-card {
-      background: white;
+      background: #2c3e50;
       border-radius: 12px;
-      padding: 2rem;
+      padding: 1.5rem;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
       position: relative;
       transition: transform 0.3s ease, box-shadow 0.3s ease;
+      min-height: auto;
+      height: auto;
     }
 
     .pricing-plan-card:hover {
@@ -165,75 +185,78 @@ import { AuthService } from '../../core/services/auth.service';
     }
 
     .pricing-plan-card.featured {
-      border: 3px solid #3498db;
+      border: 3px solid #facc15;
       transform: scale(1.05);
+      background: #34495e;
     }
 
     .popular-badge {
       position: absolute;
       top: -15px;
       right: 20px;
-      background: #3498db;
-      color: white;
+      background: #facc15;
+      color: #1f2937;
       padding: 0.5rem 1rem;
       border-radius: 20px;
       font-size: 0.9rem;
-      font-weight: 600;
+      font-weight: 700;
+      box-shadow: 0 2px 8px rgba(250, 204, 21, 0.4);
     }
 
     .pricing-plan-card h3 {
-      font-size: 1.8rem;
-      color: #2c3e50;
-      margin-bottom: 1rem;
+      font-size: 1.5rem;
+      color: #ecf0f1;
+      margin-bottom: 0.75rem;
     }
 
     .price {
-      margin: 1.5rem 0;
+      margin: 1rem 0;
       display: flex;
       align-items: baseline;
       justify-content: center;
     }
 
     .currency {
-      font-size: 1.5rem;
-      color: #7f8c8d;
+      font-size: 1.3rem;
+      color: #bdc3c7;
       margin-right: 0.25rem;
     }
 
     .amount {
-      font-size: 3rem;
+      font-size: 2.5rem;
       font-weight: 700;
-      color: #2c3e50;
+      color: #ecf0f1;
     }
 
     .period {
-      font-size: 1.2rem;
-      color: #7f8c8d;
+      font-size: 1rem;
+      color: #bdc3c7;
       margin-left: 0.25rem;
     }
 
     .description {
-      color: #7f8c8d;
-      margin-bottom: 1rem;
+      color: #bdc3c7;
+      margin-bottom: 0.75rem;
       text-align: center;
+      font-size: 0.9rem;
     }
 
     .quota {
       text-align: center;
-      margin: 1.5rem 0;
-      padding: 1rem;
-      background: #f8f9fa;
+      margin: 1rem 0;
+      padding: 0.75rem;
+      background: #34495e;
       border-radius: 8px;
-      color: #2c3e50;
+      color: #ecf0f1;
     }
 
     .features {
-      margin: 1.5rem 0;
+      margin: 1rem 0;
     }
 
     .features h4 {
-      font-size: 1.1rem;
-      color: #2c3e50;
+      font-size: 1rem;
+      color: #ecf0f1;
       margin-bottom: 0.5rem;
     }
 
@@ -243,9 +266,10 @@ import { AuthService } from '../../core/services/auth.service';
     }
 
     .features li {
-      padding: 0.5rem 0;
-      color: #7f8c8d;
-      border-bottom: 1px solid #ecf0f1;
+      padding: 0.4rem 0;
+      color: #bdc3c7;
+      border-bottom: 1px solid #34495e;
+      font-size: 0.9rem;
     }
 
     .features li:last-child {
@@ -261,17 +285,17 @@ import { AuthService } from '../../core/services/auth.service';
 
     .btn {
       width: 100%;
-      padding: 1rem;
+      padding: 0.75rem;
       border: none;
       border-radius: 8px;
-      font-size: 1.1rem;
+      font-size: 1rem;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.3s ease;
       text-decoration: none;
       display: block;
       text-align: center;
-      margin-top: 1.5rem;
+      margin-top: 1rem;
     }
 
     .btn-primary {
