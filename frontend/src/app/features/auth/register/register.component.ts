@@ -78,7 +78,7 @@ import { environment } from '../../../../environments/environment';
                 formControlName="organizationAddress"
                 class="form-control"
                 [class.error]="isFieldInvalid('organizationAddress')"
-                placeholder="Numéro, rue, \ncode postal, ville \n{{ selectedMarketProfile?.countryName }}"></textarea>
+                placeholder="Numéro, rue \ncode postal ville \n{{ selectedMarketProfile?.countryName }}"></textarea>
               <div class="error-message" *ngIf="isFieldInvalid('organizationAddress')">
                 {{ getErrorMessage('organizationAddress') }}
               </div>
@@ -129,7 +129,8 @@ import { environment } from '../../../../environments/environment';
                 type="password"
                 formControlName="organizationPassword"
                 class="form-control"
-                [class.error]="isFieldInvalid('organizationPassword')">
+                [class.error]="isFieldInvalid('organizationPassword')"
+                (focus)="onPasswordFieldFirstFocus()">
               <div class="error-message" *ngIf="isFieldInvalid('organizationPassword')">
                 {{ getErrorMessage('organizationPassword') }}
               </div>
@@ -159,7 +160,6 @@ import { environment } from '../../../../environments/environment';
               </ng-container>
               <ng-template #plansLoaded>
                 <select id="pricingPlanId" formControlName="pricingPlanId" class="form-control">
-                  <option [value]="null">Plan gratuit (limité)</option>
                   <option *ngFor="let plan of pricingPlans" [value]="plan.id">
                     {{ plan.name }} -
                     <ng-container *ngIf="plan.pricePerMonth !== null; else pricePerRequest">
@@ -379,6 +379,7 @@ export class RegisterComponent implements OnInit {
   marketProfiles: MarketProfile[] = [];
   loadingProfiles = false;
   selectedMarketProfile: MarketProfile | null = null;
+  private passwordFieldFirstFocus = false;
 
   registerForm: FormGroup = this.fb.group({
     marketVersion: [null, [Validators.required]],
@@ -447,6 +448,16 @@ export class RegisterComponent implements OnInit {
         this.loadingPlans = false;
       }
     });
+  }
+
+  onPasswordFieldFirstFocus() {
+    if (!this.passwordFieldFirstFocus) {
+      this.passwordFieldFirstFocus = true;
+      const passwordControl = this.registerForm.get('organizationPassword');
+      if (passwordControl && passwordControl.value) {
+        passwordControl.setValue('');
+      }
+    }
   }
 
   organizationPasswordMatchValidator(form: FormGroup) {
