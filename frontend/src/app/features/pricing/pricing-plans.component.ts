@@ -15,7 +15,7 @@ import { AuthService } from '../../core/services/auth.service';
       <div class="pricing-header">
         <h1>Choisissez votre plan tarifaire</h1>
         <p>Sélectionnez le plan qui correspond le mieux à vos besoins
-            <span class="quote-badge">💼 Devis personnalisé possible</span>
+            <span class="quote-badge">💼 Devis personnalisé possible après inscription.</span>
           </p>
         @if (isAuthenticated) {
           <div class="quote-notice">
