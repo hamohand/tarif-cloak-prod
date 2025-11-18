@@ -78,7 +78,7 @@ import { environment } from '../../../../environments/environment';
                 formControlName="organizationAddress"
                 class="form-control"
                 [class.error]="isFieldInvalid('organizationAddress')"
-                placeholder="Numéro, rue, code postal, ville {{ selectedMarketProfile?.countryName }}"></textarea>
+                placeholder="Numéro, rue, \ncode postal, ville \n{{ selectedMarketProfile?.countryName }}"></textarea>
               <div class="error-message" *ngIf="isFieldInvalid('organizationAddress')">
                 {{ getErrorMessage('organizationAddress') }}
               </div>
@@ -95,7 +95,7 @@ import { environment } from '../../../../environments/environment';
                   formControlName="organizationCountry"
                   class="form-control"
                   [class.error]="isFieldInvalid('organizationCountry')"
-                  placeholder="DZ">
+                  placeholder="{{ selectedMarketProfile?.countryCodeIsoAlpha2 }}">
                 <div class="error-message" *ngIf="isFieldInvalid('organizationCountry')">
                   {{ getErrorMessage('organizationCountry') }}
                 </div>
@@ -110,7 +110,7 @@ import { environment } from '../../../../environments/environment';
                   formControlName="organizationPhone"
                   class="form-control"
                   [class.error]="isFieldInvalid('organizationPhone')"
-                  [placeholder]="(selectedMarketProfile?.phonePrefix || '') + ' 123456789'">
+                  [placeholder]=selectedMarketProfile?.phonePrefix  + "123456789">
                 <div class="error-message" *ngIf="isFieldInvalid('organizationPhone')">
                   {{ getErrorMessage('organizationPhone') }}
                 </div>
