@@ -77,6 +77,9 @@ public class OrganizationService {
         organization.setName(request.getName());
         organization.setEmail(request.getEmail().trim());
         organization.setAddress(request.getAddress().trim());
+        if (request.getActivityDomain() != null && !request.getActivityDomain().trim().isEmpty()) {
+            organization.setActivityDomain(request.getActivityDomain().trim());
+        }
         organization.setCountry(request.getCountry().trim().toUpperCase());
         organization.setPhone(request.getPhone().trim());
         if (request.getKeycloakUserId() != null && !request.getKeycloakUserId().trim().isEmpty()) {
@@ -148,6 +151,12 @@ public class OrganizationService {
         
         if (request.getAddress() != null && !request.getAddress().trim().isEmpty()) {
             organization.setAddress(request.getAddress().trim());
+        }
+        
+        if (request.getActivityDomain() != null && !request.getActivityDomain().trim().isEmpty()) {
+            organization.setActivityDomain(request.getActivityDomain().trim());
+        } else if (request.getActivityDomain() != null && request.getActivityDomain().trim().isEmpty()) {
+            organization.setActivityDomain(null);
         }
         
         if (request.getCountry() != null && !request.getCountry().trim().isEmpty()) {
@@ -642,6 +651,7 @@ public class OrganizationService {
         dto.setName(organization.getName());
         dto.setEmail(organization.getEmail());
         dto.setAddress(organization.getAddress());
+        dto.setActivityDomain(organization.getActivityDomain());
         dto.setCountry(organization.getCountry());
         dto.setPhone(organization.getPhone());
         dto.setMonthlyQuota(organization.getMonthlyQuota());

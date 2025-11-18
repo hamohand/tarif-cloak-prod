@@ -92,6 +92,9 @@ public class PendingRegistrationService {
         pending.setOrganizationName(request.getOrganizationName());
         pending.setOrganizationEmail(request.getOrganizationEmail());
         pending.setOrganizationAddress(request.getOrganizationAddress());
+        if (request.getOrganizationActivityDomain() != null && !request.getOrganizationActivityDomain().trim().isEmpty()) {
+            pending.setOrganizationActivityDomain(request.getOrganizationActivityDomain().trim());
+        }
         pending.setOrganizationCountry(request.getOrganizationCountry().toUpperCase());
         pending.setOrganizationPhone(request.getOrganizationPhone());
         pending.setPricingPlanId(request.getPricingPlanId()); // Inclure le plan tarifaire sélectionné
@@ -161,6 +164,9 @@ public class PendingRegistrationService {
         pending.setOrganizationName(organization.getName());
         pending.setOrganizationEmail(organization.getEmail());
         pending.setOrganizationAddress(organization.getAddress());
+        if (organization.getActivityDomain() != null && !organization.getActivityDomain().trim().isEmpty()) {
+            pending.setOrganizationActivityDomain(organization.getActivityDomain().trim());
+        }
         pending.setOrganizationCountry(organization.getCountry());
         pending.setOrganizationPhone(organization.getPhone());
         pending.setOrganizationPassword(null);
@@ -272,6 +278,9 @@ public class PendingRegistrationService {
             orgRequest.setName(pending.getOrganizationName());
             orgRequest.setEmail(pending.getOrganizationEmail());
             orgRequest.setAddress(pending.getOrganizationAddress());
+            if (pending.getOrganizationActivityDomain() != null && !pending.getOrganizationActivityDomain().trim().isEmpty()) {
+                orgRequest.setActivityDomain(pending.getOrganizationActivityDomain().trim());
+            }
             orgRequest.setCountry(pending.getOrganizationCountry());
             orgRequest.setPhone(pending.getOrganizationPhone());
             orgRequest.setOrganizationPassword(pending.getOrganizationPassword());

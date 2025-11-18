@@ -8,6 +8,7 @@ export interface OrganizationInfo {
   name: string;
   email: string;
   address: string;
+  activityDomain?: string | null;
   country: string;
   phone: string;
   monthlyQuota?: number | null;

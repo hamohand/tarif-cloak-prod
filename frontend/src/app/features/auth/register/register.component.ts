@@ -84,6 +84,28 @@ import { environment } from '../../../../environments/environment';
               </div>
             </div>
 
+            <div class="form-group">
+              <label for="organizationActivityDomain">Domaine d'activité</label>
+              <select
+                id="organizationActivityDomain"
+                formControlName="organizationActivityDomain"
+                class="form-control"
+                [class.error]="isFieldInvalid('organizationActivityDomain')">
+                <option [value]="null">Sélectionner un domaine</option>
+                <option value="Sociétés de négoce international (Trading Companies)">Sociétés de négoce international (Trading Companies)</option>
+                <option value="Sociétés de transport et logistique">Sociétés de transport et logistique</option>
+                <option value="Sociétés de transit et de commissionnaire en douane">Sociétés de transit et de commissionnaire en douane</option>
+                <option value="Sociétés industrielles exportatrices">Sociétés industrielles exportatrices</option>
+                <option value="Sociétés d'importation et de distribution">Sociétés d'importation et de distribution</option>
+                <option value="Sociétés de conseil en commerce international">Sociétés de conseil en commerce international</option>
+                <option value="Entreprises d'emballage et de conditionnement pour l'export">Entreprises d'emballage et de conditionnement pour l'export</option>
+                <option value="Autre">Autre</option>
+              </select>
+              <div class="error-message" *ngIf="isFieldInvalid('organizationActivityDomain')">
+                {{ getErrorMessage('organizationActivityDomain') }}
+              </div>
+            </div>
+
             <div class="form-row">
               <div class="form-group half-width">
                 <label for="organizationCountry">Pays (code ISO) *</label>
@@ -430,6 +452,7 @@ export class RegisterComponent implements OnInit {
     organizationName: ['', [Validators.required, Validators.minLength(1), Validators.maxLength(255)]],
     organizationEmail: ['', [Validators.required, Validators.email, Validators.maxLength(255)]],
     organizationAddress: ['', [Validators.required, Validators.minLength(5), Validators.maxLength(512)]],
+    organizationActivityDomain: [null],
     organizationCountry: ['', [Validators.required, Validators.pattern(/^[A-Za-z]{2}$/)]],
     organizationPhone: ['', [Validators.required, Validators.pattern(/^[+0-9\s().-]{5,32}$/)]],
     organizationPassword: ['', [Validators.required, Validators.minLength(8)]],
@@ -584,6 +607,7 @@ export class RegisterComponent implements OnInit {
       organizationName: formValue.organizationName,
       organizationEmail,
       organizationAddress: formValue.organizationAddress,
+      organizationActivityDomain: formValue.organizationActivityDomain || null,
       organizationCountry,
       organizationPhone: formValue.organizationPhone,
       organizationPassword,

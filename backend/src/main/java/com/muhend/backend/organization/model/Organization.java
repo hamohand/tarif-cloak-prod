@@ -31,6 +31,9 @@ public class Organization {
     @Column(name = "address", nullable = false, length = 512)
     private String address; // Adresse complète de l'organisation
     
+    @Column(name = "activity_domain", nullable = true, length = 255)
+    private String activityDomain; // Domaine d'activité de l'organisation
+    
     @Column(name = "country", nullable = false, length = 2)
     private String country; // Code pays ISO-3166 alpha-2
     

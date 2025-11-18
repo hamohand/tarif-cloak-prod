@@ -24,6 +24,9 @@ public class UpdateOrganizationRequest {
     @Size(min = 5, max = 512, message = "L'adresse doit contenir entre 5 et 512 caractères")
     private String address;
     
+    @Size(max = 255, message = "Le domaine d'activité doit contenir au maximum 255 caractères")
+    private String activityDomain; // Domaine d'activité (optionnel)
+    
     @Size(min = 2, max = 2, message = "Le pays doit être un code ISO 3166-1 alpha-2")
     private String country;
     

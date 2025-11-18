@@ -18,6 +18,7 @@ public class OrganizationDto {
     private String name;
     private String email; // Email de contact de l'organisation
     private String address;
+    private String activityDomain; // Domaine d'activité
     private String country;
     private String phone;
     private Integer monthlyQuota; // null = quota illimité

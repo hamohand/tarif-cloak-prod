@@ -53,6 +53,9 @@ public class PendingRegistration {
     @Column(name = "organization_address", nullable = false, length = 512)
     private String organizationAddress;
     
+    @Column(name = "organization_activity_domain", nullable = true, length = 255)
+    private String organizationActivityDomain; // Domaine d'activité (optionnel)
+    
     @Column(name = "organization_country", nullable = false, length = 2)
     private String organizationCountry;
     
