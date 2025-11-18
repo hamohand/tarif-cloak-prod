@@ -155,11 +155,14 @@ import { environment } from '../../../../environments/environment';
             <h3>Plan tarifaire</h3>
             <div class="form-group">
               <label for="pricingPlanId">Sélectionner un plan</label>
+              <div class="pricing-info-bar">
+                Possibilité de changer de plan tarifaire et demande de devis personnalisé à tout moment.
+              </div>
               <ng-container *ngIf="loadingPlans; else plansLoaded">
                 <div class="loading-plans">Chargement des plans...</div>
               </ng-container>
               <ng-template #plansLoaded>
-                <select id="pricingPlanId" formControlName="pricingPlanId" class="form-control">
+                <select id="pricingPlanId" formControlName="pricingPlanId" class="form-control pricing-plan-select">
                   <option *ngFor="let plan of pricingPlans" [value]="plan.id">
                     {{ plan.name }} -
                     <ng-container *ngIf="plan.pricePerMonth !== null; else pricePerRequest">
@@ -318,6 +321,37 @@ import { environment } from '../../../../environments/environment';
     .form-hint {
       color: #95a5a6;
       font-size: 0.85rem;
+    }
+
+    .pricing-info-bar {
+      text-align: center;
+      padding: 0.75rem 1rem;
+      margin-bottom: 1rem;
+      background-color: #f8f9fa;
+      border: 1px solid #e1e8ed;
+      border-radius: 6px;
+      color: #495057;
+      font-size: 0.9rem;
+      font-style: italic;
+    }
+
+    .pricing-plan-select {
+      background-color: #2c3e50;
+      color: #ecf0f1;
+      height: auto;
+      min-height: 2.5rem;
+      padding: 0.5rem 0.75rem;
+    }
+
+    .pricing-plan-select option {
+      background-color: #2c3e50;
+      color: #ecf0f1;
+      padding: 0.5rem;
+    }
+
+    .pricing-plan-select:focus {
+      border-color: #3498db;
+      background-color: #34495e;
     }
 
     .form-actions {
