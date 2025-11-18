@@ -26,7 +26,6 @@ import { of } from 'rxjs';
         @if (!(isCollaboratorAccount$ | async)) {
           <a routerLink="/pricing" class="nav-link pricing-link">
             💳 Tarifs
-            <span class="quote-badge">💼 Devis personnalisé</span>
           </a>
         }
         @if (isAuthenticated$ | async) {
