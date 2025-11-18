@@ -6,7 +6,7 @@ import { AlertService } from '../../../core/services/alert.service';
 import { InvoiceService } from '../../../core/services/invoice.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { MarketProfileService } from '../../../core/services/market-profile.service';
-import { environment } from '../../../environments/environment';
+import { environment } from '../../../../environments/environment';
 import { AsyncPipe, CommonModule } from '@angular/common';
 import { take, map, catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
