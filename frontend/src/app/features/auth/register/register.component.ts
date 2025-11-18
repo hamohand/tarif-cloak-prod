@@ -110,7 +110,7 @@ import { environment } from '../../../../environments/environment';
                   formControlName="organizationPhone"
                   class="form-control"
                   [class.error]="isFieldInvalid('organizationPhone')"
-                  [placeholder]=selectedMarketProfile?.phonePrefix  + "123456789">
+                  [placeholder]="(selectedMarketProfile?.phonePrefix || '') + ' 123456789'">
                 <div class="error-message" *ngIf="isFieldInvalid('organizationPhone')">
                   {{ getErrorMessage('organizationPhone') }}
                 </div>
