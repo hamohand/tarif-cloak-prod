@@ -162,7 +162,7 @@ import { environment } from '../../../../environments/environment';
                 <div class="loading-plans">Chargement des plans...</div>
               </ng-container>
               <ng-template #plansLoaded>
-                <select id="pricingPlanId" formControlName="pricingPlanId" class="form-control pricing-plan-select" style="background-color: #2c3e50; color: #ecf0f1; min-height: 2.5rem; max-height: 2.5rem; padding: 0.5rem 0.75rem;">
+                <select id="pricingPlanId" formControlName="pricingPlanId" class="pricing-plan-select">
                   <option *ngFor="let plan of pricingPlans" [value]="plan.id">
                     {{ plan.name }} -
                     <ng-container *ngIf="plan.pricePerMonth !== null; else pricePerRequest">
@@ -333,16 +333,23 @@ import { environment } from '../../../../environments/environment';
       color: #495057;
       font-size: 0.9rem;
       font-style: italic;
+      display: block;
+      width: 100%;
     }
 
     .pricing-plan-select {
       background-color: #2c3e50 !important;
       color: #ecf0f1 !important;
-      height: auto !important;
+      height: 2.5rem !important;
       min-height: 2.5rem !important;
       max-height: 2.5rem !important;
       padding: 0.5rem 0.75rem !important;
       line-height: 1.5 !important;
+      border: 2px solid #34495e !important;
+      border-radius: 6px !important;
+      font-size: 1rem !important;
+      width: 100% !important;
+      box-sizing: border-box !important;
     }
 
     .pricing-plan-select option {
@@ -354,6 +361,7 @@ import { environment } from '../../../../environments/environment';
     .pricing-plan-select:focus {
       border-color: #3498db !important;
       background-color: #34495e !important;
+      outline: none !important;
     }
 
     .form-actions {
