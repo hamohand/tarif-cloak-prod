@@ -1,14 +1,14 @@
 import { Component, OnInit, inject, OnDestroy } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
-import { Observable, interval, Subscription, combineLatest } from 'rxjs';
+import { Observable, interval, Subscription } from 'rxjs';
 import { AuthService } from '../../../core/services/auth.service';
 import { AlertService } from '../../../core/services/alert.service';
 import { InvoiceService } from '../../../core/services/invoice.service';
 import { NotificationService } from '../../../core/services/notification.service';
-import { OrganizationAccountService } from '../../../core/services/organization-account.service';
 import { MarketProfileService } from '../../../core/services/market-profile.service';
+import { environment } from '../../../environments/environment';
 import { AsyncPipe, CommonModule } from '@angular/common';
-import { take, switchMap, map, catchError } from 'rxjs/operators';
+import { take, map, catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
 
 @Component({
@@ -61,6 +61,11 @@ import { of } from 'rxjs';
           </span>
           <button (click)="logout()" class="btn btn-outline">Déconnexion</button>
         } @else {
+          <span class="user-info">
+            @if (countryCode$ | async; as countryCode) {
+              <span class="country-code">{{ countryCode }}</span>
+            }
+          </span>
           <button (click)="goToRegister()" class="btn btn-secondary">Créer un compte</button>
           <button (click)="login()" class="btn btn-primary">Connexion</button>
         }
@@ -202,6 +207,10 @@ import { of } from 'rxjs';
       display: flex;
       align-items: center;
       gap: 0.5rem;
+    }
+
+    .user-info:has(.country-code:only-child) {
+      padding: 0.5rem;
     }
 
     .country-code {
@@ -556,7 +565,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
   private alertService = inject(AlertService);
   private invoiceService = inject(InvoiceService);
   private notificationService = inject(NotificationService);
-  private organizationAccountService = inject(OrganizationAccountService);
   private marketProfileService = inject(MarketProfileService);
 
   isAuthenticated$!: Observable<boolean>;
@@ -575,35 +583,19 @@ export class NavbarComponent implements OnInit, OnDestroy {
     this.isOrganizationAccount$ = this.authService.isOrganizationAccount();
     this.isCollaboratorAccount$ = this.authService.isCollaboratorAccount();
     
-    // Charger le code pays du profil de marché de l'organisation
-    this.countryCode$ = combineLatest([
-      this.isAuthenticated$,
-      this.isOrganizationAccount$
-    ]).pipe(
-      switchMap(([isAuthenticated, isOrganization]) => {
-        if (isAuthenticated && isOrganization) {
-          return this.organizationAccountService.getMyOrganization().pipe(
-            switchMap(org => {
-              if (org.marketVersion) {
-                return this.marketProfileService.getMarketProfileByVersion(org.marketVersion).pipe(
-                  map(profile => profile.countryCodeIsoAlpha2),
-                  catchError(err => {
-                    console.error('Erreur lors du chargement du profil de marché:', err);
-                    return of(null);
-                  })
-                );
-              }
-              return of(null);
-            }),
-            catchError(err => {
-              console.error('Erreur lors du chargement de l\'organisation:', err);
-              return of(null);
-            })
-          );
-        }
-        return of(null);
-      })
-    );
+    // Charger le code pays du profil de marché configuré dans l'environnement
+    // Le profil de marché est défini par la variable d'environnement MARKET_VERSION
+    if (environment.marketVersion) {
+      this.countryCode$ = this.marketProfileService.getMarketProfileByVersion(environment.marketVersion).pipe(
+        map(profile => profile.countryCodeIsoAlpha2),
+        catchError(err => {
+          console.error('Erreur lors du chargement du profil de marché:', err);
+          return of(null);
+        })
+      );
+    } else {
+      this.countryCode$ = of(null);
+    }
     
     this.loadAlertCount();
     this.loadNewInvoicesCount();
