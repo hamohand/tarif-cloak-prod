@@ -58,5 +58,10 @@ public interface QuotaAlertRepository extends JpaRepository<QuotaAlert, Long> {
      * Compte toutes les alertes non lues.
      */
     long countByIsReadFalse();
+    
+    /**
+     * Supprime toutes les alertes d'une organisation.
+     */
+    long deleteByOrganizationId(Long organizationId);
 }
 

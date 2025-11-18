@@ -71,20 +71,6 @@ import { environment } from '../../../../environments/environment';
             </div>
 
             <div class="form-group">
-              <label for="organizationAddress">Adresse complète *</label>
-              <textarea
-                id="organizationAddress"
-                rows="3"
-                formControlName="organizationAddress"
-                class="form-control"
-                [class.error]="isFieldInvalid('organizationAddress')"
-                placeholder="Numéro, rue \ncode postal ville \n{{ selectedMarketProfile?.countryName }}"></textarea>
-              <div class="error-message" *ngIf="isFieldInvalid('organizationAddress')">
-                {{ getErrorMessage('organizationAddress') }}
-              </div>
-            </div>
-
-            <div class="form-group">
               <label for="organizationActivityDomain">Domaine d'activité</label>
               <select
                 id="organizationActivityDomain"
@@ -103,6 +89,20 @@ import { environment } from '../../../../environments/environment';
               </select>
               <div class="error-message" *ngIf="isFieldInvalid('organizationActivityDomain')">
                 {{ getErrorMessage('organizationActivityDomain') }}
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="organizationAddress">Adresse complète *</label>
+              <textarea
+                id="organizationAddress"
+                rows="3"
+                formControlName="organizationAddress"
+                class="form-control"
+                [class.error]="isFieldInvalid('organizationAddress')"
+                placeholder="Numéro, rue \ncode postal ville \n{{ selectedMarketProfile?.countryName }}"></textarea>
+              <div class="error-message" *ngIf="isFieldInvalid('organizationAddress')">
+                {{ getErrorMessage('organizationAddress') }}
               </div>
             </div>
 

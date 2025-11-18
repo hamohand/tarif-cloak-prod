@@ -55,5 +55,10 @@ public interface UsageLogRepository extends JpaRepository<UsageLog, Long> {
         LocalDateTime start,
         LocalDateTime end
     );
+    
+    /**
+     * Supprime tous les logs d'un utilisateur.
+     */
+    long deleteByKeycloakUserId(String keycloakUserId);
 }
 
