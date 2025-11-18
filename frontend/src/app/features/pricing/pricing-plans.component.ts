@@ -89,7 +89,7 @@ import { AuthService } from '../../core/services/auth.service';
       }
 
       <div class="pricing-footer">
-        <p>Vous pouvez changer de plan à tout moment après votre inscription.</p>
+        <p>Tarifs de lancement valables jusqu'au 30/06/2026.</p>
         <div class="footer-actions">
           <button class="btn btn-secondary" (click)="openQuoteRequestForm()" *ngIf="isAuthenticated">
             Demander un devis personnalisé
@@ -157,10 +157,10 @@ import { AuthService } from '../../core/services/auth.service';
       text-align: center;
       padding: 0.75rem 1rem;
       margin-bottom: 2rem;
-      background-color: #f8f9fa;
+      background: #2c3e50;
       border: 1px solid #e1e8ed;
       border-radius: 6px;
-      color: #495057;
+      color:rgb(211, 225, 240);
       font-size: 0.9rem;
       font-style: italic;
       max-width: 800px;

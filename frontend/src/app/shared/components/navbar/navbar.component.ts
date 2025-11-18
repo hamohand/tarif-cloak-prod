@@ -18,7 +18,12 @@ import { of } from 'rxjs';
   template: `
     <nav class="navbar">
       <div class="nav-brand">
-        <a routerLink="/">Enclume-Numérique</a>
+        <a routerLink="/">
+          Enclume-Numérique
+          @if (countryCode$ | async; as countryCode) {
+            <span class="brand-country-code">{{ countryCode }}</span>
+          }
+        </a>
       </div>
 
       <div class="nav-links">
@@ -53,18 +58,10 @@ import { of } from 'rxjs';
       <div class="nav-auth">
         @if (isAuthenticated$ | async) {
           <span class="user-info">
-            @if (countryCode$ | async; as countryCode) {
-              <span class="country-code">{{ countryCode }}</span>
-            }
             Bienvenue {{ getUserInfo()?.preferred_username }}
           </span>
           <button (click)="logout()" class="btn btn-outline">Déconnexion</button>
         } @else {
-          <span class="user-info">
-            @if (countryCode$ | async; as countryCode) {
-              <span class="country-code">{{ countryCode }}</span>
-            }
-          </span>
           <button (click)="goToRegister()" class="btn btn-secondary">Créer un compte</button>
           <button (click)="login()" class="btn btn-primary">Connexion</button>
         }
@@ -145,11 +142,30 @@ import { of } from 'rxjs';
       letter-spacing: 0.5px;
       transition: all 0.3s ease;
       text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
     }
 
     .nav-brand a:hover {
       transform: translateY(-2px);
       text-shadow: 2px 4px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .brand-country-code {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: white;
+      font-weight: 700;
+      font-size: 0.75rem;
+      color: #1e3c72;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
 
     .nav-links {
