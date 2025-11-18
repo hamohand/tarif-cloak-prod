@@ -94,7 +94,7 @@ import { environment } from '../../../../environments/environment';
                   formControlName="organizationCountry"
                   class="form-control"
                   [class.error]="isFieldInvalid('organizationCountry')"
-                  placeholder="{{ selectedMarketProfile?.countryCodeIsoAlpha2 }}">
+                  placeholder={{ selectedMarketProfile?.countryCodeIsoAlpha2 }}>
                 <div class="error-message" *ngIf="isFieldInvalid('organizationCountry')">
                   {{ getErrorMessage('organizationCountry') }}
                 </div>
