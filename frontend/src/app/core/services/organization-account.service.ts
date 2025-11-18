@@ -16,6 +16,7 @@ export interface OrganizationInfo {
   createdAt?: string | null;
   userCount?: number | null;
   currentMonthUsage?: number | null;
+  marketVersion?: string | null;
 }
 
 export interface OrganizationCollaborator {

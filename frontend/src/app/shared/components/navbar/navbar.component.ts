@@ -1,12 +1,15 @@
 import { Component, OnInit, inject, OnDestroy } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
-import { Observable, interval, Subscription } from 'rxjs';
+import { Observable, interval, Subscription, combineLatest } from 'rxjs';
 import { AuthService } from '../../../core/services/auth.service';
 import { AlertService } from '../../../core/services/alert.service';
 import { InvoiceService } from '../../../core/services/invoice.service';
 import { NotificationService } from '../../../core/services/notification.service';
+import { OrganizationAccountService } from '../../../core/services/organization-account.service';
+import { MarketProfileService } from '../../../core/services/market-profile.service';
 import { AsyncPipe, CommonModule } from '@angular/common';
-import { take } from 'rxjs/operators';
+import { take, switchMap, map, catchError } from 'rxjs/operators';
+import { of } from 'rxjs';
 
 @Component({
   selector: 'app-navbar',
@@ -50,7 +53,12 @@ import { take } from 'rxjs/operators';
 
       <div class="nav-auth">
         @if (isAuthenticated$ | async) {
-          <span class="user-info">Bienvenue {{ getUserInfo()?.preferred_username }}</span>
+          <span class="user-info">
+            @if (countryCode$ | async; as countryCode) {
+              <span class="country-code">{{ countryCode }}</span>
+            }
+            Bienvenue {{ getUserInfo()?.preferred_username }}
+          </span>
           <button (click)="logout()" class="btn btn-outline">Déconnexion</button>
         } @else {
           <button (click)="goToRegister()" class="btn btn-secondary">Créer un compte</button>
@@ -191,6 +199,26 @@ import { take } from 'rxjs/operators';
       border-radius: 20px;
       backdrop-filter: blur(10px);
       border: 1px solid rgba(255, 255, 255, 0.2);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .country-code {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 32px;
+      height: 24px;
+      padding: 0 0.5rem;
+      background: rgba(250, 204, 21, 0.2);
+      border: 1px solid rgba(250, 204, 21, 0.4);
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 0.75rem;
+      color: #facc15;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
     .btn {
@@ -528,10 +556,13 @@ export class NavbarComponent implements OnInit, OnDestroy {
   private alertService = inject(AlertService);
   private invoiceService = inject(InvoiceService);
   private notificationService = inject(NotificationService);
+  private organizationAccountService = inject(OrganizationAccountService);
+  private marketProfileService = inject(MarketProfileService);
 
   isAuthenticated$!: Observable<boolean>;
   isOrganizationAccount$!: Observable<boolean>;
   isCollaboratorAccount$!: Observable<boolean>;
+  countryCode$!: Observable<string | null>;
   alertCount = 0;
   newInvoicesCount = 0;
   overdueInvoicesCount = 0;
@@ -543,6 +574,37 @@ export class NavbarComponent implements OnInit, OnDestroy {
     this.isAuthenticated$ = this.authService.isAuthenticated();
     this.isOrganizationAccount$ = this.authService.isOrganizationAccount();
     this.isCollaboratorAccount$ = this.authService.isCollaboratorAccount();
+    
+    // Charger le code pays du profil de marché de l'organisation
+    this.countryCode$ = combineLatest([
+      this.isAuthenticated$,
+      this.isOrganizationAccount$
+    ]).pipe(
+      switchMap(([isAuthenticated, isOrganization]) => {
+        if (isAuthenticated && isOrganization) {
+          return this.organizationAccountService.getMyOrganization().pipe(
+            switchMap(org => {
+              if (org.marketVersion) {
+                return this.marketProfileService.getMarketProfileByVersion(org.marketVersion).pipe(
+                  map(profile => profile.countryCodeIsoAlpha2),
+                  catchError(err => {
+                    console.error('Erreur lors du chargement du profil de marché:', err);
+                    return of(null);
+                  })
+                );
+              }
+              return of(null);
+            }),
+            catchError(err => {
+              console.error('Erreur lors du chargement de l\'organisation:', err);
+              return of(null);
+            })
+          );
+        }
+        return of(null);
+      })
+    );
+    
     this.loadAlertCount();
     this.loadNewInvoicesCount();
     this.loadOverdueInvoicesCount();
