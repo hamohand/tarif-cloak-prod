@@ -21,18 +21,19 @@ import { environment } from '../../../../environments/environment';
           <div class="form-section">
             <h3>Profil de marché</h3>
             <div class="form-group">
-              <label for="marketVersion">Sélectionner votre marché *</label>
-              <ng-container *ngIf="loadingProfiles; else profilesLoaded">
-                <div class="loading-plans">Chargement des profils...</div>
+              <label for="marketVersion">Marché *</label>
+              <ng-container *ngIf="selectedMarketProfile; else loadingProfile">
+                <input 
+                  id="marketVersion" 
+                  type="text" 
+                  [value]="selectedMarketProfile.countryName + ' (' + selectedMarketProfile.currencyCode + ')'"
+                  readonly
+                  class="form-control"
+                  formControlName="marketVersion">
+                <small class="form-hint">Profil de marché configuré pour cette instance de l'application.</small>
               </ng-container>
-              <ng-template #profilesLoaded>
-                <select id="marketVersion" formControlName="marketVersion" class="form-control" (change)="onMarketProfileChange()">
-                  <option [value]="null">Sélectionner un marché</option>
-                  <option *ngFor="let profile of marketProfiles" [value]="profile.marketVersion">
-                    {{ profile.countryName }} ({{ profile.currencyCode }})
-                  </option>
-                </select>
-                <small class="form-hint">Le profil sélectionné pré-remplira automatiquement certains champs.</small>
+              <ng-template #loadingProfile>
+                <div class="loading-plans">Chargement du profil de marché...</div>
               </ng-template>
             </div>
           </div>
@@ -401,46 +402,31 @@ export class RegisterComponent implements OnInit {
       }
     });
 
-    this.loadMarketProfiles();
-  }
-
-  loadMarketProfiles() {
-    this.loadingProfiles = true;
-    this.marketProfileService.getActiveMarketProfiles().subscribe({
-      next: (profiles) => {
-        this.marketProfiles = profiles;
-        this.loadingProfiles = false;
-        console.log('Profils de marché chargés:', this.marketProfiles);
-      },
-      error: (err) => {
-        console.error('Erreur lors du chargement des profils de marché:', err);
-        this.loadingProfiles = false;
-      }
-    });
-  }
-
-  onMarketProfileChange() {
-    const marketVersion = this.registerForm.get('marketVersion')?.value;
-    if (!marketVersion) {
-      this.selectedMarketProfile = null;
-      return;
-    }
-
-    const profile = this.marketProfiles.find(p => p.marketVersion === marketVersion);
-    if (profile) {
-      this.selectedMarketProfile = profile;
-      // Pré-remplir les champs avec les valeurs du profil
-      console.log('Profil sélectionné:', profile.countryCodeIsoAlpha2);
-      console.log('Préfixe téléphonique:', profile.phonePrefix);
-      console.log('Code pays ISO:', profile.countryName);
+    // Charger automatiquement le profil de marché depuis l'environnement
+    const marketVersion = environment.marketVersion;
+    if (marketVersion) {
+      // Définir la valeur dans le formulaire
+      this.registerForm.patchValue({ marketVersion: marketVersion });
       
-      this.registerForm.patchValue({
-        organizationCountry: profile.countryCodeIsoAlpha2,
-        organizationPhone: profile.phonePrefix + ' '
-      }, { emitEvent: false });
-
-      // Charger les plans tarifaires pour ce marché
-      this.loadPricingPlans(marketVersion);
+      // Charger le profil de marché
+      this.marketProfileService.getMarketProfileByVersion(marketVersion).subscribe({
+        next: (profile) => {
+          this.selectedMarketProfile = profile;
+          this.marketProfiles = [profile]; // Pour l'affichage si nécessaire
+          
+          // Pré-remplir les champs avec les valeurs du profil
+          this.registerForm.patchValue({
+            organizationCountry: profile.countryCodeIsoAlpha2,
+            organizationPhone: profile.phonePrefix + ' '
+          }, { emitEvent: false });
+          
+          // Charger les plans tarifaires pour ce marché
+          this.loadPricingPlans(marketVersion);
+        },
+        error: (err) => {
+          console.error('Erreur lors du chargement du profil de marché:', err);
+        }
+      });
     }
   }
 
