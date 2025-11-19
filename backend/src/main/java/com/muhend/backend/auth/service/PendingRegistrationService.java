@@ -66,13 +66,13 @@ public class PendingRegistrationService {
             throw new IllegalArgumentException("Une organisation avec cet email existe déjà. Veuillez vous connecter ou contacter l'administrateur.");
         }
         
-        // Vérifier si un utilisateur avec cet email est déjà en cours d'inscription
-        if (pendingRegistrationRepository.existsByEmail(request.getEmail())) {
+        // Vérifier si un utilisateur avec cet email est déjà en cours d'inscription (non confirmé)
+        if (pendingRegistrationRepository.existsByEmailAndNotConfirmed(request.getEmail())) {
             throw new IllegalArgumentException("Un utilisateur avec cet email est déjà en cours d'inscription.");
         }
         
-        // Vérifier si une inscription en attente existe déjà pour cet email d'organisation
-        if (pendingRegistrationRepository.existsByOrganizationEmail(request.getOrganizationEmail())) {
+        // Vérifier si une inscription en attente existe déjà pour cet email d'organisation (non confirmée)
+        if (pendingRegistrationRepository.existsByOrganizationEmailAndNotConfirmed(request.getOrganizationEmail())) {
             throw new IllegalArgumentException("Une inscription en attente existe déjà pour cet email d'organisation.");
         }
         
@@ -135,7 +135,7 @@ public class PendingRegistrationService {
         if (pendingRegistrationRepository.existsByUsername(request.getUsername())) {
             throw new IllegalArgumentException("Un utilisateur avec ce nom d'utilisateur est déjà en cours d'inscription.");
         }
-        if (pendingRegistrationRepository.existsByEmail(request.getEmail())) {
+        if (pendingRegistrationRepository.existsByEmailAndNotConfirmed(request.getEmail())) {
             throw new IllegalArgumentException("Un utilisateur avec cet email est déjà en cours d'inscription.");
         }
         String organizationEmail = organization.getEmail();

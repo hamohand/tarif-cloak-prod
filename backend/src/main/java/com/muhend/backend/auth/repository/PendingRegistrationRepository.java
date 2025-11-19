@@ -27,6 +27,13 @@ public interface PendingRegistrationRepository extends JpaRepository<PendingRegi
     
     boolean existsByUsername(String username);
     
+    @Query("SELECT COUNT(pr) > 0 FROM PendingRegistration pr WHERE pr.email = :email AND (pr.confirmed IS NULL OR pr.confirmed = false)")
+    boolean existsByEmailAndNotConfirmed(@Param("email") String email);
+    
+    @Query("SELECT COUNT(pr) > 0 FROM PendingRegistration pr WHERE pr.organizationEmail = :organizationEmail AND (pr.confirmed IS NULL OR pr.confirmed = false)")
+    boolean existsByOrganizationEmailAndNotConfirmed(@Param("organizationEmail") String organizationEmail);
+    
+    // Méthodes legacy pour compatibilité (vérifient tous les enregistrements)
     boolean existsByEmail(String email);
     
     boolean existsByOrganizationEmail(String organizationEmail);
