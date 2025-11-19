@@ -10,7 +10,6 @@ import { environment } from '../../../../environments/environment';
 import { AsyncPipe, CommonModule } from '@angular/common';
 import { take, map, catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
-import { PendingRegistrationsComponent } from './features/admin/pending-registrations/pending-registrations.component';
 
 @Component({
   selector: 'app-navbar',

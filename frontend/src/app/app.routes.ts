@@ -19,13 +19,13 @@ import { InvoiceDetailComponent } from './features/user/invoices/invoice-detail.
 import { InvoicesAdminComponent } from './features/admin/invoices/invoices-admin.component';
 import { InvoiceDetailAdminComponent } from './features/admin/invoices/invoice-detail-admin.component';
 import { QuoteRequestsAdminComponent } from './features/admin/quote-requests/quote-requests-admin.component';
+import { PendingRegistrationsComponent } from './features/admin/pending-registrations/pending-registrations.component';
 import { PricingPlansComponent } from './features/pricing/pricing-plans.component';
 import { OrganizationAccountComponent } from './features/organization/organization-account.component';
 import { OrganizationStatsComponent } from './features/organization/organization-stats.component';
 import { QuoteRequestsComponent } from './features/organization/quote-requests.component';
 import { collaboratorGuard } from './core/guards/collaborator.guard';
 import { organizationGuard } from './core/guards/organization.guard';
-import { PendingRegistrationsComponent } from './features/admin/pending-registrations/pending-registrations.component';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },
