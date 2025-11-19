@@ -2,6 +2,9 @@ package com.muhend.backend.usage.repository;
 
 import com.muhend.backend.usage.model.UsageLog;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
@@ -64,6 +67,8 @@ public interface UsageLogRepository extends JpaRepository<UsageLog, Long> {
     /**
      * Supprime tous les logs d'une organisation.
      */
-    long deleteByOrganizationId(Long organizationId);
+    @Modifying
+    @Query("DELETE FROM UsageLog u WHERE u.organizationId = :organizationId")
+    int deleteByOrganizationId(@Param("organizationId") Long organizationId);
 }
 

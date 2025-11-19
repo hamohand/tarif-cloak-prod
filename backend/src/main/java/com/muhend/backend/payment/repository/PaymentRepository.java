@@ -2,6 +2,9 @@ package com.muhend.backend.payment.repository;
 
 import com.muhend.backend.payment.model.Payment;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -48,6 +51,8 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     /**
      * Supprime tous les paiements d'une organisation.
      */
-    long deleteByOrganizationId(Long organizationId);
+    @Modifying
+    @Query("DELETE FROM Payment p WHERE p.organizationId = :organizationId")
+    int deleteByOrganizationId(@Param("organizationId") Long organizationId);
 }
 

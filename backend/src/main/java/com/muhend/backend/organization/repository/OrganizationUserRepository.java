@@ -2,6 +2,9 @@ package com.muhend.backend.organization.repository;
 
 import com.muhend.backend.organization.model.OrganizationUser;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -43,6 +46,8 @@ public interface OrganizationUserRepository extends JpaRepository<OrganizationUs
     /**
      * Supprime toutes les associations d'une organisation.
      */
-    long deleteByOrganizationId(Long organizationId);
+    @Modifying
+    @Query("DELETE FROM OrganizationUser ou WHERE ou.organization.id = :organizationId")
+    int deleteByOrganizationId(@Param("organizationId") Long organizationId);
 }
 

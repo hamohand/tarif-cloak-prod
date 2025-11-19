@@ -2,6 +2,9 @@ package com.muhend.backend.payment.repository;
 
 import com.muhend.backend.payment.model.Subscription;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -38,6 +41,8 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
     /**
      * Supprime tous les abonnements d'une organisation.
      */
-    long deleteByOrganizationId(Long organizationId);
+    @Modifying
+    @Query("DELETE FROM Subscription s WHERE s.organizationId = :organizationId")
+    int deleteByOrganizationId(@Param("organizationId") Long organizationId);
 }
 

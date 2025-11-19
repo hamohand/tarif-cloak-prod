@@ -2,6 +2,9 @@ package com.muhend.backend.invoice.repository;
 
 import com.muhend.backend.invoice.model.Invoice;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
@@ -66,6 +69,8 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
     /**
      * Supprime toutes les factures d'une organisation.
      */
-    long deleteByOrganizationId(Long organizationId);
+    @Modifying
+    @Query("DELETE FROM Invoice i WHERE i.organizationId = :organizationId")
+    int deleteByOrganizationId(@Param("organizationId") Long organizationId);
 }
 

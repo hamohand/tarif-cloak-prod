@@ -62,6 +62,8 @@ public interface QuotaAlertRepository extends JpaRepository<QuotaAlert, Long> {
     /**
      * Supprime toutes les alertes d'une organisation.
      */
-    long deleteByOrganizationId(Long organizationId);
+    @Modifying
+    @Query("DELETE FROM QuotaAlert q WHERE q.organizationId = :organizationId")
+    int deleteByOrganizationId(@Param("organizationId") Long organizationId);
 }
 

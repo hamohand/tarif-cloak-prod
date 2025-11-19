@@ -105,37 +105,37 @@ public class OrganizationDeletionService {
             }
             
             // 2. Supprimer les Invoices
-            long deletedInvoices = invoiceRepository.deleteByOrganizationId(organizationId);
+            int deletedInvoices = invoiceRepository.deleteByOrganizationId(organizationId);
             result.setDeletedInvoices(deletedInvoices);
             logger.info("  - {} factures supprimées", deletedInvoices);
             
             // 3. Supprimer les Payments
-            long deletedPayments = paymentRepository.deleteByOrganizationId(organizationId);
+            int deletedPayments = paymentRepository.deleteByOrganizationId(organizationId);
             result.setDeletedPayments(deletedPayments);
             logger.info("  - {} paiements supprimés", deletedPayments);
             
             // 4. Supprimer les Subscriptions
-            long deletedSubscriptions = subscriptionRepository.deleteByOrganizationId(organizationId);
+            int deletedSubscriptions = subscriptionRepository.deleteByOrganizationId(organizationId);
             result.setDeletedSubscriptions(deletedSubscriptions);
             logger.info("  - {} abonnements supprimés", deletedSubscriptions);
             
             // 5. Supprimer les QuoteRequests
-            long deletedQuoteRequests = quoteRequestRepository.deleteByOrganizationId(organizationId);
+            int deletedQuoteRequests = quoteRequestRepository.deleteByOrganizationId(organizationId);
             result.setDeletedQuoteRequests(deletedQuoteRequests);
             logger.info("  - {} demandes de devis supprimées", deletedQuoteRequests);
             
             // 6. Supprimer les UsageLogs
-            long deletedUsageLogs = usageLogRepository.deleteByOrganizationId(organizationId);
+            int deletedUsageLogs = usageLogRepository.deleteByOrganizationId(organizationId);
             result.setDeletedUsageLogs(deletedUsageLogs);
             logger.info("  - {} logs d'utilisation supprimés", deletedUsageLogs);
             
             // 7. Supprimer les QuotaAlerts
-            long deletedQuotaAlerts = quotaAlertRepository.deleteByOrganizationId(organizationId);
+            int deletedQuotaAlerts = quotaAlertRepository.deleteByOrganizationId(organizationId);
             result.setDeletedQuotaAlerts(deletedQuotaAlerts);
             logger.info("  - {} alertes de quota supprimées", deletedQuotaAlerts);
             
             // 8. Supprimer les OrganizationUsers
-            long deletedOrganizationUsers = organizationUserRepository.deleteByOrganizationId(organizationId);
+            int deletedOrganizationUsers = organizationUserRepository.deleteByOrganizationId(organizationId);
             result.setDeletedOrganizationUsers(deletedOrganizationUsers);
             logger.info("  - {} associations utilisateur-organisation supprimées", deletedOrganizationUsers);
             
