@@ -6,6 +6,7 @@ import { PricingPlanService, PricingPlan } from '../../../core/services/pricing-
 import { MarketProfileService, MarketProfile } from '../../../core/services/market-profile.service';
 import { CommonModule } from '@angular/common';
 import { environment } from '../../../../environments/environment';
+import { take } from 'rxjs/operators';
 
 @Component({
   selector: 'app-register',
@@ -463,13 +464,6 @@ export class RegisterComponent implements OnInit {
   });
 
   ngOnInit() {
-    this.route.queryParams.subscribe(params => {
-      const planId = params['planId'];
-      if (planId) {
-        this.registerForm.patchValue({ pricingPlanId: +planId });
-      }
-    });
-
     // Charger automatiquement le profil de marché depuis l'environnement
     const marketVersion = environment.marketVersion;
     if (marketVersion) {
@@ -509,6 +503,28 @@ export class RegisterComponent implements OnInit {
       next: (plans) => {
         this.pricingPlans = plans;
         this.loadingPlans = false;
+        
+        // Vérifier d'abord les query params pour un planId spécifique
+        this.route.queryParams.pipe(take(1)).subscribe((params: any) => {
+          const planId = params['planId'];
+          if (planId) {
+            const planExists = plans.some(plan => plan.id === +planId);
+            if (planExists) {
+              this.registerForm.patchValue({ pricingPlanId: +planId });
+              return; // Ne pas sélectionner le plan gratuit si un planId est fourni
+            }
+          }
+          
+          // Si aucun plan n'est sélectionné, sélectionner le plan gratuit par défaut
+          const currentPlanId = this.registerForm.get('pricingPlanId')?.value;
+          if (!currentPlanId) {
+            // Trouver le plan gratuit (pricePerMonth === 0)
+            const freePlan = plans.find(plan => plan.pricePerMonth === 0);
+            if (freePlan) {
+              this.registerForm.patchValue({ pricingPlanId: freePlan.id });
+            }
+          }
+        });
       },
       error: (err) => {
         console.error('Erreur lors du chargement des plans tarifaires:', err);
