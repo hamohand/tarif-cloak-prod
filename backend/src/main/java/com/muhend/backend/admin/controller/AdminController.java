@@ -104,4 +104,57 @@ public class AdminController {
         List<PendingRegistration> pending = pendingRegistrationService.getAllPendingRegistrations();
         return ResponseEntity.ok(pending);
     }
+    
+    /**
+     * Supprime une inscription en attente spécifique
+     * @param id ID de l'inscription en attente à supprimer
+     * @return Message de confirmation
+     */
+    @DeleteMapping("/pending-registrations/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, Object>> deletePendingRegistration(@PathVariable Long id) {
+        logger.info("Suppression de l'inscription en attente avec l'ID: {}", id);
+        try {
+            pendingRegistrationService.deletePendingRegistration(id);
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "Inscription en attente supprimée avec succès"
+            ));
+        } catch (IllegalArgumentException e) {
+            logger.error("Inscription en attente non trouvée: {}", e.getMessage());
+            return ResponseEntity.status(404).body(Map.of(
+                "success", false,
+                "error", e.getMessage()
+            ));
+        } catch (Exception e) {
+            logger.error("Erreur lors de la suppression de l'inscription en attente {}", id, e);
+            return ResponseEntity.status(500).body(Map.of(
+                "success", false,
+                "error", "Erreur lors de la suppression: " + e.getMessage()
+            ));
+        }
+    }
+    
+    /**
+     * Supprime toutes les inscriptions en attente expirées
+     * @return Nombre d'inscriptions supprimées
+     */
+    @DeleteMapping("/pending-registrations/expired")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, Object>> deleteExpiredPendingRegistrations() {
+        logger.info("Suppression de toutes les inscriptions en attente expirées");
+        try {
+            pendingRegistrationService.cleanupExpiredRegistrations();
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "Nettoyage des inscriptions expirées terminé"
+            ));
+        } catch (Exception e) {
+            logger.error("Erreur lors du nettoyage des inscriptions expirées", e);
+            return ResponseEntity.status(500).body(Map.of(
+                "success", false,
+                "error", "Erreur lors du nettoyage: " + e.getMessage()
+            ));
+        }
+    }
 }

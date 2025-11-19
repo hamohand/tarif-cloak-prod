@@ -66,13 +66,14 @@ public class PendingRegistrationService {
             throw new IllegalArgumentException("Une organisation avec cet email existe déjà. Veuillez vous connecter ou contacter l'administrateur.");
         }
         
-        // Vérifier si une inscription en attente existe déjà pour cet email d'organisation
-        List<PendingRegistration> existingPending = pendingRegistrationRepository
-            .findByOrganizationEmail(request.getOrganizationEmail());
+        // Vérifier si un utilisateur avec cet email est déjà en cours d'inscription
+        if (pendingRegistrationRepository.existsByEmail(request.getEmail())) {
+            throw new IllegalArgumentException("Un utilisateur avec cet email est déjà en cours d'inscription.");
+        }
         
-        if (!existingPending.isEmpty()) {
-            log.info("Inscription en attente déjà existante pour l'email d'organisation: {}", 
-                request.getOrganizationEmail());
+        // Vérifier si une inscription en attente existe déjà pour cet email d'organisation
+        if (pendingRegistrationRepository.existsByOrganizationEmail(request.getOrganizationEmail())) {
+            throw new IllegalArgumentException("Une inscription en attente existe déjà pour cet email d'organisation.");
         }
         
         // Générer un token de confirmation
@@ -503,12 +504,31 @@ public class PendingRegistrationService {
 
     /**
      * Récupère toutes les inscriptions en attente (non confirmées)
+     * Inclut les inscriptions expirées pour que l'admin puisse les voir
      */
     public List<PendingRegistration> getAllPendingRegistrations() {
         return pendingRegistrationRepository.findAll().stream()
-            .filter(pr -> !pr.getConfirmed())
+            .filter(pr -> pr.getConfirmed() == null || !pr.getConfirmed()) // Gérer les cas où confirmed pourrait être null
             .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt())) // Plus récentes en premier
             .collect(Collectors.toList());
+    }
+    
+    /**
+     * Supprime une inscription en attente spécifique par son ID
+     * @param id ID de l'inscription en attente à supprimer
+     * @throws IllegalArgumentException si l'inscription n'existe pas ou si l'ID est null
+     */
+    @Transactional
+    public void deletePendingRegistration(Long id) {
+        if (id == null) {
+            throw new IllegalArgumentException("L'ID de l'inscription en attente ne peut pas être null");
+        }
+        Optional<PendingRegistration> pendingOpt = pendingRegistrationRepository.findById(id);
+        if (pendingOpt.isEmpty()) {
+            throw new IllegalArgumentException("Inscription en attente non trouvée avec l'ID: " + id);
+        }
+        pendingRegistrationRepository.deleteById(id);
+        log.info("Inscription en attente supprimée: id={}", id);
     }
 }
 
