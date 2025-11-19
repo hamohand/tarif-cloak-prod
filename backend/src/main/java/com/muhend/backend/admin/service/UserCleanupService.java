@@ -35,9 +35,6 @@ public class UserCleanupService {
     @Value("${keycloak.admin.realm:hscode-realm}")
     private String realm;
     
-    @Value("${keycloak.admin.client-id:backend-client}")
-    private String clientId;
-    
     public UserCleanupService(
             Keycloak keycloak,
             UsageLogRepository usageLogRepository,
@@ -68,7 +65,16 @@ public class UserCleanupService {
         List<String> userIdsToDelete = allUsers.stream()
             .filter(user -> {
                 try {
-                    return hasRole(user.getId(), "ORGANIZATION") || hasRole(user.getId(), "COLLABORATOR");
+                    boolean hasOrgRole = hasRole(user.getId(), "ORGANIZATION");
+                    boolean hasCollabRole = hasRole(user.getId(), "COLLABORATOR");
+                    boolean shouldDelete = hasOrgRole || hasCollabRole;
+                    
+                    if (shouldDelete) {
+                        logger.info("Utilisateur {} trouvé avec rôles - ORGANIZATION: {}, COLLABORATOR: {}", 
+                            user.getUsername(), hasOrgRole, hasCollabRole);
+                    }
+                    
+                    return shouldDelete;
                 } catch (Exception e) {
                     logger.warn("Erreur lors de la vérification des rôles pour l'utilisateur {}: {}", 
                         user.getUsername(), e.getMessage());
@@ -79,6 +85,10 @@ public class UserCleanupService {
             .collect(Collectors.toList());
         
         logger.info("Nombre d'utilisateurs à supprimer: {}", userIdsToDelete.size());
+        
+        if (!userIdsToDelete.isEmpty()) {
+            logger.info("IDs des utilisateurs à supprimer: {}", userIdsToDelete);
+        }
         
         if (userIdsToDelete.isEmpty()) {
             logger.info("Aucun utilisateur à supprimer");
@@ -138,6 +148,7 @@ public class UserCleanupService {
     
     /**
      * Vérifie si un utilisateur a un rôle spécifique (ORGANIZATION ou COLLABORATOR)
+     * Les rôles sont stockés au niveau du realm, pas au niveau du client
      */
     private boolean hasRole(String userId, String roleName) {
         try {
@@ -145,13 +156,19 @@ public class UserCleanupService {
             UsersResource usersResource = realmResource.users();
             UserResource userResource = usersResource.get(userId);
             
-            // Vérifier les rôles du client backend-client
-            List<RoleRepresentation> clientRoles = userResource.roles()
-                .clientLevel(clientId)
+            // Vérifier les rôles du realm (pas du client)
+            List<RoleRepresentation> realmRoles = userResource.roles()
+                .realmLevel()
                 .listAll();
             
-            return clientRoles.stream()
+            boolean hasRole = realmRoles.stream()
                 .anyMatch(role -> role.getName().equalsIgnoreCase(roleName));
+            
+            if (hasRole) {
+                logger.debug("Utilisateur {} a le rôle {}", userId, roleName);
+            }
+            
+            return hasRole;
         } catch (Exception e) {
             logger.warn("Erreur lors de la vérification du rôle {} pour l'utilisateur {}: {}", 
                 roleName, userId, e.getMessage());
