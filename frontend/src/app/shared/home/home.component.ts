@@ -114,11 +114,11 @@ import { map } from 'rxjs/operators';
           
           <div class="feature-card request-card">
             <div class="request-icon">📋</div>
-            <h3>Recherche par lots</h3>
+            <h3>Recherche par lots (bientôt disponible)</h3>
             <p>Traitez plusieurs produits simultanément avec l'outil de recherche par lots.</p>
-            <a [routerLink]="['/recherche/searchListLots']" class="cta-button secondary">
-              Rechercher par lots
-            </a>
+            // <a [routerLink]="['/recherche/searchListLots']" class="cta-button secondary">
+            //   Rechercher par lots
+            // </a>
           </div>
         </div>
         

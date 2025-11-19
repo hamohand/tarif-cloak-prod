@@ -37,20 +37,20 @@ import { of } from 'rxjs';
           @if (isOrganizationAccount$ | async) {
             <a routerLink="/organization/account" class="nav-link">Mon organisation</a>
             <a routerLink="/dashboard" class="nav-link">Tableau de bord</a>
-            <a routerLink="/alerts" class="nav-link alerts-link">
-              🔔 Alertes
-              @if (alertCount > 0) {
+            @if (alertCount > 0) {
+              <a routerLink="/alerts" class="nav-link alerts-link">
+                🔔 Alertes
                 <span class="alert-badge">{{ alertCount }}</span>
-              }
-            </a>
+              </a>
+            }
           } @else if (isCollaboratorAccount$ | async) {
             <a routerLink="/dashboard" class="nav-link">Tableau de bord</a>
-            <a routerLink="/alerts" class="nav-link alerts-link">
-              🔔 Alertes
-              @if (alertCount > 0) {
+            @if (alertCount > 0) {
+              <a routerLink="/alerts" class="nav-link alerts-link">
+                🔔 Alertes
                 <span class="alert-badge">{{ alertCount }}</span>
-              }
-            </a>
+              </a>
+            }
           }
         }
       </div>
@@ -629,8 +629,9 @@ export class NavbarComponent implements OnInit, OnDestroy {
   }
 
   loadAlertCount() {
-    this.isCollaboratorAccount$.pipe(take(1)).subscribe(isCollaborator => {
-      if (isCollaborator) {
+    // Charger les alertes pour les comptes organisation et collaborateur
+    this.isOrganizationAccount$.pipe(take(1)).subscribe(isOrganization => {
+      if (isOrganization) {
         this.alertService.getMyAlertsCount().subscribe({
           next: (response) => {
             this.alertCount = response.count;
@@ -641,7 +642,22 @@ export class NavbarComponent implements OnInit, OnDestroy {
           }
         });
       } else {
-        this.alertCount = 0;
+        // Vérifier si c'est un collaborateur
+        this.isCollaboratorAccount$.pipe(take(1)).subscribe(isCollaborator => {
+          if (isCollaborator) {
+            this.alertService.getMyAlertsCount().subscribe({
+              next: (response) => {
+                this.alertCount = response.count;
+              },
+              error: (err) => {
+                console.error('Erreur lors du chargement du compteur d\'alertes:', err);
+                this.alertCount = 0;
+              }
+            });
+          } else {
+            this.alertCount = 0;
+          }
+        });
       }
     });
   }
