@@ -10,6 +10,7 @@ import { environment } from '../../../../environments/environment';
 import { AsyncPipe, CommonModule } from '@angular/common';
 import { take, map, catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
+import { PendingRegistrationsComponent } from './features/admin/pending-registrations/pending-registrations.component';
 
 @Component({
   selector: 'app-navbar',
@@ -27,7 +28,15 @@ import { of } from 'rxjs';
       </div>
 
       <div class="nav-links">
-        <a routerLink="/" class="nav-link">Accueil</a>
+        @if (isAuthenticated$ | async) {
+          @if ((isOrganizationAccount$ | async) || (isCollaboratorAccount$ | async)) {
+            <a routerLink="/" class="nav-link">HS-code</a>
+          } @else {
+            <a routerLink="/" class="nav-link">Accueil</a>
+          }
+        } @else {
+          <a routerLink="/" class="nav-link">Accueil</a>
+        }
         @if (!(isCollaboratorAccount$ | async)) {
           <a routerLink="/pricing" class="nav-link pricing-link">
             💳 Tarifs
@@ -99,6 +108,7 @@ import { of } from 'rxjs';
             <a routerLink="/admin/organizations" class="admin-nav-link">🏢 Organisations</a>
             <a routerLink="/admin/invoices" class="admin-nav-link">📄 Factures (Admin)</a>
             <a routerLink="/admin/quote-requests" routerLinkActive="router-link-active" class="admin-nav-link">💼 Demandes de devis</a>
+            <a routerLink="/admin/pending-registrations" class="admin-nav-link">⏳ Inscriptions en attente</a>
           </div>
         </nav>
       }

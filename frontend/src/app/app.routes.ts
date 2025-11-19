@@ -25,6 +25,7 @@ import { OrganizationStatsComponent } from './features/organization/organization
 import { QuoteRequestsComponent } from './features/organization/quote-requests.component';
 import { collaboratorGuard } from './core/guards/collaborator.guard';
 import { organizationGuard } from './core/guards/organization.guard';
+import { PendingRegistrationsComponent } from './features/admin/pending-registrations/pending-registrations.component';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -98,6 +99,11 @@ export const routes: Routes = [
   {
     path: 'admin/quote-requests',
     component: QuoteRequestsAdminComponent,
+    canActivate: [authGuard]
+  },
+  {
+    path: 'admin/pending-registrations',
+    component: PendingRegistrationsComponent,
     canActivate: [authGuard]
   },
   { path: '**', redirectTo: '' }

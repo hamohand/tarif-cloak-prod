@@ -83,6 +83,26 @@ export interface AddUserToOrganizationRequest {
   keycloakUserId: string;
 }
 
+export interface PendingRegistration {
+  id: number;
+  username: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  organizationName: string;
+  organizationEmail: string;
+  organizationAddress: string;
+  organizationActivityDomain?: string;
+  organizationCountry: string;
+  organizationPhone: string;
+  pricingPlanId?: number;
+  marketVersion?: string;
+  confirmationToken: string;
+  expiresAt: string;
+  confirmed: boolean;
+  createdAt: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -196,6 +216,14 @@ export class AdminService {
    */
   removeUserFromOrganization(organizationId: number, keycloakUserId: string): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/organizations/${organizationId}/users/${keycloakUserId}`);
+  }
+
+  /**
+   * Récupère tous les utilisateurs en attente d'inscription
+   * @return Liste des inscriptions en attente
+   */
+  getPendingRegistrations(): Observable<PendingRegistration[]> {
+    return this.http.get<PendingRegistration[]>(`${this.apiUrl}/pending-registrations`);
   }
 }
 

@@ -19,6 +19,7 @@ import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Service pour gérer les inscriptions en attente de confirmation.
@@ -498,6 +499,16 @@ public class PendingRegistrationService {
         pendingRegistrationRepository.deleteAll();
         log.info("✓ Toutes les inscriptions en attente ont été supprimées");
         return count;
+    }
+
+    /**
+     * Récupère toutes les inscriptions en attente (non confirmées)
+     */
+    public List<PendingRegistration> getAllPendingRegistrations() {
+        return pendingRegistrationRepository.findAll().stream()
+            .filter(pr -> !pr.getConfirmed())
+            .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt())) // Plus récentes en premier
+            .collect(Collectors.toList());
     }
 }
 

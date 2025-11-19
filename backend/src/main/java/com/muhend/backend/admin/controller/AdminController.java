@@ -1,6 +1,8 @@
 package com.muhend.backend.admin.controller;
 
 import com.muhend.backend.admin.service.OrganizationDeletionService;
+import com.muhend.backend.auth.model.PendingRegistration;
+import com.muhend.backend.auth.service.PendingRegistrationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -8,6 +10,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -21,9 +24,14 @@ public class AdminController {
     private static final Logger logger = LoggerFactory.getLogger(AdminController.class);
     
     private final OrganizationDeletionService organizationDeletionService;
+    private final PendingRegistrationService pendingRegistrationService;
     
-    public AdminController(OrganizationDeletionService organizationDeletionService) {
+    public AdminController(
+        OrganizationDeletionService organizationDeletionService,
+        PendingRegistrationService pendingRegistrationService
+    ) {
         this.organizationDeletionService = organizationDeletionService;
+        this.pendingRegistrationService = pendingRegistrationService;
     }
     
     /**
@@ -83,5 +91,17 @@ public class AdminController {
                 "error", "Erreur lors de la suppression: " + e.getMessage()
             ));
         }
+    }
+
+    /**
+     * Récupère tous les utilisateurs en attente d'inscription
+     * @return Liste des inscriptions en attente
+     */
+    @GetMapping("/pending-registrations")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<PendingRegistration>> getPendingRegistrations() {
+        logger.info("Récupération de tous les utilisateurs en attente d'inscription");
+        List<PendingRegistration> pending = pendingRegistrationService.getAllPendingRegistrations();
+        return ResponseEntity.ok(pending);
     }
 }
