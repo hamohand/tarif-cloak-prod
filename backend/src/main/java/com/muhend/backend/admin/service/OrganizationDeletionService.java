@@ -97,7 +97,7 @@ public class OrganizationDeletionService {
                 .toList();
             
             for (Long invoiceId : invoiceIds) {
-                long deletedItems = invoiceItemRepository.deleteByInvoiceId(invoiceId);
+                int deletedItems = invoiceItemRepository.deleteByInvoiceId(invoiceId);
                 result.addDeletedInvoiceItems(deletedItems);
                 if (deletedItems > 0) {
                     logger.debug("  - {} éléments de facture supprimés pour la facture {}", deletedItems, invoiceId);
@@ -210,7 +210,7 @@ public class OrganizationDeletionService {
             return deletedInvoiceItems;
         }
         
-        public void addDeletedInvoiceItems(long count) {
+        public void addDeletedInvoiceItems(int count) {
             this.deletedInvoiceItems += count;
         }
         

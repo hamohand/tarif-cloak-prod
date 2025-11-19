@@ -22,6 +22,6 @@ public interface InvoiceItemRepository extends JpaRepository<InvoiceItem, Long> 
      */
     @Modifying
     @Query("DELETE FROM InvoiceItem i WHERE i.invoice.id = :invoiceId")
-    long deleteByInvoiceId(@Param("invoiceId") Long invoiceId);
+    int deleteByInvoiceId(@Param("invoiceId") Long invoiceId);
 }
 
