@@ -60,5 +60,10 @@ public interface UsageLogRepository extends JpaRepository<UsageLog, Long> {
      * Supprime tous les logs d'un utilisateur.
      */
     long deleteByKeycloakUserId(String keycloakUserId);
+    
+    /**
+     * Supprime tous les logs d'une organisation.
+     */
+    long deleteByOrganizationId(Long organizationId);
 }
 

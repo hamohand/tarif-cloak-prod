@@ -17,6 +17,6 @@ public interface InvoiceItemRepository extends JpaRepository<InvoiceItem, Long> 
     /**
      * Supprime tous les éléments d'une facture.
      */
-    void deleteByInvoiceId(Long invoiceId);
+    long deleteByInvoiceId(Long invoiceId);
 }
 

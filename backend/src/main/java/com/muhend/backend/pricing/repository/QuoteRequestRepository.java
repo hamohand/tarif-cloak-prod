@@ -11,5 +11,10 @@ public interface QuoteRequestRepository extends JpaRepository<QuoteRequest, Long
     List<QuoteRequest> findByOrganizationIdOrderByCreatedAtDesc(Long organizationId);
     List<QuoteRequest> findAllByOrderByCreatedAtDesc();
     List<QuoteRequest> findByStatusOrderByCreatedAtDesc(QuoteRequest.QuoteStatus status);
+    
+    /**
+     * Supprime toutes les demandes de devis d'une organisation.
+     */
+    long deleteByOrganizationId(Long organizationId);
 }
 

@@ -62,5 +62,10 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
      * Compte les factures en retard (OVERDUE) d'une organisation.
      */
     long countByOrganizationIdAndStatus(Long organizationId, Invoice.InvoiceStatus status);
+    
+    /**
+     * Supprime toutes les factures d'une organisation.
+     */
+    long deleteByOrganizationId(Long organizationId);
 }
 

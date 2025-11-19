@@ -34,5 +34,10 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
      * Vérifie si une organisation a un abonnement actif.
      */
     boolean existsByOrganizationIdAndStatus(Long organizationId, Subscription.SubscriptionStatus status);
+    
+    /**
+     * Supprime tous les abonnements d'une organisation.
+     */
+    long deleteByOrganizationId(Long organizationId);
 }
 

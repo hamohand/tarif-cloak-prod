@@ -39,5 +39,10 @@ public interface OrganizationUserRepository extends JpaRepository<OrganizationUs
      * Supprime toutes les associations d'un utilisateur.
      */
     long deleteByKeycloakUserId(String keycloakUserId);
+    
+    /**
+     * Supprime toutes les associations d'une organisation.
+     */
+    long deleteByOrganizationId(Long organizationId);
 }
 

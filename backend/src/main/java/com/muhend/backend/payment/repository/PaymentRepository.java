@@ -44,5 +44,10 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
      * Trouve tous les paiements d'une organisation avec un statut spécifique.
      */
     List<Payment> findByOrganizationIdAndStatusOrderByCreatedAtDesc(Long organizationId, Payment.PaymentStatus status);
+    
+    /**
+     * Supprime tous les paiements d'une organisation.
+     */
+    long deleteByOrganizationId(Long organizationId);
 }
 
