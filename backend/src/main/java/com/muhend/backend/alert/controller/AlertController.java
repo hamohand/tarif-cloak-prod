@@ -35,7 +35,7 @@ public class AlertController {
      * Récupère les alertes non lues de l'utilisateur connecté (basées sur son organisation).
      */
     @GetMapping("/my-alerts")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('USER', 'ORGANIZATION', 'COLLABORATOR', 'ADMIN')")
     @Operation(
         summary = "Récupérer mes alertes",
         description = "Retourne les alertes non lues de l'organisation de l'utilisateur connecté.",
@@ -60,7 +60,7 @@ public class AlertController {
      * Compte les alertes non lues de l'utilisateur connecté.
      */
     @GetMapping("/my-alerts/count")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('USER', 'ORGANIZATION', 'COLLABORATOR', 'ADMIN')")
     @Operation(
         summary = "Compter mes alertes non lues",
         description = "Retourne le nombre d'alertes non lues de l'organisation de l'utilisateur connecté.",
@@ -130,7 +130,7 @@ public class AlertController {
      * Marque une alerte comme lue.
      */
     @PutMapping("/{alertId}/read")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('USER', 'ORGANIZATION', 'COLLABORATOR', 'ADMIN')")
     @Operation(
         summary = "Marquer une alerte comme lue",
         description = "Marque une alerte spécifique comme lue.",
@@ -145,7 +145,7 @@ public class AlertController {
      * Marque toutes les alertes de l'organisation de l'utilisateur comme lues.
      */
     @PutMapping("/my-alerts/read-all")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('USER', 'ORGANIZATION', 'COLLABORATOR', 'ADMIN')")
     @Operation(
         summary = "Marquer toutes mes alertes comme lues",
         description = "Marque toutes les alertes de l'organisation de l'utilisateur connecté comme lues.",
