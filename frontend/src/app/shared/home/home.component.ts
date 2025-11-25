@@ -11,7 +11,7 @@ import { map } from 'rxjs/operators';
   imports: [CommonModule, RouterLink],
   template: `
     <div class="home-container">
-      <h3>Bienvenue sur Enclume-Numérique</h1>
+      <h3>Bienvenue sur Enclume-Numérique</h3>
       <p>Votre solution complète pour la conformité tarifaire.</p>
 
       <!-- Présentation de l'API Recherche HS-code - Affichée uniquement pour les utilisateurs non connectés -->
@@ -101,7 +101,7 @@ import { map } from 'rxjs/operators';
 
       <!-- Section pour les utilisateurs connectés avec rôle ORGANIZATION ou COLLABORATOR -->
       <section class="user-actions" *ngIf="showRequestButtons$ | async">
-        <h4 class="section-title">Outils de recherche HS-Code</h2>
+        <h4 class="section-title">Outils de recherche HS-Code</h4>
         <div class="features primary">
           <div class="feature-card request-card">
             <div class="request-icon">🔍</div>
@@ -133,33 +133,6 @@ import { map } from 'rxjs/operators';
           </div>
         </div>
       </section>
-
-      <ng-template #restrictedAccess>
-        <div class="features primary" *ngIf="isOrganizationAccount$ | async; else guestAccess">
-          <div class="feature-card advise">
-            <h3>👥 Gestion d'organisation</h3>
-            <p>Utilisez l'espace <strong>Mon organisation</strong> pour inviter vos collaborateurs et suivre les statistiques globales.</p>
-            <a [routerLink]="['/organization/account']" class="cta-button secondary">
-              Ouvrir l'espace organisation
-            </a>
-          </div>
-        </div>
-      </ng-template>
-
-      <ng-template #guestAccess>
-        <div class="features primary">
-          <div class="feature-card advise">
-            <h3>🔑 Connexion requise</h3>
-            <p>Connectez-vous ou créez un compte organisation pour accéder aux outils Tariff.</p>
-            <a [routerLink]="['/auth/login']" class="cta-button secondary">
-              Se connecter
-            </a>
-            <a [routerLink]="['/pricing']" class="cta-button ghost">
-              Découvrir les plans tarifaires
-            </a>
-          </div>
-        </div>
-      </ng-template>
 
       <div class="features secondary" *ngIf="!(isAuthenticated$ | async)">
         <div class="feature-card">
