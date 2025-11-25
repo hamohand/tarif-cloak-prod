@@ -9,6 +9,7 @@ import { NotificationService } from '../../core/services/notification.service';
 import { OrganizationAccountService, OrganizationUsageLog } from '../../core/services/organization-account.service';
 import { CurrencyService } from '../../core/services/currency.service';
 import { Chart, ChartConfiguration, registerables } from 'chart.js';
+import { take } from 'rxjs/operators';
 
 Chart.register(...registerables);
 
@@ -719,6 +720,8 @@ export class OrganizationStatsComponent implements OnInit {
 
   organization: Organization | null = null;
   currencySymbol$ = this.currencyService.getCurrencySymbol();
+  private currentCurrencyCode = 'EUR'; // Par défaut, sera mis à jour dans ngOnInit
+  private currentCurrencySymbol = '€'; // Par défaut, sera mis à jour dans ngOnInit
   quota: UserQuota | null = null;
   stats: UserUsageStats | null = null;
   organizationUsageLogs: any = null;
@@ -743,12 +746,25 @@ export class OrganizationStatsComponent implements OnInit {
 
   ngOnInit() {
     // Précharger la devise pour qu'elle soit disponible immédiatement
-    this.currencySymbol$.subscribe({
+    this.currencySymbol$.pipe(take(1)).subscribe({
       next: (symbol) => {
         console.log('✅ OrganizationStatsComponent: Symbole de devise chargé:', symbol);
+        this.currentCurrencySymbol = symbol;
       },
       error: (err) => {
         console.error('❌ OrganizationStatsComponent: Erreur lors du chargement de la devise:', err);
+      }
+    });
+    
+    // Charger aussi le code de devise pour formatCurrency
+    this.currencyService.getCurrencyCode().pipe(take(1)).subscribe({
+      next: (code) => {
+        console.log('✅ OrganizationStatsComponent: Code devise chargé:', code);
+        this.currentCurrencyCode = code;
+        this.currentCurrencySymbol = this.currencyService.getSymbolForCurrency(code);
+      },
+      error: (err) => {
+        console.error('❌ OrganizationStatsComponent: Erreur lors du chargement du code devise:', err);
       }
     });
     
@@ -1005,7 +1021,20 @@ export class OrganizationStatsComponent implements OnInit {
 
   formatCurrency(amount: number): string {
     if (amount == null || isNaN(amount)) return '0.00';
-    return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount);
+    
+    // Utiliser la devise du marché stockée dans currentCurrencyCode
+    // Pour DZD, le symbole est placé après le montant
+    if (this.currentCurrencyCode === 'DZD' || this.currentCurrencyCode === 'MAD') {
+      return `${amount.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${this.currentCurrencySymbol}`;
+    }
+    
+    // Pour les autres devises, utiliser Intl.NumberFormat ou le symbole avant
+    try {
+      return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: this.currentCurrencyCode }).format(amount);
+    } catch (e) {
+      // Si la devise n'est pas supportée par Intl, utiliser le symbole manuellement
+      return `${this.currentCurrencySymbol}${amount.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
   }
 
   formatCost(amount: number): string {

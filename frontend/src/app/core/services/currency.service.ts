@@ -18,12 +18,15 @@ export class CurrencyService {
   getCurrencySymbol(): Observable<string> {
     // Si on a déjà un Observable en cache, le retourner
     if (this.cachedSymbol$) {
+      console.log('✅ CurrencyService: Utilisation du symbole en cache:', this.cachedCurrency);
       return this.cachedSymbol$;
     }
 
     // Si on a déjà la devise en cache, créer un Observable partagé
     if (this.cachedCurrency) {
-      this.cachedSymbol$ = of(this.getSymbolForCurrency(this.cachedCurrency)).pipe(shareReplay(1));
+      const symbol = this.getSymbolForCurrency(this.cachedCurrency);
+      console.log('✅ CurrencyService: Création Observable depuis cache:', symbol, 'pour', this.cachedCurrency);
+      this.cachedSymbol$ = of(symbol).pipe(shareReplay(1));
       return this.cachedSymbol$;
     }
 
@@ -55,16 +58,19 @@ export class CurrencyService {
       tap(profile => {
         console.log('✅ CurrencyService: Profil de marché récupéré:', profile);
         console.log('✅ CurrencyService: Code devise:', profile.currencyCode);
+        console.log('✅ CurrencyService: marketVersion du profil:', profile.marketVersion);
       }),
       map(profile => {
         const currency = profile.currencyCode || 'EUR';
         this.cachedCurrency = currency;
         const symbol = this.getSymbolForCurrency(currency);
         console.log('✅ CurrencyService: Symbole de devise calculé:', symbol, 'pour', currency);
+        console.log('✅ CurrencyService: Vérification mapping DZD -> DA:', currency === 'DZD' ? 'DA' : 'autre');
         return symbol;
       }),
       catchError((error) => {
         console.error('❌ CurrencyService: Erreur lors de la récupération du profil de marché:', error);
+        console.error('❌ CurrencyService: Détails de l\'erreur:', error.message, error.stack);
         // En cas d'erreur, utiliser EUR par défaut
         this.cachedCurrency = 'EUR';
         const defaultSymbol = '€';
@@ -113,8 +119,9 @@ export class CurrencyService {
 
   /**
    * Convertit un code de devise en symbole.
+   * Méthode publique pour être utilisée dans les composants.
    */
-  getSymbolForCurrency(currency: string): string {
+  public getSymbolForCurrency(currency: string): string {
     const currencyMap: { [key: string]: string } = {
       'EUR': '€',
       'DZD': 'DA',
