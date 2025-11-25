@@ -89,6 +89,11 @@ keycloak:
   registration:
     realm: ${KEYCLOAK_REALM:hscode-realm}
 
+# ===================================================
+# CONFIGURATION ADMIN EMAIL
+# ===================================================
+admin:
+  email: ${EMAIL_ADMIN_HSCODE:}
 
 # ===================================================
 # CONFIGURATION LOGGING

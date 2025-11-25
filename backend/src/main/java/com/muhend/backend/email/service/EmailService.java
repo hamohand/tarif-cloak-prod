@@ -444,6 +444,99 @@ public class EmailService {
     }
 
     /**
+     * Envoie une notification à l'administrateur lors de la création d'un nouveau compte organisation.
+     *
+     * @param adminEmail Email de l'administrateur
+     * @param organizationName Nom de l'organisation
+     * @param organizationAddress Adresse de l'organisation
+     */
+    public void sendNewOrganizationNotificationEmail(
+            String adminEmail,
+            String organizationName,
+            String organizationAddress) {
+        if (adminEmail == null || adminEmail.trim().isEmpty()) {
+            log.warn("EMAIL_ADMIN_HSCODE n'est pas configuré, notification admin non envoyée");
+            return;
+        }
+        
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            String from = fromEmail != null ? fromEmail : "noreply@enclume-numerique.com";
+            String fromNameValue = fromName != null ? fromName : "Enclume Numérique";
+            
+            helper.setFrom(from, fromNameValue);
+            helper.setTo(adminEmail);
+            helper.setSubject("Nouvelle création de compte - " + (organizationName != null ? organizationName : "Organisation"));
+            
+            // Créer le contenu HTML simple
+            String htmlContent = buildNewOrganizationNotificationHtml(organizationName, organizationAddress);
+            if (htmlContent != null && !htmlContent.trim().isEmpty()) {
+                helper.setText(htmlContent, true);
+            } else {
+                // Fallback en cas de problème avec le HTML
+                String plainText = String.format(
+                    "Une nouvelle organisation a été créée sur la plateforme HS-code.\n\n" +
+                    "Nom de l'entreprise : %s\n" +
+                    "Adresse : %s",
+                    organizationName != null ? organizationName : "Non renseigné",
+                    organizationAddress != null ? organizationAddress : "Non renseignée"
+                );
+                helper.setText(plainText, false);
+            }
+
+            mailSender.send(message);
+            log.info("Notification admin envoyée à {} pour la nouvelle organisation {}", adminEmail, organizationName);
+        } catch (MessagingException e) {
+            log.error("Erreur lors de l'envoi de la notification admin à {}: {}", adminEmail, e.getMessage(), e);
+            // Ne pas faire échouer la création d'organisation si l'email admin échoue
+        } catch (Exception e) {
+            log.error("Erreur inattendue lors de l'envoi de la notification admin à {}: {}", adminEmail, e.getMessage(), e);
+            // Ne pas faire échouer la création d'organisation si l'email admin échoue
+        }
+    }
+    
+    /**
+     * Construit le contenu HTML de la notification admin pour une nouvelle organisation.
+     */
+    private String buildNewOrganizationNotificationHtml(String organizationName, String organizationAddress) {
+        String safeName = organizationName != null ? organizationName : "Non renseigné";
+        String safeAddress = organizationAddress != null ? organizationAddress : "Non renseignée";
+        
+        StringBuilder html = new StringBuilder();
+        html.append("<!DOCTYPE html>");
+        html.append("<html>");
+        html.append("<head>");
+        html.append("<meta charset=\"UTF-8\">");
+        html.append("<style>");
+        html.append("body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }");
+        html.append(".container { max-width: 600px; margin: 0 auto; padding: 20px; }");
+        html.append(".header { background-color: #1e3c72; color: white; padding: 20px; text-align: center; }");
+        html.append(".content { background-color: #f9f9f9; padding: 20px; margin-top: 20px; }");
+        html.append(".info { background-color: white; padding: 15px; margin: 10px 0; border-left: 4px solid #1e3c72; }");
+        html.append(".label { font-weight: bold; color: #1e3c72; }");
+        html.append("</style>");
+        html.append("</head>");
+        html.append("<body>");
+        html.append("<div class=\"container\">");
+        html.append("<div class=\"header\">");
+        html.append("<h1>Nouvelle création de compte</h1>");
+        html.append("</div>");
+        html.append("<div class=\"content\">");
+        html.append("<p>Une nouvelle organisation a été créée sur la plateforme HS-code.</p>");
+        html.append("<div class=\"info\">");
+        html.append("<p><span class=\"label\">Nom de l'entreprise :</span> ").append(safeName).append("</p>");
+        html.append("<p><span class=\"label\">Adresse :</span> ").append(safeAddress).append("</p>");
+        html.append("</div>");
+        html.append("</div>");
+        html.append("</div>");
+        html.append("</body>");
+        html.append("</html>");
+        return html.toString();
+    }
+
+    /**
      * Récupère l'URL du frontend depuis les variables d'environnement ou utilise une valeur par défaut.
      */
     private String getFrontendUrl() {

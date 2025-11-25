@@ -114,6 +114,25 @@ public class OrganizationService {
         
         log.info("Organisation créée: id={}, name={}, email={}, pricingPlanId={}", 
             organization.getId(), organization.getName(), organization.getEmail(), organization.getPricingPlanId());
+        
+        // Envoyer une notification à l'administrateur
+        try {
+            String adminEmail = System.getenv("EMAIL_ADMIN_HSCODE");
+            if (adminEmail != null && !adminEmail.trim().isEmpty()) {
+                emailService.sendNewOrganizationNotificationEmail(
+                    adminEmail.trim(),
+                    organization.getName(),
+                    organization.getAddress()
+                );
+            } else {
+                log.debug("EMAIL_ADMIN_HSCODE non configuré, notification admin non envoyée");
+            }
+        } catch (Exception e) {
+            log.warn("Erreur lors de l'envoi de la notification admin pour la nouvelle organisation {}: {}", 
+                organization.getName(), e.getMessage());
+            // Ne pas faire échouer la création d'organisation si l'email admin échoue
+        }
+        
         return toDto(organization);
     }
     

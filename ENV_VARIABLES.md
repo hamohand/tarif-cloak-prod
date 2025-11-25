@@ -148,6 +148,9 @@ SMTP_FROM_NAME=Enclume Numérique
 
 # URL du frontend (pour les liens dans les emails)
 FRONTEND_URL=https://hscode.enclume-numerique.com
+
+# Email de l'administrateur pour les notifications de nouvelles créations de compte
+EMAIL_ADMIN_HSCODE=med@forge_numerique.com
 ```
 
 **Note** : Pour Gmail, vous devez utiliser un "Mot de passe d'application" au lieu de votre mot de passe habituel. Consultez [la documentation Gmail](https://support.google.com/accounts/answer/185833) pour plus d'informations.
