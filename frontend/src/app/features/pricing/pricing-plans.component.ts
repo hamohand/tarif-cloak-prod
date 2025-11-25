@@ -5,11 +5,13 @@ import { PricingPlanService, PricingPlan } from '../../core/services/pricing-pla
 import { environment } from '../../../environments/environment';
 import { QuoteRequestFormComponent } from './quote-request-form.component';
 import { AuthService } from '../../core/services/auth.service';
+import { CurrencyService } from '../../core/services/currency.service';
+import { AsyncPipe } from '@angular/common';
 
 @Component({
   selector: 'app-pricing-plans',
   standalone: true,
-  imports: [CommonModule, RouterLink, QuoteRequestFormComponent],
+  imports: [CommonModule, RouterLink, QuoteRequestFormComponent, AsyncPipe],
   template: `
     <div class="pricing-container">
       <div class="pricing-header">
@@ -44,12 +46,12 @@ import { AuthService } from '../../core/services/auth.service';
                   @if (plan.pricePerMonth === 0) {
                     <span class="amount">Gratuit</span>
                   } @else {
-                    <span class="currency">{{ getCurrencySymbol(plan.currency) }}</span>
+                    <span class="currency">{{ (currencySymbol$ | async) || getCurrencySymbol(plan.currency) }}</span>
                     <span class="amount">{{ plan.pricePerMonth }}</span>
                     <span class="period">/mois</span>
                   }
                 } @else if (plan.pricePerRequest !== null && plan.pricePerRequest !== undefined) {
-                  <span class="currency">{{ getCurrencySymbol(plan.currency) }}</span>
+                  <span class="currency">{{ (currencySymbol$ | async) || getCurrencySymbol(plan.currency) }}</span>
                   <span class="amount">{{ plan.pricePerRequest }}</span>
                   <span class="period">/requête</span>
                 } @else {
@@ -380,12 +382,14 @@ import { AuthService } from '../../core/services/auth.service';
 export class PricingPlansComponent implements OnInit {
   private pricingPlanService = inject(PricingPlanService);
   private authService = inject(AuthService);
+  private currencyService = inject(CurrencyService);
 
   plans: PricingPlan[] = [];
   loading = true;
   error = '';
   showQuoteForm = false;
   isAuthenticated = false;
+  currencySymbol$ = this.currencyService.getCurrencySymbol();
 
   ngOnInit() {
     this.loadPricingPlans();

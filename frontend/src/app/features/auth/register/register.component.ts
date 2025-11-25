@@ -4,14 +4,15 @@ import { RouterLink, ActivatedRoute } from '@angular/router';
 import { RegisterService } from '../../../core/services/register.service';
 import { PricingPlanService, PricingPlan } from '../../../core/services/pricing-plan.service';
 import { MarketProfileService, MarketProfile } from '../../../core/services/market-profile.service';
-import { CommonModule } from '@angular/common';
+import { CurrencyService } from '../../../core/services/currency.service';
+import { CommonModule, AsyncPipe } from '@angular/common';
 import { environment } from '../../../../environments/environment';
 import { take } from 'rxjs/operators';
 
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink, CommonModule],
+  imports: [ReactiveFormsModule, RouterLink, CommonModule, AsyncPipe],
   template: `
     <div class="register-container">
       <div class="register-card">
@@ -192,11 +193,11 @@ import { take } from 'rxjs/operators';
                       <ng-container *ngIf="plan.pricePerMonth === 0; else paidPlan">
                         Gratuit
                       </ng-container>
-                      <ng-template #paidPlan>{{ plan.pricePerMonth }} €/mois</ng-template>
+                      <ng-template #paidPlan>{{ plan.pricePerMonth }} {{ (currencySymbol$ | async) || '€' }}/mois</ng-template>
                     </ng-container>
                     <ng-template #pricePerRequest>
                       <ng-container *ngIf="plan.pricePerRequest !== null; else unlimited">
-                        {{ plan.pricePerRequest }} €/requête
+                        {{ plan.pricePerRequest }} {{ (currencySymbol$ | async) || '€' }}/requête
                       </ng-container>
                       <ng-template #unlimited>Quota illimité</ng-template>
                     </ng-template>
@@ -453,6 +454,7 @@ export class RegisterComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private pricingPlanService = inject(PricingPlanService);
   private marketProfileService = inject(MarketProfileService);
+  private currencyService = inject(CurrencyService);
 
   isLoading = false;
   errorMessage = '';
@@ -463,6 +465,7 @@ export class RegisterComponent implements OnInit {
   loadingProfiles = false;
   selectedMarketProfile: MarketProfile | null = null;
   private passwordFieldFirstFocus = false;
+  currencySymbol$ = this.currencyService.getCurrencySymbol();
 
   registerForm: FormGroup = this.fb.group({
     marketVersion: [null, [Validators.required]],

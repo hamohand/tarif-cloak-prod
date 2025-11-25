@@ -1,5 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, AsyncPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { UserService, UserUsageStats, UserQuota, Organization } from '../../core/services/user.service';
@@ -7,6 +7,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { PricingPlanService, PricingPlan } from '../../core/services/pricing-plan.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { OrganizationAccountService, OrganizationUsageLog } from '../../core/services/organization-account.service';
+import { CurrencyService } from '../../core/services/currency.service';
 import { Chart, ChartConfiguration, registerables } from 'chart.js';
 
 Chart.register(...registerables);
@@ -14,7 +15,7 @@ Chart.register(...registerables);
 @Component({
   selector: 'app-organization-stats',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, AsyncPipe],
   template: `
     <div class="stats-container">
       <h2>📊 Statistiques Globales de l'Organisation</h2>
@@ -51,10 +52,10 @@ Chart.register(...registerables);
                       @if (currentPlan.pricePerMonth === 0) {
                         Gratuit
                       } @else {
-                        {{ currentPlan.pricePerMonth }} €/mois
+                        {{ currentPlan.pricePerMonth }} {{ (currencySymbol$ | async) || '€' }}/mois
                       }
                     } @else if (currentPlan.pricePerRequest !== null && currentPlan.pricePerRequest !== undefined) {
-                      {{ currentPlan.pricePerRequest }} €/requête
+                      {{ currentPlan.pricePerRequest }} {{ (currencySymbol$ | async) || '€' }}/requête
                     } @else {
                       Gratuit
                     }
@@ -84,10 +85,10 @@ Chart.register(...registerables);
                       @if (plan.pricePerMonth === 0) {
                         Gratuit
                       } @else {
-                        {{ plan.pricePerMonth }} €/mois
+                        {{ plan.pricePerMonth }} {{ (currencySymbol$ | async) || '€' }}/mois
                       }
                     } @else if (plan.pricePerRequest !== null && plan.pricePerRequest !== undefined) {
-                      {{ plan.pricePerRequest }} €/requête
+                      {{ plan.pricePerRequest }} {{ (currencySymbol$ | async) || '€' }}/requête
                     } @else {
                       Gratuit
                     }
@@ -678,8 +679,10 @@ export class OrganizationStatsComponent implements OnInit {
   private pricingPlanService = inject(PricingPlanService);
   private notificationService = inject(NotificationService);
   private organizationAccountService = inject(OrganizationAccountService);
+  private currencyService = inject(CurrencyService);
 
   organization: Organization | null = null;
+  currencySymbol$ = this.currencyService.getCurrencySymbol();
   quota: UserQuota | null = null;
   stats: UserUsageStats | null = null;
   organizationUsageLogs: any = null;
