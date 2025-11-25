@@ -398,6 +398,10 @@ public class OrganizationService {
      * Si monthlyQuota est null, le quota est illimité et cette méthode retourne toujours true.
      * Phase 4 MVP : Quotas Basiques
      * 
+     * IMPORTANT : La consommation en requêtes est comptée au niveau de l'organisation.
+     * Elle est égale à la somme des consommations de tous les collaborateurs de l'organisation.
+     * Le quota est partagé entre tous les utilisateurs de l'organisation.
+     * 
      * @param organizationId ID de l'organisation
      * @return true si le quota n'est pas dépassé, false sinon
      * @throws QuotaExceededException si le quota est dépassé
@@ -425,7 +429,8 @@ public class OrganizationService {
         LocalDateTime endOfMonth = now.withDayOfMonth(now.toLocalDate().lengthOfMonth())
                 .withHour(23).withMinute(59).withSecond(59).withNano(999999999);
         
-        // Compter les requêtes du mois en cours
+        // Compter les requêtes du mois en cours pour TOUTE l'organisation
+        // (somme de toutes les requêtes de tous les collaborateurs)
         long currentUsage = usageLogRepository.countByOrganizationIdAndTimestampBetween(
                 organizationId, startOfMonth, endOfMonth);
         

@@ -59,6 +59,10 @@ public class QuotaAlertService {
     
     /**
      * Vérifie le quota d'une organisation spécifique et crée une alerte si nécessaire.
+     * 
+     * IMPORTANT : Les alertes sont basées sur la consommation de l'organisation
+     * (somme de toutes les requêtes de tous les collaborateurs).
+     * Les alertes sont visibles par tous les collaborateurs de l'organisation.
      */
     @Transactional
     public void checkOrganizationQuota(Long organizationId) {
@@ -67,7 +71,8 @@ public class QuotaAlertService {
             return; // Pas de quota à vérifier
         }
         
-        // Calculer l'utilisation du mois en cours
+        // Calculer l'utilisation du mois en cours pour TOUTE l'organisation
+        // (somme de toutes les requêtes de tous les collaborateurs)
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime startOfMonth = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
         LocalDateTime endOfMonth = now.withDayOfMonth(now.toLocalDate().lengthOfMonth())

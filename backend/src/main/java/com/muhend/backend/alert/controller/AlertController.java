@@ -33,12 +33,17 @@ public class AlertController {
     
     /**
      * Récupère les alertes non lues de l'utilisateur connecté (basées sur son organisation).
+     * 
+     * IMPORTANT : Les alertes sont relatives à la consommation de l'organisation,
+     * pas à la consommation personnelle de l'utilisateur.
+     * Tous les collaborateurs d'une organisation voient les mêmes alertes.
      */
     @GetMapping("/my-alerts")
     @PreAuthorize("hasAnyRole('USER', 'ORGANIZATION', 'COLLABORATOR', 'ADMIN')")
     @Operation(
         summary = "Récupérer mes alertes",
-        description = "Retourne les alertes non lues de l'organisation de l'utilisateur connecté.",
+        description = "Retourne les alertes non lues de l'organisation de l'utilisateur connecté. " +
+                     "Les alertes sont basées sur la consommation totale de l'organisation (somme de tous les collaborateurs).",
         security = @SecurityRequirement(name = "bearerAuth")
     )
     public ResponseEntity<List<QuotaAlertDto>> getMyAlerts() {
@@ -58,12 +63,16 @@ public class AlertController {
     
     /**
      * Compte les alertes non lues de l'utilisateur connecté.
+     * 
+     * IMPORTANT : Les alertes sont relatives à la consommation de l'organisation,
+     * pas à la consommation personnelle de l'utilisateur.
      */
     @GetMapping("/my-alerts/count")
     @PreAuthorize("hasAnyRole('USER', 'ORGANIZATION', 'COLLABORATOR', 'ADMIN')")
     @Operation(
         summary = "Compter mes alertes non lues",
-        description = "Retourne le nombre d'alertes non lues de l'organisation de l'utilisateur connecté.",
+        description = "Retourne le nombre d'alertes non lues de l'organisation de l'utilisateur connecté. " +
+                     "Les alertes sont basées sur la consommation totale de l'organisation (somme de tous les collaborateurs).",
         security = @SecurityRequirement(name = "bearerAuth")
     )
     public ResponseEntity<Map<String, Object>> getMyAlertsCount() {
