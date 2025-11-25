@@ -52,10 +52,20 @@ Chart.register(...registerables);
                       @if (currentPlan.pricePerMonth === 0) {
                         Gratuit
                       } @else {
-                        {{ currentPlan.pricePerMonth }} {{ (currencySymbol$ | async) || '€' }}/mois
+                        {{ currentPlan.pricePerMonth }} 
+                        @if (currencySymbol$ | async; as symbol) {
+                          {{ symbol }}
+                        } @else {
+                          €
+                        }/mois
                       }
                     } @else if (currentPlan.pricePerRequest !== null && currentPlan.pricePerRequest !== undefined) {
-                      {{ currentPlan.pricePerRequest }} {{ (currencySymbol$ | async) || '€' }}/requête
+                      {{ currentPlan.pricePerRequest }} 
+                      @if (currencySymbol$ | async; as symbol) {
+                        {{ symbol }}
+                      } @else {
+                        €
+                      }/requête
                     } @else {
                       Gratuit
                     }
@@ -85,10 +95,20 @@ Chart.register(...registerables);
                       @if (plan.pricePerMonth === 0) {
                         Gratuit
                       } @else {
-                        {{ plan.pricePerMonth }} {{ (currencySymbol$ | async) || '€' }}/mois
+                        {{ plan.pricePerMonth }} 
+                        @if (currencySymbol$ | async; as symbol) {
+                          {{ symbol }}
+                        } @else {
+                          €
+                        }/mois
                       }
                     } @else if (plan.pricePerRequest !== null && plan.pricePerRequest !== undefined) {
-                      {{ plan.pricePerRequest }} {{ (currencySymbol$ | async) || '€' }}/requête
+                      {{ plan.pricePerRequest }} 
+                      @if (currencySymbol$ | async; as symbol) {
+                        {{ symbol }}
+                      } @else {
+                        €
+                      }/requête
                     } @else {
                       Gratuit
                     }
@@ -273,8 +293,24 @@ Chart.register(...registerables);
                   <td>{{ log.endpoint }}</td>
                   <td class="search-term">{{ truncateSearchTerm(log.searchTerm) }}</td>
                   <td>{{ formatNumber(log.tokensUsed || 0) }}</td>
-                  <td>{{ formatCost(log.tokenCostUsd || 0) }} €</td>
-                  <td><strong>{{ formatCost(log.totalCostUsd || 0) }} €</strong></td>
+                  <td>
+                    {{ formatCost(log.tokenCostUsd || 0) }} 
+                    @if (currencySymbol$ | async; as symbol) {
+                      {{ symbol }}
+                    } @else {
+                      €
+                    }
+                  </td>
+                  <td>
+                    <strong>
+                      {{ formatCost(log.totalCostUsd || 0) }} 
+                      @if (currencySymbol$ | async; as symbol) {
+                        {{ symbol }}
+                      } @else {
+                        €
+                      }
+                    </strong>
+                  </td>
                 </tr>
               }
             </tbody>
@@ -706,6 +742,16 @@ export class OrganizationStatsComponent implements OnInit {
   private quotaChart: Chart | null = null;
 
   ngOnInit() {
+    // Précharger la devise pour qu'elle soit disponible immédiatement
+    this.currencySymbol$.subscribe({
+      next: (symbol) => {
+        console.log('✅ OrganizationStatsComponent: Symbole de devise chargé:', symbol);
+      },
+      error: (err) => {
+        console.error('❌ OrganizationStatsComponent: Erreur lors du chargement de la devise:', err);
+      }
+    });
+    
     this.loadOrganization();
     this.loadQuota();
     this.loadPricingPlans();

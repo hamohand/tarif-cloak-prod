@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable, of } from 'rxjs';
-import { map, catchError } from 'rxjs/operators';
+import { map, catchError, shareReplay, tap } from 'rxjs/operators';
 import { MarketProfileService } from './market-profile.service';
 import { environment } from '../../../environments/environment';
 
@@ -10,44 +10,71 @@ import { environment } from '../../../environments/environment';
 export class CurrencyService {
   private marketProfileService = inject(MarketProfileService);
   private cachedCurrency: string | null = null;
+  private cachedSymbol$: Observable<string> | null = null;
 
   /**
    * Récupère le symbole de devise du marché actuel.
    */
   getCurrencySymbol(): Observable<string> {
-    // Si on a déjà la devise en cache, la retourner
+    // Si on a déjà un Observable en cache, le retourner
+    if (this.cachedSymbol$) {
+      return this.cachedSymbol$;
+    }
+
+    // Si on a déjà la devise en cache, créer un Observable partagé
     if (this.cachedCurrency) {
-      return of(this.getSymbolForCurrency(this.cachedCurrency));
+      this.cachedSymbol$ = of(this.getSymbolForCurrency(this.cachedCurrency)).pipe(shareReplay(1));
+      return this.cachedSymbol$;
     }
 
     // Récupérer la version de marché depuis l'environnement
     let marketVersion: string | undefined = undefined;
     
-    if ((environment as any).marketVersion) {
+    // Essayer plusieurs façons d'accéder à marketVersion
+    if (environment.marketVersion) {
+      marketVersion = environment.marketVersion;
+    } else if ((environment as any).marketVersion) {
       marketVersion = (environment as any).marketVersion;
     } else if ((environment as any)['marketVersion']) {
       marketVersion = (environment as any)['marketVersion'];
     }
 
-    if (!marketVersion) {
+    if (!marketVersion || marketVersion.trim() === '') {
       // Valeur par défaut si marketVersion n'est pas défini
       const isProduction = (environment as any).production === true;
       marketVersion = isProduction ? 'DZ' : 'DEFAULT';
+      console.warn('⚠️ CurrencyService: marketVersion non trouvé dans environment, utilisation de:', marketVersion);
     }
 
+    console.log('🔍 CurrencyService: Récupération de la devise pour marketVersion:', marketVersion);
+    console.log('🔍 CurrencyService: environment.marketVersion:', environment.marketVersion);
+    console.log('🔍 CurrencyService: (environment as any).marketVersion:', (environment as any).marketVersion);
+
     // Récupérer le profil de marché et extraire la devise
-    return this.marketProfileService.getMarketProfileByVersion(marketVersion).pipe(
+    this.cachedSymbol$ = this.marketProfileService.getMarketProfileByVersion(marketVersion).pipe(
+      tap(profile => {
+        console.log('✅ CurrencyService: Profil de marché récupéré:', profile);
+        console.log('✅ CurrencyService: Code devise:', profile.currencyCode);
+      }),
       map(profile => {
         const currency = profile.currencyCode || 'EUR';
         this.cachedCurrency = currency;
-        return this.getSymbolForCurrency(currency);
+        const symbol = this.getSymbolForCurrency(currency);
+        console.log('✅ CurrencyService: Symbole de devise calculé:', symbol, 'pour', currency);
+        return symbol;
       }),
-      catchError(() => {
+      catchError((error) => {
+        console.error('❌ CurrencyService: Erreur lors de la récupération du profil de marché:', error);
         // En cas d'erreur, utiliser EUR par défaut
         this.cachedCurrency = 'EUR';
-        return of('€');
-      })
+        const defaultSymbol = '€';
+        this.cachedSymbol$ = of(defaultSymbol).pipe(shareReplay(1));
+        return of(defaultSymbol);
+      }),
+      shareReplay(1) // Partager l'Observable pour éviter plusieurs appels
     );
+    
+    return this.cachedSymbol$;
   }
 
   /**

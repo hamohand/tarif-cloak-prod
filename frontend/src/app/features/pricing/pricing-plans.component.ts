@@ -46,12 +46,20 @@ import { AsyncPipe } from '@angular/common';
                   @if (plan.pricePerMonth === 0) {
                     <span class="amount">Gratuit</span>
                   } @else {
-                    <span class="currency">{{ (currencySymbol$ | async) || getCurrencySymbol(plan.currency) }}</span>
+                    @if (currencySymbol$ | async; as symbol) {
+                      <span class="currency">{{ symbol }}</span>
+                    } @else {
+                      <span class="currency">{{ getCurrencySymbol(plan.currency) }}</span>
+                    }
                     <span class="amount">{{ plan.pricePerMonth }}</span>
                     <span class="period">/mois</span>
                   }
                 } @else if (plan.pricePerRequest !== null && plan.pricePerRequest !== undefined) {
-                  <span class="currency">{{ (currencySymbol$ | async) || getCurrencySymbol(plan.currency) }}</span>
+                  @if (currencySymbol$ | async; as symbol) {
+                    <span class="currency">{{ symbol }}</span>
+                  } @else {
+                    <span class="currency">{{ getCurrencySymbol(plan.currency) }}</span>
+                  }
                   <span class="amount">{{ plan.pricePerRequest }}</span>
                   <span class="period">/requête</span>
                 } @else {
@@ -392,6 +400,16 @@ export class PricingPlansComponent implements OnInit {
   currencySymbol$ = this.currencyService.getCurrencySymbol();
 
   ngOnInit() {
+    // Précharger la devise pour qu'elle soit disponible immédiatement
+    this.currencySymbol$.subscribe({
+      next: (symbol) => {
+        console.log('✅ PricingPlansComponent: Symbole de devise chargé:', symbol);
+      },
+      error: (err) => {
+        console.error('❌ PricingPlansComponent: Erreur lors du chargement de la devise:', err);
+      }
+    });
+    
     this.loadPricingPlans();
     // Vérifier si l'utilisateur est authentifié
     this.authService.isAuthenticated().subscribe((isAuth: boolean) => {
@@ -422,14 +440,25 @@ export class PricingPlansComponent implements OnInit {
   }
 
   getCurrencySymbol(currency?: string): string {
-    if (!currency) return '€'; // Par défaut EUR
+    if (!currency) {
+      // Si pas de devise fournie, utiliser la devise du marché depuis le service
+      // Note: Cette méthode est synchrone, donc on ne peut pas utiliser l'Observable ici
+      // Le template utilisera currencySymbol$ qui est asynchrone
+      return '€'; // Par défaut EUR (fallback)
+    }
     const currencyMap: { [key: string]: string } = {
       'EUR': '€',
       'DZD': 'DA',
       'USD': '$',
-      'GBP': '£'
+      'GBP': '£',
+      'JPY': '¥',
+      'CNY': '¥',
+      'CHF': 'CHF',
+      'CAD': 'C$',
+      'AUD': 'A$',
+      'MAD': 'DH'
     };
-    return currencyMap[currency] || currency;
+    return currencyMap[currency.toUpperCase()] || currency;
   }
 
   parseFeatures(features: string): string[] {

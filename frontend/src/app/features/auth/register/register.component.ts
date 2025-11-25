@@ -193,11 +193,23 @@ import { take } from 'rxjs/operators';
                       <ng-container *ngIf="plan.pricePerMonth === 0; else paidPlan">
                         Gratuit
                       </ng-container>
-                      <ng-template #paidPlan>{{ plan.pricePerMonth }} {{ (currencySymbol$ | async) || '€' }}/mois</ng-template>
+                      <ng-template #paidPlan>
+                        {{ plan.pricePerMonth }} 
+                        @if (currencySymbol$ | async; as symbol) {
+                          {{ symbol }}
+                        } @else {
+                          €
+                        }/mois
+                      </ng-template>
                     </ng-container>
                     <ng-template #pricePerRequest>
                       <ng-container *ngIf="plan.pricePerRequest !== null; else unlimited">
-                        {{ plan.pricePerRequest }} {{ (currencySymbol$ | async) || '€' }}/requête
+                        {{ plan.pricePerRequest }} 
+                        @if (currencySymbol$ | async; as symbol) {
+                          {{ symbol }}
+                        } @else {
+                          €
+                        }/requête
                       </ng-container>
                       <ng-template #unlimited>Quota illimité</ng-template>
                     </ng-template>
@@ -483,6 +495,16 @@ export class RegisterComponent implements OnInit {
   });
 
   ngOnInit() {
+    // Précharger la devise pour qu'elle soit disponible immédiatement
+    this.currencySymbol$.subscribe({
+      next: (symbol) => {
+        console.log('✅ RegisterComponent: Symbole de devise chargé:', symbol);
+      },
+      error: (err) => {
+        console.error('❌ RegisterComponent: Erreur lors du chargement de la devise:', err);
+      }
+    });
+    
     // Charger automatiquement le profil de marché depuis l'environnement
     const marketVersion = environment.marketVersion;
     if (marketVersion) {
