@@ -278,7 +278,7 @@ import { take } from 'rxjs/operators';
     }
 
     .form-section {
-      border: 1px solid #e1e8ed;
+      border: 2px solid #d5dbdb;
       border-radius: 10px;
       padding: 1.5rem;
       background: #fafbfc;
@@ -313,19 +313,34 @@ import { take } from 'rxjs/operators';
 
     .form-control {
       padding: 0.75rem;
-      border: 2px solid #e1e8ed;
+      border: 3px solid #bdc3c7;
       border-radius: 6px;
       font-size: 1rem;
       transition: border-color 0.3s;
+      background-color: white;
     }
 
     .form-control:focus {
       outline: none;
       border-color: #3498db;
+      border-width: 3px;
     }
 
     .form-control.error {
       border-color: #e74c3c;
+      border-width: 3px;
+    }
+
+    .form-control[readonly] {
+      background-color: #f5f5f5;
+      border-color: #95a5a6;
+      border-width: 3px;
+      cursor: not-allowed;
+    }
+
+    .form-control[readonly]:focus {
+      border-color: #95a5a6;
+      background-color: #f5f5f5;
     }
 
     .error-message {
@@ -351,7 +366,7 @@ import { take } from 'rxjs/operators';
       padding: 0.75rem 1rem;
       margin-bottom: 1rem;
       background-color: #f8f9fa;
-      border: 1px solid #e1e8ed;
+      border: 2px solid #d5dbdb;
       border-radius: 6px;
       color: #495057;
       font-size: 0.9rem;
@@ -368,7 +383,7 @@ import { take } from 'rxjs/operators';
       max-height: 2.5rem !important;
       padding: 0.5rem 0.75rem !important;
       line-height: 1.5 !important;
-      border: 2px solid #34495e !important;
+      border: 3px solid #34495e !important;
       border-radius: 6px !important;
       font-size: 1rem !important;
       width: 100% !important;
@@ -383,6 +398,7 @@ import { take } from 'rxjs/operators';
 
     .pricing-plan-select:focus {
       border-color: #3498db !important;
+      border-width: 3px !important;
       background-color: #34495e !important;
       outline: none !important;
     }
