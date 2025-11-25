@@ -34,10 +34,16 @@ export class PricingPlanService {
 
   /**
    * Récupère tous les plans tarifaires actifs.
-   * @param marketVersion Version de marché (ex: 'DZ', 'DEFAULT'). Si non fourni, récupère tous les plans.
+   * @param marketVersion Version de marché (ex: 'DZ', 'DEFAULT'). Si non fourni, récupère depuis l'environnement.
    */
   getActivePricingPlans(marketVersion?: string): Observable<PricingPlan[]> {
     let params = new HttpParams();
+    
+    // Si marketVersion n'est pas fourni, essayer de le récupérer depuis l'environnement
+    if (!marketVersion || marketVersion.trim() === '') {
+      marketVersion = this.getMarketVersionFromEnvironment();
+    }
+    
     // Vérification plus stricte
     if (marketVersion != null && marketVersion !== undefined && marketVersion.trim() !== '') {
       const trimmedVersion = marketVersion.trim();
@@ -50,6 +56,30 @@ export class PricingPlanService {
       console.log('🌐 URL complète:', this.apiUrl);
     }
     return this.http.get<PricingPlan[]>(this.apiUrl, { params });
+  }
+
+  /**
+   * Récupère la version de marché depuis l'environnement.
+   */
+  private getMarketVersionFromEnvironment(): string | undefined {
+    // Essayer plusieurs façons d'accéder à marketVersion
+    if ((environment as any).marketVersion) {
+      return (environment as any).marketVersion;
+    } else if ((environment as any)['marketVersion']) {
+      return (environment as any)['marketVersion'];
+    } else if (environment.marketVersion) {
+      return environment.marketVersion;
+    }
+    
+    // Valeur par défaut basée sur l'environnement
+    const isProduction = (environment as any).production === true;
+    if (isProduction) {
+      console.warn('⚠️ marketVersion non trouvé dans environment, utilisation de la valeur par défaut: DZ (production)');
+      return 'DZ';
+    } else {
+      console.warn('⚠️ marketVersion non trouvé dans environment, utilisation de la valeur par défaut: DEFAULT (développement)');
+      return 'DEFAULT';
+    }
   }
 
   /**
