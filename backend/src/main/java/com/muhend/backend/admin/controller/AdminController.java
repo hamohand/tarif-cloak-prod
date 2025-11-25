@@ -3,15 +3,22 @@ package com.muhend.backend.admin.controller;
 import com.muhend.backend.admin.service.OrganizationDeletionService;
 import com.muhend.backend.auth.model.PendingRegistration;
 import com.muhend.backend.auth.service.PendingRegistrationService;
+import com.muhend.backend.organization.service.OrganizationService;
+import com.muhend.backend.usage.model.UsageLog;
+import com.muhend.backend.usage.repository.UsageLogRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Contrôleur admin pour les opérations de maintenance
@@ -25,13 +32,19 @@ public class AdminController {
     
     private final OrganizationDeletionService organizationDeletionService;
     private final PendingRegistrationService pendingRegistrationService;
+    private final UsageLogRepository usageLogRepository;
+    private final OrganizationService organizationService;
     
     public AdminController(
         OrganizationDeletionService organizationDeletionService,
-        PendingRegistrationService pendingRegistrationService
+        PendingRegistrationService pendingRegistrationService,
+        UsageLogRepository usageLogRepository,
+        OrganizationService organizationService
     ) {
         this.organizationDeletionService = organizationDeletionService;
         this.pendingRegistrationService = pendingRegistrationService;
+        this.usageLogRepository = usageLogRepository;
+        this.organizationService = organizationService;
     }
     
     /**
@@ -156,5 +169,141 @@ public class AdminController {
                 "error", "Erreur lors du nettoyage: " + e.getMessage()
             ));
         }
+    }
+    
+    /**
+     * Récupère les statistiques d'utilisation globales ou pour une organisation spécifique
+     * @param organizationId ID de l'organisation (optionnel)
+     * @param startDate Date de début (optionnel, format: yyyy-MM-dd)
+     * @param endDate Date de fin (optionnel, format: yyyy-MM-dd)
+     * @return Statistiques d'utilisation
+     */
+    @GetMapping("/usage/stats")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, Object>> getUsageStats(
+            @RequestParam(required = false) Long organizationId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        logger.info("Récupération des statistiques d'utilisation - organizationId: {}, startDate: {}, endDate: {}", 
+                organizationId, startDate, endDate);
+        
+        // Déterminer la période
+        LocalDateTime startDateTime;
+        LocalDateTime endDateTime;
+        
+        if (startDate != null && endDate != null) {
+            startDateTime = startDate.atStartOfDay();
+            endDateTime = endDate.atTime(LocalTime.MAX);
+        } else {
+            // Par défaut, ce mois en cours
+            LocalDateTime now = LocalDateTime.now();
+            startDateTime = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+            endDateTime = now.withDayOfMonth(now.toLocalDate().lengthOfMonth())
+                    .withHour(23).withMinute(59).withSecond(59).withNano(999999999);
+        }
+        
+        // Récupérer les logs selon les filtres
+        List<UsageLog> logs;
+        if (organizationId != null) {
+            logs = usageLogRepository.findByOrganizationIdAndTimestampBetween(organizationId, startDateTime, endDateTime);
+        } else {
+            logs = usageLogRepository.findByTimestampBetween(startDateTime, endDateTime);
+        }
+        
+        // Calculer les statistiques globales
+        long totalRequests = logs.size();
+        BigDecimal totalCostUsd = logs.stream()
+                .filter(log -> log.getCostUsd() != null)
+                .map(UsageLog::getCostUsd)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        long totalTokens = logs.stream()
+                .filter(log -> log.getTokensUsed() != null)
+                .mapToLong(UsageLog::getTokensUsed)
+                .sum();
+        
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("totalRequests", totalRequests);
+        response.put("totalCostUsd", totalCostUsd.doubleValue());
+        response.put("totalTokens", totalTokens);
+        
+        // Statistiques par organisation (si pas de filtre organisation)
+        if (organizationId == null) {
+            Map<Long, List<UsageLog>> logsByOrg = logs.stream()
+                    .filter(log -> log.getOrganizationId() != null)
+                    .collect(Collectors.groupingBy(UsageLog::getOrganizationId));
+            
+            List<Map<String, Object>> statsByOrganization = new ArrayList<>();
+            for (Map.Entry<Long, List<UsageLog>> entry : logsByOrg.entrySet()) {
+                Long orgId = entry.getKey();
+                List<UsageLog> orgLogs = entry.getValue();
+                
+                try {
+                    var orgDto = organizationService.getOrganizationById(orgId);
+                    if (orgDto != null) {
+                        Map<String, Object> orgStats = new LinkedHashMap<>();
+                        orgStats.put("organizationId", orgId);
+                        orgStats.put("organizationName", orgDto.getName());
+                        orgStats.put("requestCount", orgLogs.size());
+                        orgStats.put("totalCostUsd", orgLogs.stream()
+                                .filter(log -> log.getCostUsd() != null)
+                                .map(UsageLog::getCostUsd)
+                                .reduce(BigDecimal.ZERO, BigDecimal::add).doubleValue());
+                        orgStats.put("totalTokens", orgLogs.stream()
+                                .filter(log -> log.getTokensUsed() != null)
+                                .mapToLong(UsageLog::getTokensUsed)
+                                .sum());
+                        statsByOrganization.add(orgStats);
+                    }
+                } catch (Exception e) {
+                    logger.warn("Impossible de récupérer l'organisation {}: {}", orgId, e.getMessage());
+                }
+            }
+            response.put("statsByOrganization", statsByOrganization);
+        }
+        
+        // Statistiques par utilisateur
+        Map<String, List<UsageLog>> logsByUser = logs.stream()
+                .collect(Collectors.groupingBy(UsageLog::getKeycloakUserId));
+        
+        List<Map<String, Object>> statsByUser = new ArrayList<>();
+        for (Map.Entry<String, List<UsageLog>> entry : logsByUser.entrySet()) {
+            String userId = entry.getKey();
+            List<UsageLog> userLogs = entry.getValue();
+            
+            Map<String, Object> userStats = new LinkedHashMap<>();
+            userStats.put("keycloakUserId", userId);
+            userStats.put("requestCount", userLogs.size());
+            userStats.put("totalCostUsd", userLogs.stream()
+                    .filter(log -> log.getCostUsd() != null)
+                    .map(UsageLog::getCostUsd)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add).doubleValue());
+            userStats.put("totalTokens", userLogs.stream()
+                    .filter(log -> log.getTokensUsed() != null)
+                    .mapToLong(UsageLog::getTokensUsed)
+                    .sum());
+            statsByUser.add(userStats);
+        }
+        response.put("statsByUser", statsByUser);
+        
+        // Utilisations récentes (10 dernières)
+        List<Map<String, Object>> recentUsage = logs.stream()
+                .sorted((a, b) -> b.getTimestamp().compareTo(a.getTimestamp()))
+                .limit(10)
+                .map(log -> {
+                    Map<String, Object> logMap = new LinkedHashMap<>();
+                    logMap.put("id", log.getId());
+                    logMap.put("keycloakUserId", log.getKeycloakUserId());
+                    logMap.put("organizationId", log.getOrganizationId());
+                    logMap.put("endpoint", log.getEndpoint());
+                    logMap.put("searchTerm", log.getSearchTerm());
+                    logMap.put("tokensUsed", log.getTokensUsed());
+                    logMap.put("costUsd", log.getCostUsd() != null ? log.getCostUsd().doubleValue() : null);
+                    logMap.put("timestamp", log.getTimestamp().toString());
+                    return logMap;
+                })
+                .collect(Collectors.toList());
+        response.put("recentUsage", recentUsage);
+        
+        return ResponseEntity.ok(response);
     }
 }
