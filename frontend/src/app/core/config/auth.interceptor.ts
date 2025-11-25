@@ -1,8 +1,8 @@
 import {HttpErrorResponse, HttpInterceptorFn} from '@angular/common/http';
 import { inject } from '@angular/core';
 import { OAuthService } from 'angular-oauth2-oidc';
-import {catchError} from 'rxjs/operators';
-import {throwError} from 'rxjs';
+import {catchError, switchMap} from 'rxjs/operators';
+import {throwError, from} from 'rxjs';
 import { AuthService } from '../services/auth.service';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
@@ -12,14 +12,39 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   // Vérifier l'expiration du token avant chaque requête
   if (token && !req.url.includes('/realms/')) {
-    // Utiliser hasValidAccessToken() qui gère le rafraîchissement automatique
-    // au lieu de isTokenValid() qui est trop strict
+    // Vérifier si le token est valide
     if (!oauthService.hasValidAccessToken()) {
-      // Si le token n'est pas valide, laisser OAuthService tenter de le rafraîchir
-      // Ne pas déconnecter immédiatement, laisser la requête passer et gérer l'erreur 401
-      console.warn('Token invalide détecté, la requête sera envoyée pour permettre le rafraîchissement automatique.');
+      // Tenter un rafraîchissement silencieux du token
+      console.warn('Token invalide détecté, tentative de rafraîchissement...');
+      
+      return from(oauthService.silentRefresh()).pipe(
+        switchMap(() => {
+          // Après le rafraîchissement, obtenir le nouveau token
+          const newToken = oauthService.getAccessToken();
+          if (!newToken || !oauthService.hasValidAccessToken()) {
+            console.warn('Impossible de rafraîchir le token. Déconnexion automatique.');
+            authService.logout();
+            return throwError(() => new Error('Token expiré et impossible de rafraîchir'));
+          }
+          
+          // Envoyer la requête avec le nouveau token
+          const cloned = req.clone({
+            setHeaders: {
+              Authorization: `Bearer ${newToken}`
+            }
+          });
+          return next(cloned);
+        }),
+        catchError((error: any) => {
+          // Si le rafraîchissement échoue, déconnecter
+          console.warn('Erreur lors du rafraîchissement du token. Déconnexion automatique.', error);
+          authService.logout();
+          return throwError(() => error);
+        })
+      );
     }
     
+    // Token valide, envoyer la requête normalement
     const cloned = req.clone({
       setHeaders: {
         Authorization: `Bearer ${token}`

@@ -62,6 +62,8 @@ x-traefik-keycloak-labels: &traefik-keycloak-labels
   "traefik.http.middlewares.keycloak-cors.headers.accessControlAllowCredentials": "true"
   "traefik.http.middlewares.keycloak-cors.headers.accessControlMaxAge": "3600"
   "traefik.http.middlewares.keycloak-cors.headers.addVaryHeader": "true"
+  # --- Content Security Policy pour autoriser le framing depuis le frontend ---
+  "traefik.http.middlewares.keycloak-cors.headers.customResponseHeaders.Content-Security-Policy": "frame-ancestors 'self' https://${FRONTEND_DOMAIN} https://${WWW_FRONTEND_DOMAIN}"
   # --- Routeur HTTPS pour Keycloak ---
   "traefik.http.routers.hscode-keycloak-secure.rule": "Host(`${KEYCLOAK_DOMAIN}`)"
   "traefik.http.routers.hscode-keycloak-secure.entrypoints": "websecure"
