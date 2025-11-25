@@ -11,7 +11,7 @@ import { map } from 'rxjs/operators';
   imports: [CommonModule, RouterLink],
   template: `
     <div class="home-container">
-      <h1>Bienvenue sur Enclume-Numérique</h1>
+      <h3>Bienvenue sur Enclume-Numérique</h1>
       <p>Votre solution complète pour la conformité tarifaire.</p>
 
       <!-- Présentation de l'API Recherche HS-code - Affichée uniquement pour les utilisateurs non connectés -->
@@ -101,7 +101,7 @@ import { map } from 'rxjs/operators';
 
       <!-- Section pour les utilisateurs connectés avec rôle ORGANIZATION ou COLLABORATOR -->
       <section class="user-actions" *ngIf="showRequestButtons$ | async">
-        <h2 class="section-title">Outils de recherche HS-Code</h2>
+        <h4 class="section-title">Outils de recherche HS-Code</h2>
         <div class="features primary">
           <div class="feature-card request-card">
             <div class="request-icon">🔍</div>
@@ -116,9 +116,9 @@ import { map } from 'rxjs/operators';
             <div class="request-icon">📋</div>
             <h3>Recherche par lots (bientôt disponible)</h3>
             <p>Traitez une liste de produits simultanément avec l'outil de recherche par lots.</p>
-            <!-- <a [routerLink]="['/recherche/searchListLots']" class="cta-button secondary">
+            <a [routerLink]="['/recherche/searchListLots']" class="cta-button secondary">
               Rechercher par lots
-            </a> -->
+            </a>
           </div>
         </div>
         
