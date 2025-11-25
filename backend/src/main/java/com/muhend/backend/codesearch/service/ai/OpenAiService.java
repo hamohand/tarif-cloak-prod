@@ -24,12 +24,12 @@ public class OpenAiService {
 
     public OpenAiService(AiPrompts aiPrompts, 
                         @Value("${OPENAI_API_KEY}") String aiKey,
-                        @Value("${BASE_REQUEST_PRICE_EUR:0.01}") String baseRequestPriceStr) {
+                        @Value("${BASE_REQUEST_PRICE:0.01}") String baseRequestPriceStr) {
         this.aiPrompts = aiPrompts;
         this.aiKey = aiKey;
         // Nettoyer la valeur pour éviter les problèmes de concaténation dans le fichier .env
         try {
-            log.info("Valeur brute de BASE_REQUEST_PRICE_EUR reçue: '{}'", baseRequestPriceStr);
+            log.info("Valeur brute de BASE_REQUEST_PRICE reçue: '{}'", baseRequestPriceStr);
             String cleaned = baseRequestPriceStr != null ? baseRequestPriceStr.trim() : "0.01";
             // Extraire seulement la partie numérique (avant tout caractère non numérique ou espace)
             cleaned = cleaned.split("\\s+")[0]; // Prendre le premier mot
@@ -39,9 +39,9 @@ public class OpenAiService {
                 log.warn("Valeur nettoyée vide ou invalide, utilisation de la valeur par défaut: {}", cleaned);
             }
             this.baseRequestPrice = Double.parseDouble(cleaned);
-            log.info("✅ Tarif de base par requête configuré avec succès: {} EUR (valeur originale: '{}')", this.baseRequestPrice, baseRequestPriceStr);
+            log.info("✅ Tarif de base par requête configuré avec succès: {} (dans la devise du marché, valeur originale: '{}')", this.baseRequestPrice, baseRequestPriceStr);
         } catch (NumberFormatException e) {
-            log.error("❌ Erreur lors du parsing de BASE_REQUEST_PRICE_EUR: '{}'. Utilisation de la valeur par défaut 0.01", baseRequestPriceStr, e);
+            log.error("❌ Erreur lors du parsing de BASE_REQUEST_PRICE: '{}'. Utilisation de la valeur par défaut 0.01", baseRequestPriceStr, e);
             this.baseRequestPrice = 0.01;
         }
     }
@@ -151,42 +151,32 @@ public class OpenAiService {
             // 💰 Tarifs GPT-4o mini (au 1er sept 2025) - en USD
             final double PRICE_INPUT_USD = 0.15 / 1_000_000;   // $ par token input
             final double PRICE_OUTPUT_USD = 0.60 / 1_000_000;  // $ par token output
-            // Taux de change USD vers EUR (approximatif, peut être configuré via variable d'environnement)
-            final double USD_TO_EUR_RATE = 0.92; // 1 USD = 0.92 EUR
             
             // Calculer le coût des tokens en USD (en utilisant promptTokens et completionTokens séparément)
             double tokenCostUsd = (promptTokens * PRICE_INPUT_USD) + (completionTokens * PRICE_OUTPUT_USD);
             
-            // Convertir le coût des tokens en EUR
-            double tokenCostEur = tokenCostUsd * USD_TO_EUR_RATE;
-            
-            // Coût total en EUR = tarif de base (EUR) + coût des tokens (EUR)
-            prix_requete = baseRequestPrice + tokenCostEur;
+            // NOUVELLE POLITIQUE : Le prix de la requête = BASE_REQUEST_PRICE (dans la devise du marché)
+            // Le coût des tokens est séparé et affiché uniquement aux administrateurs
+            prix_requete = baseRequestPrice; // Prix de la requête dans la devise du marché
 
             // Stocker les informations d'utilisation dans le ThreadLocal pour le tracking
             UsageInfo usageInfo = new UsageInfo(
                 totalTokens,
-                prix_requete,
+                prix_requete, // Prix de la requête = BASE_REQUEST_PRICE (devise marché)
                 promptTokens,
-                completionTokens
+                completionTokens,
+                tokenCostUsd // Coût des tokens en USD (pour les admins uniquement)
             );
             currentUsage.set(usageInfo);
 
-            // Enregistrer ou afficher les informations des tokens pour diagnostic
-//            log.info("Prompt Tokens (input), niveau : " + titre +" = " + promptTokens);
-//            System.out.println("Prompt Tokens (input), niveau : " + titre + " = " + promptTokens);
-//            log.info("Completion Tokens (output), niveau "+ titre +" = " + completionTokens);
-//            System.out.println("Completion Tokens (output), niveau "+ titre +" = " + completionTokens);
-//            log.info("Total Tokens, niveau "+ titre +" = " + totalTokens);
             // Log détaillé du calcul du coût
-            log.debug("Calcul du coût - Niveau: {}, Prompt tokens: {}, Completion tokens: {}, Total tokens: {}, Tarif de base: {} €, Coût tokens USD: {} $, Coût tokens EUR: {} €, Coût total: {} €", 
+            // Note: Le tarif de base est dans la devise du marché, le coût des tokens est séparé
+            log.debug("Calcul du coût - Niveau: {}, Prompt tokens: {}, Completion tokens: {}, Total tokens: {}, Tarif de base (requête): {} (devise marché), Coût tokens USD: {} $", 
                 titre, promptTokens, completionTokens, totalTokens, String.format("%.6f", baseRequestPrice), 
-                String.format("%.10f", tokenCostUsd), String.format("%.10f", tokenCostEur), String.format("%.6f", prix_requete));
+                String.format("%.10f", tokenCostUsd));
             System.out.println("Niveau "+ titre +"  -Prompt Tokens = " + promptTokens + ", Completion Tokens = " + completionTokens + ", Total Tokens = " + totalTokens + 
-                "   -Tarif de base = " + String.format("%.6f", baseRequestPrice) + " €" +
-                "   -Coût tokens USD = " + String.format("%.10f", tokenCostUsd) + " $" +
-                "   -Coût tokens EUR = " + String.format("%.10f", tokenCostEur) + " €" +
-                "   -Total Prix = " + String.format("%.6f", prix_requete) + " €");
+                "   -Tarif de base (requête) = " + String.format("%.6f", baseRequestPrice) + " (devise marché)" +
+                "   -Coût tokens USD = " + String.format("%.10f", tokenCostUsd) + " $ (admin uniquement)");
 
             /// //////////////////////////////////////////////////////////////
 

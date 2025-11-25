@@ -125,8 +125,8 @@ ollama:
 # CONFIGURATION TARIFICATION
 # ===================================================
 pricing:
-  # Tarif de base par requête (en EUR)
-  base-request-price: ${BASE_REQUEST_PRICE_EUR:0.01}
+  # Tarif de base par requête (dans la devise du marché sélectionné)
+  base-request-price: ${BASE_REQUEST_PRICE:0.01}
 
 # ===================================================
 # CONFIGURATION STRIPE (Paiement électronique)

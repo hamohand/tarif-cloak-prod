@@ -189,9 +189,10 @@ OLLAMA_BASE_URL=http://host.docker.internal:11434
 ### Configuration Tarification
 
 ```env
-# Tarif de base par requête (en EUR)
-# Ce tarif s'ajoute au coût des tokens pour chaque requête
-BASE_REQUEST_PRICE_EUR=0.01
+# Tarif de base par requête (dans la devise du marché sélectionné)
+# Ce tarif est séparé du coût des tokens et est dans la devise du marché (ex: DA pour DZ, € pour DEFAULT)
+# Le coût des tokens est calculé séparément et affiché uniquement aux administrateurs
+BASE_REQUEST_PRICE=0.01
 ```
 
 ### Configuration Frontend
@@ -311,7 +312,10 @@ OLLAMA_BASE_URL=http://host.docker.internal:11434
 # ===============================================================
 # TARIFICATION
 # ===============================================================
-BASE_REQUEST_PRICE_EUR=0.01
+# Tarif de base par requête (dans la devise du marché sélectionné)
+# Ce tarif est séparé du coût des tokens et est dans la devise du marché (ex: DA pour DZ, € pour DEFAULT)
+# Le coût des tokens est calculé séparément et affiché uniquement aux administrateurs
+BASE_REQUEST_PRICE=0.01
 
 # ===============================================================
 # FRONTEND

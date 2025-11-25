@@ -252,7 +252,7 @@ services:
       # Configuration Email Admin
       EMAIL_ADMIN_HSCODE: "${EMAIL_ADMIN_HSCODE:-}"
       # Configuration Tarification
-      BASE_REQUEST_PRICE_EUR: "${BASE_REQUEST_PRICE_EUR:-0.01}"
+      BASE_REQUEST_PRICE: "${BASE_REQUEST_PRICE:-0.01}"
     labels:
       <<: *traefik-backend-labels
     restart: unless-stopped

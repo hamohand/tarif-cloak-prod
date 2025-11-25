@@ -56,7 +56,7 @@ public class OrganizationAccountController {
     private final UsageLogRepository usageLogRepository;
     private final KeycloakAdminService keycloakAdminService;
     
-    @Value("${BASE_REQUEST_PRICE_EUR:0.01}")
+    @Value("${BASE_REQUEST_PRICE:0.01}")
     private String baseRequestPriceStr;
     
     private double baseRequestPrice;
@@ -64,7 +64,7 @@ public class OrganizationAccountController {
     @jakarta.annotation.PostConstruct
     private void initBaseRequestPrice() {
         try {
-            log.info("Valeur brute de BASE_REQUEST_PRICE_EUR reçue: '{}'", baseRequestPriceStr);
+            log.info("Valeur brute de BASE_REQUEST_PRICE reçue: '{}'", baseRequestPriceStr);
             // Nettoyer la valeur pour éviter les problèmes de concaténation dans le fichier .env
             String cleaned = baseRequestPriceStr != null ? baseRequestPriceStr.trim() : "0.01";
             // Extraire seulement la partie numérique (avant tout caractère non numérique ou espace)
@@ -75,9 +75,9 @@ public class OrganizationAccountController {
                 log.warn("Valeur nettoyée vide ou invalide, utilisation de la valeur par défaut: {}", cleaned);
             }
             baseRequestPrice = Double.parseDouble(cleaned);
-            log.info("✅ Tarif de base par requête configuré avec succès: {} EUR (valeur originale: '{}')", baseRequestPrice, baseRequestPriceStr);
+            log.info("✅ Tarif de base par requête configuré avec succès: {} (dans la devise du marché, valeur originale: '{}')", baseRequestPrice, baseRequestPriceStr);
         } catch (NumberFormatException e) {
-            log.error("❌ Erreur lors du parsing de BASE_REQUEST_PRICE_EUR: '{}'. Utilisation de la valeur par défaut 0.01", baseRequestPriceStr, e);
+            log.error("❌ Erreur lors du parsing de BASE_REQUEST_PRICE: '{}'. Utilisation de la valeur par défaut 0.01", baseRequestPriceStr, e);
             baseRequestPrice = 0.01;
         }
     }
@@ -319,29 +319,45 @@ public class OrganizationAccountController {
                         logMap.put("searchTerm", usageLog.getSearchTerm());
                         logMap.put("tokensUsed", usageLog.getTokensUsed());
                         
-                        // Calculer le coût des tokens et le coût total
-                        BigDecimal totalCost = usageLog.getCostUsd() != null ? usageLog.getCostUsd() : BigDecimal.ZERO;
+                        // NOUVELLE POLITIQUE : 
+                        // - costUsd = BASE_REQUEST_PRICE (dans la devise du marché) = prix de la requête
+                        // - tokenCostUsd = coût des tokens en USD (affiché uniquement aux admins)
+                        BigDecimal requestPrice = usageLog.getCostUsd() != null ? usageLog.getCostUsd() : BigDecimal.ZERO;
                         BigDecimal baseCost = BigDecimal.valueOf(baseRequestPrice);
-                        BigDecimal tokenCost = totalCost.subtract(baseCost);
                         
-                        // Log pour diagnostic
-                        log.debug("Calcul coût pour log ID {}: totalCost={}, baseCost={}, tokenCost={}, tokensUsed={}", 
-                            usageLog.getId(), totalCost, baseCost, tokenCost, usageLog.getTokensUsed());
-                        
-                        // S'assurer que le coût des tokens n'est pas négatif
-                        if (tokenCost.compareTo(BigDecimal.ZERO) < 0) {
-                            log.warn("Coût des tokens négatif pour log ID {}: tokenCost={}, totalCost={}, baseCost={}", 
-                                usageLog.getId(), tokenCost, totalCost, baseCost);
-                            tokenCost = BigDecimal.ZERO;
+                        // Calculer le coût des tokens en USD à partir de tokensUsed
+                        // Utiliser les mêmes tarifs que dans OpenAiService
+                        BigDecimal tokenCost = BigDecimal.ZERO;
+                        if (usageLog.getTokensUsed() != null && usageLog.getTokensUsed() > 0) {
+                            // Tarifs GPT-4o mini (au 1er sept 2025) - en USD
+                            final double PRICE_INPUT_USD = 0.15 / 1_000_000;   // $ par token input
+                            final double PRICE_OUTPUT_USD = 0.60 / 1_000_000;  // $ par token output
+                            
+                            // Estimation : on suppose un ratio moyen de 70% input / 30% output
+                            // (basé sur les observations typiques des requêtes)
+                            int totalTokens = usageLog.getTokensUsed();
+                            int estimatedPromptTokens = (int) (totalTokens * 0.7);
+                            int estimatedCompletionTokens = totalTokens - estimatedPromptTokens;
+                            
+                            // Calculer le coût des tokens
+                            double tokenCostDouble = (estimatedPromptTokens * PRICE_INPUT_USD) + (estimatedCompletionTokens * PRICE_OUTPUT_USD);
+                            tokenCost = BigDecimal.valueOf(tokenCostDouble);
+                            
+                            log.debug("Calcul coût tokens pour log ID {}: totalTokens={}, estimatedPrompt={}, estimatedCompletion={}, tokenCost={}", 
+                                usageLog.getId(), totalTokens, estimatedPromptTokens, estimatedCompletionTokens, tokenCost);
                         }
                         
-                        // Arrondir à 5 décimales pour le coût des tokens, 3 décimales pour le coût total
-                        BigDecimal tokenCostRounded = tokenCost.setScale(5, RoundingMode.HALF_UP);
-                        BigDecimal totalCostRounded = totalCost.setScale(3, RoundingMode.HALF_UP);
+                        // Log pour diagnostic
+                        log.debug("Calcul coût pour log ID {}: requestPrice={} (devise marché), baseCost={}, tokensUsed={}, tokenCostUsd={}", 
+                            usageLog.getId(), requestPrice, baseCost, usageLog.getTokensUsed(), tokenCost);
                         
-                        logMap.put("tokenCostUsd", tokenCostRounded.doubleValue());
-                        logMap.put("totalCostUsd", totalCostRounded.doubleValue());
-                        logMap.put("baseCostUsd", baseCost.setScale(3, RoundingMode.HALF_UP).doubleValue());
+                        // Arrondir à 5 décimales pour le coût des tokens, 3 décimales pour le prix de la requête
+                        BigDecimal tokenCostRounded = tokenCost.setScale(5, RoundingMode.HALF_UP);
+                        BigDecimal requestPriceRounded = requestPrice.setScale(3, RoundingMode.HALF_UP);
+                        
+                        logMap.put("tokenCostUsd", tokenCostRounded.doubleValue()); // Coût des tokens en USD (pour admins uniquement)
+                        logMap.put("totalCostUsd", requestPriceRounded.doubleValue()); // Prix de la requête dans devise marché
+                        logMap.put("baseCostUsd", baseCost.setScale(3, RoundingMode.HALF_UP).doubleValue()); // BASE_REQUEST_PRICE
                         logMap.put("timestamp", usageLog.getTimestamp().toString());
                         return logMap;
                     })

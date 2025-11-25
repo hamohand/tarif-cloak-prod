@@ -205,7 +205,7 @@ Chart.register(...registerables);
               <p class="stat-value">{{ stats.totalRequests }}</p>
             </div>
             <div class="stat-item">
-              <h4>💰 Coût Total</h4>
+              <h4>💰 Prix Total Requêtes</h4>
               <p class="stat-value">{{ formatCurrency(stats.totalCostUsd) }}</p>
             </div>
             <div class="stat-item">
@@ -242,7 +242,7 @@ Chart.register(...registerables);
                     <th>Endpoint</th>
                     <th>Recherche</th>
                     <th>Tokens</th>
-                    <th>Coût</th>
+                    <th>Prix requête</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -282,8 +282,10 @@ Chart.register(...registerables);
                 <th>Endpoint</th>
                 <th>Recherche</th>
                 <th>Tokens</th>
-                <th>Coût tokens</th>
-                <th>Coût total</th>
+                @if (isAdmin()) {
+                  <th>Coût tokens (USD)</th>
+                }
+                <th>Prix requête</th>
               </tr>
             </thead>
             <tbody>
@@ -294,14 +296,11 @@ Chart.register(...registerables);
                   <td>{{ log.endpoint }}</td>
                   <td class="search-term">{{ truncateSearchTerm(log.searchTerm) }}</td>
                   <td>{{ formatNumber(log.tokensUsed || 0) }}</td>
-                  <td>
-                    {{ formatCost(log.tokenCostUsd || 0) }} 
-                    @if (currencySymbol$ | async; as symbol) {
-                      {{ symbol }}
-                    } @else {
-                      €
-                    }
-                  </td>
+                  @if (isAdmin()) {
+                    <td>
+                      {{ formatCost(log.tokenCostUsd || 0) }} USD
+                    </td>
+                  }
                   <td>
                     <strong>
                       {{ formatCost(log.totalCostUsd || 0) }} 
@@ -1043,6 +1042,10 @@ export class OrganizationStatsComponent implements OnInit {
       minimumFractionDigits: 5, 
       maximumFractionDigits: 5 
     }).format(amount);
+  }
+
+  isAdmin(): boolean {
+    return this.authService.hasRole('ADMIN');
   }
 
   formatNumber(num: number): string {
