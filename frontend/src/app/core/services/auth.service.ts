@@ -70,12 +70,25 @@ export class AuthService {
       return;
     }
     
+    // Vérifier d'abord s'il y a des tokens en cache qui pourraient être invalides
+    // Cela évite de garder des sessions expirées en mémoire
+    this.validateExistingTokens();
+    
     // Utiliser loadDiscoveryDocumentAndTryLogin qui gère automatiquement le callback
     // Cette méthode charge le document ET traite le callback si présent
     this.oauthService.loadDiscoveryDocumentAndTryLogin()
       .then(() => {
         const isAuthenticated = this.oauthService.hasValidAccessToken();
         const initialToken = this.oauthService.getAccessToken();
+
+        // Vérifier à nouveau la validité après le chargement du document
+        // pour détecter les sessions Keycloak expirées
+        if (initialToken && !this.isTokenValid()) {
+          console.warn('Token présent mais invalide détecté au démarrage. Nettoyage automatique.');
+          this.cleanupTokens();
+          this.isAuthenticatedSubject.next(false);
+          return;
+        }
 
         if (isAuthenticated && initialToken) {
           // Afficher le token dans la console après connexion réussie
@@ -224,6 +237,29 @@ export class AuthService {
   }
 
   /**
+   * Valide les tokens existants dans le stockage local
+   * Nettoie automatiquement les tokens invalides ou expirés
+   */
+  private validateExistingTokens(): void {
+    try {
+      const token = this.oauthService.getAccessToken();
+      if (token) {
+        // Vérifier si le token est valide avant de continuer
+        if (!this.isTokenValid()) {
+          console.debug('Token invalide détecté au démarrage. Nettoyage automatique.');
+          this.cleanupTokens();
+          this.isAuthenticatedSubject.next(false);
+        }
+      }
+    } catch (error) {
+      // En cas d'erreur, nettoyer les tokens pour être sûr
+      console.debug('Erreur lors de la validation des tokens. Nettoyage préventif.', error);
+      this.cleanupTokens();
+      this.isAuthenticatedSubject.next(false);
+    }
+  }
+
+  /**
    * Démarre la vérification périodique de l'expiration du token
    */
   private startTokenCheck(): void {
@@ -237,6 +273,24 @@ export class AuthService {
     
     // Vérifier immédiatement
     this.checkTokenExpiration();
+    
+    // Écouter les événements de visibilité de la page pour vérifier la session
+    // quand l'utilisateur revient sur l'application après une période d'inactivité
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) {
+        // L'utilisateur revient sur la page, vérifier la session
+        setTimeout(() => {
+          this.checkTokenExpiration();
+        }, 1000); // Attendre 1 seconde pour laisser le temps à l'application de se stabiliser
+      }
+    });
+    
+    // Écouter aussi l'événement focus de la fenêtre
+    window.addEventListener('focus', () => {
+      setTimeout(() => {
+        this.checkTokenExpiration();
+      }, 1000);
+    });
   }
 
   /**
@@ -288,12 +342,12 @@ export class AuthService {
         return;
       }
       
-      // Si le token est valide, s'assurer que le statut d'authentification est correct
+      // Si le token est valide selon l'expiration, vérifier aussi avec OAuthService
       if (currentTime < expirationTime) {
         const isValid = this.oauthService.hasValidAccessToken();
         if (!isValid) {
-          // Le token n'est pas valide selon OAuthService mais n'est pas expiré
-          // Cela peut arriver si la session Keycloak a expiré
+          // Le token n'est pas valide selon OAuthService mais n'est pas expiré selon l'exp
+          // Cela peut arriver si la session Keycloak a expiré côté serveur
           console.warn('Token présent mais session Keycloak invalide. Déconnexion automatique.');
           this.stopTokenCheck();
           this.cleanupTokens();
@@ -310,6 +364,16 @@ export class AuthService {
             this.isAuthenticatedSubject.next(true);
           }
         }
+      } else {
+        // Token expiré selon l'exp, nettoyer même si OAuthService ne l'a pas encore détecté
+        console.warn('Token expiré détecté. Déconnexion automatique.');
+        this.stopTokenCheck();
+        this.cleanupTokens();
+        this.isAuthenticatedSubject.next(false);
+        this.accountContextService.setContext({ accountType: null, organizationEmail: null });
+        setTimeout(() => {
+          this.router.navigate(['/']);
+        }, 0);
       }
     } catch (e) {
       // Si on ne peut pas décoder le token, il est invalide
@@ -326,15 +390,43 @@ export class AuthService {
   }
 
   private cleanupTokens() {
-    // Nettoyer les tokens localement sans appeler Keycloak (pour éviter les erreurs)
+    // Arrêter la vérification périodique
+    this.stopTokenCheck();
+    
+    // Nettoyer les tokens localement de manière exhaustive
+    // Nettoyer localStorage
     const oauthKeys = Object.keys(localStorage).filter(key => 
-      key.startsWith('oauth') || key.startsWith('angular-oauth2-oidc')
+      key.startsWith('oauth') || 
+      key.startsWith('angular-oauth2-oidc') ||
+      key.includes('keycloak') ||
+      key.includes('access_token') ||
+      key.includes('id_token') ||
+      key.includes('refresh_token')
     );
-    oauthKeys.forEach(key => localStorage.removeItem(key));
+    oauthKeys.forEach(key => {
+      try {
+        localStorage.removeItem(key);
+      } catch (e) {
+        console.debug('Erreur lors du nettoyage de localStorage:', e);
+      }
+    });
+    
+    // Nettoyer sessionStorage
     const oauthSessionKeys = Object.keys(sessionStorage).filter(key => 
-      key.startsWith('oauth') || key.startsWith('angular-oauth2-oidc')
+      key.startsWith('oauth') || 
+      key.startsWith('angular-oauth2-oidc') ||
+      key.includes('keycloak') ||
+      key.includes('access_token') ||
+      key.includes('id_token') ||
+      key.includes('refresh_token')
     );
-    oauthSessionKeys.forEach(key => sessionStorage.removeItem(key));
+    oauthSessionKeys.forEach(key => {
+      try {
+        sessionStorage.removeItem(key);
+      } catch (e) {
+        console.debug('Erreur lors du nettoyage de sessionStorage:', e);
+      }
+    });
     
     // Vérifier si le token est encore valide avant de tenter le logout Keycloak
     // Cela évite les erreurs "session_expired" dans les logs Keycloak
@@ -342,9 +434,17 @@ export class AuthService {
       const idToken = this.oauthService.getIdToken();
       const accessToken = this.oauthService.getAccessToken();
       
-      // Ne tenter le logout Keycloak que si on a un token valide
-      if (idToken && accessToken && this.oauthService.hasValidAccessToken()) {
-        this.oauthService.logOut(false); // false = ne pas rediriger automatiquement
+      // Ne tenter le logout Keycloak que si on a un token valide ET que la session n'est pas expirée
+      if (idToken && accessToken && this.oauthService.hasValidAccessToken() && this.isTokenValid()) {
+        // Tenter le logout Keycloak avec un timeout pour éviter de bloquer
+        const logoutPromise = Promise.resolve(this.oauthService.logOut(false));
+        Promise.race([
+          logoutPromise,
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 2000))
+        ]).catch((error) => {
+          // Ignorer les erreurs de timeout ou autres erreurs de logout
+          console.debug('Logout Keycloak ignoré (timeout ou session expirée):', error);
+        });
       } else {
         // Pas de token valide, session probablement déjà expirée
         // Ne pas appeler Keycloak pour éviter les erreurs dans les logs
@@ -354,6 +454,7 @@ export class AuthService {
       // Ignorer les erreurs de logout (session probablement expirée)
       console.debug('Erreur lors du logout Keycloak (ignorée):', error);
     }
+    
   }
 
   public login(): void {

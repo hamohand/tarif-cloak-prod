@@ -17,7 +17,7 @@ import { map } from 'rxjs/operators';
       <!-- Présentation de l'API Recherche HS-code - Affichée uniquement pour les utilisateurs non connectés -->
       <section class="api-presentation" *ngIf="!(isAuthenticated$ | async)">
         <div class="api-header">
-          <h2>🔍 API Recherche de HS-Code</h2>
+          <h2>🔍 Recherche de HS-Code</h2>
           <p class="api-subtitle">Recherche intelligente et multilingue dans le système harmonisé douanier</p>
         </div>
         
