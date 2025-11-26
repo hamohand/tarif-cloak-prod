@@ -91,8 +91,8 @@ public class QuotaAlertService {
         double percentageUsed = (double) currentUsage / organization.getMonthlyQuota() * 100;
         
         // Déterminer le type d'alerte
-        QuotaAlert.AlertType alertType = null;
-        String message = null;
+        QuotaAlert.AlertType alertType;
+        String message;
         
         if (percentageUsed >= CRITICAL_THRESHOLD) {
             if (currentUsage > organization.getMonthlyQuota()) {
@@ -114,21 +114,65 @@ public class QuotaAlertService {
                 "🟡 Le quota mensuel de votre organisation '%s' approche de la limite ! Consommation de l'organisation: %d/%d requêtes (%.1f%%)",
                 organization.getName(), currentUsage, organization.getMonthlyQuota(), percentageUsed
             );
+        } else {
+            // Pas d'alerte nécessaire, sortir de la méthode
+            return;
         }
         
-        // Créer une alerte si nécessaire
-        if (alertType != null) {
-            // Vérifier s'il existe déjà une alerte non lue du même type pour cette organisation ce mois-ci
+        // Créer une alerte si nécessaire (alertType est maintenant final)
+        {
+            // Récupérer toutes les alertes non lues pour cette organisation ce mois-ci
             List<QuotaAlert> existingAlerts = quotaAlertRepository.findByOrganizationIdAndIsReadFalseOrderByCreatedAtDesc(organizationId);
-            boolean shouldCreateAlert = true;
             
-            // Ne créer qu'une alerte par type par mois pour éviter le spam
-            for (QuotaAlert existingAlert : existingAlerts) {
-                if (existingAlert.getAlertType() == alertType && 
-                    existingAlert.getCreatedAt().getMonth() == now.getMonth() &&
-                    existingAlert.getCreatedAt().getYear() == now.getYear()) {
+            // Filtrer les alertes du mois en cours
+            List<QuotaAlert> currentMonthAlerts = existingAlerts.stream()
+                    .filter(alert -> alert.getCreatedAt().getMonth() == now.getMonth() &&
+                                   alert.getCreatedAt().getYear() == now.getYear())
+                    .collect(java.util.stream.Collectors.toList());
+            
+            // Trouver l'alerte la plus critique existante
+            QuotaAlert.AlertType mostCriticalExisting = null;
+            if (!currentMonthAlerts.isEmpty()) {
+                mostCriticalExisting = currentMonthAlerts.stream()
+                        .map(QuotaAlert::getAlertType)
+                        .max(this::compareAlertTypeSeverity)
+                        .orElse(null);
+            }
+            
+            // Déterminer si on doit créer une nouvelle alerte
+            // Ordre de priorité : EXCEEDED > CRITICAL > WARNING
+            boolean shouldCreateAlert = false;
+            
+            if (mostCriticalExisting == null) {
+                // Aucune alerte existante, créer la nouvelle
+                shouldCreateAlert = true;
+            } else {
+                // Comparer avec l'alerte existante la plus critique
+                int comparison = compareAlertTypeSeverity(alertType, mostCriticalExisting);
+                if (comparison > 0) {
+                    // La nouvelle alerte est plus critique, marquer les anciennes comme lues et créer la nouvelle
+                    for (QuotaAlert existingAlert : currentMonthAlerts) {
+                        quotaAlertRepository.markAsRead(existingAlert.getId());
+                        log.debug("Alerte {} marquée comme lue car remplacée par une alerte plus critique ({})", 
+                                existingAlert.getAlertType(), alertType);
+                    }
+                    shouldCreateAlert = true;
+                } else if (comparison < 0) {
+                    // La nouvelle alerte est moins critique, ne pas créer (garder la plus critique)
                     shouldCreateAlert = false;
-                    break;
+                    log.debug("Alerte {} ignorée car une alerte plus critique ({}) existe déjà", 
+                            alertType, mostCriticalExisting);
+                } else {
+                    // Même niveau de criticité, vérifier si c'est exactement le même type
+                    boolean sameTypeExists = currentMonthAlerts.stream()
+                            .anyMatch(alert -> alert.getAlertType() == alertType);
+                    if (!sameTypeExists) {
+                        shouldCreateAlert = true;
+                    } else {
+                        // Même type existe déjà, ne pas créer de doublon
+                        shouldCreateAlert = false;
+                        log.debug("Alerte {} ignorée car une alerte du même type existe déjà", alertType);
+                    }
                 }
             }
             
@@ -210,6 +254,40 @@ public class QuotaAlertService {
      */
     public long countAllUnreadAlerts() {
         return quotaAlertRepository.countByIsReadFalse();
+    }
+    
+    /**
+     * Compare deux types d'alerte pour déterminer lequel est le plus critique.
+     * @return valeur positive si alertType1 est plus critique, négative si alertType2 est plus critique, 0 si égaux
+     * Ordre de criticité : EXCEEDED > CRITICAL > WARNING
+     */
+    private int compareAlertTypeSeverity(QuotaAlert.AlertType alertType1, QuotaAlert.AlertType alertType2) {
+        if (alertType1 == alertType2) {
+            return 0;
+        }
+        
+        // Définir l'ordre de criticité
+        int severity1 = getAlertTypeSeverity(alertType1);
+        int severity2 = getAlertTypeSeverity(alertType2);
+        
+        return Integer.compare(severity1, severity2);
+    }
+    
+    /**
+     * Retourne un score de criticité pour un type d'alerte.
+     * Plus le score est élevé, plus l'alerte est critique.
+     */
+    private int getAlertTypeSeverity(QuotaAlert.AlertType alertType) {
+        switch (alertType) {
+            case EXCEEDED:
+                return 3;
+            case CRITICAL:
+                return 2;
+            case WARNING:
+                return 1;
+            default:
+                return 0;
+        }
     }
     
     /**
