@@ -60,8 +60,11 @@ public class QuotaAlertService {
     /**
      * Vérifie le quota d'une organisation spécifique et crée une alerte si nécessaire.
      * 
-     * IMPORTANT : Les alertes sont basées sur la consommation de l'organisation
-     * (somme de toutes les requêtes de tous les collaborateurs).
+     * IMPORTANT : Les alertes sont basées sur :
+     * - La consommation de l'organisation : somme de toutes les requêtes de tous les collaborateurs
+     * - Le quota de l'organisation : défini par le plan tarifaire choisi (organization.monthlyQuota)
+     * 
+     * Les alertes affichent uniquement : consommation-organisation / quota-organisation
      * Les alertes sont visibles par tous les collaborateurs de l'organisation.
      */
     @Transactional
@@ -71,7 +74,10 @@ public class QuotaAlertService {
             return; // Pas de quota à vérifier
         }
         
-        // Calculer l'utilisation du mois en cours pour TOUTE l'organisation
+        // Le quota provient du plan tarifaire de l'organisation (organization.monthlyQuota)
+        // qui est défini lors du changement de plan ou à la création de l'organisation
+        
+        // Calculer la consommation du mois en cours pour TOUTE l'organisation
         // (somme de toutes les requêtes de tous les collaborateurs)
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime startOfMonth = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
@@ -81,6 +87,7 @@ public class QuotaAlertService {
         long currentUsage = usageLogRepository.countByOrganizationIdAndTimestampBetween(
                 organizationId, startOfMonth, endOfMonth);
         
+        // Calculer le pourcentage : consommation-organisation / quota-organisation
         double percentageUsed = (double) currentUsage / organization.getMonthlyQuota() * 100;
         
         // Déterminer le type d'alerte
@@ -91,20 +98,20 @@ public class QuotaAlertService {
             if (currentUsage > organization.getMonthlyQuota()) {
                 alertType = QuotaAlert.AlertType.EXCEEDED;
                 message = String.format(
-                    "⚠️ Quota mensuel DÉPASSÉ pour l'organisation '%s' ! Utilisation: %d/%d requêtes (%.1f%%)",
+                    "⚠️ Le quota mensuel de votre organisation '%s' a été DÉPASSÉ ! Consommation de l'organisation: %d/%d requêtes (%.1f%%)",
                     organization.getName(), currentUsage, organization.getMonthlyQuota(), percentageUsed
                 );
             } else {
                 alertType = QuotaAlert.AlertType.CRITICAL;
                 message = String.format(
-                    "🔴 Quota mensuel ATTEINT pour l'organisation '%s' ! Utilisation: %d/%d requêtes (100%%)",
+                    "🔴 Le quota mensuel de votre organisation '%s' a été ATTEINT ! Consommation de l'organisation: %d/%d requêtes (100%%)",
                     organization.getName(), currentUsage, organization.getMonthlyQuota()
                 );
             }
         } else if (percentageUsed >= WARNING_THRESHOLD) {
             alertType = QuotaAlert.AlertType.WARNING;
             message = String.format(
-                "🟡 Quota mensuel proche de la limite pour l'organisation '%s' ! Utilisation: %d/%d requêtes (%.1f%%)",
+                "🟡 Le quota mensuel de votre organisation '%s' approche de la limite ! Consommation de l'organisation: %d/%d requêtes (%.1f%%)",
                 organization.getName(), currentUsage, organization.getMonthlyQuota(), percentageUsed
             );
         }

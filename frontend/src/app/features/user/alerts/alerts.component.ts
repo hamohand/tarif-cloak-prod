@@ -21,7 +21,7 @@ import { interval, Subscription } from 'rxjs';
       } @else if (alerts.length === 0) {
         <div class="no-alerts">
           <p>✅ Aucune alerte active</p>
-          <p class="subtitle">Tous vos quotas sont dans les limites normales.</p>
+          <p class="subtitle">La consommation de votre organisation est dans les limites normales par rapport à votre quota.</p>
         </div>
       } @else {
         <div class="alerts-list">
@@ -41,16 +41,17 @@ import { interval, Subscription } from 'rxjs';
                 <p class="alert-message">{{ alert.message }}</p>
                 <div class="alert-details">
                   <div class="detail-item">
-                    <span class="label">Utilisation:</span>
+                    <span class="label">Consommation de l'organisation:</span>
                     <span class="value">{{ alert.currentUsage }} / {{ alert.monthlyQuota || '∞' }} requêtes</span>
                   </div>
                   <div class="detail-item">
-                    <span class="label">Pourcentage:</span>
+                    <span class="label">Pourcentage utilisé:</span>
                     <span class="value" [class]="getPercentageClass(alert.percentageUsed)">
                       {{ alert.percentageUsed.toFixed(1) }}%
                     </span>
                   </div>
                 </div>
+                <p class="alert-note">💡 Note: Cette alerte concerne la consommation totale de votre organisation (somme de toutes les requêtes de tous les collaborateurs) par rapport au quota défini par votre plan tarifaire.</p>
               </div>
             </div>
           }
@@ -175,6 +176,17 @@ import { interval, Subscription } from 'rxjs';
       color: #333;
       margin: 0 0 1rem 0;
       line-height: 1.5;
+    }
+
+    .alert-note {
+      font-size: 0.85rem;
+      color: #666;
+      margin: 1rem 0 0 0;
+      padding: 0.75rem;
+      background: #f8f9fa;
+      border-radius: 6px;
+      border-left: 3px solid #3498db;
+      font-style: italic;
     }
 
     .alert-details {
