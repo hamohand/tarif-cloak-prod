@@ -9,6 +9,8 @@ export interface Organization {
   email?: string | null;
   monthlyQuota?: number | null;
   pricingPlanId?: number | null;
+  trialExpiresAt?: string | null;
+  trialPermanentlyExpired?: boolean | null;
   createdAt: string;
   userCount?: number;
 }

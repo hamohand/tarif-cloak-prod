@@ -87,10 +87,10 @@ Chart.register(...registerables);
             </div>
             <div class="change-plan-section">
               <h4>Changer de plan</h4>
-              <select [(ngModel)]="selectedPlanId" class="plan-select">
+              <select [(ngModel)]="selectedPlanId" class="plan-select" [disabled]="loadingPlans">
                 <option [value]="null">Aucun plan (gratuit)</option>
                 @for (plan of pricingPlans; track plan.id) {
-                  <option [value]="plan.id" [selected]="plan.id === organization.pricingPlanId">
+                  <option [value]="plan.id" [selected]="plan.id === organization.pricingPlanId" [disabled]="organization.trialPermanentlyExpired && plan.trialPeriodDays && plan.trialPeriodDays > 0">
                     {{ plan.name }} - 
                     @if (plan.pricePerMonth !== null && plan.pricePerMonth !== undefined) {
                       @if (plan.pricePerMonth === 0) {
@@ -127,8 +127,8 @@ Chart.register(...registerables);
               </select>
               <button 
                 class="btn btn-primary" 
-                (click)="changePricingPlan()"
-                [disabled]="isChangingPlan || selectedPlanId === organization.pricingPlanId">
+                (click)="openConfirmModal()"
+                [disabled]="isChangingPlan || selectedPlanId === organization.pricingPlanId || !selectedPlanId">
                 @if (isChangingPlan) {
                   <span>Changement en cours...</span>
                 } @else {
@@ -140,6 +140,70 @@ Chart.register(...registerables);
           } @else {
             <p class="no-plans-message">Aucun plan tarifaire disponible</p>
           }
+        </div>
+      }
+
+      <!-- Modal de confirmation pour le changement de plan -->
+      @if (showConfirmModal && selectedPlanForConfirmation) {
+        <div class="modal-overlay" (click)="closeConfirmModal()">
+          <div class="modal-content" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+              <h3>Confirmer le changement de plan</h3>
+              <button class="modal-close" (click)="closeConfirmModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+              <p>Vous êtes sur le point de changer votre plan tarifaire vers :</p>
+              <div class="selected-plan-info">
+                <h4>{{ selectedPlanForConfirmation.name }}</h4>
+                @if (selectedPlanForConfirmation.description) {
+                  <p class="plan-description">{{ selectedPlanForConfirmation.description }}</p>
+                }
+                @if (selectedPlanForConfirmation.pricePerMonth !== null && selectedPlanForConfirmation.pricePerMonth !== undefined) {
+                  @if (selectedPlanForConfirmation.pricePerMonth === 0) {
+                    <p class="plan-price">Gratuit</p>
+                  } @else {
+                    <p class="plan-price">
+                      {{ selectedPlanForConfirmation.pricePerMonth }} 
+                      @if (currencySymbol$ | async; as symbol) {
+                        {{ symbol }}
+                      } @else {
+                        €
+                      }/mois
+                    </p>
+                  }
+                } @else if (selectedPlanForConfirmation.pricePerRequest !== null && selectedPlanForConfirmation.pricePerRequest !== undefined) {
+                  <p class="plan-price">
+                    {{ selectedPlanForConfirmation.pricePerRequest }} 
+                    @if (currencySymbol$ | async; as symbol) {
+                      {{ symbol }}
+                    } @else {
+                      €
+                    }/requête
+                  </p>
+                }
+                @if (selectedPlanForConfirmation.monthlyQuota) {
+                  <p class="plan-quota">Quota: {{ selectedPlanForConfirmation.monthlyQuota | number }} requêtes/mois</p>
+                } @else if (selectedPlanForConfirmation.pricePerRequest !== null && selectedPlanForConfirmation.pricePerRequest !== undefined) {
+                  <p class="plan-quota">Facturation à la requête</p>
+                } @else {
+                  <p class="plan-quota">Quota illimité</p>
+                }
+              </div>
+              <p class="confirmation-warning">⚠️ Êtes-vous sûr de vouloir continuer ?</p>
+            </div>
+            <div class="modal-footer">
+              <button class="btn btn-secondary" (click)="closeConfirmModal()" [disabled]="isChangingPlan">
+                Annuler
+              </button>
+              <button class="btn btn-primary" (click)="changePricingPlan()" [disabled]="isChangingPlan">
+                @if (isChangingPlan) {
+                  <span>Changement en cours...</span>
+                } @else {
+                  <span>Confirmer le changement</span>
+                }
+              </button>
+            </div>
+          </div>
         </div>
       }
 
@@ -694,6 +758,169 @@ Chart.register(...registerables);
       text-decoration: underline;
     }
 
+    /* Modal de confirmation */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 10000;
+      padding: 1rem;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 12px;
+      max-width: 500px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      animation: modalFadeIn 0.3s ease-out;
+    }
+
+    @keyframes modalFadeIn {
+      from {
+        opacity: 0;
+        transform: scale(0.9);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.5rem;
+      border-bottom: 2px solid #e1e8ed;
+    }
+
+    .modal-header h3 {
+      margin: 0;
+      color: #2c3e50;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 2rem;
+      color: #7f8c8d;
+      cursor: pointer;
+      padding: 0;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      transition: all 0.2s;
+    }
+
+    .modal-close:hover {
+      background: #e1e8ed;
+      color: #2c3e50;
+    }
+
+    .modal-body {
+      padding: 1.5rem;
+    }
+
+    .modal-body p {
+      margin: 0.5rem 0;
+      color: #2c3e50;
+    }
+
+    .selected-plan-info {
+      background: #f8f9fa;
+      padding: 1rem;
+      border-radius: 8px;
+      margin: 1rem 0;
+      border-left: 4px solid #3498db;
+    }
+
+    .selected-plan-info h4 {
+      margin: 0 0 0.5rem 0;
+      color: #2c3e50;
+    }
+
+    .plan-description {
+      color: #7f8c8d;
+      font-size: 0.9rem;
+      margin: 0.5rem 0;
+    }
+
+    .plan-price {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #27ae60;
+      margin: 0.5rem 0;
+    }
+
+    .plan-quota {
+      color: #7f8c8d;
+      font-size: 0.9rem;
+      margin: 0.5rem 0;
+    }
+
+    .confirmation-warning {
+      margin-top: 1rem;
+      padding: 1rem;
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      border-radius: 6px;
+      color: #856404;
+      font-weight: 500;
+    }
+
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 1rem;
+      padding: 1.5rem;
+      border-top: 2px solid #e1e8ed;
+    }
+
+    .modal-footer .btn {
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .modal-footer .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .modal-footer .btn-secondary {
+      background: #e1e8ed;
+      color: #2c3e50;
+    }
+
+    .modal-footer .btn-secondary:hover:not(:disabled) {
+      background: #d1d9e0;
+    }
+
+    .modal-footer .btn-primary {
+      background: #3498db;
+      color: white;
+    }
+
+    .modal-footer .btn-primary:hover:not(:disabled) {
+      background: #2980b9;
+    }
+
     .usage-logs-card {
       background: #e0e0e0;
       border-radius: 8px;
@@ -746,6 +973,8 @@ export class OrganizationStatsComponent implements OnInit {
   selectedPlanId: number | null = null;
   loadingPlans = false;
   isChangingPlan = false;
+  showConfirmModal = false;
+  selectedPlanForConfirmation: PricingPlan | null = null;
 
   private quotaChart: Chart | null = null;
 
@@ -805,7 +1034,12 @@ export class OrganizationStatsComponent implements OnInit {
     this.loadingPlans = true;
     this.pricingPlanService.getActivePricingPlans().subscribe({
       next: (plans) => {
-        this.pricingPlans = plans;
+        // Filtrer les plans d'essai si l'essai est définitivement terminé
+        if (this.organization?.trialPermanentlyExpired) {
+          this.pricingPlans = plans.filter(plan => !plan.trialPeriodDays || plan.trialPeriodDays <= 0);
+        } else {
+          this.pricingPlans = plans;
+        }
         this.loadingPlans = false;
         if (this.organization?.pricingPlanId) {
           this.updateCurrentPlan(this.organization.pricingPlanId);
@@ -823,6 +1057,30 @@ export class OrganizationStatsComponent implements OnInit {
     this.currentPlan = plan || null;
   }
 
+  onPlanSelectChange() {
+    // Ne pas afficher de modal pour le moment, on attend le clic sur le bouton
+  }
+
+  openConfirmModal() {
+    if (!this.selectedPlanId || this.selectedPlanId === this.organization?.pricingPlanId) {
+      return;
+    }
+
+    const selectedPlan = this.pricingPlans.find(p => p.id === this.selectedPlanId);
+    if (!selectedPlan) {
+      this.notificationService.error('Plan sélectionné introuvable');
+      return;
+    }
+
+    this.selectedPlanForConfirmation = selectedPlan;
+    this.showConfirmModal = true;
+  }
+
+  closeConfirmModal() {
+    this.showConfirmModal = false;
+    this.selectedPlanForConfirmation = null;
+  }
+
   changePricingPlan() {
     if (this.isChangingPlan || !this.organization) {
       return;
@@ -830,19 +1088,23 @@ export class OrganizationStatsComponent implements OnInit {
 
     this.isChangingPlan = true;
     this.errorMessage = '';
+    this.showConfirmModal = false;
 
     this.pricingPlanService.changeMyOrganizationPricingPlan(this.selectedPlanId).subscribe({
       next: (updatedOrg) => {
         this.organization = updatedOrg;
         this.updateCurrentPlan(updatedOrg.pricingPlanId || 0);
         this.isChangingPlan = false;
+        this.selectedPlanForConfirmation = null;
         this.notificationService.success('Plan tarifaire changé avec succès');
         this.loadQuota();
+        // Recharger les plans pour mettre à jour le filtre si nécessaire
+        this.loadPricingPlans();
       },
       error: (err) => {
         this.errorMessage = 'Erreur lors du changement de plan: ' + (err.error?.message || err.message);
         this.isChangingPlan = false;
-        this.notificationService.error('Erreur lors du changement de plan');
+        this.notificationService.error('Erreur lors du changement de plan: ' + (err.error?.message || err.message));
       }
     });
   }
@@ -989,7 +1251,7 @@ export class OrganizationStatsComponent implements OnInit {
           },
           tooltip: {
             callbacks: {
-              label: (context) => {
+              label: (context: any) => {
                 const label = context.label || '';
                 const value = context.parsed || 0;
                 const total = used + remaining;

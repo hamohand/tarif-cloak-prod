@@ -14,6 +14,7 @@ export interface OrganizationInfo {
   monthlyQuota?: number | null;
   pricingPlanId?: number | null;
   trialExpiresAt?: string | null;
+  trialPermanentlyExpired?: boolean | null;
   createdAt?: string | null;
   userCount?: number | null;
   currentMonthUsage?: number | null;

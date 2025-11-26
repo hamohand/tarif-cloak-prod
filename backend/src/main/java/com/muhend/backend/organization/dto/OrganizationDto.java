@@ -25,6 +25,7 @@ public class OrganizationDto {
     private Long pricingPlanId; // ID du plan tarifaire
     private String marketVersion; // Version du marché (ex: DEFAULT, DZ)
     private LocalDateTime trialExpiresAt; // Date d'expiration du plan d'essai (null si pas un plan d'essai)
+    private Boolean trialPermanentlyExpired; // true si l'essai est définitivement terminé (ne peut plus être réactivé)
     private LocalDateTime createdAt;
     
     // Pour les réponses avec le nombre d'utilisateurs

@@ -515,6 +515,16 @@ public class OrganizationService {
         if (pricingPlanId != null) {
             try {
                 newPlan = pricingPlanService.getPricingPlanById(pricingPlanId);
+                
+                // Vérifier si l'organisation essaie de revenir à un plan d'essai alors que l'essai est définitivement terminé
+                if (Boolean.TRUE.equals(organization.getTrialPermanentlyExpired()) 
+                        && newPlan.getTrialPeriodDays() != null && newPlan.getTrialPeriodDays() > 0) {
+                    throw new IllegalArgumentException(
+                        "Impossible de revenir au plan d'essai. Votre essai gratuit est définitivement terminé. " +
+                        "Veuillez choisir un plan payant ou faire une demande de devis."
+                    );
+                }
+                
                 organization.setPricingPlanId(pricingPlanId);
                 // Mettre à jour le quota selon le plan
                 if (newPlan.getMonthlyQuota() != null) {
@@ -696,6 +706,7 @@ public class OrganizationService {
         dto.setPricingPlanId(organization.getPricingPlanId());
         dto.setMarketVersion(organization.getMarketVersion());
         dto.setTrialExpiresAt(organization.getTrialExpiresAt());
+        dto.setTrialPermanentlyExpired(organization.getTrialPermanentlyExpired());
         dto.setCreatedAt(organization.getCreatedAt());
         return dto;
     }
@@ -837,8 +848,13 @@ public class OrganizationService {
             }
             
             // Quota atteint et pas de plan payant = essai expiré
-            log.info("Essai expiré pour l'organisation {}: quota atteint ({}/{})", 
-                    organization.getId(), currentUsage, monthlyQuota);
+            // Marquer l'essai comme définitivement terminé (ne peut plus être réactivé)
+            if (!Boolean.TRUE.equals(organization.getTrialPermanentlyExpired())) {
+                organization.setTrialPermanentlyExpired(true);
+                organizationRepository.save(organization);
+                log.info("Essai définitivement terminé pour l'organisation {}: quota atteint ({}/{})", 
+                        organization.getId(), currentUsage, monthlyQuota);
+            }
             return true;
         }
         
