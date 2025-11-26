@@ -208,10 +208,12 @@ Chart.register(...registerables);
               <h4>💰 Prix Total Requêtes</h4>
               <p class="stat-value">{{ formatCurrency(stats.totalCostUsd) }}</p>
             </div>
-            <div class="stat-item">
-              <h4>🔢 Tokens Total</h4>
-              <p class="stat-value">{{ formatNumber(stats.totalTokens) }}</p>
-            </div>
+            @if (isAdmin()) {
+              <div class="stat-item">
+                <h4>🔢 Tokens Total</h4>
+                <p class="stat-value">{{ formatNumber(stats.totalTokens) }}</p>
+              </div>
+            }
             <div class="stat-item">
               <h4>📅 Requêtes ce mois</h4>
               <p class="stat-value">{{ stats.monthlyRequests }}</p>
@@ -241,7 +243,9 @@ Chart.register(...registerables);
                     <th>Date</th>
                     <th>Endpoint</th>
                     <th>Recherche</th>
-                    <th>Tokens</th>
+                    @if (isAdmin()) {
+                      <th>Tokens</th>
+                    }
                     <th>Prix requête</th>
                   </tr>
                 </thead>
@@ -251,7 +255,9 @@ Chart.register(...registerables);
                       <td>{{ formatDate(usage.timestamp) }}</td>
                       <td>{{ usage.endpoint }}</td>
                       <td class="search-term">{{ truncateSearchTerm(usage.searchTerm) }}</td>
-                      <td>{{ formatNumber(usage.tokensUsed) }}</td>
+                      @if (isAdmin()) {
+                        <td>{{ formatNumber(usage.tokensUsed) }}</td>
+                      }
                       <td>{{ formatCurrency(usage.costUsd || 0) }}</td>
                     </tr>
                   }
@@ -281,8 +287,8 @@ Chart.register(...registerables);
                 <th>Collaborateur</th>
                 <th>Endpoint</th>
                 <th>Recherche</th>
-                <th>Tokens</th>
                 @if (isAdmin()) {
+                  <th>Tokens</th>
                   <th>Coût tokens (USD)</th>
                 }
                 <th>Prix requête</th>
@@ -295,8 +301,8 @@ Chart.register(...registerables);
                   <td><strong>{{ log.collaboratorName }}</strong></td>
                   <td>{{ log.endpoint }}</td>
                   <td class="search-term">{{ truncateSearchTerm(log.searchTerm) }}</td>
-                  <td>{{ formatNumber(log.tokensUsed || 0) }}</td>
                   @if (isAdmin()) {
+                    <td>{{ formatNumber(log.tokensUsed || 0) }}</td>
                     <td>
                       {{ formatCost(log.tokenCostUsd || 0) }} USD
                     </td>
