@@ -540,8 +540,16 @@ public class OrganizationService {
                     log.info("Plan d'essai activé pour l'organisation {}: expiration dans {} jours", 
                         organization.getName(), newPlan.getTrialPeriodDays());
                 } else {
-                    // Si ce n'est pas un plan d'essai, réinitialiser la date d'expiration
+                    // Si c'est un plan payant, réinitialiser la date d'expiration et le flag trialPermanentlyExpired
                     organization.setTrialExpiresAt(null);
+                    // Si l'organisation passe à un plan payant, réinitialiser le flag trialPermanentlyExpired
+                    boolean isPaidPlan = (newPlan.getPricePerMonth() != null && newPlan.getPricePerMonth().compareTo(BigDecimal.ZERO) > 0)
+                            || (newPlan.getPricePerRequest() != null && newPlan.getPricePerRequest().compareTo(BigDecimal.ZERO) > 0);
+                    if (isPaidPlan && Boolean.TRUE.equals(organization.getTrialPermanentlyExpired())) {
+                        organization.setTrialPermanentlyExpired(false);
+                        log.info("Flag trialPermanentlyExpired réinitialisé pour l'organisation {} (plan payant sélectionné)", 
+                                organization.getName());
+                    }
                 }
             } catch (IllegalArgumentException e) {
                 throw new IllegalArgumentException("Plan tarifaire invalide: " + e.getMessage());

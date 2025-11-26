@@ -21,6 +21,22 @@ Chart.register(...registerables);
     <div class="stats-container">
       <h2>📊 Statistiques Globales de l'Organisation</h2>
 
+      <!-- Bannière d'alerte si l'essai est définitivement terminé -->
+      @if (organization && organization.trialPermanentlyExpired) {
+        <div class="trial-expired-alert">
+          <div class="alert-content">
+            <h3>⚠️ Action requise : Choisissez un plan tarifaire</h3>
+            <p>
+              Le quota de votre essai gratuit a été atteint et est maintenant <strong>définitivement désactivé</strong> pour votre organisation. 
+              Aucune requête HS-code n'est autorisée pour tous les collaborateurs jusqu'à ce qu'un nouveau plan soit sélectionné.
+            </p>
+            <p class="alert-action">
+              <strong>Veuillez sélectionner un plan tarifaire ci-dessous pour continuer à utiliser le service.</strong>
+            </p>
+          </div>
+        </div>
+      }
+
       <!-- Organisation -->
       <div class="organization-card" *ngIf="organization || loadingOrg">
         <h3>🏢 Mon Organisation</h3>
@@ -85,10 +101,19 @@ Chart.register(...registerables);
                 <p class="no-plan-message">Aucun plan tarifaire sélectionné</p>
               }
             </div>
-            <div class="change-plan-section">
-              <h4>Changer de plan</h4>
-              <select [(ngModel)]="selectedPlanId" class="plan-select" [disabled]="loadingPlans">
-                <option [value]="null">Aucun plan (gratuit)</option>
+            <div class="change-plan-section" [class.required-change]="organization.trialPermanentlyExpired">
+              @if (organization.trialPermanentlyExpired) {
+                <h4 class="required-plan-title">🔴 Sélection obligatoire d'un plan tarifaire</h4>
+                <p class="required-plan-message">
+                  Votre essai gratuit étant définitivement terminé, vous devez choisir un plan payant pour continuer à utiliser le service.
+                </p>
+              } @else {
+                <h4>Changer de plan</h4>
+              }
+              <select [(ngModel)]="selectedPlanId" class="plan-select" [disabled]="loadingPlans" [class.required-select]="organization.trialPermanentlyExpired">
+                @if (!organization.trialPermanentlyExpired) {
+                  <option [value]="null">Aucun plan (gratuit)</option>
+                }
                 @for (plan of pricingPlans; track plan.id) {
                   <option [value]="plan.id" [selected]="plan.id === organization.pricingPlanId" [disabled]="organization.trialPermanentlyExpired && plan.trialPeriodDays && plan.trialPeriodDays > 0">
                     {{ plan.name }} - 
@@ -127,10 +152,13 @@ Chart.register(...registerables);
               </select>
               <button 
                 class="btn btn-primary" 
+                [class.btn-required]="organization.trialPermanentlyExpired"
                 (click)="openConfirmModal()"
                 [disabled]="isChangingPlan || selectedPlanId === organization.pricingPlanId || !selectedPlanId">
                 @if (isChangingPlan) {
                   <span>Changement en cours...</span>
+                } @else if (organization.trialPermanentlyExpired) {
+                  <span>🔴 Valider le nouveau plan (obligatoire)</span>
                 } @else {
                   <span>Changer de plan</span>
                 }
@@ -633,6 +661,27 @@ Chart.register(...registerables);
       cursor: not-allowed;
     }
 
+    .btn-primary.btn-required {
+      background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+      box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
+      animation: pulse-required 2s infinite;
+    }
+
+    .btn-primary.btn-required:hover:not(:disabled) {
+      background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(231, 76, 60, 0.5);
+    }
+
+    @keyframes pulse-required {
+      0%, 100% {
+        box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
+      }
+      50% {
+        box-shadow: 0 4px 20px rgba(231, 76, 60, 0.6);
+      }
+    }
+
     .btn-secondary {
       background: #95a5a6;
       color: white;
@@ -688,6 +737,80 @@ Chart.register(...registerables);
       max-height: 200px;
     }
 
+    /* Bannière d'alerte essai terminé */
+    .trial-expired-alert {
+      background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+      border-radius: 12px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 4px 12px rgba(243, 156, 18, 0.3);
+      border: 3px solid #f39c12;
+    }
+
+    .alert-content {
+      color: white;
+      text-align: center;
+    }
+
+    .alert-content h3 {
+      margin: 0 0 1rem 0;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: white;
+    }
+
+    .alert-content p {
+      margin: 0.75rem 0;
+      font-size: 1rem;
+      line-height: 1.6;
+      color: white;
+    }
+
+    .alert-action {
+      margin-top: 1rem !important;
+      font-size: 1.1rem !important;
+      background: rgba(255, 255, 255, 0.2);
+      padding: 1rem;
+      border-radius: 8px;
+    }
+
+    /* Bannière d'alerte essai terminé */
+    .trial-expired-alert {
+      background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+      border-radius: 12px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 4px 12px rgba(243, 156, 18, 0.3);
+      border: 3px solid #f39c12;
+    }
+
+    .alert-content {
+      color: white;
+      text-align: center;
+    }
+
+    .alert-content h3 {
+      margin: 0 0 1rem 0;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: white;
+    }
+
+    .alert-content p {
+      margin: 0.75rem 0;
+      font-size: 1rem;
+      line-height: 1.6;
+      color: white;
+    }
+
+    .alert-action {
+      margin-top: 1rem !important;
+      font-size: 1.1rem !important;
+      background: rgba(255, 255, 255, 0.2);
+      padding: 1rem;
+      border-radius: 8px;
+    }
+
     .pricing-plan-card {
       background: white;
       border-radius: 12px;
@@ -725,9 +848,59 @@ Chart.register(...registerables);
       border-top: 2px solid #e1e8ed;
     }
 
+    .change-plan-section.required-change {
+      background: linear-gradient(135deg, #fff5f5 0%, #ffe5e5 100%);
+      padding: 1.5rem;
+      border-radius: 12px;
+      border: 3px solid #e74c3c;
+      margin-top: 2rem;
+      margin-bottom: 2rem;
+    }
+
+    .change-plan-section.required-change {
+      background: linear-gradient(135deg, #fff5f5 0%, #ffe5e5 100%);
+      padding: 1.5rem;
+      border-radius: 12px;
+      border: 3px solid #e74c3c;
+      margin-top: 2rem;
+      margin-bottom: 2rem;
+    }
+
     .change-plan-section h4 {
       margin-bottom: 1rem;
       color: #2c3e50;
+    }
+
+    .required-plan-title {
+      color: #e74c3c !important;
+      font-size: 1.3rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .required-plan-message {
+      color: #c0392b;
+      font-weight: 500;
+      margin-bottom: 1rem;
+      padding: 0.75rem;
+      background: rgba(231, 76, 60, 0.1);
+      border-radius: 6px;
+      border-left: 4px solid #e74c3c;
+    }
+
+    .required-plan-title {
+      color: #e74c3c !important;
+      font-size: 1.3rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .required-plan-message {
+      color: #c0392b;
+      font-weight: 500;
+      margin-bottom: 1rem;
+      padding: 0.75rem;
+      background: rgba(231, 76, 60, 0.1);
+      border-radius: 6px;
+      border-left: 4px solid #e74c3c;
     }
 
     .plan-select {
@@ -740,9 +913,20 @@ Chart.register(...registerables);
       background: white;
     }
 
+    .plan-select.required-select {
+      border-color: #e74c3c;
+      border-width: 2px;
+      background: white;
+    }
+
     .plan-select:focus {
       outline: none;
       border-color: #3498db;
+    }
+
+    .plan-select.required-select:focus {
+      border-color: #e74c3c;
+      box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
     }
 
     .view-all-plans-link {
