@@ -1,14 +1,15 @@
 import { Component, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, AsyncPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
-import { combineLatest } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { OrganizationAccountService } from '../../core/services/organization-account.service';
+import { combineLatest, of } from 'rxjs';
+import { map, switchMap, catchError, distinctUntilChanged } from 'rxjs/operators';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, AsyncPipe],
   template: `
     <div class="home-container">
       <h3>Bienvenue sur Enclume-Numérique</h3>
@@ -101,26 +102,50 @@ import { map } from 'rxjs/operators';
 
       <!-- Section pour les utilisateurs connectés avec rôle ORGANIZATION ou COLLABORATOR -->
       <section class="user-actions" *ngIf="showRequestButtons$ | async">
-        <h4 class="section-title">Outils de recherche HS-Code</h4>
-        <div class="features primary">
-          <div class="feature-card request-card">
-            <div class="request-icon">🔍</div>
-            <h3>Recherche d'article unique</h3>
-            <p>Recherchez le code HS d'un produit spécifique en quelques secondes.</p>
-            <a [routerLink]="['/recherche/search']" class="cta-button secondary">
-              Rechercher un article
-            </a>
+        @if (!(canMakeRequests$ | async)) {
+          <!-- Message d'avertissement quand l'essai est terminé -->
+          <div class="trial-expired-message">
+            <div class="message-content">
+              <h4>⚠️ Essai gratuit terminé</h4>
+              @if (isOrganizationAccount$ | async) {
+                <p>
+                  Le quota de votre essai gratuit a été atteint et est maintenant définitivement désactivé pour votre organisation. 
+                  Aucune requête HS-code n'est autorisée pour tous les collaborateurs. 
+                  Veuillez <a routerLink="/pricing">choisir un plan tarifaire</a> ou 
+                  <a routerLink="/organization/quote-requests">faire une demande de devis</a> pour continuer à utiliser le service.
+                </p>
+              } @else {
+                <p>
+                  Le quota de l'essai gratuit de votre organisation a été atteint et est maintenant définitivement désactivé. 
+                  Aucune requête HS-code n'est autorisée. 
+                  Veuillez contacter votre administrateur d'organisation pour choisir un plan tarifaire ou faire une demande de devis.
+                </p>
+              }
+            </div>
           </div>
-          
-          <div class="feature-card request-card">
-            <div class="request-icon">📋</div>
-            <h3>Recherche par lots (bientôt disponible)</h3>
-            <p>Traitez une liste de produits simultanément avec l'outil de recherche par lots.</p>
-            <a [routerLink]="['/recherche/searchListLots']" class="cta-button secondary">
-              Rechercher par lots
-            </a>
+        } @else {
+          <!-- Boutons de recherche HS-code (affichés seulement si l'organisation peut faire des requêtes) -->
+          <h4 class="section-title">Outils de recherche HS-Code</h4>
+          <div class="features primary">
+            <div class="feature-card request-card">
+              <div class="request-icon">🔍</div>
+              <h3>Recherche d'article unique</h3>
+              <p>Recherchez le code HS d'un produit spécifique en quelques secondes.</p>
+              <a [routerLink]="['/recherche/search']" class="cta-button secondary">
+                Rechercher un article
+              </a>
+            </div>
+            
+            <div class="feature-card request-card">
+              <div class="request-icon">📋</div>
+              <h3>Recherche par lots (bientôt disponible)</h3>
+              <p>Traitez une liste de produits simultanément avec l'outil de recherche par lots.</p>
+              <a [routerLink]="['/recherche/searchListLots']" class="cta-button secondary">
+                Rechercher par lots
+              </a>
+            </div>
           </div>
-        </div>
+        }
         
         <!-- Section supplémentaire pour les organisations -->
         <div class="features primary" *ngIf="isOrganizationAccount$ | async">
@@ -306,6 +331,48 @@ import { map } from 'rxjs/operators';
       background-color: #f9fafb;
       transform: translateY(-2px);
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Styles pour le message d'avertissement essai terminé */
+    .trial-expired-message {
+      margin: 2rem 0;
+      padding: 2rem;
+      background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(243, 156, 18, 0.3);
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .message-content {
+      text-align: center;
+      color: white;
+    }
+
+    .message-content h4 {
+      margin: 0 0 1rem 0;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: white;
+    }
+
+    .message-content p {
+      margin: 0;
+      font-size: 1rem;
+      line-height: 1.6;
+      color: white;
+    }
+
+    .message-content a {
+      color: white;
+      text-decoration: underline;
+      font-weight: 700;
+    }
+
+    .message-content a:hover {
+      text-decoration: none;
+      opacity: 0.9;
     }
 
     /* Styles pour la présentation de l'API */
@@ -534,6 +601,7 @@ import { map } from 'rxjs/operators';
 })
 export class HomeComponent {
   private authService = inject(AuthService);
+  private organizationAccountService = inject(OrganizationAccountService);
 
   isAuthenticated$ = this.authService.isAuthenticated();
   isOrganizationAccount$ = this.authService.isOrganizationAccount();
@@ -548,5 +616,30 @@ export class HomeComponent {
     map(([isAuthenticated, isOrganization, isCollaborator]) => 
       isAuthenticated && (isOrganization || isCollaborator)
     )
+  );
+
+  // Observable pour vérifier si l'organisation peut faire des requêtes
+  canMakeRequests$ = combineLatest([
+    this.isAuthenticated$,
+    this.isOrganizationAccount$,
+    this.isCollaboratorAccount$
+  ]).pipe(
+    switchMap(([isAuthenticated, isOrganization, isCollaborator]) => {
+      const hasOrgOrCollabAccount = isOrganization || isCollaborator;
+      if (!isAuthenticated || !hasOrgOrCollabAccount) {
+        // Pas d'organisation, donc pas de restriction
+        return of(true);
+      }
+      // Vérifier l'état de l'organisation
+      return this.organizationAccountService.getOrganizationStatus().pipe(
+        map(status => status.canMakeRequests),
+        catchError(err => {
+          console.error('Erreur lors de la vérification de l\'état de l\'organisation:', err);
+          // En cas d'erreur, autoriser par défaut pour ne pas bloquer l'interface
+          return of(true);
+        })
+      );
+    }),
+    distinctUntilChanged()
   );
 }
