@@ -82,6 +82,46 @@ public class OrganizationAccountController {
         }
     }
 
+    @GetMapping("/status")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "État de l'organisation",
+            description = "Retourne l'état de l'organisation (essai expiré, peut faire des requêtes, etc.).",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    public ResponseEntity<?> getOrganizationStatus() {
+        String userId = getCurrentUserId();
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "AUTH_REQUIRED", "message", "Authentification requise"));
+        }
+        try {
+            Long organizationId = organizationService.getOrganizationIdByUserId(userId);
+            if (organizationId == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Map.of("error", "ORGANIZATION_NOT_FOUND", "message", "Organisation introuvable"));
+            }
+            
+            // Récupérer l'organisation pour vérifier l'essai
+            OrganizationDto organization = organizationService.getOrganizationById(organizationId);
+            boolean canMakeRequests = organizationService.canOrganizationMakeRequests(organizationId);
+            boolean isTrialExpired = !canMakeRequests && organization.getTrialExpiresAt() != null 
+                    && organization.getTrialExpiresAt().isBefore(LocalDateTime.now());
+            
+            Map<String, Object> status = new LinkedHashMap<>();
+            status.put("canMakeRequests", canMakeRequests);
+            status.put("isTrialExpired", isTrialExpired);
+            status.put("trialExpiresAt", organization.getTrialExpiresAt());
+            status.put("hasPricingPlan", organization.getPricingPlanId() != null);
+            
+            return ResponseEntity.ok(status);
+        } catch (Exception e) {
+            log.error("Erreur lors de la récupération de l'état de l'organisation: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "INTERNAL_ERROR", "message", "Erreur lors de la récupération de l'état"));
+        }
+    }
+
     @GetMapping("/me")
     @PreAuthorize("isAuthenticated()")
     @Operation(

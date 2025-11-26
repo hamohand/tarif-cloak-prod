@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -545,6 +546,19 @@ public class OrganizationService {
         log.info("Plan tarifaire changé pour l'organisation {} (ID: {}): planId={}", 
             organization.getName(), organizationId, pricingPlanId);
         
+        // Si l'essai était expiré et qu'un plan payant est maintenant sélectionné, réactiver les collaborateurs
+        boolean wasTrialExpired = isTrialExpired(organization);
+        if (wasTrialExpired && newPlan != null) {
+            // Vérifier si c'est un plan payant
+            boolean isPaidPlan = (newPlan.getPricePerMonth() != null && newPlan.getPricePerMonth().compareTo(BigDecimal.ZERO) > 0)
+                    || (newPlan.getPricePerRequest() != null && newPlan.getPricePerRequest().compareTo(BigDecimal.ZERO) > 0);
+            if (isPaidPlan && canOrganizationMakeRequests(organization)) {
+                log.info("Réactivation automatique des collaborateurs pour l'organisation {} (plan payant sélectionné)", 
+                        organization.getName());
+                reactivateAllCollaborators(organization);
+            }
+        }
+        
         // Créer les factures pour le changement de plan
         LocalDate changeDate = LocalDate.now();
         try {
@@ -765,6 +779,145 @@ public class OrganizationService {
         
         dto.setJoinedAt(organizationUser.getJoinedAt());
         return dto;
+    }
+    
+    /**
+     * Vérifie si l'essai gratuit d'une organisation est expiré.
+     * Un essai est considéré comme expiré si :
+     * - trialExpiresAt n'est pas null ET est dans le passé
+     * - L'organisation n'a pas de plan tarifaire payant actif
+     *
+     * @param organization L'organisation à vérifier
+     * @return true si l'essai est expiré, false sinon
+     */
+    @Transactional(readOnly = true)
+    public boolean isTrialExpired(Organization organization) {
+        if (organization.getTrialExpiresAt() == null) {
+            // Pas d'essai, donc pas expiré
+            return false;
+        }
+        
+        LocalDateTime now = LocalDateTime.now();
+        if (organization.getTrialExpiresAt().isBefore(now)) {
+            // L'essai est expiré, vérifier si l'organisation a un plan payant
+            // Un plan payant est un plan qui n'est pas gratuit (pricePerMonth > 0 ou pricePerRequest > 0)
+            if (organization.getPricingPlanId() != null) {
+                try {
+                    PricingPlanDto plan = pricingPlanService.getPricingPlanById(organization.getPricingPlanId());
+                    // Si le plan a un prix > 0, c'est un plan payant
+                    boolean isPaidPlan = (plan.getPricePerMonth() != null && plan.getPricePerMonth().compareTo(BigDecimal.ZERO) > 0)
+                            || (plan.getPricePerRequest() != null && plan.getPricePerRequest().compareTo(BigDecimal.ZERO) > 0);
+                    // L'essai est expiré ET l'organisation n'a pas de plan payant
+                    return !isPaidPlan;
+                } catch (Exception e) {
+                    log.warn("Impossible de récupérer le plan pour vérifier l'expiration de l'essai: {}", e.getMessage());
+                    // En cas d'erreur, considérer que l'essai est expiré pour sécurité
+                    return true;
+                }
+            }
+            // Essai expiré et pas de plan = essai expiré
+            return true;
+        }
+        
+        // L'essai n'est pas encore expiré
+        return false;
+    }
+    
+    /**
+     * Vérifie si une organisation peut effectuer des requêtes.
+     * Une organisation ne peut pas faire de requêtes si :
+     * - Son essai gratuit est expiré et elle n'a pas de plan payant
+     *
+     * @param organization L'organisation à vérifier
+     * @return true si l'organisation peut faire des requêtes, false sinon
+     */
+    @Transactional(readOnly = true)
+    public boolean canOrganizationMakeRequests(Organization organization) {
+        return !isTrialExpired(organization);
+    }
+    
+    /**
+     * Vérifie si une organisation peut effectuer des requêtes à partir de son ID.
+     *
+     * @param organizationId L'ID de l'organisation à vérifier
+     * @return true si l'organisation peut faire des requêtes, false sinon
+     */
+    @Transactional(readOnly = true)
+    public boolean canOrganizationMakeRequests(Long organizationId) {
+        Optional<Organization> organizationOpt = organizationRepository.findById(organizationId);
+        if (organizationOpt.isEmpty()) {
+            log.warn("Organisation {} introuvable lors de la vérification de l'essai", organizationId);
+            return false;
+        }
+        return canOrganizationMakeRequests(organizationOpt.get());
+    }
+    
+    /**
+     * Suspend tous les collaborateurs d'une organisation en les désactivant dans Keycloak.
+     * Cette méthode est appelée quand l'essai gratuit est expiré.
+     *
+     * @param organization L'organisation dont les collaborateurs doivent être suspendus
+     */
+    @Transactional
+    public void suspendAllCollaborators(Organization organization) {
+        List<OrganizationUser> collaborators = organizationUserRepository.findByOrganizationId(organization.getId());
+        log.info("Suspension de {} collaborateurs pour l'organisation {}", collaborators.size(), organization.getId());
+        
+        for (OrganizationUser collaborator : collaborators) {
+            try {
+                // Vérifier si le collaborateur est différent du propriétaire de l'organisation
+                // (le propriétaire est celui qui a créé l'organisation)
+                if (!collaborator.getKeycloakUserId().equals(organization.getKeycloakUserId())) {
+                    keycloakAdminService.disableUser(collaborator.getKeycloakUserId());
+                    log.info("Collaborateur {} suspendu pour l'organisation {}", 
+                            collaborator.getKeycloakUserId(), organization.getId());
+                } else {
+                    log.debug("Le propriétaire de l'organisation {} n'est pas suspendu", organization.getId());
+                }
+            } catch (Exception e) {
+                log.error("Erreur lors de la suspension du collaborateur {}: {}", 
+                        collaborator.getKeycloakUserId(), e.getMessage(), e);
+                // Continuer avec les autres collaborateurs même en cas d'erreur
+            }
+        }
+    }
+    
+    /**
+     * Réactive tous les collaborateurs d'une organisation en les activant dans Keycloak.
+     * Cette méthode est appelée quand l'organisation souscrit à un plan payant après l'expiration de l'essai.
+     *
+     * @param organization L'organisation dont les collaborateurs doivent être réactivés
+     */
+    @Transactional
+    public void reactivateAllCollaborators(Organization organization) {
+        List<OrganizationUser> collaborators = organizationUserRepository.findByOrganizationId(organization.getId());
+        log.info("Réactivation de {} collaborateurs pour l'organisation {}", collaborators.size(), organization.getId());
+        
+        for (OrganizationUser collaborator : collaborators) {
+            try {
+                keycloakAdminService.enableUser(collaborator.getKeycloakUserId());
+                log.info("Collaborateur {} réactivé pour l'organisation {}", 
+                        collaborator.getKeycloakUserId(), organization.getId());
+            } catch (Exception e) {
+                log.error("Erreur lors de la réactivation du collaborateur {}: {}", 
+                        collaborator.getKeycloakUserId(), e.getMessage(), e);
+                // Continuer avec les autres collaborateurs même en cas d'erreur
+            }
+        }
+    }
+    
+    /**
+     * Vérifie et suspend automatiquement les collaborateurs si l'essai est expiré.
+     * Cette méthode doit être appelée régulièrement (par exemple via un scheduler).
+     *
+     * @param organization L'organisation à vérifier
+     */
+    @Transactional
+    public void checkAndSuspendIfTrialExpired(Organization organization) {
+        if (isTrialExpired(organization)) {
+            log.info("L'essai de l'organisation {} est expiré. Suspension des collaborateurs.", organization.getId());
+            suspendAllCollaborators(organization);
+        }
     }
 }
 

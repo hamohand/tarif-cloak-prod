@@ -84,7 +84,7 @@ Chart.register(...registerables);
                     </p>
                     <p class="quota-remaining">
                       @if ((quota.monthlyQuota - quota.personalUsage) >= 0) {
-                        <span class="quota-remaining-text">⚠️ {{ quota.monthlyQuota - (quota.currentUsage || 0) }} requêtes restantes pour l'organisation</span>
+                        <span class="quota-remaining-text">⚠️ {{ quota.monthlyQuota - (quota.currentUsage || 0) }} requêtes restantes dans le plan de l'organisation</span>
                       } @else {
                         <span class="quota-exceeded">❌ Quota dépassé!</span>
                       }

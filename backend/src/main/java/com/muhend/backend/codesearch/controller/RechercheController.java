@@ -247,6 +247,7 @@ public class RechercheController {
      * Vérifie le quota de l'organisation de l'utilisateur avant d'effectuer une recherche.
      * Phase 4 MVP : Quotas Basiques
      * Un utilisateur DOIT être associé à une organisation pour effectuer des recherches.
+     * Vérifie aussi si l'essai gratuit est expiré.
      */
     private void checkQuotaBeforeSearch() {
         try {
@@ -257,6 +258,13 @@ public class RechercheController {
             
             // EXIGER une organisation (lève une exception si pas d'organisation)
             Long organizationId = organizationService.getOrganizationIdByUserId(userId);
+            
+            // Vérifier si l'essai est expiré
+            if (!organizationService.canOrganizationMakeRequests(organizationId)) {
+                throw new IllegalStateException(
+                    "Votre période d'essai gratuit est terminée. Veuillez choisir un plan tarifaire ou faire une demande de devis pour continuer à utiliser le service."
+                );
+            }
             
             // Vérifier le quota (lève une exception si dépassé)
             organizationService.checkQuota(organizationId);

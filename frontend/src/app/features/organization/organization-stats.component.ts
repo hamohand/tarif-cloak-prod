@@ -181,7 +181,7 @@ Chart.register(...registerables);
                   </p>
                   <p class="quota-remaining">
                     @if ((quota.remaining || 0) >= 0) {
-                      <span class="quota-remaining-text">⚠️ {{ quota.remaining }} requêtes restantes</span>
+                      <span class="quota-remaining-text">⚠️ {{ quota.remaining }} requêtes restantes dans le plan de l'organisation</span>
                     } @else {
                       <span class="quota-exceeded">❌ Quota dépassé!</span>
                     }
@@ -853,8 +853,6 @@ export class OrganizationStatsComponent implements OnInit {
       next: (quota) => {
         this.quota = quota;
         this.loadingQuota = false;
-        // Recalculer les stats après le chargement du quota pour mettre à jour totalRequests
-        this.calculateStatsFromLogs();
         setTimeout(() => {
           this.updateQuotaChart();
         }, 100);
@@ -862,8 +860,6 @@ export class OrganizationStatsComponent implements OnInit {
       error: (err) => {
         this.errorMessage = 'Erreur lors du chargement du quota: ' + (err.error?.message || err.message);
         this.loadingQuota = false;
-        // Recalculer les stats même en cas d'erreur
-        this.calculateStatsFromLogs();
       }
     });
   }
@@ -880,10 +876,8 @@ export class OrganizationStatsComponent implements OnInit {
 
   private calculateStatsFromLogs() {
     if (!this.organizationUsageLogs || !this.organizationUsageLogs.usageLogs) {
-      // Utiliser quota.currentUsage si disponible, sinon 0
-      const totalRequests = this.quota?.currentUsage || 0;
       this.stats = {
-        totalRequests,
+        totalRequests: 0,
         totalCostUsd: 0,
         totalTokens: 0,
         monthlyRequests: 0,
@@ -895,9 +889,7 @@ export class OrganizationStatsComponent implements OnInit {
     const logs: OrganizationUsageLog[] = this.organizationUsageLogs.usageLogs;
     
     // Calculer les statistiques globales
-    // Utiliser quota.currentUsage pour le total réel de toutes les requêtes de l'organisation
-    // (pas seulement celles chargées/filtrées)
-    const totalRequests = this.quota?.currentUsage || logs.length;
+    const totalRequests = logs.length;
     const totalCostUsd = logs.reduce((sum: number, log: OrganizationUsageLog) => sum + (log.totalCostUsd || 0), 0);
     const totalTokens = logs.reduce((sum: number, log: OrganizationUsageLog) => sum + (log.tokensUsed || 0), 0);
     
@@ -940,8 +932,6 @@ export class OrganizationStatsComponent implements OnInit {
       next: (logs) => {
         this.organizationUsageLogs = logs;
         this.loadingUsageLogs = false;
-        // Recharger le quota pour avoir le total réel de requêtes
-        this.loadQuota();
         // Recalculer les statistiques après le chargement des logs
         this.calculateStatsFromLogs();
       },

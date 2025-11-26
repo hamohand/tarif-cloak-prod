@@ -1,14 +1,15 @@
 import { Component, OnInit, inject, OnDestroy } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
-import { Observable, interval, Subscription } from 'rxjs';
+import { Observable, interval, Subscription, combineLatest } from 'rxjs';
 import { AuthService } from '../../../core/services/auth.service';
 import { AlertService } from '../../../core/services/alert.service';
 import { InvoiceService } from '../../../core/services/invoice.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { MarketProfileService } from '../../../core/services/market-profile.service';
+import { OrganizationAccountService } from '../../../core/services/organization-account.service';
 import { environment } from '../../../../environments/environment';
 import { AsyncPipe, CommonModule } from '@angular/common';
-import { take, map, catchError } from 'rxjs/operators';
+import { take, map, catchError, switchMap } from 'rxjs/operators';
 import { of } from 'rxjs';
 
 @Component({
@@ -29,7 +30,11 @@ import { of } from 'rxjs';
       <div class="nav-links">
         @if (isAuthenticated$ | async) {
           @if ((isOrganizationAccount$ | async) || (isCollaboratorAccount$ | async)) {
-            <a routerLink="/" class="nav-link">HS-code</a>
+            @if (canMakeRequests$ | async) {
+              <a routerLink="/" class="nav-link">HS-code</a>
+            } @else {
+              <span class="nav-link disabled" title="Votre période d'essai est terminée. Veuillez choisir un plan tarifaire.">HS-code</span>
+            }
           } @else {
             <a routerLink="/" class="nav-link">Accueil</a>
           }
@@ -81,6 +86,11 @@ import { of } from 'rxjs';
     </nav>
     
     @if ((isAuthenticated$ | async) && (isOrganizationAccount$ | async)) {
+      @if (!(canMakeRequests$ | async)) {
+        <div class="trial-expired-banner">
+          <p>⚠️ Votre période d'essai gratuit est terminée. Veuillez <a routerLink="/pricing">choisir un plan tarifaire</a> ou <a routerLink="/organization/quote-requests">faire une demande de devis</a> pour continuer à utiliser le service.</p>
+        </div>
+      }
       <nav class="organization-navbar">
         <div class="org-nav-links">
           <a routerLink="/organization/account" routerLinkActive="router-link-active" class="org-nav-link">👥 Collaborateurs</a>
@@ -216,6 +226,19 @@ import { of } from 'rxjs';
       background-color: rgba(255, 255, 255, 0.15);
       transform: translateY(-2px);
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .nav-link.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      text-decoration: line-through;
+      pointer-events: none;
+    }
+
+    .nav-link.disabled:hover {
+      background-color: transparent;
+      transform: none;
+      box-shadow: none;
     }
 
     .nav-auth {
@@ -376,6 +399,33 @@ import { of } from 'rxjs';
     .invoice-badge.overdue-badge {
       background: #e74c3c;
       animation: pulse-red 2s infinite;
+    }
+
+    .trial-expired-banner {
+      background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+      color: white;
+      padding: 1rem 2rem;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      z-index: 997;
+      position: relative;
+    }
+
+    .trial-expired-banner p {
+      margin: 0;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .trial-expired-banner a {
+      color: white;
+      text-decoration: underline;
+      font-weight: 700;
+    }
+
+    .trial-expired-banner a:hover {
+      text-decoration: none;
+      opacity: 0.9;
     }
 
     @keyframes pulse-red {
@@ -593,11 +643,13 @@ export class NavbarComponent implements OnInit, OnDestroy {
   private invoiceService = inject(InvoiceService);
   private notificationService = inject(NotificationService);
   private marketProfileService = inject(MarketProfileService);
+  private organizationAccountService = inject(OrganizationAccountService);
 
   isAuthenticated$!: Observable<boolean>;
   isOrganizationAccount$!: Observable<boolean>;
   isCollaboratorAccount$!: Observable<boolean>;
   countryCode$!: Observable<string | null>;
+  canMakeRequests$!: Observable<boolean>;
   alertCount = 0;
   newInvoicesCount = 0;
   overdueInvoicesCount = 0;
@@ -609,6 +661,30 @@ export class NavbarComponent implements OnInit, OnDestroy {
     this.isAuthenticated$ = this.authService.isAuthenticated();
     this.isOrganizationAccount$ = this.authService.isOrganizationAccount();
     this.isCollaboratorAccount$ = this.authService.isCollaboratorAccount();
+    
+    // Vérifier si l'organisation peut faire des requêtes (essai non expiré)
+    // Par défaut, on suppose que les requêtes sont autorisées
+    this.canMakeRequests$ = combineLatest([
+      this.isOrganizationAccount$,
+      this.isCollaboratorAccount$
+    ]).pipe(
+      switchMap(([isOrg, isCollab]) => {
+        const hasOrgOrCollabAccount = isOrg || isCollab;
+        if (!hasOrgOrCollabAccount) {
+          // Pas d'organisation, donc pas de restriction
+          return of(true);
+        }
+        // Vérifier l'état de l'organisation
+        return this.organizationAccountService.getOrganizationStatus().pipe(
+          map(status => status.canMakeRequests),
+          catchError(err => {
+            console.error('Erreur lors de la vérification de l\'état de l\'organisation:', err);
+            // En cas d'erreur, autoriser par défaut pour ne pas bloquer l'interface
+            return of(true);
+          })
+        );
+      })
+    );
     
     // Charger le code pays du profil de marché configuré dans l'environnement
     // Le profil de marché est défini par la variable d'environnement MARKET_VERSION

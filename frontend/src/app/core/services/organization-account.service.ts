@@ -72,6 +72,13 @@ export interface OrganizationUsageLogsResponse {
   usageLogs: OrganizationUsageLog[];
 }
 
+export interface OrganizationStatus {
+  canMakeRequests: boolean;
+  isTrialExpired: boolean;
+  trialExpiresAt?: string | null;
+  hasPricingPlan: boolean;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -116,6 +123,10 @@ export class OrganizationAccountService {
       url += '?' + params.join('&');
     }
     return this.http.get<OrganizationUsageLogsResponse>(url);
+  }
+
+  getOrganizationStatus(): Observable<OrganizationStatus> {
+    return this.http.get<OrganizationStatus>(`${this.baseUrl}/status`);
   }
 }
 
