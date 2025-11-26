@@ -51,7 +51,21 @@ export class AuthService {
     if (hasError) {
       const error = urlParams.get('error') || hashParams.get('error');
       const errorDescription = urlParams.get('error_description') || hashParams.get('error_description');
-      console.error('Erreur OAuth:', error, errorDescription);
+      
+      // Gérer les erreurs spécifiques de manière appropriée
+      if (error === 'invalid_user_credentials') {
+        // Identifiants invalides - c'est une erreur utilisateur normale, pas une erreur système
+        console.warn('Identifiants invalides lors de la connexion');
+      } else if (error === 'session_expired') {
+        // Session expirée - c'est normal, pas une erreur critique
+        console.debug('Session expirée détectée lors du callback OAuth');
+      } else {
+        // Autres erreurs OAuth
+        console.error('Erreur OAuth:', error, errorDescription);
+      }
+      
+      // Nettoyer l'URL des paramètres d'erreur
+      window.history.replaceState({}, document.title, window.location.pathname);
       this.isAuthenticatedSubject.next(false);
       return;
     }
@@ -322,11 +336,23 @@ export class AuthService {
     );
     oauthSessionKeys.forEach(key => sessionStorage.removeItem(key));
     
-    // Essayer de déconnecter de Keycloak silencieusement (peut échouer si session expirée)
+    // Vérifier si le token est encore valide avant de tenter le logout Keycloak
+    // Cela évite les erreurs "session_expired" dans les logs Keycloak
     try {
-      this.oauthService.logOut(false); // false = ne pas rediriger automatiquement
+      const idToken = this.oauthService.getIdToken();
+      const accessToken = this.oauthService.getAccessToken();
+      
+      // Ne tenter le logout Keycloak que si on a un token valide
+      if (idToken && accessToken && this.oauthService.hasValidAccessToken()) {
+        this.oauthService.logOut(false); // false = ne pas rediriger automatiquement
+      } else {
+        // Pas de token valide, session probablement déjà expirée
+        // Ne pas appeler Keycloak pour éviter les erreurs dans les logs
+        console.debug('Session déjà expirée, nettoyage local uniquement');
+      }
     } catch (error) {
       // Ignorer les erreurs de logout (session probablement expirée)
+      console.debug('Erreur lors du logout Keycloak (ignorée):', error);
     }
   }
 
@@ -357,12 +383,16 @@ export class AuthService {
     );
     oauthSessionKeys.forEach(key => sessionStorage.removeItem(key));
     
-    // Essayer de déconnecter de Keycloak si un token est disponible
+    // Essayer de déconnecter de Keycloak si un token est disponible et valide
     // Utiliser un iframe pour faire le logout en arrière-plan sans redirection
     // Cela évite les erreurs de validation Keycloak avec post_logout_redirect_uri
     try {
       const idToken = this.oauthService.getIdToken();
-      if (idToken) {
+      const accessToken = this.oauthService.getAccessToken();
+      
+      // Ne tenter le logout Keycloak que si on a un token valide
+      // Cela évite les erreurs "session_expired" dans les logs Keycloak
+      if (idToken && accessToken && this.oauthService.hasValidAccessToken()) {
         // Construire l'URL de logout avec id_token_hint uniquement (sans post_logout_redirect_uri)
         const issuer = authConfig.issuer;
         const idTokenHint = encodeURIComponent(idToken);
@@ -385,6 +415,10 @@ export class AuthService {
             // Ignorer si l'iframe a déjà été supprimé
           }
         }, 1000);
+      } else {
+        // Pas de token valide, session probablement déjà expirée
+        // Ne pas appeler Keycloak pour éviter les erreurs dans les logs
+        console.debug('Session déjà expirée, logout Keycloak ignoré');
       }
     } catch (error) {
       // Ignorer les erreurs de logout Keycloak (session peut être déjà expirée)

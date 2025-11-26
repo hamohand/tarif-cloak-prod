@@ -137,8 +137,36 @@ export class LoginComponent implements OnInit {
   errorMessage = '';
 
   ngOnInit() {
+    // Vérifier les erreurs OAuth dans l'URL
+    this.checkOAuthErrors();
     // Vérifier si le document de découverte est chargé
     this.checkReady();
+  }
+
+  private checkOAuthErrors() {
+    // Vérifier les paramètres d'erreur dans l'URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const error = urlParams.get('error') || hashParams.get('error');
+    const errorDescription = urlParams.get('error_description') || hashParams.get('error_description');
+    
+    if (error) {
+      // Nettoyer l'URL des paramètres d'erreur
+      window.history.replaceState({}, document.title, window.location.pathname);
+      
+      // Afficher un message d'erreur approprié selon le type d'erreur
+      if (error === 'invalid_user_credentials') {
+        this.errorMessage = 'Identifiants incorrects. Veuillez vérifier votre email et votre mot de passe.';
+      } else if (error === 'session_expired') {
+        this.errorMessage = 'Votre session a expiré. Veuillez vous reconnecter.';
+      } else if (error === 'access_denied') {
+        this.errorMessage = 'Accès refusé. Vous n\'avez pas les permissions nécessaires.';
+      } else {
+        // Message générique pour les autres erreurs
+        const description = errorDescription || 'Une erreur est survenue lors de la connexion.';
+        this.errorMessage = description;
+      }
+    }
   }
 
   private async checkReady() {
