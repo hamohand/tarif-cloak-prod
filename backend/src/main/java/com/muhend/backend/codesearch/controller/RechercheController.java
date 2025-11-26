@@ -10,6 +10,7 @@ import com.muhend.backend.codesearch.service.ai.AiService;
 import com.muhend.backend.codesearch.service.ai.OpenAiService;
 import com.muhend.backend.usage.service.UsageLogService;
 import com.muhend.backend.organization.service.OrganizationService;
+import com.muhend.backend.organization.dto.OrganizationDto;
 import com.muhend.backend.organization.exception.UserNotAssociatedException;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -259,8 +260,27 @@ public class RechercheController {
             // EXIGER une organisation (lève une exception si pas d'organisation)
             Long organizationId = organizationService.getOrganizationIdByUserId(userId);
             
-            // Vérifier si l'essai est expiré
+            // Vérifier si l'essai est expiré (quota atteint pour un plan d'essai)
+            // Si le quota de l'essai gratuit est atteint, l'essai est définitivement terminé
+            // et aucune requête n'est autorisée pour tous les collaborateurs de l'organisation
             if (!organizationService.canOrganizationMakeRequests(organizationId)) {
+                // Vérifier si c'est parce que le quota est atteint et définitivement terminé
+                try {
+                    OrganizationDto organization = organizationService.getOrganizationById(organizationId);
+                    if (organization != null && Boolean.TRUE.equals(organization.getTrialPermanentlyExpired())) {
+                        throw new IllegalStateException(
+                            "Le quota de votre essai gratuit a été atteint et est maintenant définitivement désactivé pour votre organisation. " +
+                            "Aucune requête HS-code n'est autorisée pour tous les collaborateurs. " +
+                            "Veuillez choisir un plan tarifaire ou faire une demande de devis pour continuer à utiliser le service."
+                        );
+                    }
+                } catch (IllegalStateException e) {
+                    // Relancer l'exception si c'est déjà notre message personnalisé
+                    throw e;
+                } catch (Exception e) {
+                    // Si l'organisation n'est pas trouvée ou autre erreur, utiliser le message générique
+                    log.debug("Erreur lors de la vérification du statut définitif de l'essai: {}", e.getMessage());
+                }
                 throw new IllegalStateException(
                     "Votre période d'essai gratuit est terminée. Veuillez choisir un plan tarifaire ou faire une demande de devis pour continuer à utiliser le service."
                 );

@@ -76,6 +76,7 @@ export interface OrganizationUsageLogsResponse {
 export interface OrganizationStatus {
   canMakeRequests: boolean;
   isTrialExpired: boolean;
+  trialPermanentlyExpired?: boolean | null;
   trialExpiresAt?: string | null;
   hasPricingPlan: boolean;
 }

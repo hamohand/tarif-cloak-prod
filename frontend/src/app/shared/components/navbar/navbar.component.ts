@@ -33,7 +33,7 @@ import { of } from 'rxjs';
             @if (canMakeRequests$ | async) {
               <a routerLink="/" class="nav-link">HS-code</a>
             } @else {
-              <span class="nav-link disabled" title="Votre période d'essai est terminée. Veuillez choisir un plan tarifaire.">HS-code</span>
+              <span class="nav-link disabled" title="Le quota de l'essai gratuit de votre organisation a été atteint. Aucune requête HS-code n'est autorisée. Veuillez contacter votre administrateur d'organisation pour choisir un plan tarifaire.">HS-code</span>
             }
           } @else {
             <a routerLink="/" class="nav-link">Accueil</a>
@@ -85,10 +85,21 @@ import { of } from 'rxjs';
       </div>
     </nav>
     
-    @if ((isAuthenticated$ | async) && (isOrganizationAccount$ | async)) {
+    @if ((isAuthenticated$ | async) && ((isOrganizationAccount$ | async) || (isCollaboratorAccount$ | async))) {
       @if (!(canMakeRequests$ | async)) {
         <div class="trial-expired-banner">
-          <p>⚠️ Votre période d'essai gratuit est terminée. Veuillez <a routerLink="/pricing">choisir un plan tarifaire</a> ou <a routerLink="/organization/quote-requests">faire une demande de devis</a> pour continuer à utiliser le service.</p>
+          <p>
+            ⚠️ 
+            @if (isOrganizationAccount$ | async) {
+              Le quota de votre essai gratuit a été atteint et est maintenant définitivement désactivé pour votre organisation. 
+              Aucune requête HS-code n'est autorisée pour tous les collaborateurs. 
+              Veuillez <a routerLink="/pricing">choisir un plan tarifaire</a> ou <a routerLink="/organization/quote-requests">faire une demande de devis</a> pour continuer à utiliser le service.
+            } @else {
+              Le quota de l'essai gratuit de votre organisation a été atteint et est maintenant définitivement désactivé. 
+              Aucune requête HS-code n'est autorisée. 
+              Veuillez contacter votre administrateur d'organisation pour choisir un plan tarifaire ou faire une demande de devis.
+            }
+          </p>
         </div>
       }
       <nav class="organization-navbar">

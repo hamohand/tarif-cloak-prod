@@ -103,16 +103,23 @@ public class OrganizationAccountController {
             }
             
             // Récupérer l'organisation pour vérifier l'essai
+            // Cette méthode fonctionne pour les comptes organisation ET les collaborateurs
             OrganizationDto organization = organizationService.getOrganizationById(organizationId);
             boolean canMakeRequests = organizationService.canOrganizationMakeRequests(organizationId);
-            boolean isTrialExpired = !canMakeRequests && organization.getTrialExpiresAt() != null 
-                    && organization.getTrialExpiresAt().isBefore(LocalDateTime.now());
+            boolean isTrialExpired = !canMakeRequests;
+            boolean trialPermanentlyExpired = Boolean.TRUE.equals(organization.getTrialPermanentlyExpired());
             
             Map<String, Object> status = new LinkedHashMap<>();
             status.put("canMakeRequests", canMakeRequests);
             status.put("isTrialExpired", isTrialExpired);
+            status.put("trialPermanentlyExpired", trialPermanentlyExpired);
             status.put("trialExpiresAt", organization.getTrialExpiresAt());
             status.put("hasPricingPlan", organization.getPricingPlanId() != null);
+            
+            // Si l'essai est définitivement terminé, cela signifie que le quota a été atteint
+            if (trialPermanentlyExpired) {
+                status.put("message", "Le quota de l'essai gratuit a été atteint et est maintenant définitivement désactivé. Aucune requête HS-code n'est autorisée.");
+            }
             
             return ResponseEntity.ok(status);
         } catch (Exception e) {
