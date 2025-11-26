@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, ViewChild, ElementRef, AfterViewInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AdminService, UsageStats, OrganizationStats, UserStats, UsageLog, Organization } from '../../../core/services/admin.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { FormsModule } from '@angular/forms';
 import { Chart, ChartConfiguration, registerables } from 'chart.js';
 
@@ -403,6 +404,7 @@ Chart.register(...registerables);
 })
 export class StatsComponent implements OnInit, AfterViewInit, OnDestroy {
   private adminService = inject(AdminService);
+  private authService = inject(AuthService);
 
   @ViewChild('requestsChart', { static: false }) requestsChartRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('costsChart', { static: false }) costsChartRef!: ElementRef<HTMLCanvasElement>;
@@ -726,6 +728,10 @@ export class StatsComponent implements OnInit, AfterViewInit, OnDestroy {
 
   get recentUsage(): UsageLog[] {
     return this.stats?.recentUsage || [];
+  }
+
+  isAdmin(): boolean {
+    return this.authService.hasRole('ADMIN');
   }
 }
 

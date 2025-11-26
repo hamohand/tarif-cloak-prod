@@ -82,7 +82,7 @@ Chart.register(...registerables);
                     </p>
                     <p class="quota-remaining">
                       @if ((quota.monthlyQuota - quota.personalUsage) >= 0) {
-                        <span class="quota-remaining-text">⚠️ {{ quota.monthlyQuota - quota.organizationUsage }} requêtes restantes pour l'organisation</span>
+                        <span class="quota-remaining-text">⚠️ {{ quota.monthlyQuota - (quota.currentUsage || 0) }} requêtes restantes pour l'organisation</span>
                       } @else {
                         <span class="quota-exceeded">❌ Quota dépassé!</span>
                       }
@@ -720,6 +720,10 @@ export class UserDashboardComponent implements OnInit, AfterViewInit, OnDestroy 
       return 0;
     }
     return (quota.personalUsage / quota.monthlyQuota) * 100;
+  }
+
+  isAdmin(): boolean {
+    return this.authService.hasRole('ADMIN');
   }
 }
 
