@@ -143,7 +143,9 @@ Chart.register(...registerables);
                 <th>Endpoint</th>
                 <th>Terme de recherche</th>
                 <th>Coût (€)</th>
-                <th>Tokens</th>
+                @if (isAdmin()) {
+                      <th>Tokens</th>
+                    }
               </tr>
             </thead>
             <tbody>
@@ -154,7 +156,9 @@ Chart.register(...registerables);
                 <td>{{ usage.endpoint }}</td>
                 <td>{{ usage.searchTerm }}</td>
                 <td>{{ formatCurrency(usage.costUsd || 0) }}</td>
-                <td>{{ usage.tokensUsed }}</td>
+                @if (isAdmin()) {
+                    <td>{{ formatNumber(usage.tokensUsed) }}</td>
+                  }
               </tr>
             </tbody>
           </table>

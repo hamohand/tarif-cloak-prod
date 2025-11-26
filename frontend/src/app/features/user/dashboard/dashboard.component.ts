@@ -82,7 +82,7 @@ Chart.register(...registerables);
                     </p>
                     <p class="quota-remaining">
                       @if ((quota.monthlyQuota - quota.personalUsage) >= 0) {
-                        <span class="quota-remaining-text">⚠️ {{ quota.monthlyQuota - quota.personalUsage }} requêtes restantes</span>
+                        <span class="quota-remaining-text">⚠️ {{ quota.monthlyQuota - quota.organizationUsage }} requêtes restantes pour l'organisation</span>
                       } @else {
                         <span class="quota-exceeded">❌ Quota dépassé!</span>
                       }
@@ -145,7 +145,9 @@ Chart.register(...registerables);
                     <th>Date</th>
                     <th>Endpoint</th>
                     <th>Recherche</th>
-                    <th>Tokens</th>
+                    @if (isAdmin()) {
+                      <th>Tokens</th>
+                    }
                     <th>Coût</th>
                   </tr>
                 </thead>
@@ -155,7 +157,9 @@ Chart.register(...registerables);
                       <td>{{ formatDate(usage.timestamp) }}</td>
                       <td>{{ usage.endpoint }}</td>
                       <td class="search-term">{{ truncateSearchTerm(usage.searchTerm) }}</td>
-                      <td>{{ formatNumber(usage.tokensUsed) }}</td>
+                      @if (isAdmin()) {
+                        <td>{{ formatNumber(usage.tokensUsed) }}</td>
+                      }
                       <td>{{ formatCurrency(usage.costUsd || 0) }}</td>
                     </tr>
                   }
