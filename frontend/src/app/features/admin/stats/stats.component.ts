@@ -2,8 +2,10 @@ import { Component, OnInit, inject, ViewChild, ElementRef, AfterViewInit, OnDest
 import { CommonModule } from '@angular/common';
 import { AdminService, UsageStats, OrganizationStats, UserStats, UsageLog, Organization } from '../../../core/services/admin.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { CurrencyService } from '../../../core/services/currency.service';
 import { FormsModule } from '@angular/forms';
 import { Chart, ChartConfiguration, registerables } from 'chart.js';
+import { take } from 'rxjs/operators';
 
 Chart.register(...registerables);
 
@@ -405,6 +407,10 @@ Chart.register(...registerables);
 export class StatsComponent implements OnInit, AfterViewInit, OnDestroy {
   private adminService = inject(AdminService);
   private authService = inject(AuthService);
+  private currencyService = inject(CurrencyService);
+  
+  private currentCurrencyCode = 'EUR'; // Par défaut, sera mis à jour dans ngOnInit
+  private currentCurrencySymbol = '€'; // Par défaut, sera mis à jour dans ngOnInit
 
   @ViewChild('requestsChart', { static: false }) requestsChartRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('costsChart', { static: false }) costsChartRef!: ElementRef<HTMLCanvasElement>;
@@ -425,6 +431,17 @@ export class StatsComponent implements OnInit, AfterViewInit, OnDestroy {
   private usersChart: Chart | null = null;
 
   ngOnInit() {
+    // Charger la devise du marché
+    this.currencyService.getCurrencyCode().pipe(take(1)).subscribe({
+      next: (code: string) => {
+        this.currentCurrencyCode = code;
+        this.currentCurrencySymbol = this.currencyService.getSymbolForCurrency(code);
+      },
+      error: (err: any) => {
+        console.error('Erreur lors du chargement de la devise:', err);
+      }
+    });
+    
     this.loadOrganizations();
     this.loadStats();
   }
@@ -687,12 +704,26 @@ export class StatsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   formatCurrency(value: number): string {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'EUR',
-      minimumFractionDigits: 6,
-      maximumFractionDigits: 6
-    }).format(value);
+    if (value == null || isNaN(value)) return '0.00';
+    
+    // Utiliser la devise du marché stockée dans currentCurrencyCode
+    // Pour DZD et MAD, le symbole est placé après le montant
+    if (this.currentCurrencyCode === 'DZD' || this.currentCurrencyCode === 'MAD') {
+      return `${value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${this.currentCurrencySymbol}`;
+    }
+    
+    // Pour les autres devises, utiliser Intl.NumberFormat ou le symbole avant
+    try {
+      return new Intl.NumberFormat('fr-FR', { 
+        style: 'currency', 
+        currency: this.currentCurrencyCode,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      }).format(value);
+    } catch (e) {
+      // Si la devise n'est pas supportée par Intl, utiliser le symbole manuellement
+      return `${this.currentCurrencySymbol}${value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
   }
 
   formatNumber(value: number): string {
