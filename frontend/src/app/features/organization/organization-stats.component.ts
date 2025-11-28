@@ -451,700 +451,6 @@ export class OrganizationStatsComponent implements OnInit {
 
   organization: Organization | null = null;
   currencySymbol$ = this.currencyService.getCurrencySymbol();
-    .stats-card {
-      background: #e0e0e0;
-      border-radius: 8px;
-      padding: 1.5rem;
-      margin-bottom: 1.5rem;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-
-    .org-details p,
-    .organization-card p {
-      margin: 0.5rem 0;
-      color: #555;
-    }
-
-    .no-org-message {
-      color: #888;
-      font-style: italic;
-    }
-
-    .quota-details {
-      margin-top: 1rem;
-    }
-
-    .quota-unlimited {
-      padding: 1rem;
-      background: #e8f5e9;
-      border-radius: 4px;
-    }
-
-    .quota-status {
-      font-weight: 600;
-      color: #2e7d32;
-      margin: 0.5rem 0;
-    }
-
-    .quota-limited {
-      padding: 1rem;
-    }
-
-    .quota-progress {
-      margin: 1rem 0;
-    }
-
-    .quota-progress-bar {
-      width: 100%;
-      height: 30px;
-      background: #e0e0e0;
-      border-radius: 15px;
-      overflow: hidden;
-      margin-bottom: 0.5rem;
-    }
-
-    .quota-progress-fill {
-      height: 100%;
-      background: linear-gradient(90deg, #4caf50, #8bc34a);
-      transition: width 0.3s ease;
-    }
-
-    .quota-progress-fill.quota-warning {
-      background: linear-gradient(90deg, #ff9800, #ffc107);
-    }
-
-    .quota-progress-fill.quota-danger {
-      background: linear-gradient(90deg, #f44336, #ef5350);
-    }
-
-    .quota-text {
-      text-align: center;
-      font-weight: 600;
-      color: #2c3e50;
-      margin: 0.5rem 0;
-    }
-
-    .quota-remaining {
-      text-align: center;
-      margin-top: 0.5rem;
-    }
-
-    .quota-remaining-text {
-      color: #ff9800;
-      font-weight: 600;
-    }
-
-    .quota-exceeded {
-      color: #f44336;
-      font-weight: 600;
-    }
-
-    .quota-usage {
-      color: #666;
-      margin: 0.5rem 0;
-    }
-
-    .quota-usage-info {
-      text-align: center;
-      margin: 0.5rem 0;
-      font-size: 0.9rem;
-    }
-
-    .quota-usage-text {
-      color: #666;
-      margin: 0 0.5rem;
-    }
-
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 1rem;
-      margin: 1.5rem 0;
-    }
-
-    .stat-item {
-      background: #d0d0d0;
-      padding: 1rem;
-      border-radius: 8px;
-      text-align: center;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
-
-    .stat-item h4 {
-      margin: 0 0 0.5rem 0;
-      color: #666;
-      font-size: 0.9rem;
-    }
-
-    .stat-value {
-      font-size: 1.5rem;
-      font-weight: 600;
-      color: #2c3e50;
-      margin: 0;
-    }
-
-    .filters {
-      display: flex;
-      gap: 1rem;
-      align-items: flex-end;
-      margin: 1.5rem 0;
-      flex-wrap: wrap;
-    }
-
-    .filter-group {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-
-    .filter-group label {
-      font-weight: 600;
-      color: #2c3e50;
-      font-size: 0.9rem;
-    }
-
-    .filter-group input {
-      padding: 0.5rem;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-    }
-
-    .recent-usage {
-      margin-top: 2rem;
-    }
-
-    .recent-usage h4 {
-      margin-bottom: 1rem;
-    }
-
-    .usage-table {
-      width: 100%;
-      border-collapse: collapse;
-      background: white;
-      border-radius: 4px;
-      overflow: hidden;
-    }
-
-    .usage-table th,
-    .usage-table td {
-      padding: 0.75rem;
-      text-align: left;
-      border-bottom: 1px solid #ddd;
-    }
-
-    .usage-table th {
-      background: #d5d5d5;
-      font-weight: 600;
-      color: #2c3e50;
-    }
-
-    .search-term {
-      max-width: 200px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .btn {
-      padding: 0.6rem 1.2rem;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 600;
-      transition: all 0.3s ease;
-    }
-
-    .btn-primary {
-      background: #3498db;
-      color: white;
-    }
-
-    .btn-primary:hover:not(:disabled) {
-      background: #2980b9;
-    }
-
-    .btn-primary:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-
-    .btn-primary.btn-required {
-      background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
-      box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
-      animation: pulse-required 2s infinite;
-    }
-
-    .btn-primary.btn-required:hover:not(:disabled) {
-      background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);
-      transform: translateY(-2px);
-      box-shadow: 0 6px 16px rgba(231, 76, 60, 0.5);
-    }
-
-    @keyframes pulse-required {
-      0%, 100% {
-        box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
-      }
-      50% {
-        box-shadow: 0 4px 20px rgba(231, 76, 60, 0.6);
-      }
-    }
-
-    .btn-secondary {
-      background: #95a5a6;
-      color: white;
-    }
-
-    .btn-secondary:hover {
-      background: #7f8c8d;
-    }
-
-    .empty-message {
-      color: #888;
-      font-style: italic;
-      text-align: center;
-      padding: 2rem;
-    }
-
-    .error-message {
-      background: #e74c3c;
-      color: white;
-      padding: 1rem;
-      border-radius: 4px;
-      margin-top: 1rem;
-    }
-
-    .chart-section {
-      margin: 2rem 0;
-      padding: 1.5rem;
-      background: #e0e0e0;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
-
-    .chart-section h4 {
-      margin: 0 0 1rem 0;
-      color: #2c3e50;
-    }
-
-    .chart-wrapper {
-      position: relative;
-      height: 300px;
-    }
-
-    .quota-chart-wrapper {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      margin: 1rem 0;
-      height: 200px;
-    }
-
-    .quota-chart-wrapper canvas {
-      max-width: 200px;
-      max-height: 200px;
-    }
-
-    /* Bannière d'alerte essai terminé */
-    .trial-expired-alert {
-      background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
-      border-radius: 12px;
-      padding: 2rem;
-      margin-bottom: 2rem;
-      box-shadow: 0 4px 12px rgba(243, 156, 18, 0.3);
-      border: 3px solid #f39c12;
-    }
-
-    .alert-content {
-      color: white;
-      text-align: center;
-    }
-
-    .alert-content h3 {
-      margin: 0 0 1rem 0;
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: white;
-    }
-
-    .alert-content p {
-      margin: 0.75rem 0;
-      font-size: 1rem;
-      line-height: 1.6;
-      color: white;
-    }
-
-    .alert-action {
-      margin-top: 1rem !important;
-      font-size: 1.1rem !important;
-      background: rgba(255, 255, 255, 0.2);
-      padding: 1rem;
-      border-radius: 8px;
-    }
-
-    /* Bannière d'alerte essai terminé */
-    .trial-expired-alert {
-      background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
-      border-radius: 12px;
-      padding: 2rem;
-      margin-bottom: 2rem;
-      box-shadow: 0 4px 12px rgba(243, 156, 18, 0.3);
-      border: 3px solid #f39c12;
-    }
-
-    .alert-content {
-      color: white;
-      text-align: center;
-    }
-
-    .alert-content h3 {
-      margin: 0 0 1rem 0;
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: white;
-    }
-
-    .alert-content p {
-      margin: 0.75rem 0;
-      font-size: 1rem;
-      line-height: 1.6;
-      color: white;
-    }
-
-    .alert-action {
-      margin-top: 1rem !important;
-      font-size: 1.1rem !important;
-      background: rgba(255, 255, 255, 0.2);
-      padding: 1rem;
-      border-radius: 8px;
-    }
-
-    .pricing-plan-card {
-      background: white;
-      border-radius: 12px;
-      padding: 2rem;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      margin-bottom: 2rem;
-    }
-
-    .pricing-plan-card h3 {
-      margin-top: 0;
-      margin-bottom: 1.5rem;
-      color: #2c3e50;
-    }
-
-    .current-plan {
-      margin-bottom: 2rem;
-      padding: 1rem;
-      background: #f8f9fa;
-      border-radius: 8px;
-    }
-
-    .plan-info p {
-      margin: 0.5rem 0;
-      color: #2c3e50;
-    }
-
-    .no-plan-message, .no-plans-message {
-      color: #7f8c8d;
-      font-style: italic;
-    }
-
-    .change-plan-section {
-      margin-top: 2rem;
-      padding-top: 2rem;
-      border-top: 2px solid #e1e8ed;
-    }
-
-    .change-plan-section.required-change {
-      background: linear-gradient(135deg, #fff5f5 0%, #ffe5e5 100%);
-      padding: 1.5rem;
-      border-radius: 12px;
-      border: 3px solid #e74c3c;
-      margin-top: 2rem;
-      margin-bottom: 2rem;
-    }
-
-    .change-plan-section.required-change {
-      background: linear-gradient(135deg, #fff5f5 0%, #ffe5e5 100%);
-      padding: 1.5rem;
-      border-radius: 12px;
-      border: 3px solid #e74c3c;
-      margin-top: 2rem;
-      margin-bottom: 2rem;
-    }
-
-    .change-plan-section h4 {
-      margin-bottom: 1rem;
-      color: #2c3e50;
-    }
-
-    .required-plan-title {
-      color: #e74c3c !important;
-      font-size: 1.3rem;
-      margin-bottom: 0.5rem;
-    }
-
-    .required-plan-message {
-      color: #c0392b;
-      font-weight: 500;
-      margin-bottom: 1rem;
-      padding: 0.75rem;
-      background: rgba(231, 76, 60, 0.1);
-      border-radius: 6px;
-      border-left: 4px solid #e74c3c;
-    }
-
-    .required-plan-title {
-      color: #e74c3c !important;
-      font-size: 1.3rem;
-      margin-bottom: 0.5rem;
-    }
-
-    .required-plan-message {
-      color: #c0392b;
-      font-weight: 500;
-      margin-bottom: 1rem;
-      padding: 0.75rem;
-      background: rgba(231, 76, 60, 0.1);
-      border-radius: 6px;
-      border-left: 4px solid #e74c3c;
-    }
-
-    .plan-select {
-      width: 100%;
-      padding: 0.75rem;
-      border: 2px solid #e1e8ed;
-      border-radius: 6px;
-      font-size: 1rem;
-      margin-bottom: 1rem;
-      background: white;
-    }
-
-    .plan-select.required-select {
-      border-color: #e74c3c;
-      border-width: 2px;
-      background: white;
-    }
-
-    .plan-select:focus {
-      outline: none;
-      border-color: #3498db;
-    }
-
-    .plan-select.required-select:focus {
-      border-color: #e74c3c;
-      box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
-    }
-
-    .view-all-plans-link {
-      display: block;
-      margin-top: 1rem;
-      text-align: center;
-      color: #3498db;
-      text-decoration: none;
-      font-size: 0.9rem;
-    }
-
-    .view-all-plans-link:hover {
-      text-decoration: underline;
-    }
-
-    /* Modal de confirmation */
-    .modal-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.5);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 10000;
-      padding: 1rem;
-    }
-
-    .modal-content {
-      background: white;
-      border-radius: 12px;
-      max-width: 500px;
-      width: 100%;
-      max-height: 90vh;
-      overflow-y: auto;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-      animation: modalFadeIn 0.3s ease-out;
-    }
-
-    .modal-required {
-      cursor: not-allowed;
-    }
-
-    .modal-required .modal-overlay {
-      pointer-events: auto;
-    }
-
-    .modal-required-content {
-      border: 3px solid #e74c3c;
-      box-shadow: 0 8px 32px rgba(231, 76, 60, 0.4);
-    }
-
-    @keyframes modalFadeIn {
-      from {
-        opacity: 0;
-        transform: scale(0.9);
-      }
-      to {
-        opacity: 1;
-        transform: scale(1);
-      }
-    }
-
-    .modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 1.5rem;
-      border-bottom: 2px solid #e1e8ed;
-    }
-
-    .modal-header h3 {
-      margin: 0;
-      color: #2c3e50;
-    }
-
-    .modal-close {
-      background: none;
-      border: none;
-      font-size: 2rem;
-      color: #7f8c8d;
-      cursor: pointer;
-      padding: 0;
-      width: 32px;
-      height: 32px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 4px;
-      transition: all 0.2s;
-    }
-
-    .modal-close:hover {
-      background: #e1e8ed;
-      color: #2c3e50;
-    }
-
-    .modal-body {
-      padding: 1.5rem;
-    }
-
-    .modal-body p {
-      margin: 0.5rem 0;
-      color: #2c3e50;
-    }
-
-    .selected-plan-info {
-      background: #f8f9fa;
-      padding: 1rem;
-      border-radius: 8px;
-      margin: 1rem 0;
-      border-left: 4px solid #3498db;
-    }
-
-    .selected-plan-info h4 {
-      margin: 0 0 0.5rem 0;
-      color: #2c3e50;
-    }
-
-    .plan-description {
-      color: #7f8c8d;
-      font-size: 0.9rem;
-      margin: 0.5rem 0;
-    }
-
-    .plan-price {
-      font-size: 1.25rem;
-      font-weight: 600;
-      color: #27ae60;
-      margin: 0.5rem 0;
-    }
-
-    .plan-quota {
-      color: #7f8c8d;
-      font-size: 0.9rem;
-      margin: 0.5rem 0;
-    }
-
-    .confirmation-warning {
-      margin-top: 1rem;
-      padding: 1rem;
-      background: #fff3cd;
-      border: 1px solid #ffc107;
-      border-radius: 6px;
-      color: #856404;
-      font-weight: 500;
-    }
-
-    .confirmation-warning-urgent {
-      margin-top: 1rem;
-      padding: 1rem;
-      background: linear-gradient(135deg, #ffe5e5 0%, #fff5f5 100%);
-      border: 2px solid #e74c3c;
-      border-radius: 6px;
-      color: #c0392b;
-      font-weight: 600;
-      font-size: 1rem;
-    }
-
-    .confirmation-info {
-      margin-top: 0.75rem;
-      padding: 0.75rem;
-      background: #e8f5e9;
-      border-left: 4px solid #4caf50;
-      border-radius: 4px;
-      color: #2e7d32;
-      font-size: 0.9rem;
-      line-height: 1.5;
-    }
-
-    .modal-footer {
-      display: flex;
-      justify-content: flex-end;
-      gap: 1rem;
-      padding: 1.5rem;
-      border-top: 2px solid #e1e8ed;
-    }
-
-    .modal-footer .btn {
-      padding: 0.75rem 1.5rem;
-      border: none;
-      border-radius: 6px;
-      font-size: 1rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .modal-footer .btn:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-
-    .modal-footer .btn-secondary {
-      background: #e1e8ed;
-      color: #2c3e50;
-    }
-
-    .modal-footer .btn-secondary:hover:not(:disabled) {
-      background: #d1d9e0;
-    }
-
-  private pricingPlanService = inject(PricingPlanService);
-  private notificationService = inject(NotificationService);
-  private organizationAccountService = inject(OrganizationAccountService);
-  private currencyService = inject(CurrencyService);
-
-  organization: Organization | null = null;
-  currencySymbol$ = this.currencyService.getCurrencySymbol();
   private currentCurrencyCode = 'EUR'; // Par défaut, sera mis à jour dans ngOnInit
   private currentCurrencySymbol = '€'; // Par défaut, sera mis à jour dans ngOnInit
   quota: UserQuota | null = null;
@@ -1251,12 +557,190 @@ export class OrganizationStatsComponent implements OnInit {
   }
 
   onPlanSelectChange() {
-    // Ne pas afficher de modal pour le moment, on attend le clic sur le bouton
+    // Ne rien faire, la validation se fait dans openConfirmModal
   }
 
   openConfirmModal() {
     if (!this.selectedPlanId || this.selectedPlanId === this.organization?.pricingPlanId) {
       if (this.organization?.trialPermanentlyExpired) {
+        this.notificationService.error('Veuillez sélectionner un plan payant. Les plans d\'essai ne sont plus disponibles.');
+      }
+      return;
+    }
+
+    const selectedPlan = this.pricingPlans.find(p => p.id === this.selectedPlanId);
+    if (!selectedPlan) {
+      this.notificationService.error('Plan sélectionné introuvable');
+      return;
+    }
+
+    // Validation : si l'essai est définitivement terminé, vérifier que le plan sélectionné est payant
+    if (this.organization?.trialPermanentlyExpired) {
+      const isPaidPlan = (selectedPlan.pricePerMonth !== null && selectedPlan.pricePerMonth !== undefined && selectedPlan.pricePerMonth > 0)
+        || (selectedPlan.pricePerRequest !== null && selectedPlan.pricePerRequest !== undefined && selectedPlan.pricePerRequest > 0);
+      
+      if (!isPaidPlan && (!selectedPlan.trialPeriodDays || selectedPlan.trialPeriodDays <= 0)) {
+        // Plan gratuit sans essai - pas autorisé
+        this.notificationService.error('Vous devez sélectionner un plan payant. Les plans gratuits ne sont plus disponibles après la fin de l\'essai.');
+        return;
+      }
+      
+      if (selectedPlan.trialPeriodDays && selectedPlan.trialPeriodDays > 0) {
+        // Plan d'essai - pas autorisé
+        this.notificationService.error('Les plans d\'essai ne sont plus disponibles. Veuillez sélectionner un plan payant.');
+        return;
+      }
+    }
+
+    this.selectedPlanForConfirmation = selectedPlan;
+    this.showConfirmModal = true;
+  }
+
+  closeConfirmModal() {
+    // Si l'essai est définitivement terminé, on ne peut pas fermer la modal sans choisir un plan
+    if (this.organization?.trialPermanentlyExpired && (!this.selectedPlanId || (this.selectedPlanForConfirmation?.pricePerMonth === 0 && !this.selectedPlanForConfirmation?.trialPeriodDays))) {
+      this.notificationService.warning('Vous devez sélectionner un plan payant pour continuer. La sélection d\'un plan est obligatoire.');
+      return;
+    }
+    this.showConfirmModal = false;
+    this.selectedPlanForConfirmation = null;
+  }
+
+  changePricingPlan() {
+    if (this.isChangingPlan || !this.organization) {
+      return;
+    }
+
+    this.isChangingPlan = true;
+    this.errorMessage = '';
+    this.showConfirmModal = false;
+
+    this.pricingPlanService.changeMyOrganizationPricingPlan(this.selectedPlanId).subscribe({
+      next: (updatedOrg) => {
+        this.organization = updatedOrg;
+        this.updateCurrentPlan(updatedOrg.pricingPlanId || 0);
+        this.isChangingPlan = false;
+        this.selectedPlanForConfirmation = null;
+        this.notificationService.success('Plan tarifaire changé avec succès');
+        this.loadQuota();
+        // Recharger les plans pour mettre à jour le filtre si nécessaire
+        this.loadPricingPlans();
+      },
+      error: (err) => {
+        this.errorMessage = 'Erreur lors du changement de plan: ' + (err.error?.message || err.message);
+        this.isChangingPlan = false;
+        this.notificationService.error('Erreur lors du changement de plan: ' + (err.error?.message || err.message));
+      }
+    });
+  }
+
+  loadQuota() {
+    this.loadingQuota = true;
+    this.userService.getMyQuota().subscribe({
+      next: (quota) => {
+        this.quota = quota;
+        this.loadingQuota = false;
+        setTimeout(() => {
+          this.updateQuotaChart();
+        }, 100);
+      },
+      error: (err) => {
+        this.errorMessage = 'Erreur lors du chargement du quota: ' + (err.error?.message || err.message);
+        this.loadingQuota = false;
+      }
+    });
+  }
+
+  loadStats() {
+    this.loadingStats = true;
+    this.errorMessage = '';
+    // Pour les statistiques de l'organisation, on calcule à partir des logs d'utilisation
+    // qui sont déjà chargés dans loadOrganizationUsageLogs()
+    // On recalcule les stats à partir des logs existants
+    this.calculateStatsFromLogs();
+    this.loadingStats = false;
+  }
+
+  private calculateStatsFromLogs() {
+    if (!this.organizationUsageLogs || !this.organizationUsageLogs.usageLogs) {
+      this.stats = {
+        totalRequests: 0,
+        totalCostUsd: 0,
+        totalTokens: 0,
+        monthlyRequests: 0,
+        recentUsage: []
+      };
+      return;
+    }
+
+    const logs = this.organizationUsageLogs.usageLogs;
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthlyRequests = logs.filter((log: OrganizationUsageLog) => {
+      const logDate = new Date(log.timestamp);
+      return logDate >= startOfMonth;
+    }).length;
+
+    // Calculer le total des requêtes
+    const totalRequests = logs.length;
+
+    // Calculer le coût total
+    const totalCostUsd = logs.reduce((sum: number, log: OrganizationUsageLog) => {
+      return sum + (log.totalCostUsd || 0);
+    }, 0);
+
+    // Calculer le total des tokens
+    const totalTokens = logs.reduce((sum: number, log: OrganizationUsageLog) => {
+      return sum + (log.tokensUsed || 0);
+    }, 0);
+
+    // Trier les logs par date (plus récent en premier) et prendre les 10 premiers
+    const recentLogs = [...logs]
+      .sort((a: OrganizationUsageLog, b: OrganizationUsageLog) => {
+        return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+      })
+      .slice(0, 10)
+      .map((log: OrganizationUsageLog) => ({
+        id: log.id,
+        endpoint: log.endpoint,
+        searchTerm: log.searchTerm || 'N/A',
+        tokensUsed: log.tokensUsed || 0,
+        costUsd: log.totalCostUsd || null,
+        timestamp: log.timestamp
+      }));
+
+    this.stats = {
+      totalRequests,
+      totalCostUsd,
+      totalTokens,
+      monthlyRequests,
+      recentUsage: recentLogs
+    };
+  }
+
+  loadOrganizationUsageLogs() {
+    this.loadingUsageLogs = true;
+    const startDate = this.startDate || undefined;
+    const endDate = this.endDate || undefined;
+    
+    this.organizationAccountService.getOrganizationUsageLogs(startDate, endDate).subscribe({
+      next: (logs) => {
+        this.organizationUsageLogs = logs;
+        this.loadingUsageLogs = false;
+        // Recalculer les stats à partir des nouveaux logs
+        this.calculateStatsFromLogs();
+      },
+      error: (err) => {
+        this.errorMessage = 'Erreur lors du chargement des logs d\'utilisation: ' + (err.error?.message || err.message);
+        this.loadingUsageLogs = false;
+      }
+    });
+  }
+
+  updateQuotaChart() {
+    if (!this.quota || !this.quota.hasOrganization || this.quota.isUnlimited) {
+      return;
+    }
         this.notificationService.error('Veuillez sélectionner un plan payant. Les plans d\'essai ne sont plus disponibles.');
       }
       return;
