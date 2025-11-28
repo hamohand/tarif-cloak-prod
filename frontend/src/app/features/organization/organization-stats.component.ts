@@ -17,6 +17,7 @@ Chart.register(...registerables);
   selector: 'app-organization-stats',
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink, AsyncPipe],
+  styleUrl: './organization-stats.component.css',
   template: `
     <div class="stats-container">
       <h2>📊 Statistiques Globales de l'Organisation</h2>
@@ -439,26 +440,17 @@ Chart.register(...registerables);
       }
     </div>
   `,
-  styles: [`
-    .stats-container {
-      padding: 2rem;
-      max-width: 1200px;
-      margin: 0 auto;
-    }
+})
+export class OrganizationStatsComponent implements OnInit {
+  private userService = inject(UserService);
+  private authService = inject(AuthService);
+  private pricingPlanService = inject(PricingPlanService);
+  private notificationService = inject(NotificationService);
+  private organizationAccountService = inject(OrganizationAccountService);
+  private currencyService = inject(CurrencyService);
 
-    h2 {
-      color: #2c3e50;
-      margin-bottom: 2rem;
-    }
-
-    h3 {
-      color: #2c3e50;
-      margin-top: 0;
-      margin-bottom: 1rem;
-    }
-
-    .organization-card,
-    .quota-card,
+  organization: Organization | null = null;
+  currencySymbol$ = this.currencyService.getCurrencySymbol();
     .stats-card {
       background: #e0e0e0;
       border-radius: 8px;
@@ -1146,39 +1138,6 @@ Chart.register(...registerables);
       background: #d1d9e0;
     }
 
-    .modal-footer .btn-primary {
-      background: #3498db;
-      color: white;
-    }
-
-    .modal-footer .btn-primary:hover:not(:disabled) {
-      background: #2980b9;
-    }
-
-    .usage-logs-card {
-      background: #e0e0e0;
-      border-radius: 8px;
-      padding: 1.5rem;
-      margin-bottom: 1.5rem;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-
-    .usage-logs-info {
-      margin-bottom: 1rem;
-      padding: 0.75rem;
-      background: #f8f9fa;
-      border-radius: 4px;
-    }
-
-    .usage-logs-info p {
-      margin: 0.25rem 0;
-      color: #555;
-    }
-  `]
-})
-export class OrganizationStatsComponent implements OnInit {
-  private userService = inject(UserService);
-  private authService = inject(AuthService);
   private pricingPlanService = inject(PricingPlanService);
   private notificationService = inject(NotificationService);
   private organizationAccountService = inject(OrganizationAccountService);
