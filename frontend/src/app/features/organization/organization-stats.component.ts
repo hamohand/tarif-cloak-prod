@@ -173,11 +173,17 @@ Chart.register(...registerables);
 
       <!-- Modal de confirmation pour le changement de plan -->
       @if (showConfirmModal && selectedPlanForConfirmation) {
-        <div class="modal-overlay" (click)="closeConfirmModal()">
-          <div class="modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-overlay" [class.modal-required]="organization && organization.trialPermanentlyExpired" (click)="!organization?.trialPermanentlyExpired && closeConfirmModal()">
+          <div class="modal-content" [class.modal-required-content]="organization && organization.trialPermanentlyExpired" (click)="$event.stopPropagation()">
             <div class="modal-header">
-              <h3>Confirmer le changement de plan</h3>
-              <button class="modal-close" (click)="closeConfirmModal()">&times;</button>
+              @if (organization && organization.trialPermanentlyExpired) {
+                <h3>🔴 Validation obligatoire d'un plan payant</h3>
+              } @else {
+                <h3>Confirmer le changement de plan</h3>
+              }
+              @if (!organization || !organization.trialPermanentlyExpired) {
+                <button class="modal-close" (click)="closeConfirmModal()">&times;</button>
+              }
             </div>
             <div class="modal-body">
               <p>Vous êtes sur le point de changer votre plan tarifaire vers :</p>
@@ -217,15 +223,24 @@ Chart.register(...registerables);
                   <p class="plan-quota">Quota illimité</p>
                 }
               </div>
-              <p class="confirmation-warning">⚠️ Êtes-vous sûr de vouloir continuer ?</p>
+              @if (organization && organization.trialPermanentlyExpired) {
+                <p class="confirmation-warning-urgent">🔴 <strong>Action obligatoire :</strong> Votre essai gratuit étant définitivement terminé, vous devez valider un plan payant pour continuer à utiliser le service.</p>
+                <p class="confirmation-info">Une fois validé, votre plan sera immédiatement activé et vos collaborateurs pourront à nouveau effectuer des requêtes HS-code. Aucune création de compte supplémentaire n'est nécessaire.</p>
+              } @else {
+                <p class="confirmation-warning">⚠️ Êtes-vous sûr de vouloir continuer ?</p>
+              }
             </div>
             <div class="modal-footer">
-              <button class="btn btn-secondary" (click)="closeConfirmModal()" [disabled]="isChangingPlan">
-                Annuler
-              </button>
-              <button class="btn btn-primary" (click)="changePricingPlan()" [disabled]="isChangingPlan">
+              @if (!organization || !organization.trialPermanentlyExpired) {
+                <button class="btn btn-secondary" (click)="closeConfirmModal()" [disabled]="isChangingPlan">
+                  Annuler
+                </button>
+              }
+              <button class="btn btn-primary" [class.btn-required]="organization && organization.trialPermanentlyExpired" (click)="changePricingPlan()" [disabled]="isChangingPlan">
                 @if (isChangingPlan) {
                   <span>Changement en cours...</span>
+                } @else if (organization && organization.trialPermanentlyExpired) {
+                  <span>✅ Valider le plan payant (obligatoire)</span>
                 } @else {
                   <span>Confirmer le changement</span>
                 }
@@ -968,6 +983,19 @@ Chart.register(...registerables);
       animation: modalFadeIn 0.3s ease-out;
     }
 
+    .modal-required {
+      cursor: not-allowed;
+    }
+
+    .modal-required .modal-overlay {
+      pointer-events: auto;
+    }
+
+    .modal-required-content {
+      border: 3px solid #e74c3c;
+      box-shadow: 0 8px 32px rgba(231, 76, 60, 0.4);
+    }
+
     @keyframes modalFadeIn {
       from {
         opacity: 0;
@@ -1062,6 +1090,28 @@ Chart.register(...registerables);
       border-radius: 6px;
       color: #856404;
       font-weight: 500;
+    }
+
+    .confirmation-warning-urgent {
+      margin-top: 1rem;
+      padding: 1rem;
+      background: linear-gradient(135deg, #ffe5e5 0%, #fff5f5 100%);
+      border: 2px solid #e74c3c;
+      border-radius: 6px;
+      color: #c0392b;
+      font-weight: 600;
+      font-size: 1rem;
+    }
+
+    .confirmation-info {
+      margin-top: 0.75rem;
+      padding: 0.75rem;
+      background: #e8f5e9;
+      border-left: 4px solid #4caf50;
+      border-radius: 4px;
+      color: #2e7d32;
+      font-size: 0.9rem;
+      line-height: 1.5;
     }
 
     .modal-footer {
@@ -1247,6 +1297,9 @@ export class OrganizationStatsComponent implements OnInit {
 
   openConfirmModal() {
     if (!this.selectedPlanId || this.selectedPlanId === this.organization?.pricingPlanId) {
+      if (this.organization?.trialPermanentlyExpired) {
+        this.notificationService.error('Veuillez sélectionner un plan payant. Les plans d\'essai ne sont plus disponibles.');
+      }
       return;
     }
 
@@ -1256,11 +1309,34 @@ export class OrganizationStatsComponent implements OnInit {
       return;
     }
 
+    // Validation : si l'essai est définitivement terminé, vérifier que le plan sélectionné est payant
+    if (this.organization?.trialPermanentlyExpired) {
+      const isPaidPlan = (selectedPlan.pricePerMonth !== null && selectedPlan.pricePerMonth !== undefined && selectedPlan.pricePerMonth > 0)
+        || (selectedPlan.pricePerRequest !== null && selectedPlan.pricePerRequest !== undefined && selectedPlan.pricePerRequest > 0);
+      
+      if (!isPaidPlan && (!selectedPlan.trialPeriodDays || selectedPlan.trialPeriodDays <= 0)) {
+        // Plan gratuit sans essai - pas autorisé
+        this.notificationService.error('Vous devez sélectionner un plan payant. Les plans gratuits ne sont plus disponibles après la fin de l\'essai.');
+        return;
+      }
+      
+      if (selectedPlan.trialPeriodDays && selectedPlan.trialPeriodDays > 0) {
+        // Plan d'essai - pas autorisé
+        this.notificationService.error('Les plans d\'essai ne sont plus disponibles. Veuillez sélectionner un plan payant.');
+        return;
+      }
+    }
+
     this.selectedPlanForConfirmation = selectedPlan;
     this.showConfirmModal = true;
   }
 
   closeConfirmModal() {
+    // Si l'essai est définitivement terminé, on ne peut pas fermer la modal sans choisir un plan
+    if (this.organization?.trialPermanentlyExpired && !this.selectedPlanId) {
+      this.notificationService.warning('Vous devez sélectionner un plan payant pour continuer. La sélection d\'un plan est obligatoire.');
+      return;
+    }
     this.showConfirmModal = false;
     this.selectedPlanForConfirmation = null;
   }
