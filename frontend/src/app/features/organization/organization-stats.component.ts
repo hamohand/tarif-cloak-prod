@@ -643,23 +643,42 @@ export class OrganizationStatsComponent implements OnInit {
         
         // Si l'essai est terminé, toujours forcer la sélection d'un plan payant
         if (this.organization?.trialPermanentlyExpired) {
-          // Vérifier si le plan actuel est un plan payant
+          // Vérifier si le plan actuel est un plan payant ET s'il est dans la liste filtrée
           const currentPlanIsPaid = this.currentPlan && 
             ((this.currentPlan.pricePerMonth !== null && this.currentPlan.pricePerMonth !== undefined && this.currentPlan.pricePerMonth > 0) ||
              (this.currentPlan.pricePerRequest !== null && this.currentPlan.pricePerRequest !== undefined && this.currentPlan.pricePerRequest > 0));
           
-          // Si aucun plan payant n'est sélectionné et qu'il y a des plans payants disponibles, sélectionner le premier
-          if (!currentPlanIsPaid && this.pricingPlans.length > 0 && this.pricingPlans[0].id) {
+          const currentPlanInFilteredList = this.currentPlan && this.currentPlan.id ? this.pricingPlans.some(p => p.id === this.currentPlan!.id) : false;
+          
+          // Si le plan actuel n'est pas payant OU n'est pas dans la liste filtrée, sélectionner le premier plan payant disponible
+          if ((!currentPlanIsPaid || !currentPlanInFilteredList) && this.pricingPlans.length > 0 && this.pricingPlans[0].id) {
+            console.log('🔄 Plan actuel non valide, sélection du premier plan payant:', this.pricingPlans[0].id);
             this.selectedPlanId = this.pricingPlans[0].id;
             this.updateCurrentPlan(this.pricingPlans[0].id);
-          } else if (currentPlanIsPaid && this.organization.pricingPlanId) {
-            // Si un plan payant est déjà sélectionné, garder cette sélection
+          } else if (currentPlanIsPaid && currentPlanInFilteredList && this.organization?.pricingPlanId) {
+            // Si un plan payant est déjà sélectionné et dans la liste, garder cette sélection
             this.selectedPlanId = this.organization.pricingPlanId;
+          } else if (this.pricingPlans.length > 0 && this.pricingPlans[0].id) {
+            // Fallback : sélectionner le premier plan payant disponible
+            console.log('🔄 Fallback : sélection du premier plan payant:', this.pricingPlans[0].id);
+            this.selectedPlanId = this.pricingPlans[0].id;
+            this.updateCurrentPlan(this.pricingPlans[0].id);
+          } else {
+            // Aucun plan payant disponible
+            this.selectedPlanId = null;
+            this.currentPlan = null;
           }
         } else {
-          // Si l'essai n'est pas terminé, garder le plan actuel
+          // Si l'essai n'est pas terminé, garder le plan actuel s'il existe dans la liste
           if (this.organization?.pricingPlanId) {
-            this.selectedPlanId = this.organization.pricingPlanId;
+            const planExists = this.pricingPlans.some(p => p.id === this.organization?.pricingPlanId);
+            if (planExists) {
+              this.selectedPlanId = this.organization.pricingPlanId;
+            } else {
+              // Le plan n'existe plus dans la liste, le réinitialiser
+              this.selectedPlanId = null;
+              this.currentPlan = null;
+            }
           }
         }
       },
@@ -688,16 +707,31 @@ export class OrganizationStatsComponent implements OnInit {
       }
       return;
     }
+
+    const selectedPlan = this.pricingPlans.find(p => p.id === this.selectedPlanId);
+    if (!selectedPlan) {
+      console.error('❌ Plan sélectionné introuvable dans pricingPlans:', this.selectedPlanId);
+      console.log('📋 Plans disponibles:', this.pricingPlans.map(p => ({ id: p.id, name: p.name })));
+      // Si le plan n'est pas trouvé, essayer de sélectionner le premier plan payant disponible
+      if (this.pricingPlans.length > 0 && this.pricingPlans[0].id) {
+        console.log('🔄 Sélection automatique du premier plan payant:', this.pricingPlans[0].id);
+        this.selectedPlanId = this.pricingPlans[0].id;
+        this.updateCurrentPlan(this.pricingPlans[0].id);
+        // Réessayer avec le nouveau plan
+        const newSelectedPlan = this.pricingPlans.find(p => p.id === this.selectedPlanId);
+        if (newSelectedPlan) {
+          this.selectedPlanForConfirmation = newSelectedPlan;
+          this.showConfirmModal = true;
+          return;
+        }
+      }
+      this.notificationService.error('Plan sélectionné introuvable. Veuillez sélectionner un plan dans la liste.');
+      return;
+    }
     
     // Si l'essai est définitivement terminé, forcer le changement même si c'est le même plan (cas où l'ancien plan était gratuit)
     if (this.selectedPlanId === this.organization?.pricingPlanId && !this.organization?.trialPermanentlyExpired) {
       this.notificationService.info('Le plan sélectionné est déjà votre plan actuel.');
-      return;
-    }
-
-    const selectedPlan = this.pricingPlans.find(p => p.id === this.selectedPlanId);
-    if (!selectedPlan) {
-      this.notificationService.error('Plan sélectionné introuvable');
       return;
     }
 
