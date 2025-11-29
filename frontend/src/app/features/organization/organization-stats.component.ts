@@ -115,6 +115,15 @@ Chart.register(...registerables);
                   Votre essai gratuit étant définitivement terminé, vous devez choisir un plan payant pour continuer à utiliser le service. 
                   <strong>Il suffit de valider le plan sélectionné ci-dessous - aucune création de compte supplémentaire n'est nécessaire.</strong>
                 </p>
+                @if (!selectedPlanId && pricingPlans.length > 0) {
+                  <p class="selection-prompt" style="color: #dc3545; font-weight: bold; margin: 1rem 0;">
+                    ⚠️ Veuillez sélectionner un plan payant dans la liste ci-dessous.
+                  </p>
+                } @else if (selectedPlanId) {
+                  <p class="selection-prompt" style="color: #28a745; font-weight: bold; margin: 1rem 0;">
+                    ✅ Un plan payant est sélectionné. Cliquez sur le bouton ci-dessous pour valider.
+                  </p>
+                }
               } @else {
                 <h4>Changer de plan</h4>
               }
@@ -123,7 +132,7 @@ Chart.register(...registerables);
                   <option [value]="null">Aucun plan (gratuit)</option>
                 }
                 @if (organization?.trialPermanentlyExpired && !selectedPlanId && pricingPlans.length > 0) {
-                  <option [value]="null" disabled>Sélectionnez un plan payant</option>
+                  <option [value]="null" selected disabled style="color: #dc3545;">⚠️ Sélectionnez un plan payant</option>
                 }
                 @for (plan of pricingPlans; track plan.id) {
                   <option [value]="plan.id" [selected]="plan.id === organization.pricingPlanId">
@@ -526,6 +535,8 @@ export class OrganizationStatsComponent implements OnInit {
     this.errorMessage = '';
     this.userService.getMyOrganization().subscribe({
       next: (org) => {
+        console.log('🏢 Organisation chargée:', org);
+        console.log('🔍 trialPermanentlyExpired:', org?.trialPermanentlyExpired);
         this.organization = org;
         this.selectedPlanId = org?.pricingPlanId || null;
         this.loadingOrg = false;
@@ -550,21 +561,37 @@ export class OrganizationStatsComponent implements OnInit {
     this.loadingPlans = true;
     this.pricingPlanService.getActivePricingPlans().subscribe({
       next: (plans) => {
+        console.log('📋 Plans reçus du serveur:', plans.length, plans);
+        console.log('🔍 Organization trialPermanentlyExpired:', this.organization?.trialPermanentlyExpired);
+        
         // Filtrer les plans d'essai si l'essai est définitivement terminé
         if (this.organization?.trialPermanentlyExpired) {
           // Filtrer les plans d'essai et les plans gratuits - seuls les plans payants sont autorisés
-          this.pricingPlans = plans.filter(plan => {
+          const filteredPlans = plans.filter(plan => {
             // Exclure les plans d'essai
             if (plan.trialPeriodDays && plan.trialPeriodDays > 0) {
+              console.log('❌ Plan exclu (essai):', plan.name);
               return false;
             }
             // Exclure tous les plans gratuits - seuls les plans avec un prix > 0 sont autorisés
             const hasPaidMonthlyPrice = plan.pricePerMonth !== null && plan.pricePerMonth !== undefined && plan.pricePerMonth > 0;
             const hasPaidPerRequestPrice = plan.pricePerRequest !== null && plan.pricePerRequest !== undefined && plan.pricePerRequest > 0;
+            const isPaidPlan = hasPaidMonthlyPrice || hasPaidPerRequestPrice;
+            
+            if (!isPaidPlan) {
+              console.log('❌ Plan exclu (gratuit):', plan.name, 'pricePerMonth:', plan.pricePerMonth, 'pricePerRequest:', plan.pricePerRequest);
+            } else {
+              console.log('✅ Plan inclus (payant):', plan.name);
+            }
+            
             // Un plan est payant s'il a un prix mensuel > 0 OU un prix par requête > 0
-            return hasPaidMonthlyPrice || hasPaidPerRequestPrice;
+            return isPaidPlan;
           });
+          
+          console.log('📊 Plans filtrés (payants uniquement):', filteredPlans.length, filteredPlans);
+          this.pricingPlans = filteredPlans;
         } else {
+          console.log('✅ Aucun filtre appliqué (essai non terminé)');
           this.pricingPlans = plans;
         }
         this.loadingPlans = false;
