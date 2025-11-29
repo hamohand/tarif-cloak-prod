@@ -1,12 +1,16 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { RouterLink, Router } from '@angular/router';
 import { PricingPlanService, PricingPlan } from '../../core/services/pricing-plan.service';
 import { environment } from '../../../environments/environment';
 import { QuoteRequestFormComponent } from './quote-request-form.component';
 import { AuthService } from '../../core/services/auth.service';
 import { CurrencyService } from '../../core/services/currency.service';
+import { OrganizationAccountService } from '../../core/services/organization-account.service';
+import { AccountContextService } from '../../core/services/account-context.service';
 import { AsyncPipe } from '@angular/common';
+import { switchMap } from 'rxjs/operators';
+import { of } from 'rxjs';
 
 @Component({
   selector: 'app-pricing-plans',
@@ -391,6 +395,9 @@ export class PricingPlansComponent implements OnInit {
   private pricingPlanService = inject(PricingPlanService);
   private authService = inject(AuthService);
   private currencyService = inject(CurrencyService);
+  private organizationAccountService = inject(OrganizationAccountService);
+  private accountContextService = inject(AccountContextService);
+  private router = inject(Router);
 
   plans: PricingPlan[] = [];
   loading = true;
@@ -410,11 +417,36 @@ export class PricingPlansComponent implements OnInit {
       }
     });
     
-    this.loadPricingPlans();
     // Vérifier si l'utilisateur est authentifié
     this.authService.isAuthenticated().subscribe((isAuth: boolean) => {
       this.isAuthenticated = isAuth;
+      
+      // Si l'utilisateur est authentifié et qu'il s'agit d'une organisation avec un essai terminé, rediriger
+      if (isAuth) {
+        this.accountContextService.isOrganizationAccount$.pipe(
+          switchMap(isOrg => {
+            if (isOrg) {
+              // Vérifier si l'essai est définitivement terminé
+              return this.organizationAccountService.getMyOrganization();
+            }
+            return of(null);
+          })
+        ).subscribe({
+          next: (org) => {
+            if (org?.trialPermanentlyExpired) {
+              // Rediriger vers la page de sélection de plan de l'organisation
+              this.router.navigate(['/organization/stats']);
+            }
+          },
+          error: (err) => {
+            // Ignorer les erreurs (utilisateur peut ne pas être une organisation)
+            console.debug('PricingPlansComponent: Pas une organisation ou erreur:', err);
+          }
+        });
+      }
     });
+    
+    this.loadPricingPlans();
   }
 
   loadPricingPlans() {

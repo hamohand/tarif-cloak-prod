@@ -93,7 +93,7 @@ import { of } from 'rxjs';
             @if (isOrganizationAccount$ | async) {
               Le quota de votre essai gratuit a été atteint et est maintenant définitivement désactivé pour votre organisation. 
               Aucune requête HS-code n'est autorisée pour tous les collaborateurs. 
-              Veuillez <a routerLink="/pricing">choisir un plan tarifaire</a> ou <a routerLink="/organization/quote-requests">faire une demande de devis</a> pour continuer à utiliser le service.
+              Veuillez <a routerLink="/organization/stats">choisir un plan tarifaire</a> ou <a routerLink="/organization/quote-requests">faire une demande de devis</a> pour continuer à utiliser le service.
             } @else {
               Le quota de l'essai gratuit de votre organisation a été atteint et est maintenant définitivement désactivé. 
               Aucune requête HS-code n'est autorisée. 
@@ -105,7 +105,7 @@ import { of } from 'rxjs';
       <nav class="organization-navbar">
         <div class="org-nav-links">
           <a routerLink="/organization/account" routerLinkActive="router-link-active" class="org-nav-link">👥 Collaborateurs</a>
-          <a routerLink="/pricing" routerLinkActive="router-link-active" class="org-nav-link">💳 Plan tarifaire</a>
+          <a routerLink="/organization/stats" routerLinkActive="router-link-active" class="org-nav-link">💳 Plan tarifaire</a>
           <a routerLink="/organization/stats" routerLinkActive="router-link-active" class="org-nav-link">📊 Statistiques globales</a>
           <a routerLink="/organization/invoices" routerLinkActive="router-link-active" class="org-nav-link invoices-link">
             📄 Factures

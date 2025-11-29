@@ -111,7 +111,7 @@ import { map, switchMap, catchError, distinctUntilChanged } from 'rxjs/operators
                 <p>
                   Le quota de votre essai gratuit a été atteint et est maintenant définitivement désactivé pour votre organisation. 
                   Aucune requête HS-code n'est autorisée pour tous les collaborateurs. 
-                  Veuillez <a routerLink="/pricing">choisir un plan tarifaire</a> ou 
+                  Veuillez <a routerLink="/organization/stats">choisir un plan tarifaire</a> ou 
                   <a routerLink="/organization/quote-requests">faire une demande de devis</a> pour continuer à utiliser le service.
                 </p>
               } @else {
