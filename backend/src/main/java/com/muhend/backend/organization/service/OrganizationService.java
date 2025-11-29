@@ -907,11 +907,12 @@ public class OrganizationService {
     
     /**
      * Vérifie si une organisation peut effectuer des requêtes à partir de son ID.
+     * Cette méthode peut modifier l'organisation (mettre à jour trialPermanentlyExpired) si nécessaire.
      *
      * @param organizationId L'ID de l'organisation à vérifier
      * @return true si l'organisation peut faire des requêtes, false sinon
      */
-    @Transactional(readOnly = true)
+    @Transactional
     public boolean canOrganizationMakeRequests(Long organizationId) {
         Optional<Organization> organizationOpt = organizationRepository.findById(organizationId);
         if (organizationOpt.isEmpty()) {

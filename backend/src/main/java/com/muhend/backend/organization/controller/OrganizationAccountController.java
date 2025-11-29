@@ -102,11 +102,13 @@ public class OrganizationAccountController {
                         .body(Map.of("error", "ORGANIZATION_NOT_FOUND", "message", "Organisation introuvable"));
             }
             
-            // Récupérer l'organisation pour vérifier l'essai
-            // Cette méthode fonctionne pour les comptes organisation ET les collaborateurs
-            OrganizationDto organization = organizationService.getOrganizationById(organizationId);
+            // Vérifier si l'organisation peut faire des requêtes (cela met à jour trialPermanentlyExpired si nécessaire)
+            // Cette méthode appelle isTrialExpired() qui met à jour trialPermanentlyExpired dans la base
             boolean canMakeRequests = organizationService.canOrganizationMakeRequests(organizationId);
             boolean isTrialExpired = !canMakeRequests;
+            
+            // Récupérer l'organisation APRÈS la vérification pour avoir la valeur mise à jour de trialPermanentlyExpired
+            OrganizationDto organization = organizationService.getOrganizationById(organizationId);
             boolean trialPermanentlyExpired = Boolean.TRUE.equals(organization.getTrialPermanentlyExpired());
             
             Map<String, Object> status = new LinkedHashMap<>();

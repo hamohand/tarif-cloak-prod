@@ -533,26 +533,68 @@ export class OrganizationStatsComponent implements OnInit {
   loadOrganization() {
     this.loadingOrg = true;
     this.errorMessage = '';
-    this.userService.getMyOrganization().subscribe({
-      next: (org) => {
-        console.log('🏢 Organisation chargée:', org);
-        console.log('🔍 trialPermanentlyExpired:', org?.trialPermanentlyExpired);
-        this.organization = org;
-        this.selectedPlanId = org?.pricingPlanId || null;
-        this.loadingOrg = false;
-        if (org?.pricingPlanId) {
-          this.updateCurrentPlan(org.pricingPlanId);
-        } else {
-          this.currentPlan = null;
-        }
-        // Recharger les plans tarifaires après avoir chargé l'organisation pour appliquer le bon filtre
-        this.loadPricingPlans();
+    
+    // Charger d'abord le statut pour avoir l'état réel (met à jour trialPermanentlyExpired si nécessaire)
+    this.organizationAccountService.getOrganizationStatus().subscribe({
+      next: (status) => {
+        console.log('📊 Statut de l\'organisation:', status);
+        console.log('🔍 isTrialExpired:', status.isTrialExpired);
+        console.log('🔍 trialPermanentlyExpired (status):', status.trialPermanentlyExpired);
+        
+        // Charger ensuite les détails de l'organisation
+        this.userService.getMyOrganization().subscribe({
+          next: (org) => {
+            console.log('🏢 Organisation chargée:', org);
+            
+            // Mettre à jour trialPermanentlyExpired avec la valeur du statut (plus à jour)
+            if (org && status.trialPermanentlyExpired !== undefined && status.trialPermanentlyExpired !== null) {
+              org.trialPermanentlyExpired = status.trialPermanentlyExpired;
+              console.log('✅ trialPermanentlyExpired mis à jour avec le statut:', org.trialPermanentlyExpired);
+            } else if (org) {
+              console.log('🔍 trialPermanentlyExpired depuis l\'organisation:', org.trialPermanentlyExpired);
+            }
+            
+            this.organization = org;
+            this.selectedPlanId = org?.pricingPlanId || null;
+            this.loadingOrg = false;
+            if (org?.pricingPlanId) {
+              this.updateCurrentPlan(org.pricingPlanId);
+            } else {
+              this.currentPlan = null;
+            }
+            // Recharger les plans tarifaires après avoir chargé l'organisation pour appliquer le bon filtre
+            this.loadPricingPlans();
+          },
+          error: (err) => {
+            this.errorMessage = 'Erreur lors du chargement de l\'organisation: ' + (err.error?.message || err.message);
+            this.loadingOrg = false;
+            // Charger les plans même en cas d'erreur (sans filtre)
+            this.loadPricingPlans();
+          }
+        });
       },
       error: (err) => {
-        this.errorMessage = 'Erreur lors du chargement de l\'organisation: ' + (err.error?.message || err.message);
-        this.loadingOrg = false;
-        // Charger les plans même en cas d'erreur (sans filtre)
-        this.loadPricingPlans();
+        console.error('❌ Erreur lors du chargement du statut:', err);
+        // Si le statut échoue, charger quand même l'organisation
+        this.userService.getMyOrganization().subscribe({
+          next: (org) => {
+            console.log('🏢 Organisation chargée (sans statut):', org);
+            this.organization = org;
+            this.selectedPlanId = org?.pricingPlanId || null;
+            this.loadingOrg = false;
+            if (org?.pricingPlanId) {
+              this.updateCurrentPlan(org.pricingPlanId);
+            } else {
+              this.currentPlan = null;
+            }
+            this.loadPricingPlans();
+          },
+          error: (err2) => {
+            this.errorMessage = 'Erreur lors du chargement de l\'organisation: ' + (err2.error?.message || err2.message);
+            this.loadingOrg = false;
+            this.loadPricingPlans();
+          }
+        });
       }
     });
   }
