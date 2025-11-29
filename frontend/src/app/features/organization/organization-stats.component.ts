@@ -106,7 +106,8 @@ Chart.register(...registerables);
               @if (organization.trialPermanentlyExpired) {
                 <h4 class="required-plan-title">🔴 Sélection obligatoire d'un plan tarifaire</h4>
                 <p class="required-plan-message">
-                  Votre essai gratuit étant définitivement terminé, vous devez choisir un plan payant pour continuer à utiliser le service.
+                  Votre essai gratuit étant définitivement terminé, vous devez choisir un plan payant pour continuer à utiliser le service. 
+                  <strong>Il suffit de valider le plan sélectionné ci-dessous - aucune création de compte supplémentaire n'est nécessaire.</strong>
                 </p>
               } @else {
                 <h4>Changer de plan</h4>
@@ -116,7 +117,7 @@ Chart.register(...registerables);
                   <option [value]="null">Aucun plan (gratuit)</option>
                 }
                 @for (plan of pricingPlans; track plan.id) {
-                  <option [value]="plan.id" [selected]="plan.id === organization.pricingPlanId" [disabled]="organization.trialPermanentlyExpired && plan.trialPeriodDays && plan.trialPeriodDays > 0">
+                  <option [value]="plan.id" [selected]="plan.id === organization.pricingPlanId">
                     {{ plan.name }} - 
                     @if (plan.pricePerMonth !== null && plan.pricePerMonth !== undefined) {
                       @if (plan.pricePerMonth === 0) {
@@ -226,7 +227,8 @@ Chart.register(...registerables);
               </div>
               @if (organization && organization.trialPermanentlyExpired) {
                 <p class="confirmation-warning-urgent">🔴 <strong>Action obligatoire :</strong> Votre essai gratuit étant définitivement terminé, vous devez valider un plan payant pour continuer à utiliser le service.</p>
-                <p class="confirmation-info">Une fois validé, votre plan sera immédiatement activé et vos collaborateurs pourront à nouveau effectuer des requêtes HS-code. Aucune création de compte supplémentaire n'est nécessaire.</p>
+                <p class="confirmation-info">✅ <strong>Validation simple :</strong> Il suffit de valider ce plan payant. Votre compte organisation existant sera automatiquement mis à jour avec le nouveau plan. <strong>Aucune création de compte supplémentaire n'est nécessaire.</strong></p>
+                <p class="confirmation-info">Une fois validé, votre plan sera immédiatement activé et vos collaborateurs pourront à nouveau effectuer des requêtes HS-code.</p>
               } @else {
                 <p class="confirmation-warning">⚠️ Êtes-vous sûr de vouloir continuer ?</p>
               }
@@ -535,7 +537,17 @@ export class OrganizationStatsComponent implements OnInit {
       next: (plans) => {
         // Filtrer les plans d'essai si l'essai est définitivement terminé
         if (this.organization?.trialPermanentlyExpired) {
-          this.pricingPlans = plans.filter(plan => !plan.trialPeriodDays || plan.trialPeriodDays <= 0);
+          // Filtrer les plans d'essai et les plans gratuits - seuls les plans payants sont autorisés
+          this.pricingPlans = plans.filter(plan => {
+            // Exclure les plans d'essai
+            if (plan.trialPeriodDays && plan.trialPeriodDays > 0) {
+              return false;
+            }
+            // Exclure les plans gratuits (pricePerMonth === 0 ou null, et pricePerRequest === null ou undefined)
+            const isFree = (plan.pricePerMonth === null || plan.pricePerMonth === undefined || plan.pricePerMonth === 0) 
+              && (plan.pricePerRequest === null || plan.pricePerRequest === undefined);
+            return !isFree;
+          });
         } else {
           this.pricingPlans = plans;
         }
