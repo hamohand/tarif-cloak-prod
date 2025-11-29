@@ -527,11 +527,16 @@ public class OrganizationService {
                 
                 organization.setPricingPlanId(pricingPlanId);
                 // Mettre à jour le quota selon le plan
+                Integer oldQuota = organization.getMonthlyQuota();
                 if (newPlan.getMonthlyQuota() != null) {
                     organization.setMonthlyQuota(newPlan.getMonthlyQuota());
+                    log.info("Quota mensuel mis à jour pour l'organisation {} (ID: {}): {} -> {} requêtes/mois (plan: {} - ID: {})", 
+                        organization.getName(), organizationId, oldQuota, newPlan.getMonthlyQuota(), newPlan.getName(), pricingPlanId);
                 } else {
-                    // Si le plan n'a pas de quota défini, garder le quota actuel ou le mettre à null
-                    // (on peut décider de laisser le quota actuel)
+                    // Si le plan n'a pas de quota défini (plan pay-per-request ou illimité), mettre le quota à null (illimité)
+                    organization.setMonthlyQuota(null);
+                    log.info("Quota mensuel mis à null (illimité) pour l'organisation {} (ID: {}): {} -> null (plan: {} - ID: {})", 
+                        organization.getName(), organizationId, oldQuota, newPlan.getName(), pricingPlanId);
                 }
                 // Si c'est un plan d'essai, définir la date d'expiration
                 if (newPlan.getTrialPeriodDays() != null && newPlan.getTrialPeriodDays() > 0) {
@@ -561,8 +566,15 @@ public class OrganizationService {
         }
         
         organization = organizationRepository.save(organization);
-        log.info("Plan tarifaire changé pour l'organisation {} (ID: {}): planId={}", 
-            organization.getName(), organizationId, pricingPlanId);
+        log.info("Plan tarifaire changé pour l'organisation {} (ID: {}): planId={}, nouveau quota={}", 
+            organization.getName(), organizationId, pricingPlanId, organization.getMonthlyQuota());
+        
+        // Vérifier que le quota a bien été mis à jour
+        Organization savedOrg = organizationRepository.findById(organizationId).orElse(null);
+        if (savedOrg != null) {
+            log.info("Vérification après sauvegarde - Organisation {} (ID: {}): quota={}, planId={}", 
+                savedOrg.getName(), organizationId, savedOrg.getMonthlyQuota(), savedOrg.getPricingPlanId());
+        }
         
         // Si l'essai était expiré et qu'un plan payant est maintenant sélectionné, réactiver les collaborateurs
         boolean wasTrialExpired = isTrialExpired(organization);
