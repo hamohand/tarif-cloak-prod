@@ -68,7 +68,9 @@ Chart.register(...registerables);
                   <p><strong>Prix:</strong> 
                     @if (currentPlan.pricePerMonth !== null && currentPlan.pricePerMonth !== undefined) {
                       @if (currentPlan.pricePerMonth === 0) {
-                        Gratuit
+                        @if (!organization.trialPermanentlyExpired) {
+                          Gratuit
+                        }
                       } @else {
                         {{ currentPlan.pricePerMonth }} 
                         @if (currencySymbol$ | async; as symbol) {
@@ -85,7 +87,11 @@ Chart.register(...registerables);
                         €
                       }/requête
                     } @else {
-                      Gratuit
+                      @if (!organization.trialPermanentlyExpired) {
+                        Gratuit
+                      } @else {
+                        <span style="color: #dc3545;">Plan gratuit - Sélection d'un plan payant requise</span>
+                      }
                     }
                   </p>
                   @if (currentPlan.trialPeriodDays) {
@@ -122,26 +128,20 @@ Chart.register(...registerables);
                 @for (plan of pricingPlans; track plan.id) {
                   <option [value]="plan.id" [selected]="plan.id === organization.pricingPlanId">
                     {{ plan.name }} - 
-                    @if (plan.pricePerMonth !== null && plan.pricePerMonth !== undefined) {
-                      @if (plan.pricePerMonth === 0) {
-                        Gratuit
+                    @if (plan.pricePerMonth !== null && plan.pricePerMonth !== undefined && plan.pricePerMonth > 0) {
+                      {{ plan.pricePerMonth }} 
+                      @if (currencySymbol$ | async; as symbol) {
+                        {{ symbol }}
                       } @else {
-                        {{ plan.pricePerMonth }} 
-                        @if (currencySymbol$ | async; as symbol) {
-                          {{ symbol }}
-                        } @else {
-                          €
-                        }/mois
-                      }
-                    } @else if (plan.pricePerRequest !== null && plan.pricePerRequest !== undefined) {
+                        €
+                      }/mois
+                    } @else if (plan.pricePerRequest !== null && plan.pricePerRequest !== undefined && plan.pricePerRequest > 0) {
                       {{ plan.pricePerRequest }} 
                       @if (currencySymbol$ | async; as symbol) {
                         {{ symbol }}
                       } @else {
                         €
                       }/requête
-                    } @else {
-                      Gratuit
                     }
                     @if (plan.trialPeriodDays) {
                       ({{ plan.trialPeriodDays }} jours)
@@ -159,7 +159,7 @@ Chart.register(...registerables);
                 class="btn btn-primary" 
                 [class.btn-required]="organization.trialPermanentlyExpired"
                 (click)="openConfirmModal()"
-                [disabled]="isChangingPlan || selectedPlanId === organization.pricingPlanId || (!selectedPlanId && !organization.trialPermanentlyExpired)"
+                [disabled]="isChangingPlan || !selectedPlanId"
                 [title]="(!selectedPlanId && organization.trialPermanentlyExpired) ? 'Sélectionnez un plan payant pour continuer' : ''">
                 @if (isChangingPlan) {
                   <span>Changement en cours...</span>
@@ -204,7 +204,11 @@ Chart.register(...registerables);
                 }
                 @if (selectedPlanForConfirmation.pricePerMonth !== null && selectedPlanForConfirmation.pricePerMonth !== undefined) {
                   @if (selectedPlanForConfirmation.pricePerMonth === 0) {
-                    <p class="plan-price">Gratuit</p>
+                    @if (!organization.trialPermanentlyExpired) {
+                      <p class="plan-price">Gratuit</p>
+                    } @else {
+                      <p class="plan-price" style="color: #dc3545;">Plan gratuit - Non disponible</p>
+                    }
                   } @else {
                     <p class="plan-price">
                       {{ selectedPlanForConfirmation.pricePerMonth }} 
@@ -554,10 +558,11 @@ export class OrganizationStatsComponent implements OnInit {
             if (plan.trialPeriodDays && plan.trialPeriodDays > 0) {
               return false;
             }
-            // Exclure les plans gratuits (pricePerMonth === 0 ou null, et pricePerRequest === null ou undefined)
-            const isFree = (plan.pricePerMonth === null || plan.pricePerMonth === undefined || plan.pricePerMonth === 0) 
-              && (plan.pricePerRequest === null || plan.pricePerRequest === undefined);
-            return !isFree;
+            // Exclure tous les plans gratuits - seuls les plans avec un prix > 0 sont autorisés
+            const hasPaidMonthlyPrice = plan.pricePerMonth !== null && plan.pricePerMonth !== undefined && plan.pricePerMonth > 0;
+            const hasPaidPerRequestPrice = plan.pricePerRequest !== null && plan.pricePerRequest !== undefined && plan.pricePerRequest > 0;
+            // Un plan est payant s'il a un prix mensuel > 0 OU un prix par requête > 0
+            return hasPaidMonthlyPrice || hasPaidPerRequestPrice;
           });
         } else {
           this.pricingPlans = plans;
@@ -565,11 +570,9 @@ export class OrganizationStatsComponent implements OnInit {
         this.loadingPlans = false;
         if (this.organization?.pricingPlanId) {
           this.updateCurrentPlan(this.organization.pricingPlanId);
-          // S'assurer que selectedPlanId est défini si un plan existe
-          this.selectedPlanId = this.organization.pricingPlanId;
         }
         
-        // Si l'essai est terminé et qu'aucun plan payant n'est sélectionné, sélectionner automatiquement le premier plan payant disponible
+        // Si l'essai est terminé, toujours forcer la sélection d'un plan payant
         if (this.organization?.trialPermanentlyExpired) {
           // Vérifier si le plan actuel est un plan payant
           const currentPlanIsPaid = this.currentPlan && 
@@ -577,9 +580,17 @@ export class OrganizationStatsComponent implements OnInit {
              (this.currentPlan.pricePerRequest !== null && this.currentPlan.pricePerRequest !== undefined && this.currentPlan.pricePerRequest > 0));
           
           // Si aucun plan payant n'est sélectionné et qu'il y a des plans payants disponibles, sélectionner le premier
-          if (!currentPlanIsPaid && this.pricingPlans.length > 0) {
+          if (!currentPlanIsPaid && this.pricingPlans.length > 0 && this.pricingPlans[0].id) {
             this.selectedPlanId = this.pricingPlans[0].id;
             this.updateCurrentPlan(this.pricingPlans[0].id);
+          } else if (currentPlanIsPaid && this.organization.pricingPlanId) {
+            // Si un plan payant est déjà sélectionné, garder cette sélection
+            this.selectedPlanId = this.organization.pricingPlanId;
+          }
+        } else {
+          // Si l'essai n'est pas terminé, garder le plan actuel
+          if (this.organization?.pricingPlanId) {
+            this.selectedPlanId = this.organization.pricingPlanId;
           }
         }
       },
@@ -600,10 +611,18 @@ export class OrganizationStatsComponent implements OnInit {
   }
 
   openConfirmModal() {
-    if (!this.selectedPlanId || this.selectedPlanId === this.organization?.pricingPlanId) {
+    if (!this.selectedPlanId) {
       if (this.organization?.trialPermanentlyExpired) {
         this.notificationService.error('Veuillez sélectionner un plan payant. Les plans d\'essai ne sont plus disponibles.');
+      } else {
+        this.notificationService.error('Veuillez sélectionner un plan.');
       }
+      return;
+    }
+    
+    // Si l'essai est définitivement terminé, forcer le changement même si c'est le même plan (cas où l'ancien plan était gratuit)
+    if (this.selectedPlanId === this.organization?.pricingPlanId && !this.organization?.trialPermanentlyExpired) {
+      this.notificationService.info('Le plan sélectionné est déjà votre plan actuel.');
       return;
     }
 
