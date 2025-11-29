@@ -455,13 +455,56 @@ export class PricingPlansComponent implements OnInit {
     // Le service récupère automatiquement marketVersion depuis l'environnement si non fourni
     this.pricingPlanService.getActivePricingPlans().subscribe({
       next: (plans) => {
-        this.plans = plans;
-        this.loading = false;
-        console.log('✅ Plans reçus:', plans.length, plans);
-        console.log('✅ Market versions des plans reçus:', plans.map(p => ({ name: p.name, marketVersion: p.marketVersion })));
-        if (plans.length === 0) {
-          this.error = 'Aucun plan tarifaire disponible pour le moment.';
+        // Si une organisation avec un essai terminé accède à cette page, filtrer les plans gratuits et d'essai
+        if (this.isAuthenticated) {
+          this.accountContextService.isOrganizationAccount$.pipe(
+            switchMap(isOrg => {
+              if (isOrg) {
+                return this.organizationAccountService.getMyOrganization();
+              }
+              return of(null);
+            })
+          ).subscribe({
+            next: (org) => {
+              if (org?.trialPermanentlyExpired) {
+                // Filtrer les plans d'essai et les plans gratuits
+                this.plans = plans.filter(plan => {
+                  // Exclure les plans d'essai
+                  if (plan.trialPeriodDays && plan.trialPeriodDays > 0) {
+                    return false;
+                  }
+                  // Exclure les plans gratuits
+                  const isFree = (plan.pricePerMonth === null || plan.pricePerMonth === undefined || plan.pricePerMonth === 0) 
+                    && (plan.pricePerRequest === null || plan.pricePerRequest === undefined);
+                  return !isFree;
+                });
+              } else {
+                this.plans = plans;
+              }
+              this.loading = false;
+              if (this.plans.length === 0) {
+                this.error = 'Aucun plan tarifaire disponible pour le moment.';
+              }
+            },
+            error: () => {
+              // Pas une organisation ou erreur, afficher tous les plans
+              this.plans = plans;
+              this.loading = false;
+              if (this.plans.length === 0) {
+                this.error = 'Aucun plan tarifaire disponible pour le moment.';
+              }
+            }
+          });
+        } else {
+          // Utilisateur non authentifié, afficher tous les plans
+          this.plans = plans;
+          this.loading = false;
+          if (this.plans.length === 0) {
+            this.error = 'Aucun plan tarifaire disponible pour le moment.';
+          }
         }
+        console.log('✅ Plans reçus:', this.plans.length, this.plans);
+        console.log('✅ Market versions des plans reçus:', this.plans.map(p => ({ name: p.name, marketVersion: p.marketVersion })));
       },
       error: (err) => {
         this.error = 'Erreur lors du chargement des plans tarifaires: ' + (err.error?.message || err.message || 'Erreur inconnue');

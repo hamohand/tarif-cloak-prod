@@ -116,6 +116,9 @@ Chart.register(...registerables);
                 @if (!organization.trialPermanentlyExpired) {
                   <option [value]="null">Aucun plan (gratuit)</option>
                 }
+                @if (organization.trialPermanentlyExpired && !selectedPlanId && pricingPlans.length > 0) {
+                  <option [value]="null" disabled>Sélectionnez un plan payant</option>
+                }
                 @for (plan of pricingPlans; track plan.id) {
                   <option [value]="plan.id" [selected]="plan.id === organization.pricingPlanId">
                     {{ plan.name }} - 
@@ -156,16 +159,21 @@ Chart.register(...registerables);
                 class="btn btn-primary" 
                 [class.btn-required]="organization.trialPermanentlyExpired"
                 (click)="openConfirmModal()"
-                [disabled]="isChangingPlan || selectedPlanId === organization.pricingPlanId || !selectedPlanId">
+                [disabled]="isChangingPlan || selectedPlanId === organization.pricingPlanId || (!selectedPlanId && !organization.trialPermanentlyExpired)"
+                [title]="(!selectedPlanId && organization.trialPermanentlyExpired) ? 'Sélectionnez un plan payant pour continuer' : ''">
                 @if (isChangingPlan) {
                   <span>Changement en cours...</span>
-                } @else if (organization.trialPermanentlyExpired) {
+                } @else if (organization.trialPermanentlyExpired && selectedPlanId) {
                   <span>🔴 Valider le nouveau plan (obligatoire)</span>
+                } @else if (organization.trialPermanentlyExpired && !selectedPlanId) {
+                  <span>Sélectionnez un plan payant</span>
                 } @else {
                   <span>Changer de plan</span>
                 }
               </button>
-              <a routerLink="/pricing" class="view-all-plans-link">Voir tous les plans tarifaires</a>
+              @if (!organization.trialPermanentlyExpired) {
+                <a routerLink="/pricing" class="view-all-plans-link">Voir tous les plans tarifaires</a>
+              }
             </div>
           } @else {
             <p class="no-plans-message">Aucun plan tarifaire disponible</p>
@@ -505,7 +513,6 @@ export class OrganizationStatsComponent implements OnInit {
     
     this.loadOrganization();
     this.loadQuota();
-    this.loadPricingPlans();
     // Charger les logs d'utilisation qui recalculeront automatiquement les stats
     this.loadOrganizationUsageLogs();
   }
@@ -523,10 +530,14 @@ export class OrganizationStatsComponent implements OnInit {
         } else {
           this.currentPlan = null;
         }
+        // Recharger les plans tarifaires après avoir chargé l'organisation pour appliquer le bon filtre
+        this.loadPricingPlans();
       },
       error: (err) => {
         this.errorMessage = 'Erreur lors du chargement de l\'organisation: ' + (err.error?.message || err.message);
         this.loadingOrg = false;
+        // Charger les plans même en cas d'erreur (sans filtre)
+        this.loadPricingPlans();
       }
     });
   }
@@ -554,6 +565,22 @@ export class OrganizationStatsComponent implements OnInit {
         this.loadingPlans = false;
         if (this.organization?.pricingPlanId) {
           this.updateCurrentPlan(this.organization.pricingPlanId);
+          // S'assurer que selectedPlanId est défini si un plan existe
+          this.selectedPlanId = this.organization.pricingPlanId;
+        }
+        
+        // Si l'essai est terminé et qu'aucun plan payant n'est sélectionné, sélectionner automatiquement le premier plan payant disponible
+        if (this.organization?.trialPermanentlyExpired) {
+          // Vérifier si le plan actuel est un plan payant
+          const currentPlanIsPaid = this.currentPlan && 
+            ((this.currentPlan.pricePerMonth !== null && this.currentPlan.pricePerMonth !== undefined && this.currentPlan.pricePerMonth > 0) ||
+             (this.currentPlan.pricePerRequest !== null && this.currentPlan.pricePerRequest !== undefined && this.currentPlan.pricePerRequest > 0));
+          
+          // Si aucun plan payant n'est sélectionné et qu'il y a des plans payants disponibles, sélectionner le premier
+          if (!currentPlanIsPaid && this.pricingPlans.length > 0) {
+            this.selectedPlanId = this.pricingPlans[0].id;
+            this.updateCurrentPlan(this.pricingPlans[0].id);
+          }
         }
       },
       error: (err) => {
