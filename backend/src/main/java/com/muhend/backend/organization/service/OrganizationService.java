@@ -459,16 +459,20 @@ public class OrganizationService {
         long currentUsage = usageLogRepository.countByOrganizationIdAndTimestampBetween(
                 organizationId, startOfMonth, endOfMonth);
         
+        log.info("🔍 Vérification du quota pour l'organisation {} (ID: {}): utilisation actuelle={}, quota={}, planId={}, période: {} à {}", 
+            organization.getName(), organizationId, currentUsage, monthlyQuota, pricingPlanId, startOfMonth, endOfMonth);
+        
         // Vérifier si le quota est dépassé
         if (currentUsage >= monthlyQuota) {
             String message = String.format(
                     "Quota mensuel dépassé pour l'organisation '%s' (ID: %d). Utilisation: %d/%d requêtes (planId: %s)",
                     organization.getName(), organizationId, currentUsage, monthlyQuota, pricingPlanId);
-            log.warn("{} - Vérifiez que le quota du plan {} correspond bien au quota de l'organisation", message, pricingPlanId);
+            log.warn("❌ {} - Vérifiez que le quota du plan {} correspond bien au quota de l'organisation. " +
+                    "Si le plan vient d'être changé, le quota devrait être mis à jour.", message, pricingPlanId);
             throw new QuotaExceededException(message);
         }
         
-        log.debug("Quota OK pour l'organisation {} (ID: {}): {}/{} requêtes utilisées ce mois (planId: {})", 
+        log.info("✅ Quota OK pour l'organisation {} (ID: {}): {}/{} requêtes utilisées ce mois (planId: {})", 
                  organization.getName(), organizationId, currentUsage, monthlyQuota, pricingPlanId);
         return true;
     }
@@ -533,14 +537,28 @@ public class OrganizationService {
                 organization.setPricingPlanId(pricingPlanId);
                 // Mettre à jour le quota selon le plan
                 Integer oldQuota = organization.getMonthlyQuota();
-                if (newPlan.getMonthlyQuota() != null) {
+                log.info("🔄 Changement de plan pour l'organisation {} (ID: {}): ancien quota={}, nouveau plan={} (ID: {}), monthlyQuota du plan={}, pricePerRequest={}", 
+                    organization.getName(), organizationId, oldQuota, newPlan.getName(), pricingPlanId, newPlan.getMonthlyQuota(), newPlan.getPricePerRequest());
+                
+                // Pour les plans pay-per-request (pricePerRequest != null), le quota doit être null (illimité)
+                // Pour les plans mensuels avec quota défini, utiliser le quota du plan
+                // Pour les plans mensuels sans quota défini, mettre à null (illimité)
+                boolean isPayPerRequest = newPlan.getPricePerRequest() != null && newPlan.getPricePerRequest().compareTo(BigDecimal.ZERO) > 0;
+                
+                if (isPayPerRequest) {
+                    // Plan pay-per-request : quota illimité
+                    organization.setMonthlyQuota(null);
+                    log.info("✅ Quota mensuel mis à null (illimité - plan pay-per-request) pour l'organisation {} (ID: {}): {} -> null (plan: {} - ID: {})", 
+                        organization.getName(), organizationId, oldQuota, newPlan.getName(), pricingPlanId);
+                } else if (newPlan.getMonthlyQuota() != null && newPlan.getMonthlyQuota() > 0) {
+                    // Plan mensuel avec quota défini
                     organization.setMonthlyQuota(newPlan.getMonthlyQuota());
-                    log.info("Quota mensuel mis à jour pour l'organisation {} (ID: {}): {} -> {} requêtes/mois (plan: {} - ID: {})", 
+                    log.info("✅ Quota mensuel mis à jour pour l'organisation {} (ID: {}): {} -> {} requêtes/mois (plan: {} - ID: {})", 
                         organization.getName(), organizationId, oldQuota, newPlan.getMonthlyQuota(), newPlan.getName(), pricingPlanId);
                 } else {
-                    // Si le plan n'a pas de quota défini (plan pay-per-request ou illimité), mettre le quota à null (illimité)
+                    // Plan mensuel sans quota défini : quota illimité
                     organization.setMonthlyQuota(null);
-                    log.info("Quota mensuel mis à null (illimité) pour l'organisation {} (ID: {}): {} -> null (plan: {} - ID: {})", 
+                    log.info("✅ Quota mensuel mis à null (illimité - plan sans quota) pour l'organisation {} (ID: {}): {} -> null (plan: {} - ID: {})", 
                         organization.getName(), organizationId, oldQuota, newPlan.getName(), pricingPlanId);
                 }
                 // Si c'est un plan d'essai, définir la date d'expiration
@@ -571,14 +589,23 @@ public class OrganizationService {
         }
         
         organization = organizationRepository.save(organization);
-        log.info("Plan tarifaire changé pour l'organisation {} (ID: {}): planId={}, nouveau quota={}", 
+        log.info("💾 Plan tarifaire changé pour l'organisation {} (ID: {}): planId={}, nouveau quota={}", 
             organization.getName(), organizationId, pricingPlanId, organization.getMonthlyQuota());
         
-        // Vérifier que le quota a bien été mis à jour
+        // Forcer le flush pour s'assurer que les changements sont persistés
+        organizationRepository.flush();
+        
+        // Vérifier que le quota a bien été mis à jour en récupérant l'organisation depuis la base de données
         Organization savedOrg = organizationRepository.findById(organizationId).orElse(null);
         if (savedOrg != null) {
-            log.info("Vérification après sauvegarde - Organisation {} (ID: {}): quota={}, planId={}", 
+            log.info("🔍 Vérification après sauvegarde - Organisation {} (ID: {}): quota={}, planId={}", 
                 savedOrg.getName(), organizationId, savedOrg.getMonthlyQuota(), savedOrg.getPricingPlanId());
+            if (!java.util.Objects.equals(savedOrg.getMonthlyQuota(), organization.getMonthlyQuota())) {
+                log.error("❌ ERREUR: Le quota sauvegardé ({}) ne correspond pas au quota attendu ({})", 
+                    savedOrg.getMonthlyQuota(), organization.getMonthlyQuota());
+            }
+        } else {
+            log.error("❌ ERREUR: Impossible de récupérer l'organisation {} après la sauvegarde", organizationId);
         }
         
         // Si l'essai était expiré et qu'un plan payant est maintenant sélectionné, réactiver les collaborateurs
