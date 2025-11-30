@@ -543,10 +543,15 @@ public class OrganizationService {
                 // Pour les plans pay-per-request (pricePerRequest != null), le quota doit être null (illimité)
                 // Pour les plans mensuels avec quota défini, utiliser le quota du plan
                 // Pour les plans mensuels sans quota défini, mettre à null (illimité)
-                boolean isPayPerRequest = newPlan.getPricePerRequest() != null && newPlan.getPricePerRequest().compareTo(BigDecimal.ZERO) > 0;
+                boolean hasPricePerRequest = newPlan.getPricePerRequest() != null && newPlan.getPricePerRequest().compareTo(BigDecimal.ZERO) > 0;
+                boolean hasPricePerMonth = newPlan.getPricePerMonth() != null && newPlan.getPricePerMonth().compareTo(BigDecimal.ZERO) > 0;
+                boolean isPayPerRequest = hasPricePerRequest && !hasPricePerMonth; // Plan pay-per-request si pricePerRequest > 0 ET pricePerMonth est null ou 0
+                
+                log.info("🔍 Analyse du plan {} (ID: {}): pricePerRequest={}, pricePerMonth={}, monthlyQuota={}, isPayPerRequest={}", 
+                    newPlan.getName(), pricingPlanId, newPlan.getPricePerRequest(), newPlan.getPricePerMonth(), newPlan.getMonthlyQuota(), isPayPerRequest);
                 
                 if (isPayPerRequest) {
-                    // Plan pay-per-request : quota illimité
+                    // Plan pay-per-request : quota illimité (ignorer le monthlyQuota du plan s'il existe)
                     organization.setMonthlyQuota(null);
                     log.info("✅ Quota mensuel mis à null (illimité - plan pay-per-request) pour l'organisation {} (ID: {}): {} -> null (plan: {} - ID: {})", 
                         organization.getName(), organizationId, oldQuota, newPlan.getName(), pricingPlanId);
