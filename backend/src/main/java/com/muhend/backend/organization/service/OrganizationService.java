@@ -437,9 +437,14 @@ public class OrganizationService {
                 .orElseThrow(() -> new IllegalArgumentException("Organisation non trouvée avec l'ID: " + organizationId));
         
         Integer monthlyQuota = organization.getMonthlyQuota();
+        Long pricingPlanId = organization.getPricingPlanId();
         
-        // Si le quota est null, il est illimité
+        log.debug("Vérification du quota pour l'organisation {} (ID: {}): quota={}, planId={}", 
+            organization.getName(), organizationId, monthlyQuota, pricingPlanId);
+        
+        // Si le quota est null, il est illimité (plan pay-per-request ou illimité)
         if (monthlyQuota == null) {
+            log.debug("Quota illimité pour l'organisation {} (plan pay-per-request ou illimité)", organization.getName());
             return true;
         }
         
@@ -457,14 +462,14 @@ public class OrganizationService {
         // Vérifier si le quota est dépassé
         if (currentUsage >= monthlyQuota) {
             String message = String.format(
-                    "Quota mensuel dépassé pour l'organisation '%s' (ID: %d). Utilisation: %d/%d requêtes",
-                    organization.getName(), organizationId, currentUsage, monthlyQuota);
-            log.warn(message);
+                    "Quota mensuel dépassé pour l'organisation '%s' (ID: %d). Utilisation: %d/%d requêtes (planId: %s)",
+                    organization.getName(), organizationId, currentUsage, monthlyQuota, pricingPlanId);
+            log.warn("{} - Vérifiez que le quota du plan {} correspond bien au quota de l'organisation", message, pricingPlanId);
             throw new QuotaExceededException(message);
         }
         
-        log.debug("Quota OK pour l'organisation {}: {}/{} requêtes utilisées ce mois", 
-                 organizationId, currentUsage, monthlyQuota);
+        log.debug("Quota OK pour l'organisation {} (ID: {}): {}/{} requêtes utilisées ce mois (planId: {})", 
+                 organization.getName(), organizationId, currentUsage, monthlyQuota, pricingPlanId);
         return true;
     }
     
