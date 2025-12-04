@@ -869,7 +869,27 @@ public class OrganizationService {
             return false;
         }
         
-        // Vérifier d'abord le quota si l'organisation en a un
+        // IMPORTANT : Vérifier d'abord si l'organisation a un plan payant
+        // Si elle a un plan payant, l'essai n'est jamais considéré comme expiré
+        // (le quota mensuel sera géré par checkQuota(), pas par isTrialExpired())
+        if (organization.getPricingPlanId() != null) {
+            try {
+                PricingPlanDto plan = pricingPlanService.getPricingPlanById(organization.getPricingPlanId());
+                boolean isPaidPlan = (plan.getPricePerMonth() != null && plan.getPricePerMonth().compareTo(BigDecimal.ZERO) > 0)
+                        || (plan.getPricePerRequest() != null && plan.getPricePerRequest().compareTo(BigDecimal.ZERO) > 0);
+                // Si c'est un plan payant, l'essai n'est pas expiré (l'organisation peut continuer)
+                // Le quota mensuel sera vérifié par checkQuota(), pas ici
+                if (isPaidPlan) {
+                    log.debug("Essai non expiré pour l'organisation {}: plan payant actif (ID: {})", 
+                            organization.getId(), organization.getPricingPlanId());
+                    return false;
+                }
+            } catch (Exception e) {
+                log.warn("Impossible de récupérer le plan pour vérifier l'expiration de l'essai: {}", e.getMessage());
+            }
+        }
+        
+        // Vérifier le quota si l'organisation en a un (seulement pour les plans d'essai gratuit)
         // Pour un plan d'essai avec quota, l'essai expire seulement quand le quota est atteint
         Integer monthlyQuota = organization.getMonthlyQuota();
         if (monthlyQuota != null) {
@@ -887,21 +907,6 @@ public class OrganizationService {
                 log.debug("Essai non expiré pour l'organisation {}: quota non atteint ({}/{})", 
                         organization.getId(), currentUsage, monthlyQuota);
                 return false;
-            }
-            
-            // Si le quota est atteint, vérifier si l'organisation a un plan payant
-            if (organization.getPricingPlanId() != null) {
-                try {
-                    PricingPlanDto plan = pricingPlanService.getPricingPlanById(organization.getPricingPlanId());
-                    boolean isPaidPlan = (plan.getPricePerMonth() != null && plan.getPricePerMonth().compareTo(BigDecimal.ZERO) > 0)
-                            || (plan.getPricePerRequest() != null && plan.getPricePerRequest().compareTo(BigDecimal.ZERO) > 0);
-                    // Si c'est un plan payant, l'essai n'est pas expiré (l'organisation peut continuer)
-                    if (isPaidPlan) {
-                        return false;
-                    }
-                } catch (Exception e) {
-                    log.warn("Impossible de récupérer le plan pour vérifier l'expiration de l'essai: {}", e.getMessage());
-                }
             }
             
             // Quota atteint et pas de plan payant = essai expiré
