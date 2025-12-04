@@ -442,6 +442,35 @@ public class OrganizationService {
         log.debug("Vérification du quota pour l'organisation {} (ID: {}): quota={}, planId={}", 
             organization.getName(), organizationId, monthlyQuota, pricingPlanId);
         
+        // Vérifier si le plan est pay-per-request (même si le quota n'a pas été correctement mis à null)
+        // Si c'est un plan pay-per-request, le quota doit être traité comme illimité
+        if (pricingPlanId != null) {
+            try {
+                PricingPlanDto plan = pricingPlanService.getPricingPlanById(pricingPlanId);
+                boolean hasPricePerRequest = plan.getPricePerRequest() != null && plan.getPricePerRequest().compareTo(BigDecimal.ZERO) > 0;
+                boolean hasPricePerMonth = plan.getPricePerMonth() != null && plan.getPricePerMonth().compareTo(BigDecimal.ZERO) > 0;
+                boolean isPayPerRequest = hasPricePerRequest && !hasPricePerMonth;
+                
+                if (isPayPerRequest) {
+                    // Plan pay-per-request : quota illimité (ignorer le quota de l'organisation)
+                    log.info("✅ Quota illimité pour l'organisation {} (ID: {}): plan pay-per-request détecté (plan: {} - ID: {}). " +
+                            "Le quota de l'organisation ({}) est ignoré.", 
+                            organization.getName(), organizationId, plan.getName(), pricingPlanId, monthlyQuota);
+                    // Corriger le quota dans la base de données si nécessaire
+                    if (monthlyQuota != null) {
+                        log.warn("⚠️ Correction du quota pour l'organisation {} (ID: {}): {} -> null (plan pay-per-request)", 
+                                organization.getName(), organizationId, monthlyQuota);
+                        organization.setMonthlyQuota(null);
+                        organizationRepository.save(organization);
+                        organizationRepository.flush();
+                    }
+                    return true;
+                }
+            } catch (Exception e) {
+                log.warn("Impossible de récupérer le plan {} pour vérifier le type de plan: {}", pricingPlanId, e.getMessage());
+            }
+        }
+        
         // Si le quota est null, il est illimité (plan pay-per-request ou illimité)
         if (monthlyQuota == null) {
             log.debug("Quota illimité pour l'organisation {} (plan pay-per-request ou illimité)", organization.getName());
