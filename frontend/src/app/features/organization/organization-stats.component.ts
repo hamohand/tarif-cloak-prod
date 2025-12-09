@@ -602,7 +602,8 @@ export class OrganizationStatsComponent implements OnInit {
   loadPricingPlans() {
     this.loadingPlans = true;
     const organizationId = this.organization?.id;
-    const marketVersion = this.organization?.marketVersion;
+    // Convertir null en undefined pour correspondre au type attendu
+    const marketVersion = this.organization?.marketVersion ?? undefined;
     
     // Utiliser le nouvel endpoint qui exclut automatiquement le plan d'essai si déjà utilisé
     this.pricingPlanService.getAvailablePricingPlans(marketVersion, organizationId).subscribe({
