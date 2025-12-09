@@ -68,7 +68,7 @@ Chart.register(...registerables);
                   <p><strong>Prix:</strong> 
                     @if (currentPlan.pricePerMonth !== null && currentPlan.pricePerMonth !== undefined) {
                       @if (currentPlan.pricePerMonth === 0) {
-                        @if (!organization?.trialPermanentlyExpired) {
+                        @if (!organization.trialPermanentlyExpired) {
                           Gratuit
                         }
                       } @else {
@@ -87,7 +87,7 @@ Chart.register(...registerables);
                         €
                       }/requête
                     } @else {
-                      @if (!organization?.trialPermanentlyExpired) {
+                      @if (!organization.trialPermanentlyExpired) {
                         Gratuit
                       } @else {
                         <span style="color: #dc3545;">Plan gratuit - Sélection d'un plan payant requise</span>
@@ -108,8 +108,8 @@ Chart.register(...registerables);
                 <p class="no-plan-message">Aucun plan tarifaire sélectionné</p>
               }
             </div>
-            <div class="change-plan-section" [class.required-change]="organization?.trialPermanentlyExpired">
-              @if (organization?.trialPermanentlyExpired) {
+            <div class="change-plan-section" [class.required-change]="organization.trialPermanentlyExpired">
+              @if (organization.trialPermanentlyExpired) {
                 <h4 class="required-plan-title">🔴 Sélection obligatoire d'un plan tarifaire</h4>
                 <p class="required-plan-message">
                   Votre essai gratuit étant définitivement terminé, vous devez choisir un plan payant pour continuer à utiliser le service. 
@@ -127,11 +127,11 @@ Chart.register(...registerables);
               } @else {
                 <h4>Changer de plan</h4>
               }
-              <select [(ngModel)]="selectedPlanId" class="plan-select" [disabled]="loadingPlans" [class.required-select]="organization?.trialPermanentlyExpired">
-                @if (!organization?.trialPermanentlyExpired) {
+              <select [(ngModel)]="selectedPlanId" class="plan-select" [disabled]="loadingPlans" [class.required-select]="organization.trialPermanentlyExpired">
+                @if (!organization.trialPermanentlyExpired) {
                   <option [value]="null">Aucun plan (gratuit)</option>
                 }
-                @if (organization?.trialPermanentlyExpired && !selectedPlanId && pricingPlans.length > 0) {
+                @if (organization.trialPermanentlyExpired && !selectedPlanId && pricingPlans.length > 0) {
                   <option [value]="null" selected disabled style="color: #dc3545;">⚠️ Sélectionnez un plan payant</option>
                 }
                 @for (plan of pricingPlans; track plan.id) {
@@ -166,21 +166,21 @@ Chart.register(...registerables);
               </select>
               <button 
                 class="btn btn-primary" 
-                [class.btn-required]="organization?.trialPermanentlyExpired"
+                [class.btn-required]="organization.trialPermanentlyExpired"
                 (click)="openConfirmModal()"
                 [disabled]="isChangingPlan || !selectedPlanId"
-                [title]="(!selectedPlanId && organization?.trialPermanentlyExpired) ? 'Sélectionnez un plan payant pour continuer' : ''">
+                [title]="(!selectedPlanId && organization.trialPermanentlyExpired) ? 'Sélectionnez un plan payant pour continuer' : ''">
                 @if (isChangingPlan) {
                   <span>Changement en cours...</span>
-                } @else if (organization?.trialPermanentlyExpired && selectedPlanId) {
+                } @else if (organization.trialPermanentlyExpired && selectedPlanId) {
                   <span>🔴 Valider le nouveau plan (obligatoire)</span>
-                } @else if (organization?.trialPermanentlyExpired && !selectedPlanId) {
+                } @else if (organization.trialPermanentlyExpired && !selectedPlanId) {
                   <span>Sélectionnez un plan payant</span>
                 } @else {
                   <span>Changer de plan</span>
                 }
               </button>
-              @if (!organization?.trialPermanentlyExpired) {
+              @if (!organization.trialPermanentlyExpired) {
                 <a routerLink="/pricing" class="view-all-plans-link">Voir tous les plans tarifaires</a>
               }
             </div>

@@ -13,6 +13,7 @@ export interface Organization {
   trialPermanentlyExpired?: boolean | null;
   createdAt: string;
   userCount?: number;
+  marketVersion?: string | null;
 }
 
 export interface UserUsageStats {
