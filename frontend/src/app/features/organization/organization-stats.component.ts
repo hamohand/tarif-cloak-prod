@@ -601,39 +601,36 @@ export class OrganizationStatsComponent implements OnInit {
 
   loadPricingPlans() {
     this.loadingPlans = true;
-    this.pricingPlanService.getActivePricingPlans().subscribe({
+    const organizationId = this.organization?.id;
+    const marketVersion = this.organization?.marketVersion;
+    
+    // Utiliser le nouvel endpoint qui exclut automatiquement le plan d'essai si déjà utilisé
+    this.pricingPlanService.getAvailablePricingPlans(marketVersion, organizationId).subscribe({
       next: (plans) => {
-        console.log('📋 Plans reçus du serveur:', plans.length, plans);
+        console.log('📋 Plans disponibles reçus du serveur:', plans.length, plans);
         console.log('🔍 Organization trialPermanentlyExpired:', this.organization?.trialPermanentlyExpired);
         
-        // Filtrer les plans d'essai si l'essai est définitivement terminé
+        // Le backend exclut déjà le plan d'essai si l'organisation l'a déjà utilisé
+        // Mais on peut ajouter un filtre supplémentaire côté frontend pour s'assurer
+        // que seuls les plans payants sont proposés si l'essai est définitivement terminé
         if (this.organization?.trialPermanentlyExpired) {
-          // Filtrer les plans d'essai et les plans gratuits - seuls les plans payants sont autorisés
+          // Filtrer pour ne garder que les plans payants
           const filteredPlans = plans.filter(plan => {
-            // Exclure les plans d'essai
-            if (plan.trialPeriodDays && plan.trialPeriodDays > 0) {
-              console.log('❌ Plan exclu (essai):', plan.name);
-              return false;
-            }
-            // Exclure tous les plans gratuits - seuls les plans avec un prix > 0 sont autorisés
             const hasPaidMonthlyPrice = plan.pricePerMonth !== null && plan.pricePerMonth !== undefined && plan.pricePerMonth > 0;
             const hasPaidPerRequestPrice = plan.pricePerRequest !== null && plan.pricePerRequest !== undefined && plan.pricePerRequest > 0;
             const isPaidPlan = hasPaidMonthlyPrice || hasPaidPerRequestPrice;
             
             if (!isPaidPlan) {
-              console.log('❌ Plan exclu (gratuit):', plan.name, 'pricePerMonth:', plan.pricePerMonth, 'pricePerRequest:', plan.pricePerRequest);
-            } else {
-              console.log('✅ Plan inclus (payant):', plan.name);
+              console.log('❌ Plan exclu (gratuit):', plan.name);
             }
             
-            // Un plan est payant s'il a un prix mensuel > 0 OU un prix par requête > 0
             return isPaidPlan;
           });
           
           console.log('📊 Plans filtrés (payants uniquement):', filteredPlans.length, filteredPlans);
           this.pricingPlans = filteredPlans;
         } else {
-          console.log('✅ Aucun filtre appliqué (essai non terminé)');
+          console.log('✅ Tous les plans disponibles (essai non terminé ou pas encore utilisé)');
           this.pricingPlans = plans;
         }
         this.loadingPlans = false;

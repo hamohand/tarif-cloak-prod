@@ -83,6 +83,26 @@ export class PricingPlanService {
   }
 
   /**
+   * Récupère les plans tarifaires disponibles pour une organisation.
+   * Exclut automatiquement le plan d'essai gratuit si l'organisation l'a déjà utilisé.
+   * @param marketVersion Version de marché (ex: 'DZ', 'DEFAULT')
+   * @param organizationId ID de l'organisation (optionnel)
+   */
+  getAvailablePricingPlans(marketVersion?: string, organizationId?: number): Observable<PricingPlan[]> {
+    let params = new HttpParams();
+    
+    if (marketVersion && marketVersion.trim() !== '') {
+      params = params.set('marketVersion', marketVersion.trim());
+    }
+    
+    if (organizationId) {
+      params = params.set('organizationId', organizationId.toString());
+    }
+    
+    return this.http.get<PricingPlan[]>(`${this.apiUrl}/available`, { params });
+  }
+
+  /**
    * Récupère un plan tarifaire par ID.
    */
   getPricingPlanById(id: number): Observable<PricingPlan> {

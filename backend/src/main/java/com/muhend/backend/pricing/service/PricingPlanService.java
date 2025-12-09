@@ -1,5 +1,7 @@
 package com.muhend.backend.pricing.service;
 
+import com.muhend.backend.organization.model.Organization;
+import com.muhend.backend.organization.repository.OrganizationRepository;
 import com.muhend.backend.pricing.dto.PricingPlanDto;
 import com.muhend.backend.pricing.dto.UpdatePricingPlanRequest;
 import com.muhend.backend.pricing.model.PricingPlan;
@@ -9,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -19,9 +22,12 @@ import java.util.stream.Collectors;
 public class PricingPlanService {
     
     private final PricingPlanRepository pricingPlanRepository;
+    private final OrganizationRepository organizationRepository;
     
-    public PricingPlanService(PricingPlanRepository pricingPlanRepository) {
+    public PricingPlanService(PricingPlanRepository pricingPlanRepository,
+                             OrganizationRepository organizationRepository) {
         this.pricingPlanRepository = pricingPlanRepository;
+        this.organizationRepository = organizationRepository;
     }
     
     /**
@@ -76,6 +82,72 @@ public class PricingPlanService {
     @Transactional(readOnly = true)
     public List<PricingPlanDto> getCustomPricingPlansForOrganization(Long organizationId) {
         List<PricingPlan> plans = pricingPlanRepository.findByOrganizationIdAndIsActiveTrueOrderByDisplayOrderAsc(organizationId);
+        return plans.stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
+    }
+    
+    /**
+     * Récupère les plans tarifaires disponibles pour une organisation.
+     * Exclut automatiquement le plan d'essai gratuit si l'organisation l'a déjà utilisé.
+     * 
+     * @param marketVersion Version de marché (ex: 'DZ', 'DEFAULT')
+     * @param organizationId ID de l'organisation (optionnel)
+     * @return Liste des plans tarifaires disponibles pour l'organisation
+     */
+    @Transactional(readOnly = true)
+    public List<PricingPlanDto> getAvailablePricingPlansForOrganization(String marketVersion, Long organizationId) {
+        List<PricingPlan> plans;
+        
+        // Récupérer les plans selon la version de marché
+        if (marketVersion != null && !marketVersion.trim().isEmpty()) {
+            String trimmedVersion = marketVersion.trim();
+            plans = pricingPlanRepository.findByMarketVersionAndIsActiveTrueAndIsCustomFalseOrderByDisplayOrderAsc(trimmedVersion);
+            log.info("🔍 Récupération des plans pour marketVersion='{}': {} plan(s) trouvé(s)", trimmedVersion, plans.size());
+        } else {
+            plans = pricingPlanRepository.findByIsActiveTrueOrderByDisplayOrderAsc();
+            log.info("🔍 Récupération de tous les plans actifs: {} plan(s) trouvé(s)", plans.size());
+        }
+        
+        // Si une organisation est spécifiée, vérifier si elle a déjà utilisé l'essai gratuit
+        if (organizationId != null) {
+            Optional<Organization> orgOpt = organizationRepository.findById(organizationId);
+            if (orgOpt.isPresent()) {
+                Organization org = orgOpt.get();
+                
+                // Vérifier si l'organisation a déjà utilisé l'essai gratuit
+                boolean hasUsedTrial = Boolean.TRUE.equals(org.getTrialPermanentlyExpired()) 
+                        || (org.getTrialExpiresAt() != null && org.getPricingPlanId() != null);
+                
+                if (hasUsedTrial) {
+                    // Vérifier si le plan actuel est un plan d'essai
+                    boolean currentPlanIsTrial = false;
+                    if (org.getPricingPlanId() != null) {
+                        try {
+                            PricingPlanDto currentPlan = getPricingPlanById(org.getPricingPlanId());
+                            currentPlanIsTrial = currentPlan.getTrialPeriodDays() != null && currentPlan.getTrialPeriodDays() > 0;
+                        } catch (Exception e) {
+                            log.warn("Impossible de récupérer le plan actuel pour vérifier s'il s'agit d'un plan d'essai: {}", e.getMessage());
+                        }
+                    }
+                    
+                    // Exclure tous les plans d'essai (trialPeriodDays > 0)
+                    int plansBeforeFilter = plans.size();
+                    plans = plans.stream()
+                            .filter(plan -> plan.getTrialPeriodDays() == null || plan.getTrialPeriodDays() == 0)
+                            .collect(Collectors.toList());
+                    
+                    log.info("🚫 Plan d'essai exclu pour l'organisation {} (ID: {}): {} plan(s) d'essai filtré(s), {} plan(s) restant(s)", 
+                            org.getName(), organizationId, plansBeforeFilter - plans.size(), plans.size());
+                } else {
+                    log.info("✅ Plan d'essai disponible pour l'organisation {} (ID: {}): l'essai n'a pas encore été utilisé", 
+                            org.getName(), organizationId);
+                }
+            } else {
+                log.warn("⚠️ Organisation {} introuvable, tous les plans seront retournés", organizationId);
+            }
+        }
+        
         return plans.stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());

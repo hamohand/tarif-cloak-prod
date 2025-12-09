@@ -57,6 +57,31 @@ public class PricingPlanController {
         }
     }
     
+    @GetMapping("/available")
+    @Operation(
+        summary = "Récupérer les plans tarifaires disponibles pour une organisation",
+        description = "Retourne la liste des plans tarifaires disponibles pour une organisation. " +
+                     "Exclut automatiquement le plan d'essai gratuit si l'organisation l'a déjà utilisé. " +
+                     "Si organizationId n'est pas fourni, retourne tous les plans actifs."
+    )
+    public ResponseEntity<List<PricingPlanDto>> getAvailablePricingPlans(
+            @RequestParam(required = false) String marketVersion,
+            @RequestParam(required = false) Long organizationId) {
+        try {
+            log.info("📥 Requête GET /pricing-plans/available - marketVersion: {}, organizationId: {}", 
+                marketVersion, organizationId);
+            
+            List<PricingPlanDto> plans = pricingPlanService.getAvailablePricingPlansForOrganization(
+                marketVersion, organizationId);
+            
+            log.info("📤 Réponse: {} plan(s) disponible(s) pour l'organisation {}", plans.size(), organizationId);
+            return ResponseEntity.ok(plans);
+        } catch (Exception e) {
+            log.error("Erreur lors de la récupération des plans tarifaires disponibles", e);
+            return ResponseEntity.ok(List.of());
+        }
+    }
+    
     @GetMapping("/{id}")
     @Operation(
         summary = "Récupérer un plan tarifaire par ID",

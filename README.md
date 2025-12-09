@@ -1,8 +1,3 @@
-## AI Assistant
-
-README.md
-Voici un README complet et professionnel pour votre projet :
-llm:snippet-fileREADME.md</llm:snippet-file>``` markdown
 # SaaS Qwen - Application Full-Stack avec Authentification Keycloak
 
 Une application SaaS moderne construite avec Angular, Spring Boot, Keycloak et PostgreSQL, entièrement conteneurisée avec Docker.
@@ -18,25 +13,52 @@ Une application SaaS moderne construite avec Angular, Spring Boot, Keycloak et P
 - [Utilisation](#-utilisation)
 - [Développement](#-développement)
 - [Déploiement](#-déploiement)
+- [Documentation](#-documentation)
 - [Troubleshooting](#-troubleshooting)
-- [Contribution](#-contribution)
-- [Licence](#-licence)
 
 ## 🚀 Fonctionnalités
 
 - ✅ **Authentification complète** avec Keycloak (OAuth 2.0 / OpenID Connect)
 - ✅ **Gestion des utilisateurs** : Inscription, connexion, profils
+- ✅ **Gestion multi-organisations** : Création et gestion d'organisations avec utilisateurs
+- ✅ **Plans tarifaires** : Système de facturation avec quotas et essai gratuit
+- ✅ **Recherche de codes HS-code** : Recherche intelligente avec IA (OpenAI, Anthropic, Ollama)
+- ✅ **Tracking d'utilisation** : Enregistrement automatique des requêtes et coûts
 - ✅ **API REST sécurisée** avec Spring Boot et JWT
 - ✅ **Interface moderne** avec Angular 20
 - ✅ **Base de données PostgreSQL** persistante
 - ✅ **Architecture microservices** entièrement conteneurisée
 - ✅ **Configuration centralisée** via variables d'environnement
-- ✅ **Import/Export** de configuration Keycloak
 
 ## 🏗️ Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      CLIENT (Browser)                        │
+└────────────────────────────┬────────────────────────────────┘
+                             │
+                             ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    Traefik (Reverse Proxy)                    │
+└────────────┬───────────────────────┬────────────────────────┘
+             │                       │
+             ▼                       ▼
+┌─────────────────────┐   ┌─────────────────────┐
+│   Frontend          │   │   Backend           │
+│   Angular + Nginx   │   │   Spring Boot       │
+│   :4200             │   │   :8081             │
+└─────────────────────┘   └───────┬─────────────┘
+                                   │
+                    ┌─────────────┼─────────────┐
+                    ▼             ▼             ▼
+        ┌──────────────┐  ┌──────────────┐  ┌──────────────┐
+        │  Keycloak    │  │  PostgreSQL  │  │  PostgreSQL  │
+        │  (Auth)      │  │  (App DB)    │  │ (Keycloak DB)│
+        │  :8080       │  │  :5432       │  │  :5432       │
+        └──────────────┘  └──────────────┘  └──────────────┘
 ```
 
-┌─────────────────────────────────────────────────────────────┐ │ CLIENT (Browser) │ └────────────────────────────┬────────────────────────────────┘ │ ┌────────▼────────┐ │ Frontend │ :4200 │ Angular 20 │ │ (Nginx) │ └────────┬────────┘ │ ┌────────▼────────┐ │ Backend │ :8081 │ Spring Boot │ │ + OAuth2 │ └────┬───────┬────┘ │ │ ┌──────────┘ └──────────┐ ▼ ▼ ┌──────────────┐ ┌──────────────┐ │ Keycloak │ │ PostgreSQL │ │ (Auth) │◄─────────────│ (Database) │ │ :8080 │ │ :5432 │ └──────────────┘ └──────────────┘``` 
+Pour plus de détails sur l'architecture, consultez [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## 💻 Technologies
 
@@ -62,6 +84,7 @@ Une application SaaS moderne construite avec Angular, Spring Boot, Keycloak et P
 - **Keycloak** 22.0.1
 - **PostgreSQL** 16
 - **Nginx** (pour servir le frontend)
+- **Traefik** (reverse proxy en production)
 
 ## 📦 Prérequis
 
@@ -79,21 +102,29 @@ Une application SaaS moderne construite avec Angular, Spring Boot, Keycloak et P
 git clone https://github.com/votre-username/saas-qwen.git
 cd saas-qwen
 ```
-```
 
-2. Configuration Initiale
-Créez le fichier .env à partir de l'exemple :``` bash
+### 2. Configuration Initiale
+
+Créez le fichier `.env` à partir de l'exemple :
+
+```bash
 cp .env.example .env
 ```
 
-Éditez .env et configurez au minimum :``` env
+Éditez `.env` et configurez au minimum :
+
+```env
 PROJECT_NAME=mon-projet
 POSTGRES_PASSWORD=votre-mot-de-passe-securise
 KEYCLOAK_ADMIN_PASSWORD=votre-admin-password
 KEYCLOAK_BACKEND_CLIENT_SECRET=votre-client-secret
 ```
 
-3. Démarrage des Services``` bash
+Pour la liste complète des variables d'environnement, consultez [CONFIGURATION.md](CONFIGURATION.md).
+
+### 3. Démarrage des Services
+
+```bash
 # Première installation (avec construction des images)
 docker compose up -d --build
 
@@ -104,62 +135,51 @@ docker compose ps
 docker compose logs -f
 ```
 
-4. Accéder à l'Application
-   Frontend : http://localhost:4200
-   Backend API : http://localhost:8081
-   Keycloak Admin : http://localhost:8080 (admin / admin par défaut)
-   API Documentation : http://localhost:8081/swagger-ui.html
-   ⚙️ Configuration
-   Toutes les variables de configuration sont centralisées dans le fichier .env. Consultez README-CONFIGURATION.md pour la liste complète.
-   Variables Principales
-   Variable
-   Description
-   Valeur par défaut
-   PROJECT_NAME
-   Nom du projet
-   saasessai2
-   POSTGRES_DB
-   Nom de la base de données
-   ${PROJECT_NAME}-db
-   POSTGRES_USER
-   Utilisateur PostgreSQL
-   muhend
-   POSTGRES_PASSWORD
-   Mot de passe PostgreSQL
-   À DÉFINIR
-   KEYCLOAK_REALM : utiliser 'volume:' de Keycloak dans docker-compose uniquement la première fois lors de la création du realm
-   Nom du realm Keycloak
-   saasqwen2 : à modifier à chaque nouveau realm, 
-   KEYCLOAK_ADMIN_USER
-   Admin Keycloak
-   admin
-   KEYCLOAK_ADMIN_PASSWORD
-   Password admin Keycloak
-   À DÉFINIR
-   KEYCLOAK_BACKEND_CLIENT
-   ID du client backend
-   backend-client
-   KEYCLOAK_BACKEND_CLIENT_SECRET
-   Secret du client backend
-   À DÉFINIR
-   🎯 Utilisation
-   Inscription d'un Utilisateur
-   Accédez à http://localhost:4200
-   Cliquez sur "S'inscrire"
-   Remplissez le formulaire
-   L'utilisateur est créé dans Keycloak
-   Connexion
-   Cliquez sur "Se connecter"
-   Vous serez redirigé vers Keycloak
-   Entrez vos identifiants
-   Vous serez redirigé vers le recherche
-   API Backend
-   L'API backend est documentée avec OpenAPI :``` bash
+### 4. Accéder à l'Application
+
+- **Frontend** : http://localhost:4200
+- **Backend API** : http://localhost:8081
+- **Keycloak Admin** : http://localhost:8080 (admin / admin par défaut)
+- **API Documentation** : http://localhost:8081/swagger-ui.html
+
+## ⚙️ Configuration
+
+Toutes les variables de configuration sont centralisées dans le fichier `.env`. 
+
+Consultez [CONFIGURATION.md](CONFIGURATION.md) pour :
+- La liste complète des variables d'environnement
+- La configuration du thème Keycloak
+- Les paramètres de sécurité
+- Les exemples de configuration
+
+## 🎯 Utilisation
+
+### Inscription d'un Utilisateur
+
+1. Accédez à http://localhost:4200
+2. Cliquez sur "S'inscrire"
+3. Remplissez le formulaire
+4. L'utilisateur est créé dans Keycloak
+
+### Connexion
+
+1. Cliquez sur "Se connecter"
+2. Vous serez redirigé vers Keycloak
+3. Entrez vos identifiants
+4. Vous serez redirigé vers l'application
+
+### API Backend
+
+L'API backend est documentée avec OpenAPI :
+
+```bash
 # Accéder à la documentation interactive
 open http://localhost:8081/swagger-ui.html
 ```
 
-Exemple d'appel API :``` bash
+Exemple d'appel API :
+
+```bash
 # S'inscrire (endpoint public)
 curl -X POST http://localhost:8081/api/auth/register \
   -H "Content-Type: application/json" \
@@ -172,8 +192,11 @@ curl -X POST http://localhost:8081/api/auth/register \
   }'
 ```
 
-👨‍💻 Développement
-Structure du Projet```
+## 👨‍💻 Développement
+
+### Structure du Projet
+
+```
 saas-qwen/
 ├── backend/               # API Spring Boot
 │   ├── src/
@@ -204,10 +227,14 @@ saas-qwen/
 │   └── realm-export.json
 ├── docker-compose.yml     # Orchestration des services
 ├── .env                   # Variables d'environnement (ne pas commiter)
-└── README.md
+├── README.md
+├── ARCHITECTURE.md        # Documentation de l'architecture
+└── CONFIGURATION.md       # Documentation de la configuration
 ```
 
-Développement Local du Frontend``` bash
+### Développement Local du Frontend
+
+```bash
 cd frontend
 npm install
 npm start
@@ -216,7 +243,9 @@ npm start
 # Le hot-reload est activé
 ```
 
-Développement Local du Backend``` bash
+### Développement Local du Backend
+
+```bash
 cd backend
 ./mvnw spring-boot:run
 
@@ -224,7 +253,9 @@ cd backend
 # Assurez-vous que PostgreSQL et Keycloak sont démarrés
 ```
 
-Tests``` bash
+### Tests
+
+```bash
 # Tests backend
 cd backend
 ./mvnw test
@@ -237,26 +268,39 @@ npm test
 npm run e2e
 ```
 
-🚢 Déploiement
-Production avec Docker Compose
-Modifiez .env pour la production :``` env
+## 🚢 Déploiement
+
+### Production avec Docker Compose
+
+1. Modifiez `.env` pour la production :
+
+```env
 SPRING_PROFILES_ACTIVE=prod
 KEYCLOAK_HOSTNAME=votre-domaine.com
 # Changez tous les mots de passe
 ```
 
-Utilisez HTTPS (configurez un reverse proxy comme Traefik ou Nginx)
-Démarrez les services :``` bash
+2. Utilisez HTTPS (configurez un reverse proxy comme Traefik ou Nginx)
+
+3. Démarrez les services :
+
+```bash
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 ```
 
-Variables de Production à Changer
-⚠️ Important : En production, changez obligatoirement :
-POSTGRES_PASSWORD
-KEYCLOAK_ADMIN_PASSWORD
-KEYCLOAK_BACKEND_CLIENT_SECRET
-Générez un nouveau secret pour backend-client dans Keycloak
-Backup de la Base de Données``` bash
+### Variables de Production à Changer
+
+⚠️ **Important** : En production, changez obligatoirement :
+
+- `POSTGRES_PASSWORD`
+- `KEYCLOAK_ADMIN_PASSWORD`
+- `KEYCLOAK_BACKEND_CLIENT_SECRET`
+
+Générez un nouveau secret pour `backend-client` dans Keycloak.
+
+### Backup de la Base de Données
+
+```bash
 # Backup
 docker exec saasessai2-db pg_dump -U muhend saasessai2-db > backup.sql
 
@@ -264,8 +308,16 @@ docker exec saasessai2-db pg_dump -U muhend saasessai2-db > backup.sql
 docker exec -i saasessai2-db psql -U muhend saasessai2-db < backup.sql
 ```
 
-🔧 Troubleshooting
-Le backend ne démarre pas``` bash
+## 📚 Documentation
+
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** : Architecture complète de l'application, modèle de données, flux principaux
+- **[CONFIGURATION.md](CONFIGURATION.md)** : Configuration complète, variables d'environnement, thème Keycloak
+
+## 🔧 Troubleshooting
+
+### Le backend ne démarre pas
+
+```bash
 # Vérifier les logs
 docker compose logs backend
 
@@ -276,13 +328,18 @@ docker compose ps keycloak
 docker compose restart backend
 ```
 
-Erreur 403 lors de l'inscription
-Le service account backend-client n'a pas les bons rôles :
-Connectez-vous à Keycloak Admin Console
-Sélectionnez le realm saasqwen2
-Clients → backend-client → Service Account Roles
-Ajoutez les rôles : manage-users, view-users, query-users
-Réinitialisation Complète``` bash
+### Erreur 403 lors de l'inscription
+
+Le service account `backend-client` n'a pas les bons rôles :
+
+1. Connectez-vous à Keycloak Admin Console
+2. Sélectionnez le realm `hscode-realm`
+3. **Clients** → `backend-client` → **Service Account Roles**
+4. Ajoutez les rôles : `manage-users`, `view-users`, `query-users`
+
+### Réinitialisation Complète
+
+```bash
 # Arrêter et supprimer tous les conteneurs et volumes
 docker compose down --volumes --remove-orphans
 
@@ -290,7 +347,9 @@ docker compose down --volumes --remove-orphans
 docker compose up -d --build
 ```
 
-Voir les Logs en Temps Réel``` bash
+### Voir les Logs en Temps Réel
+
+```bash
 # Tous les services
 docker compose logs -f
 
@@ -298,31 +357,34 @@ docker compose logs -f
 docker compose logs -f backend
 docker compose logs -f keycloak
 ```
-🤝 Contribution
+
+## 🤝 Contribution
+
 Les contributions sont les bienvenues ! Veuillez suivre ces étapes :
-Forkez le projet
-Créez une branche pour votre fonctionnalité (git checkout -b feature/AmazingFeature)
-Committez vos changements (git commit -m 'Add some AmazingFeature')
-Poussez vers la branche (git push origin feature/AmazingFeature)
-Ouvrez une Pull Request
-Standards de Code
-Backend : Suivez les conventions Java et Spring Boot
-Frontend : Suivez le style guide Angular officiel
-Git : Utilisez des messages de commit conventionnels
-📄 Licence
+
+1. Forkez le projet
+2. Créez une branche pour votre fonctionnalité (`git checkout -b feature/AmazingFeature`)
+3. Committez vos changements (`git commit -m 'Add some AmazingFeature'`)
+4. Poussez vers la branche (`git push origin feature/AmazingFeature`)
+5. Ouvrez une Pull Request
+
+### Standards de Code
+
+- **Backend** : Suivez les conventions Java et Spring Boot
+- **Frontend** : Suivez le style guide Angular officiel
+- **Git** : Utilisez des messages de commit conventionnels
+
+## 📄 Licence
+
 Ce projet est sous licence MIT. Voir le fichier LICENSE pour plus de détails.
-👥 Auteurs
-Muhend - Développeur principal - GitHub
-🙏 Remerciements
-Spring Boot
-Angular
-Keycloak
-PostgreSQL
 
-## AI Assistant
+## 👥 Auteurs
 
+Muhend - Développeur principal
 
-#   t a r i f - s e c u r  
- #   t a r i f - s e c u r - p r o d  
- #   t a r i f - c l o a k - p r o d  
- 
+## 🙏 Remerciements
+
+- Spring Boot
+- Angular
+- Keycloak
+- PostgreSQL

@@ -1,16 +1,18 @@
-# Variables d'Environnement - Documentation Complète
+# Configuration de l'Application
 
-Ce document liste toutes les variables d'environnement utilisées dans le projet.
+## 📋 Vue d'Ensemble
 
-## 📋 Instructions
+Ce document décrit toutes les configurations nécessaires pour déployer et faire fonctionner l'application.
+
+## 🔧 Variables d'Environnement
+
+### Instructions
 
 1. Créez un fichier `.env` à la racine du projet
 2. Copiez les variables ci-dessous et adaptez les valeurs à votre environnement
 3. **IMPORTANT** : Ne commitez jamais le fichier `.env` dans Git (il est déjà dans `.gitignore`)
 
-## 🔧 Variables d'Environnement
-
-### Configuration Générale du Projet
+### Configuration Générale
 
 ```env
 # Nom du projet (utilisé pour les noms de conteneurs et volumes)
@@ -20,7 +22,7 @@ PROJECT_NAME=app
 FRONTEND_SERVICE_NAME=frontend
 ```
 
-### Configuration des Domaines
+### Domaines
 
 ```env
 # Domaines principaux pour le frontend et le backend
@@ -32,49 +34,42 @@ KEYCLOAK_DOMAIN=auth.hscode.enclume-numerique.com
 KC_HOSTNAME=auth.hscode.enclume-numerique.com
 ```
 
-### Configuration Traefik
+### Traefik
 
 ```env
 # Nom du certificate resolver Traefik pour les certificats Let's Encrypt
 TRAEFIK_CERT_RESOLVER=myresolver
 ```
 
-### Configuration des Ports Internes
+### Ports Internes
 
 ```env
-# Ports internes des services (ne pas exposer à l'extérieur)
 FRONTEND_INTERNAL_PORT=80
 BACKEND_INTERNAL_PORT=8081
 KEYCLOAK_INTERNAL_PORT=8080
 POSTGRES_PORT=5432
 ```
 
-### Configuration PostgreSQL - Base de Données Application
+### PostgreSQL - Base de Données Application
 
 ```env
 POSTGRES_DB=app-db
 POSTGRES_USER=muhend
 POSTGRES_PASSWORD=CHANGEZ_MOI
-
-# Nom du service de base de données (utilisé dans les URLs JDBC)
 DB_SERVICE_NAME=app-db
-
-# Version de l'image PostgreSQL
 POSTGRES_IMAGE_TAG=16
 ```
 
-### Configuration PostgreSQL - Base de Données Keycloak
+### PostgreSQL - Base de Données Keycloak
 
 ```env
 KEYCLOAK_DB=keycloak
 KEYCLOAK_DB_USER=keycloak
 KEYCLOAK_DB_PASSWORD=CHANGEZ_MOI
-
-# Nom du service de base de données Keycloak
 DB_KEYCLOAK_SERVICE_NAME=keycloak-db
 ```
 
-### Configuration Keycloak
+### Keycloak
 
 ```env
 # Nom du realm Keycloak
@@ -90,40 +85,41 @@ KEYCLOAK_BACKEND_CLIENT=backend-client
 KEYCLOAK_BACKEND_CLIENT_SECRET=CHANGEZ_MOI
 
 # URLs Keycloak
-# URL interne : utilisée par les services Docker pour communiquer entre eux
 KEYCLOAK_INTERNAL_URL=http://keycloak:8080
-# URL externe : utilisée par le frontend et les tokens JWT
 KEYCLOAK_EXTERNAL_URL=https://auth.hscode.enclume-numerique.com
-
-# Version de l'image Keycloak
 KEYCLOAK_IMAGE_TAG=22.0.1
-```
 
-### Configuration Keycloak - Timeouts et Retry
-
-```env
-# Timeout de connexion pour les requêtes de validation de jeton (ms)
+# Timeouts et Retry
 KEYCLOAK_CONNECTION_TIMEOUT=10000
-
-# Timeout de lecture pour les requêtes de validation de jeton (ms)
 KEYCLOAK_READ_TIMEOUT=10000
-
-# Nombre maximum de tentatives en cas d'échec
 KEYCLOAK_RETRY_MAX_ATTEMPTS=5
-
-# Durée d'attente entre les tentatives
 KEYCLOAK_RETRY_WAIT_DURATION=10s
 ```
 
-### Configuration CORS
+### Keycloak - Cache des Thèmes
+
+```env
+# Durée de cache pour les fichiers statiques des thèmes (en secondes)
+# Recommandé : 2592000 (30 jours) pour la production
+KC_THEME_STATIC_MAX_AGE=2592000
+
+# Active le cache des thèmes compilés (true/false)
+# Recommandé : true pour la production, false pour le développement
+KC_THEME_CACHE_THEMES=true
+
+# Active le cache des templates FreeMarker (true/false)
+# Recommandé : true pour la production, false pour le développement
+KC_THEME_CACHE_TEMPLATES=true
+```
+
+### CORS
 
 ```env
 # Origines CORS autorisées (séparées par des virgules)
-# Format: "https://domain1.com,https://www.domain1.com,http://localhost:4200"
 CORS_ALLOWED_ORIGINS=https://hscode.enclume-numerique.com,https://www.hscode.enclume-numerique.com,http://localhost:4200
 ```
 
-### Configuration SMTP (Email)
+### SMTP (Email)
 
 ```env
 # Serveur SMTP
@@ -149,28 +145,20 @@ SMTP_FROM_NAME=Enclume Numérique
 # URL du frontend (pour les liens dans les emails)
 FRONTEND_URL=https://hscode.enclume-numerique.com
 
-# Email de l'administrateur pour les notifications de nouvelles créations de compte
+# Email de l'administrateur pour les notifications
 EMAIL_ADMIN_HSCODE=med@forge_numerique.com
 ```
 
-**Note** : Pour Gmail, vous devez utiliser un "Mot de passe d'application" au lieu de votre mot de passe habituel. Consultez [la documentation Gmail](https://support.google.com/accounts/answer/185833) pour plus d'informations.
+**Note** : Pour Gmail, utilisez un "Mot de passe d'application" au lieu de votre mot de passe habituel.
 
-### Configuration Inscription
-
-```env
-# Délai d'expiration du token de confirmation d'inscription (en heures)
-# Les inscriptions non confirmées après ce délai seront automatiquement supprimées
-REGISTRATION_TOKEN_EXPIRATION_HOURS=24
-```
-
-### Configuration Spring Boot
+### Spring Boot
 
 ```env
 # Profil Spring Boot (dev ou prod)
 SPRING_PROFILES_ACTIVE=prod
 ```
 
-### Configuration Services IA
+### Services IA
 
 ```env
 # OpenAI
@@ -186,23 +174,106 @@ OLLAMA_API_KEY=CHANGEZ_MOI
 OLLAMA_BASE_URL=http://host.docker.internal:11434
 ```
 
-### Configuration Tarification
+### Tarification
 
 ```env
 # Tarif de base par requête (dans la devise du marché sélectionné)
-# Ce tarif est séparé du coût des tokens et est dans la devise du marché (ex: DA pour DZ, € pour DEFAULT)
-# Le coût des tokens est calculé séparément et affiché uniquement aux administrateurs
 BASE_REQUEST_PRICE=0.01
 ```
 
-### Configuration Frontend
+### Frontend
 
 ```env
 # URL de l'API backend (utilisée par le frontend)
-# En production, utilisez un chemin relatif: /api
-# En développement, utilisez: http://localhost:8081/api
+# En production : /api
+# En développement : http://localhost:8081/api
 API_URL=/api
 ```
+
+### Inscription
+
+```env
+# Délai d'expiration du token de confirmation d'inscription (en heures)
+REGISTRATION_TOKEN_EXPIRATION_HOURS=24
+```
+
+## 🎨 Configuration du Thème Keycloak
+
+### Structure des Thèmes
+
+Les thèmes personnalisés sont situés dans `keycloak/themes/` :
+
+```
+keycloak/themes/
+├── README.md
+└── custom-theme/
+    ├── theme.properties
+    ├── login/
+    │   ├── theme.properties
+    │   ├── login.ftl
+    │   ├── login.css
+    │   └── resources/
+    │       ├── css/
+    │       │   └── custom-login.css
+    │       └── img/
+    └── account/
+```
+
+### Activation du Thème
+
+1. **Redémarrer Keycloak** pour charger le nouveau thème :
+   ```bash
+   docker compose restart keycloak
+   ```
+
+2. **Configurer le thème dans Keycloak Admin Console** :
+   - Accéder à `https://auth.hscode.enclume-numerique.com`
+   - Se connecter avec les identifiants admin
+   - Aller dans **Realm Settings** → **Themes**
+   - Sélectionner `custom-theme` pour **Login theme** et **Account theme**
+   - Cliquer sur **Save**
+
+3. **Vider le cache du navigateur** si nécessaire
+
+### Variables de Cache
+
+Pour le développement, désactivez le cache des thèmes :
+
+```env
+KC_THEME_CACHE_THEMES=false
+KC_THEME_CACHE_TEMPLATES=false
+KC_THEME_STATIC_MAX_AGE=3600
+```
+
+Pour la production, activez le cache :
+
+```env
+KC_THEME_CACHE_THEMES=true
+KC_THEME_CACHE_TEMPLATES=true
+KC_THEME_STATIC_MAX_AGE=2592000
+```
+
+## 🔐 Configuration de Sécurité
+
+### Mots de Passe à Changer
+
+⚠️ **IMPORTANT** : En production, changez obligatoirement :
+
+- `POSTGRES_PASSWORD`
+- `KEYCLOAK_ADMIN_PASSWORD`
+- `KEYCLOAK_BACKEND_CLIENT_SECRET`
+- `KEYCLOAK_DB_PASSWORD`
+
+### Génération du Secret Backend Client
+
+1. Connectez-vous à Keycloak Admin Console
+2. Allez dans **Clients** → **backend-client**
+3. Onglet **Credentials**
+4. Copiez le **Secret** et mettez-le dans `.env` comme `KEYCLOAK_BACKEND_CLIENT_SECRET`
+
+### Configuration des Rôles Keycloak
+
+Voir `KEYCLOAK_ROLES_SETUP.md` pour la configuration détaillée des rôles.
 
 ## 📝 Exemple de Fichier .env Complet
 
@@ -263,14 +334,17 @@ KEYCLOAK_BACKEND_CLIENT_SECRET=votre_client_secret
 KEYCLOAK_INTERNAL_URL=http://keycloak:8080
 KEYCLOAK_EXTERNAL_URL=https://auth.hscode.enclume-numerique.com
 KEYCLOAK_IMAGE_TAG=22.0.1
-
-# ===============================================================
-# KEYCLOAK - TIMEOUTS ET RETRY
-# ===============================================================
 KEYCLOAK_CONNECTION_TIMEOUT=10000
 KEYCLOAK_READ_TIMEOUT=10000
 KEYCLOAK_RETRY_MAX_ATTEMPTS=5
 KEYCLOAK_RETRY_WAIT_DURATION=10s
+
+# ===============================================================
+# KEYCLOAK - CACHE DES THÈMES
+# ===============================================================
+KC_THEME_STATIC_MAX_AGE=2592000
+KC_THEME_CACHE_THEMES=true
+KC_THEME_CACHE_TEMPLATES=true
 
 # ===============================================================
 # CORS
@@ -293,6 +367,7 @@ SMTP_WRITE_TIMEOUT=5000
 SMTP_FROM=noreply@enclume-numerique.com
 SMTP_FROM_NAME=Enclume Numérique
 FRONTEND_URL=https://hscode.enclume-numerique.com
+EMAIL_ADMIN_HSCODE=med@forge_numerique.com
 
 # ===============================================================
 # SPRING BOOT
@@ -312,15 +387,17 @@ OLLAMA_BASE_URL=http://host.docker.internal:11434
 # ===============================================================
 # TARIFICATION
 # ===============================================================
-# Tarif de base par requête (dans la devise du marché sélectionné)
-# Ce tarif est séparé du coût des tokens et est dans la devise du marché (ex: DA pour DZ, € pour DEFAULT)
-# Le coût des tokens est calculé séparément et affiché uniquement aux administrateurs
 BASE_REQUEST_PRICE=0.01
 
 # ===============================================================
 # FRONTEND
 # ===============================================================
 API_URL=/api
+
+# ===============================================================
+# INSCRIPTION
+# ===============================================================
+REGISTRATION_TOKEN_EXPIRATION_HOURS=24
 ```
 
 ## ⚠️ Notes Importantes
@@ -329,7 +406,7 @@ API_URL=/api
 2. **Domaines** : Les domaines doivent pointer vers votre serveur et être configurés dans votre DNS
 3. **Certificats SSL** : Assurez-vous que Traefik est configuré pour générer les certificats Let's Encrypt
 4. **Développement local** : Pour le développement, certaines valeurs peuvent être différentes (localhost, ports, etc.)
-5. **Fichier .env** : Ne commitez JAMAIS le fichier `.env` dans Git (il doit être dans `.gitignore`)
+5. **Fichier .env** : Ne commitez JAMAIS le fichier `.env` dans Git
 
 ## 🔍 Où sont utilisées ces variables ?
 
@@ -338,9 +415,7 @@ API_URL=/api
 - **frontend/generate-env.js** : Génération de `environment.prod.ts`
 - **backend/src/main/java/com/muhend/backend/config/SecurityConfig.java** : Configuration CORS
 
-## 📚 Références
+---
 
-- [Documentation Docker Compose](https://docs.docker.com/compose/environment-variables/)
-- [Documentation Spring Boot](https://docs.spring.io/spring-boot/docs/current/reference/html/features.html#features.external-config)
-- [Documentation Keycloak](https://www.keycloak.org/documentation)
+*Dernière mise à jour : Configuration complète*
 

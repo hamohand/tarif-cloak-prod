@@ -554,13 +554,22 @@ public class OrganizationService {
             try {
                 newPlan = pricingPlanService.getPricingPlanById(pricingPlanId);
                 
-                // Vérifier si l'organisation essaie de revenir à un plan d'essai alors que l'essai est définitivement terminé
-                if (Boolean.TRUE.equals(organization.getTrialPermanentlyExpired()) 
-                        && newPlan.getTrialPeriodDays() != null && newPlan.getTrialPeriodDays() > 0) {
-                    throw new IllegalArgumentException(
-                        "Impossible de revenir au plan d'essai. Votre essai gratuit est définitivement terminé. " +
-                        "Veuillez choisir un plan payant ou faire une demande de devis."
-                    );
+                // Vérifier si l'organisation essaie de sélectionner un plan d'essai alors qu'elle en a déjà utilisé un
+                if (newPlan.getTrialPeriodDays() != null && newPlan.getTrialPeriodDays() > 0) {
+                    // Vérifier si l'essai est définitivement terminé
+                    if (Boolean.TRUE.equals(organization.getTrialPermanentlyExpired())) {
+                        throw new IllegalArgumentException(
+                            "Impossible de revenir au plan d'essai. Votre essai gratuit est définitivement terminé. " +
+                            "Veuillez choisir un plan payant ou faire une demande de devis."
+                        );
+                    }
+                    // Vérifier si l'organisation a déjà un essai en cours ou a déjà utilisé un essai
+                    if (organization.getTrialExpiresAt() != null) {
+                        throw new IllegalArgumentException(
+                            "Impossible de sélectionner le plan d'essai gratuit. Votre organisation a déjà utilisé l'essai gratuit. " +
+                            "Veuillez choisir un plan payant ou faire une demande de devis."
+                        );
+                    }
                 }
                 
                 organization.setPricingPlanId(pricingPlanId);
