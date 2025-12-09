@@ -116,31 +116,48 @@ public class PricingPlanService {
                 Organization org = orgOpt.get();
                 
                 // Vérifier si l'organisation a déjà utilisé l'essai gratuit
+                // L'essai est considéré comme utilisé si :
+                // 1. trialPermanentlyExpired est true, OU
+                // 2. trialExpiresAt n'est pas null (même si pas encore expiré)
                 boolean hasUsedTrial = Boolean.TRUE.equals(org.getTrialPermanentlyExpired()) 
-                        || (org.getTrialExpiresAt() != null && org.getPricingPlanId() != null);
+                        || org.getTrialExpiresAt() != null;
                 
-                if (hasUsedTrial) {
-                    // Vérifier si le plan actuel est un plan d'essai
-                    boolean currentPlanIsTrial = false;
-                    if (org.getPricingPlanId() != null) {
-                        try {
-                            PricingPlanDto currentPlan = getPricingPlanById(org.getPricingPlanId());
-                            currentPlanIsTrial = currentPlan.getTrialPeriodDays() != null && currentPlan.getTrialPeriodDays() > 0;
-                        } catch (Exception e) {
-                            log.warn("Impossible de récupérer le plan actuel pour vérifier s'il s'agit d'un plan d'essai: {}", e.getMessage());
-                        }
+                // Vérifier si l'organisation a actuellement un plan payant
+                boolean hasPaidPlan = false;
+                if (org.getPricingPlanId() != null) {
+                    try {
+                        PricingPlanDto currentPlan = getPricingPlanById(org.getPricingPlanId());
+                        boolean hasPricePerMonth = currentPlan.getPricePerMonth() != null && currentPlan.getPricePerMonth().compareTo(BigDecimal.ZERO) > 0;
+                        boolean hasPricePerRequest = currentPlan.getPricePerRequest() != null && currentPlan.getPricePerRequest().compareTo(BigDecimal.ZERO) > 0;
+                        hasPaidPlan = hasPricePerMonth || hasPricePerRequest;
+                    } catch (Exception e) {
+                        log.warn("Impossible de récupérer le plan actuel pour vérifier s'il s'agit d'un plan payant: {}", e.getMessage());
                     }
-                    
-                    // Exclure tous les plans d'essai (trialPeriodDays > 0)
+                }
+                
+                if (hasUsedTrial || hasPaidPlan) {
+                    // Exclure tous les plans d'essai (trialPeriodDays > 0) ET tous les plans gratuits
                     int plansBeforeFilter = plans.size();
                     plans = plans.stream()
-                            .filter(plan -> plan.getTrialPeriodDays() == null || plan.getTrialPeriodDays() == 0)
+                            .filter(plan -> {
+                                // Exclure les plans d'essai
+                                if (plan.getTrialPeriodDays() != null && plan.getTrialPeriodDays() > 0) {
+                                    return false;
+                                }
+                                
+                                // Exclure les plans gratuits (pricePerMonth = 0 ou null ET pricePerRequest = 0 ou null)
+                                boolean isFreePlan = (plan.getPricePerMonth() == null || plan.getPricePerMonth().compareTo(BigDecimal.ZERO) == 0)
+                                        && (plan.getPricePerRequest() == null || plan.getPricePerRequest().compareTo(BigDecimal.ZERO) == 0);
+                                
+                                // Ne garder que les plans payants
+                                return !isFreePlan;
+                            })
                             .collect(Collectors.toList());
                     
-                    log.info("🚫 Plan d'essai exclu pour l'organisation {} (ID: {}): {} plan(s) d'essai filtré(s), {} plan(s) restant(s)", 
+                    log.info("🚫 Plans d'essai et plans gratuits exclus pour l'organisation {} (ID: {}): {} plan(s) filtré(s), {} plan(s) payant(s) restant(s)", 
                             org.getName(), organizationId, plansBeforeFilter - plans.size(), plans.size());
                 } else {
-                    log.info("✅ Plan d'essai disponible pour l'organisation {} (ID: {}): l'essai n'a pas encore été utilisé", 
+                    log.info("✅ Plans d'essai et plans gratuits disponibles pour l'organisation {} (ID: {}): l'essai n'a pas encore été utilisé", 
                             org.getName(), organizationId);
                 }
             } else {

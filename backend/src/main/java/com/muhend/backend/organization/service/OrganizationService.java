@@ -572,6 +572,35 @@ public class OrganizationService {
                     }
                 }
                 
+                // Vérifier si l'organisation essaie de passer d'un plan payant à un plan gratuit
+                // Un plan est gratuit si : pricePerMonth est null ou 0 ET pricePerRequest est null ou 0 ET pas de trialPeriodDays
+                boolean isNewPlanFree = (newPlan.getPricePerMonth() == null || newPlan.getPricePerMonth().compareTo(BigDecimal.ZERO) == 0)
+                        && (newPlan.getPricePerRequest() == null || newPlan.getPricePerRequest().compareTo(BigDecimal.ZERO) == 0)
+                        && (newPlan.getTrialPeriodDays() == null || newPlan.getTrialPeriodDays() == 0);
+                
+                if (isNewPlanFree) {
+                    // Vérifier si l'organisation a actuellement un plan payant
+                    boolean hasPaidPlan = false;
+                    if (oldPlan != null) {
+                        boolean oldPlanHasPricePerMonth = oldPlan.getPricePerMonth() != null && oldPlan.getPricePerMonth().compareTo(BigDecimal.ZERO) > 0;
+                        boolean oldPlanHasPricePerRequest = oldPlan.getPricePerRequest() != null && oldPlan.getPricePerRequest().compareTo(BigDecimal.ZERO) > 0;
+                        hasPaidPlan = oldPlanHasPricePerMonth || oldPlanHasPricePerRequest;
+                    }
+                    
+                    // Vérifier aussi si l'organisation a déjà utilisé l'essai gratuit
+                    boolean hasUsedTrial = Boolean.TRUE.equals(organization.getTrialPermanentlyExpired()) 
+                            || organization.getTrialExpiresAt() != null;
+                    
+                    if (hasPaidPlan || hasUsedTrial) {
+                        throw new IllegalArgumentException(
+                            "Impossible de passer à un plan gratuit. " +
+                            (hasPaidPlan ? "Vous avez actuellement un plan payant. " : "") +
+                            (hasUsedTrial ? "Votre essai gratuit a déjà été utilisé. " : "") +
+                            "Veuillez choisir un plan payant ou faire une demande de devis."
+                        );
+                    }
+                }
+                
                 organization.setPricingPlanId(pricingPlanId);
                 // Mettre à jour le quota selon le plan
                 Integer oldQuota = organization.getMonthlyQuota();

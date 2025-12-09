@@ -611,12 +611,24 @@ export class OrganizationStatsComponent implements OnInit {
         console.log('📋 Plans disponibles reçus du serveur:', plans.length, plans);
         console.log('🔍 Organization trialPermanentlyExpired:', this.organization?.trialPermanentlyExpired);
         
-        // Le backend exclut déjà le plan d'essai si l'organisation l'a déjà utilisé
+        // Le backend exclut déjà le plan d'essai et les plans gratuits si l'organisation les a déjà utilisés
         // Mais on peut ajouter un filtre supplémentaire côté frontend pour s'assurer
-        // que seuls les plans payants sont proposés si l'essai est définitivement terminé
-        if (this.organization?.trialPermanentlyExpired) {
-          // Filtrer pour ne garder que les plans payants
+        // que seuls les plans payants sont proposés si l'essai est définitivement terminé ou si l'organisation a un plan payant
+        const hasUsedTrial = this.organization?.trialPermanentlyExpired || this.organization?.trialExpiresAt;
+        const hasPaidPlan = this.currentPlan && 
+          ((this.currentPlan.pricePerMonth !== null && this.currentPlan.pricePerMonth !== undefined && this.currentPlan.pricePerMonth > 0) ||
+           (this.currentPlan.pricePerRequest !== null && this.currentPlan.pricePerRequest !== undefined && this.currentPlan.pricePerRequest > 0));
+        
+        if (hasUsedTrial || hasPaidPlan) {
+          // Filtrer pour ne garder que les plans payants (exclure les plans gratuits et d'essai)
           const filteredPlans = plans.filter(plan => {
+            // Exclure les plans d'essai
+            if (plan.trialPeriodDays && plan.trialPeriodDays > 0) {
+              console.log('❌ Plan exclu (essai):', plan.name);
+              return false;
+            }
+            
+            // Exclure les plans gratuits
             const hasPaidMonthlyPrice = plan.pricePerMonth !== null && plan.pricePerMonth !== undefined && plan.pricePerMonth > 0;
             const hasPaidPerRequestPrice = plan.pricePerRequest !== null && plan.pricePerRequest !== undefined && plan.pricePerRequest > 0;
             const isPaidPlan = hasPaidMonthlyPrice || hasPaidPerRequestPrice;
