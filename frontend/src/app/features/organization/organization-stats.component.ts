@@ -698,16 +698,22 @@ export class OrganizationStatsComponent implements OnInit {
   }
 
   updateCurrentPlan(planId: number) {
-    const plan = this.pricingPlans.find(p => p.id === planId);
+    // S'assurer que planId est un number
+    const id = typeof planId === 'string' ? parseInt(planId, 10) : planId;
+    const plan = this.pricingPlans.find(p => p.id === id);
     this.currentPlan = plan || null;
   }
 
   onPlanSelectChange() {
     // Mettre à jour selectedPlanForConfirmation quand le plan sélectionné change
+    // Convertir selectedPlanId en number car il peut venir du select HTML comme string
     if (this.selectedPlanId) {
-      const selectedPlan = this.pricingPlans.find(p => p.id === this.selectedPlanId);
+      const planId = typeof this.selectedPlanId === 'string' ? parseInt(this.selectedPlanId, 10) : this.selectedPlanId;
+      const selectedPlan = this.pricingPlans.find(p => p.id === planId);
       if (selectedPlan) {
         this.selectedPlanForConfirmation = selectedPlan;
+        // S'assurer que selectedPlanId est un number
+        this.selectedPlanId = planId;
       }
     } else {
       this.selectedPlanForConfirmation = null;
@@ -724,10 +730,25 @@ export class OrganizationStatsComponent implements OnInit {
       return;
     }
 
-    const selectedPlan = this.pricingPlans.find(p => p.id === this.selectedPlanId);
+    // Convertir selectedPlanId en number car il peut venir du select HTML comme string
+    const planId = typeof this.selectedPlanId === 'string' ? parseInt(this.selectedPlanId, 10) : this.selectedPlanId;
+    
+    // S'assurer que selectedPlanId est un number
+    if (typeof this.selectedPlanId === 'string') {
+      this.selectedPlanId = planId;
+    }
+
+    console.log('🔍 Recherche du plan avec ID:', planId, 'Type:', typeof planId);
+    console.log('📋 Plans disponibles:', this.pricingPlans.map(p => ({ id: p.id, name: p.name, type: typeof p.id })));
+
+    const selectedPlan = this.pricingPlans.find(p => p.id === planId);
     if (!selectedPlan) {
-      console.error('❌ Plan sélectionné introuvable dans pricingPlans:', this.selectedPlanId);
-      console.log('📋 Plans disponibles:', this.pricingPlans.map(p => ({ id: p.id, name: p.name })));
+      console.error('❌ Plan sélectionné introuvable dans pricingPlans:', {
+        selectedPlanId: this.selectedPlanId,
+        planId: planId,
+        planIdType: typeof planId,
+        plansIds: this.pricingPlans.map(p => ({ id: p.id, type: typeof p.id }))
+      });
       // Si le plan n'est pas trouvé, essayer de sélectionner le premier plan payant disponible
       if (this.pricingPlans.length > 0 && this.pricingPlans[0].id) {
         console.log('🔄 Sélection automatique du premier plan payant:', this.pricingPlans[0].id);
@@ -809,7 +830,7 @@ export class OrganizationStatsComponent implements OnInit {
     }
 
     // Utiliser selectedPlanForConfirmation si selectedPlanId n'est pas défini
-    const planIdToUse = this.selectedPlanId || this.selectedPlanForConfirmation?.id;
+    let planIdToUse = this.selectedPlanId || this.selectedPlanForConfirmation?.id;
     
     if (!planIdToUse) {
       console.error('❌ Aucun plan sélectionné');
@@ -817,8 +838,13 @@ export class OrganizationStatsComponent implements OnInit {
       return;
     }
 
-    // S'assurer que selectedPlanId est défini
-    if (!this.selectedPlanId && planIdToUse) {
+    // Convertir en number si c'est une string (venant du select HTML)
+    if (typeof planIdToUse === 'string') {
+      planIdToUse = parseInt(planIdToUse, 10);
+    }
+
+    // S'assurer que selectedPlanId est défini et est un number
+    if (!this.selectedPlanId || typeof this.selectedPlanId === 'string') {
       this.selectedPlanId = planIdToUse;
     }
 
