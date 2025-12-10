@@ -127,7 +127,7 @@ Chart.register(...registerables);
               } @else {
                 <h4>Changer de plan</h4>
               }
-              <select [(ngModel)]="selectedPlanId" class="plan-select" [disabled]="loadingPlans" [class.required-select]="organization.trialPermanentlyExpired">
+              <select [(ngModel)]="selectedPlanId" (ngModelChange)="onPlanSelectChange()" class="plan-select" [disabled]="loadingPlans" [class.required-select]="organization.trialPermanentlyExpired">
                 @if (!organization.trialPermanentlyExpired) {
                   <option [value]="null">Aucun plan (gratuit)</option>
                 }
@@ -255,11 +255,9 @@ Chart.register(...registerables);
               }
             </div>
             <div class="modal-footer">
-              @if (!organization || !organization.trialPermanentlyExpired) {
-                <button class="btn btn-secondary" (click)="closeConfirmModal()" [disabled]="isChangingPlan">
-                  Annuler
-                </button>
-              }
+              <button class="btn btn-secondary" (click)="closeConfirmModal()" [disabled]="isChangingPlan">
+                Annuler
+              </button>
               <button class="btn btn-primary" [class.btn-required]="organization && organization.trialPermanentlyExpired" (click)="changePricingPlan()" [disabled]="isChangingPlan">
                 @if (isChangingPlan) {
                   <span>Changement en cours...</span>
@@ -705,7 +703,15 @@ export class OrganizationStatsComponent implements OnInit {
   }
 
   onPlanSelectChange() {
-    // Ne rien faire, la validation se fait dans openConfirmModal
+    // Mettre à jour selectedPlanForConfirmation quand le plan sélectionné change
+    if (this.selectedPlanId) {
+      const selectedPlan = this.pricingPlans.find(p => p.id === this.selectedPlanId);
+      if (selectedPlan) {
+        this.selectedPlanForConfirmation = selectedPlan;
+      }
+    } else {
+      this.selectedPlanForConfirmation = null;
+    }
   }
 
   openConfirmModal() {
@@ -768,13 +774,10 @@ export class OrganizationStatsComponent implements OnInit {
   }
 
   closeConfirmModal() {
-    // Si l'essai est définitivement terminé, on ne peut pas fermer la modal sans choisir un plan
-    if (this.organization?.trialPermanentlyExpired && (!this.selectedPlanId || (this.selectedPlanForConfirmation?.pricePerMonth === 0 && !this.selectedPlanForConfirmation?.trialPeriodDays))) {
-      this.notificationService.warning('Vous devez sélectionner un plan payant pour continuer. La sélection d\'un plan est obligatoire.');
-      return;
-    }
+    // Toujours permettre de fermer la modal, même si l'essai est terminé
+    // L'utilisateur peut toujours revenir en arrière pour choisir un autre plan
     this.showConfirmModal = false;
-    this.selectedPlanForConfirmation = null;
+    // Ne pas réinitialiser selectedPlanForConfirmation pour garder la sélection
   }
 
   changePricingPlan() {
