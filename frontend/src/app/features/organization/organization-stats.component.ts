@@ -770,6 +770,14 @@ export class OrganizationStatsComponent implements OnInit {
     }
 
     this.selectedPlanForConfirmation = selectedPlan;
+    // S'assurer que selectedPlanId est bien défini
+    if (!this.selectedPlanId && selectedPlan.id) {
+      this.selectedPlanId = selectedPlan.id;
+    }
+    console.log('✅ Modal de confirmation ouverte avec plan:', {
+      selectedPlanId: this.selectedPlanId,
+      selectedPlanForConfirmation: this.selectedPlanForConfirmation
+    });
     this.showConfirmModal = true;
   }
 
@@ -781,29 +789,73 @@ export class OrganizationStatsComponent implements OnInit {
   }
 
   changePricingPlan() {
-    if (this.isChangingPlan || !this.organization) {
+    console.log('🔄 changePricingPlan() appelé');
+    console.log('📋 État actuel:', {
+      isChangingPlan: this.isChangingPlan,
+      organization: this.organization,
+      selectedPlanId: this.selectedPlanId,
+      selectedPlanForConfirmation: this.selectedPlanForConfirmation
+    });
+
+    if (this.isChangingPlan) {
+      console.warn('⚠️ Changement déjà en cours');
       return;
+    }
+
+    if (!this.organization) {
+      console.error('❌ Aucune organisation trouvée');
+      this.notificationService.error('Aucune organisation trouvée. Veuillez rafraîchir la page.');
+      return;
+    }
+
+    // Utiliser selectedPlanForConfirmation si selectedPlanId n'est pas défini
+    const planIdToUse = this.selectedPlanId || this.selectedPlanForConfirmation?.id;
+    
+    if (!planIdToUse) {
+      console.error('❌ Aucun plan sélectionné');
+      this.notificationService.error('Veuillez sélectionner un plan tarifaire.');
+      return;
+    }
+
+    // S'assurer que selectedPlanId est défini
+    if (!this.selectedPlanId && planIdToUse) {
+      this.selectedPlanId = planIdToUse;
     }
 
     this.isChangingPlan = true;
     this.errorMessage = '';
-    this.showConfirmModal = false;
+    // Ne pas fermer la modal immédiatement, attendre la réponse
+    // this.showConfirmModal = false;
 
-    this.pricingPlanService.changeMyOrganizationPricingPlan(this.selectedPlanId).subscribe({
+    console.log('📤 Envoi de la requête de changement de plan avec planId:', planIdToUse);
+
+    this.pricingPlanService.changeMyOrganizationPricingPlan(planIdToUse).subscribe({
       next: (updatedOrg) => {
+        console.log('✅ Changement de plan réussi:', updatedOrg);
         this.organization = updatedOrg;
         this.updateCurrentPlan(updatedOrg.pricingPlanId || 0);
         this.isChangingPlan = false;
         this.selectedPlanForConfirmation = null;
+        this.showConfirmModal = false; // Fermer la modal seulement après succès
         this.notificationService.success('Plan tarifaire changé avec succès');
         this.loadQuota();
         // Recharger les plans pour mettre à jour le filtre si nécessaire
         this.loadPricingPlans();
       },
       error: (err) => {
-        this.errorMessage = 'Erreur lors du changement de plan: ' + (err.error?.message || err.message);
+        console.error('❌ Erreur lors du changement de plan:', err);
+        console.error('❌ Détails de l\'erreur:', {
+          status: err.status,
+          statusText: err.statusText,
+          error: err.error,
+          message: err.message
+        });
+        const errorMessage = err.error?.message || err.error?.error || err.message || 'Une erreur est survenue';
+        this.errorMessage = 'Erreur lors du changement de plan: ' + errorMessage;
         this.isChangingPlan = false;
-        this.notificationService.error('Erreur lors du changement de plan: ' + (err.error?.message || err.message));
+        this.notificationService.error('Erreur lors du changement de plan: ' + errorMessage);
+        // Garder la modal ouverte en cas d'erreur pour permettre une nouvelle tentative
+        // this.showConfirmModal reste true
       }
     });
   }

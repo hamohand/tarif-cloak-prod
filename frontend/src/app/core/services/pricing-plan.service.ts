@@ -113,6 +113,10 @@ export class PricingPlanService {
    * Change le plan tarifaire de l'organisation de l'utilisateur connecté.
    */
   changeMyOrganizationPricingPlan(pricingPlanId: number | null): Observable<any> {
+    console.log('📤 PricingPlanService.changeMyOrganizationPricingPlan appelé avec pricingPlanId:', pricingPlanId);
+    console.log('🌐 URL:', `${environment.apiUrl}/user/organization/pricing-plan`);
+    console.log('📦 Body:', { pricingPlanId });
+    
     return this.http.put(`${environment.apiUrl}/user/organization/pricing-plan`, {
       pricingPlanId
     });
