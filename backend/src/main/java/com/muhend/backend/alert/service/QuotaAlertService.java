@@ -147,19 +147,6 @@ public class QuotaAlertService {
         long currentUsage = usageLogRepository.countByOrganizationIdAndTimestampBetween(
                 organizationId, startOfMonth, endOfMonth);
         
-        // Récupérer la valeur actuelle du quota depuis le plan tarifaire (pas celle stockée dans l'organisation)
-        Integer currentMonthlyQuota = organization.getMonthlyQuota(); // Valeur par défaut (pour compatibilité)
-        if (organization.getPricingPlanId() != null) {
-            try {
-                PricingPlanDto plan = pricingPlanService.getPricingPlanById(organization.getPricingPlanId());
-                currentMonthlyQuota = plan.getMonthlyQuota(); // Utiliser la valeur actuelle du plan
-            } catch (Exception e) {
-                log.warn("Impossible de récupérer le plan {} pour l'organisation {}: {}", 
-                        organization.getPricingPlanId(), organizationId, e.getMessage());
-                // Utiliser la valeur stockée dans l'organisation en cas d'erreur
-            }
-        }
-        
         // Calculer le pourcentage : consommation-organisation / quota-organisation (utiliser la valeur actuelle du plan)
         // #region agent log
         Map<String, Object> logDataD2 = new HashMap<>();
