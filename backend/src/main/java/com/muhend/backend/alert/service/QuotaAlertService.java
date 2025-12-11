@@ -6,6 +6,8 @@ import com.muhend.backend.alert.model.QuotaAlert;
 import com.muhend.backend.alert.repository.QuotaAlertRepository;
 import com.muhend.backend.organization.dto.OrganizationDto;
 import com.muhend.backend.organization.service.OrganizationService;
+import com.muhend.backend.pricing.dto.PricingPlanDto;
+import com.muhend.backend.pricing.service.PricingPlanService;
 import com.muhend.backend.usage.repository.UsageLogRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -53,6 +55,7 @@ public class QuotaAlertService {
     private final QuotaAlertRepository quotaAlertRepository;
     private final OrganizationService organizationService;
     private final UsageLogRepository usageLogRepository;
+    private final PricingPlanService pricingPlanService;
     
     // Seuils d'alerte
     private static final double WARNING_THRESHOLD = 80.0;  // Alerte à 80%
@@ -61,10 +64,12 @@ public class QuotaAlertService {
     public QuotaAlertService(
             QuotaAlertRepository quotaAlertRepository,
             OrganizationService organizationService,
-            UsageLogRepository usageLogRepository) {
+            UsageLogRepository usageLogRepository,
+            PricingPlanService pricingPlanService) {
         this.quotaAlertRepository = quotaAlertRepository;
         this.organizationService = organizationService;
         this.usageLogRepository = usageLogRepository;
+        this.pricingPlanService = pricingPlanService;
     }
     
     /**
@@ -99,15 +104,34 @@ public class QuotaAlertService {
     @Transactional
     public void checkOrganizationQuota(Long organizationId) {
         OrganizationDto organization = organizationService.getOrganizationById(organizationId);
+        if (organization == null) {
+            return; // Organisation introuvable
+        }
+        
+        // Récupérer la valeur actuelle du quota depuis le plan tarifaire (pas celle stockée dans l'organisation)
+        Integer currentMonthlyQuota = organization.getMonthlyQuota(); // Valeur par défaut (pour compatibilité)
+        if (organization.getPricingPlanId() != null) {
+            try {
+                PricingPlanDto plan = pricingPlanService.getPricingPlanById(organization.getPricingPlanId());
+                currentMonthlyQuota = plan.getMonthlyQuota(); // Utiliser la valeur actuelle du plan
+            } catch (Exception e) {
+                log.warn("Impossible de récupérer le plan {} pour l'organisation {}: {}", 
+                        organization.getPricingPlanId(), organizationId, e.getMessage());
+                // Utiliser la valeur stockée dans l'organisation en cas d'erreur
+            }
+        }
+        
         // #region agent log
         Map<String, Object> logDataD1 = new HashMap<>();
         logDataD1.put("organizationId", organizationId);
-        logDataD1.put("monthlyQuota", organization != null ? organization.getMonthlyQuota() : null);
-        logDataD1.put("isNull", organization == null || organization.getMonthlyQuota() == null);
-        debugLog("QuotaAlertService.java:73", "checkOrganizationQuota - checking monthlyQuota", logDataD1, "D");
+        logDataD1.put("organizationMonthlyQuota", organization.getMonthlyQuota());
+        logDataD1.put("planMonthlyQuota", currentMonthlyQuota);
+        logDataD1.put("isNull", currentMonthlyQuota == null);
+        debugLog("QuotaAlertService.java:73", "checkOrganizationQuota - checking monthlyQuota", logDataD1, "F");
         // #endregion
-        if (organization == null || organization.getMonthlyQuota() == null) {
-            return; // Pas de quota à vérifier
+        
+        if (currentMonthlyQuota == null) {
+            return; // Pas de quota à vérifier (quota illimité)
         }
         
         // Le quota provient du plan tarifaire de l'organisation (organization.monthlyQuota)
@@ -123,38 +147,52 @@ public class QuotaAlertService {
         long currentUsage = usageLogRepository.countByOrganizationIdAndTimestampBetween(
                 organizationId, startOfMonth, endOfMonth);
         
-        // Calculer le pourcentage : consommation-organisation / quota-organisation
+        // Récupérer la valeur actuelle du quota depuis le plan tarifaire (pas celle stockée dans l'organisation)
+        Integer currentMonthlyQuota = organization.getMonthlyQuota(); // Valeur par défaut (pour compatibilité)
+        if (organization.getPricingPlanId() != null) {
+            try {
+                PricingPlanDto plan = pricingPlanService.getPricingPlanById(organization.getPricingPlanId());
+                currentMonthlyQuota = plan.getMonthlyQuota(); // Utiliser la valeur actuelle du plan
+            } catch (Exception e) {
+                log.warn("Impossible de récupérer le plan {} pour l'organisation {}: {}", 
+                        organization.getPricingPlanId(), organizationId, e.getMessage());
+                // Utiliser la valeur stockée dans l'organisation en cas d'erreur
+            }
+        }
+        
+        // Calculer le pourcentage : consommation-organisation / quota-organisation (utiliser la valeur actuelle du plan)
         // #region agent log
         Map<String, Object> logDataD2 = new HashMap<>();
         logDataD2.put("currentUsage", currentUsage);
-        logDataD2.put("monthlyQuota", organization.getMonthlyQuota());
-        debugLog("QuotaAlertService.java:91", "checkOrganizationQuota - calculating percentage", logDataD2, "D");
+        logDataD2.put("organizationMonthlyQuota", organization.getMonthlyQuota());
+        logDataD2.put("planMonthlyQuota", currentMonthlyQuota);
+        debugLog("QuotaAlertService.java:91", "checkOrganizationQuota - calculating percentage", logDataD2, "F");
         // #endregion
-        double percentageUsed = (double) currentUsage / organization.getMonthlyQuota() * 100;
+        double percentageUsed = (double) currentUsage / currentMonthlyQuota * 100;
         
         // Déterminer le type d'alerte
         QuotaAlert.AlertType alertType;
         String message;
         
         if (percentageUsed >= CRITICAL_THRESHOLD) {
-            if (currentUsage > organization.getMonthlyQuota()) {
+            if (currentUsage > currentMonthlyQuota) {
                 alertType = QuotaAlert.AlertType.EXCEEDED;
                 message = String.format(
                     "⚠️ Le quota mensuel de votre organisation '%s' a été DÉPASSÉ ! Consommation de l'organisation: %d/%d requêtes (%.1f%%)",
-                    organization.getName(), currentUsage, organization.getMonthlyQuota(), percentageUsed
+                    organization.getName(), currentUsage, currentMonthlyQuota, percentageUsed
                 );
             } else {
                 alertType = QuotaAlert.AlertType.CRITICAL;
                 message = String.format(
                     "🔴 Le quota mensuel de votre organisation '%s' a été ATTEINT ! Consommation de l'organisation: %d/%d requêtes (100%%)",
-                    organization.getName(), currentUsage, organization.getMonthlyQuota()
+                    organization.getName(), currentUsage, currentMonthlyQuota
                 );
             }
         } else if (percentageUsed >= WARNING_THRESHOLD) {
             alertType = QuotaAlert.AlertType.WARNING;
             message = String.format(
                 "🟡 Le quota mensuel de votre organisation '%s' approche de la limite ! Consommation de l'organisation: %d/%d requêtes (%.1f%%)",
-                organization.getName(), currentUsage, organization.getMonthlyQuota(), percentageUsed
+                organization.getName(), currentUsage, currentMonthlyQuota, percentageUsed
             );
         } else {
             // Pas d'alerte nécessaire, sortir de la méthode
@@ -224,7 +262,7 @@ public class QuotaAlertService {
                 alert.setOrganizationName(organization.getName());
                 alert.setAlertType(alertType);
                 alert.setCurrentUsage(currentUsage);
-                alert.setMonthlyQuota(organization.getMonthlyQuota());
+                alert.setMonthlyQuota(currentMonthlyQuota); // Utiliser la valeur actuelle du plan
                 alert.setPercentageUsed(percentageUsed);
                 alert.setMessage(message);
                 alert.setIsRead(false);

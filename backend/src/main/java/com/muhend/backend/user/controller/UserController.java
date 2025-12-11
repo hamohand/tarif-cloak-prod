@@ -4,6 +4,8 @@ import com.muhend.backend.organization.dto.ChangePricingPlanRequest;
 import com.muhend.backend.organization.dto.OrganizationDto;
 import com.muhend.backend.organization.exception.UserNotAssociatedException;
 import com.muhend.backend.organization.service.OrganizationService;
+import com.muhend.backend.pricing.dto.PricingPlanDto;
+import com.muhend.backend.pricing.service.PricingPlanService;
 import com.muhend.backend.usage.model.UsageLog;
 import com.muhend.backend.usage.repository.UsageLogRepository;
 import org.springframework.http.HttpStatus;
@@ -71,6 +73,7 @@ public class UserController {
 
     private final OrganizationService organizationService;
     private final UsageLogRepository usageLogRepository;
+    private final PricingPlanService pricingPlanService;
 
     /**
      * Récupère l'organisation de l'utilisateur connecté.
@@ -189,23 +192,37 @@ public class UserController {
                 // Calculer l'utilisation totale de l'organisation ce mois
                 long organizationMonthlyUsage = usageLogRepository.countByOrganizationIdAndTimestampBetween(organizationId, startOfMonth, endOfMonth);
                 
-            Map<String, Object> quotaInfo = new LinkedHashMap<>();
-            // #region agent log
-            Map<String, Object> logDataE1 = new HashMap<>();
-            logDataE1.put("monthlyQuota", organization.getMonthlyQuota());
-            logDataE1.put("currentUsage", organizationMonthlyUsage);
-            logDataE1.put("isNull", organization.getMonthlyQuota() == null);
-            debugLog("UserController.java:166", "getMyStats - calculating quota info", logDataE1, "E");
-            // #endregion
-            quotaInfo.put("monthlyQuota", organization.getMonthlyQuota());
-            quotaInfo.put("currentUsage", organizationMonthlyUsage); // Usage total de l'organisation
-            quotaInfo.put("personalUsage", monthlyRequests); // Usage personnel
-            quotaInfo.put("remaining", organization.getMonthlyQuota() != null 
-                    ? Math.max(0, organization.getMonthlyQuota() - organizationMonthlyUsage)
-                    : -1); // -1 = illimité
-            quotaInfo.put("percentageUsed", organization.getMonthlyQuota() != null && organization.getMonthlyQuota() > 0
-                    ? (double) organizationMonthlyUsage / organization.getMonthlyQuota() * 100
-                    : 0.0);
+                // Récupérer la valeur actuelle du quota depuis le plan tarifaire (pas celle stockée dans l'organisation)
+                Integer currentMonthlyQuota = organization.getMonthlyQuota(); // Valeur par défaut (pour compatibilité)
+                if (organization.getPricingPlanId() != null) {
+                    try {
+                        PricingPlanDto plan = pricingPlanService.getPricingPlanById(organization.getPricingPlanId());
+                        currentMonthlyQuota = plan.getMonthlyQuota(); // Utiliser la valeur actuelle du plan
+                    } catch (Exception e) {
+                        log.warn("Impossible de récupérer le plan {} pour l'organisation {}: {}", 
+                                organization.getPricingPlanId(), organizationId, e.getMessage());
+                        // Utiliser la valeur stockée dans l'organisation en cas d'erreur
+                    }
+                }
+                
+                Map<String, Object> quotaInfo = new LinkedHashMap<>();
+                // #region agent log
+                Map<String, Object> logDataE1 = new HashMap<>();
+                logDataE1.put("organizationMonthlyQuota", organization.getMonthlyQuota());
+                logDataE1.put("planMonthlyQuota", currentMonthlyQuota);
+                logDataE1.put("currentUsage", organizationMonthlyUsage);
+                logDataE1.put("isNull", currentMonthlyQuota == null);
+                debugLog("UserController.java:166", "getMyStats - calculating quota info", logDataE1, "F");
+                // #endregion
+                quotaInfo.put("monthlyQuota", currentMonthlyQuota); // Utiliser la valeur actuelle du plan
+                quotaInfo.put("currentUsage", organizationMonthlyUsage); // Usage total de l'organisation
+                quotaInfo.put("personalUsage", monthlyRequests); // Usage personnel
+                quotaInfo.put("remaining", currentMonthlyQuota != null 
+                        ? Math.max(0, currentMonthlyQuota - organizationMonthlyUsage)
+                        : -1); // -1 = illimité
+                quotaInfo.put("percentageUsed", currentMonthlyQuota != null && currentMonthlyQuota > 0
+                        ? (double) organizationMonthlyUsage / currentMonthlyQuota * 100
+                        : 0.0);
                 stats.put("quotaInfo", quotaInfo);
             }
 
@@ -254,27 +271,41 @@ public class UserController {
             // Calculer aussi l'utilisation personnelle de l'utilisateur
             long personalUsage = usageLogRepository.countByKeycloakUserIdAndTimestampBetween(userId, startOfMonth, endOfMonth);
 
+            // Récupérer la valeur actuelle du quota depuis le plan tarifaire (pas celle stockée dans l'organisation)
+            Integer currentMonthlyQuota = organization.getMonthlyQuota(); // Valeur par défaut (pour compatibilité)
+            if (organization.getPricingPlanId() != null) {
+                try {
+                    PricingPlanDto plan = pricingPlanService.getPricingPlanById(organization.getPricingPlanId());
+                    currentMonthlyQuota = plan.getMonthlyQuota(); // Utiliser la valeur actuelle du plan
+                } catch (Exception e) {
+                    log.warn("Impossible de récupérer le plan {} pour l'organisation {}: {}", 
+                            organization.getPricingPlanId(), organizationId, e.getMessage());
+                    // Utiliser la valeur stockée dans l'organisation en cas d'erreur
+                }
+            }
+
             Map<String, Object> quota = new LinkedHashMap<>();
             // #region agent log
             Map<String, Object> logDataE2 = new HashMap<>();
-            logDataE2.put("monthlyQuota", organization.getMonthlyQuota());
+            logDataE2.put("organizationMonthlyQuota", organization.getMonthlyQuota());
+            logDataE2.put("planMonthlyQuota", currentMonthlyQuota);
             logDataE2.put("currentUsage", currentUsage);
-            logDataE2.put("isNull", organization.getMonthlyQuota() == null);
-            debugLog("UserController.java:223", "getMyQuota - calculating quota", logDataE2, "E");
+            logDataE2.put("isNull", currentMonthlyQuota == null);
+            debugLog("UserController.java:223", "getMyQuota - calculating quota", logDataE2, "F");
             // #endregion
             quota.put("hasOrganization", true);
             quota.put("organizationId", organizationId);
             quota.put("organizationName", organization.getName());
-            quota.put("monthlyQuota", organization.getMonthlyQuota());
+            quota.put("monthlyQuota", currentMonthlyQuota); // Utiliser la valeur actuelle du plan
             quota.put("currentUsage", currentUsage); // Usage total de l'organisation
             quota.put("personalUsage", personalUsage); // Usage personnel de l'utilisateur
-            quota.put("remaining", organization.getMonthlyQuota() != null 
-                    ? Math.max(0, organization.getMonthlyQuota() - currentUsage)
+            quota.put("remaining", currentMonthlyQuota != null 
+                    ? Math.max(0, currentMonthlyQuota - currentUsage)
                     : -1); // -1 = illimité
-            quota.put("percentageUsed", organization.getMonthlyQuota() != null && organization.getMonthlyQuota() > 0
-                    ? (double) currentUsage / organization.getMonthlyQuota() * 100
+            quota.put("percentageUsed", currentMonthlyQuota != null && currentMonthlyQuota > 0
+                    ? (double) currentUsage / currentMonthlyQuota * 100
                     : 0.0);
-            quota.put("isUnlimited", organization.getMonthlyQuota() == null);
+            quota.put("isUnlimited", currentMonthlyQuota == null);
 
             return ResponseEntity.ok(quota);
         } catch (UserNotAssociatedException e) {
