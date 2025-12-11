@@ -11,6 +11,7 @@ import com.muhend.backend.codesearch.service.ai.OpenAiService;
 import com.muhend.backend.usage.service.UsageLogService;
 import com.muhend.backend.organization.service.OrganizationService;
 import com.muhend.backend.organization.dto.OrganizationDto;
+import com.muhend.backend.organization.dto.QuotaCheckResult;
 import com.muhend.backend.organization.exception.UserNotAssociatedException;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -46,6 +47,9 @@ public class RechercheController {
     private final Position6DzService position6DzService;
     private final UsageLogService usageLogService;
     private final OrganizationService organizationService;
+    
+    // ThreadLocal pour stocker le résultat de la vérification du quota pour la requête courante
+    private static final ThreadLocal<QuotaCheckResult> currentQuotaCheck = new ThreadLocal<>();
 
     @Autowired
     public RechercheController(AiService aiService, AiPrompts aiPrompts, SectionService sectionService, ChapitreService chapitreService,
@@ -89,6 +93,7 @@ public class RechercheController {
                 logUsage("/recherche/sections", termeRecherche);
             }
             OpenAiService.clearCurrentUsage(); // Nettoyage de sécurité
+            clearCurrentQuotaCheck(); // Nettoyer aussi le quota check
         }
     }
 
@@ -111,6 +116,7 @@ public class RechercheController {
                 logUsage("/recherche/chapitres", termeRecherche);
             }
             OpenAiService.clearCurrentUsage(); // Nettoyage de sécurité
+            clearCurrentQuotaCheck(); // Nettoyer aussi le quota check
         }
     }
 
@@ -172,6 +178,7 @@ public class RechercheController {
                 logUsage("/recherche/positions6", termeRecherche);
             }
             OpenAiService.clearCurrentUsage(); // Nettoyage de sécurité
+            clearCurrentQuotaCheck(); // Nettoyer aussi le quota check
         }
     }
     
@@ -206,6 +213,22 @@ public class RechercheController {
             // Récupérer les informations d'utilisation depuis OpenAiService
             UsageInfo usageInfo = OpenAiService.getCurrentUsage();
             if (usageInfo != null && usageInfo.getTokens() != null && usageInfo.getTokens() > 0) {
+                // Vérifier si le quota est dépassé et utiliser le prix Pay-per-Request si applicable
+                QuotaCheckResult quotaResult = getCurrentQuotaCheck();
+                Double costToUse = usageInfo.getCostUsd();
+                
+                if (quotaResult != null && !quotaResult.isQuotaOk() && quotaResult.isCanUsePayPerRequest()) {
+                    // Quota dépassé : utiliser le prix Pay-per-Request du plan correspondant au marché
+                    if (quotaResult.getPayPerRequestPrice() != null) {
+                        costToUse = quotaResult.getPayPerRequestPrice().doubleValue();
+                        log.info("💰 Requête facturée au prix Pay-per-Request (quota dépassé): {} au lieu de {}", 
+                                costToUse, usageInfo.getCostUsd());
+                    } else {
+                        log.warn("⚠️ Quota dépassé mais prix Pay-per-Request non disponible, utilisation du tarif de base: {}", 
+                                usageInfo.getCostUsd());
+                    }
+                }
+                
                 // Le service logUsage est déjà non-bloquant, on peut l'appeler sans try-catch
                 usageLogService.logUsage(
                     userId,
@@ -213,14 +236,18 @@ public class RechercheController {
                     endpoint,
                     searchTerm,
                     usageInfo.getTokens(),
-                    usageInfo.getCostUsd()
+                    costToUse
                 );
-                log.debug("Tentative d'enregistrement du log: userId={}, organizationId={}, endpoint={}, tokens={}, cost={}", 
-                         userId, organizationId, endpoint, usageInfo.getTokens(), usageInfo.getCostUsd());
+                log.debug("Tentative d'enregistrement du log: userId={}, organizationId={}, endpoint={}, tokens={}, cost={} (quota dépassé: {})", 
+                         userId, organizationId, endpoint, usageInfo.getTokens(), costToUse,
+                         quotaResult != null && !quotaResult.isQuotaOk());
             } else {
                 log.debug("Aucune information d'utilisation disponible pour l'endpoint: {} (usageInfo={})", 
                          endpoint, usageInfo != null ? "présent mais tokens=0 ou null" : "null");
             }
+            
+            // Nettoyer le ThreadLocal après utilisation
+            clearCurrentQuotaCheck();
         } catch (Exception e) {
             // Double sécurité : ne jamais faire échouer la requête si le logging échoue
             log.warn("Erreur lors du logging de l'utilisation (non bloquant): {}", e.getMessage());
@@ -286,23 +313,67 @@ public class RechercheController {
                 );
             }
             
-            // Vérifier le quota (lève une exception si dépassé)
-            organizationService.checkQuota(organizationId);
+            // Vérifier le quota avec résultat détaillé (ne lève plus d'exception si dépassé)
+            QuotaCheckResult quotaResult = organizationService.checkQuotaWithResult(organizationId);
+            
+            // Stocker le résultat dans ThreadLocal pour utilisation dans logUsage()
+            currentQuotaCheck.set(quotaResult);
+            
+            // Si le quota est dépassé mais qu'on peut utiliser Pay-per-Request, permettre la requête
+            if (!quotaResult.isQuotaOk() && quotaResult.isCanUsePayPerRequest()) {
+                log.info("⚠️ Quota dépassé pour l'organisation {} (ID: {}): {}/{} requêtes. " +
+                        "La requête sera facturée au prix Pay-per-Request: {}",
+                        organizationId, quotaResult.getCurrentUsage(), quotaResult.getMonthlyQuota(),
+                        quotaResult.getPayPerRequestPrice() != null ? quotaResult.getPayPerRequestPrice() : "tarif de base");
+                // Permettre la requête, elle sera facturée au prix Pay-per-Request
+            } else if (!quotaResult.isQuotaOk() && !quotaResult.isCanUsePayPerRequest()) {
+                // Quota dépassé et pas de plan Pay-per-Request disponible - bloquer la requête
+                String message = String.format(
+                        "Quota mensuel dépassé pour votre organisation. Utilisation: %d/%d requêtes. " +
+                        "Aucun plan Pay-per-Request disponible pour votre marché.",
+                        quotaResult.getCurrentUsage(), quotaResult.getMonthlyQuota());
+                log.warn("❌ {}", message);
+                currentQuotaCheck.remove();
+                throw new com.muhend.backend.organization.exception.QuotaExceededException(message);
+            } else {
+                // Quota OK
+                log.debug("✅ Quota OK pour l'organisation {}: {}/{} requêtes", 
+                        organizationId, quotaResult.getCurrentUsage(), quotaResult.getMonthlyQuota());
+            }
             
         } catch (UserNotAssociatedException e) {
             // Un utilisateur doit être associé à une organisation
+            currentQuotaCheck.remove();
             throw new IllegalStateException("Vous devez être associé à une organisation pour effectuer des recherches.", e);
         } catch (com.muhend.backend.organization.exception.QuotaExceededException e) {
             // Relancer l'exception pour qu'elle soit gérée par le gestionnaire d'exceptions global
+            currentQuotaCheck.remove();
             throw e;
         } catch (IllegalArgumentException e) {
             // Erreur lors de la vérification du quota (organisation introuvable, etc.)
+            currentQuotaCheck.remove();
             throw new IllegalStateException("Impossible de vérifier le quota. Recherche non autorisée.", e);
         } catch (Exception e) {
             // En cas d'erreur inattendue, on bloque la recherche pour la sécurité
+            currentQuotaCheck.remove();
             log.error("Erreur inattendue lors de la vérification du quota: {}", e.getMessage(), e);
             throw new IllegalStateException("Erreur lors de la vérification du quota. Recherche non autorisée.", e);
         }
+    }
+    
+    /**
+     * Récupère le résultat de la vérification du quota pour la requête courante.
+     * @return QuotaCheckResult ou null si non disponible
+     */
+    public static QuotaCheckResult getCurrentQuotaCheck() {
+        return currentQuotaCheck.get();
+    }
+    
+    /**
+     * Nettoie le ThreadLocal du quota check.
+     */
+    public static void clearCurrentQuotaCheck() {
+        currentQuotaCheck.remove();
     }
 
 

@@ -1,5 +1,6 @@
 package com.muhend.backend.alert.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.muhend.backend.alert.dto.QuotaAlertDto;
 import com.muhend.backend.alert.model.QuotaAlert;
 import com.muhend.backend.alert.repository.QuotaAlertRepository;
@@ -11,8 +12,12 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.FileWriter;
+import java.io.PrintWriter;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -22,6 +27,28 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 public class QuotaAlertService {
+    
+    private static final String DEBUG_LOG_PATH = "c:\\Users\\hamoh\\Documents\\projets\\tarif\\tarif-saas\\tarif-cloak-prod\\.cursor\\debug.log";
+    private static final ObjectMapper objectMapper = new ObjectMapper();
+    
+    private static void debugLog(String location, String message, Map<String, Object> data, String hypothesisId) {
+        try {
+            Map<String, Object> logEntry = new HashMap<>();
+            logEntry.put("id", "log_" + System.currentTimeMillis() + "_" + (int)(Math.random() * 1000));
+            logEntry.put("timestamp", System.currentTimeMillis());
+            logEntry.put("location", location);
+            logEntry.put("message", message);
+            logEntry.put("data", data);
+            logEntry.put("sessionId", "debug-session");
+            logEntry.put("runId", "run1");
+            logEntry.put("hypothesisId", hypothesisId);
+            try (PrintWriter writer = new PrintWriter(new FileWriter(DEBUG_LOG_PATH, true))) {
+                writer.println(objectMapper.writeValueAsString(logEntry));
+            }
+        } catch (Exception e) {
+            // Ignorer les erreurs de logging pour ne pas perturber le flux principal
+        }
+    }
     
     private final QuotaAlertRepository quotaAlertRepository;
     private final OrganizationService organizationService;
@@ -60,6 +87,8 @@ public class QuotaAlertService {
     /**
      * Vérifie le quota d'une organisation spécifique et crée une alerte si nécessaire.
      * 
+     * RÈGLE IMPORTANTE : monthlyQuota = null signifie quota ILLIMITÉ (pas d'alerte créée).
+     * 
      * IMPORTANT : Les alertes sont basées sur :
      * - La consommation de l'organisation : somme de toutes les requêtes de tous les collaborateurs
      * - Le quota de l'organisation : défini par le plan tarifaire choisi (organization.monthlyQuota)
@@ -70,6 +99,13 @@ public class QuotaAlertService {
     @Transactional
     public void checkOrganizationQuota(Long organizationId) {
         OrganizationDto organization = organizationService.getOrganizationById(organizationId);
+        // #region agent log
+        Map<String, Object> logDataD1 = new HashMap<>();
+        logDataD1.put("organizationId", organizationId);
+        logDataD1.put("monthlyQuota", organization != null ? organization.getMonthlyQuota() : null);
+        logDataD1.put("isNull", organization == null || organization.getMonthlyQuota() == null);
+        debugLog("QuotaAlertService.java:73", "checkOrganizationQuota - checking monthlyQuota", logDataD1, "D");
+        // #endregion
         if (organization == null || organization.getMonthlyQuota() == null) {
             return; // Pas de quota à vérifier
         }
@@ -88,6 +124,12 @@ public class QuotaAlertService {
                 organizationId, startOfMonth, endOfMonth);
         
         // Calculer le pourcentage : consommation-organisation / quota-organisation
+        // #region agent log
+        Map<String, Object> logDataD2 = new HashMap<>();
+        logDataD2.put("currentUsage", currentUsage);
+        logDataD2.put("monthlyQuota", organization.getMonthlyQuota());
+        debugLog("QuotaAlertService.java:91", "checkOrganizationQuota - calculating percentage", logDataD2, "D");
+        // #endregion
         double percentageUsed = (double) currentUsage / organization.getMonthlyQuota() * 100;
         
         // Déterminer le type d'alerte

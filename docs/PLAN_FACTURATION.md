@@ -70,7 +70,12 @@ Ce document décrit le système de facturation complet pour l'application HS-Cod
 
 ### Cas 3 : Quota mensuel entièrement consommé
 
-**⚠️ Non implémenté actuellement** : Le passage automatique vers Pay-per-Request lorsque le quota est dépassé n'est pas activé. Une exception `QuotaExceededException` est levée.
+**✅ Implémenté** : Lorsque le quota mensuel d'un plan mensuel est entièrement consommé, les requêtes supplémentaires sont automatiquement facturées au prix du plan Pay-per-Request correspondant au marché de l'organisation.
+
+- Le système recherche automatiquement le plan Pay-per-Request actif pour le marché de l'organisation
+- Si un plan Pay-per-Request est trouvé, les requêtes supplémentaires sont facturées à ce prix
+- Si aucun plan Pay-per-Request n'est disponible pour le marché, une exception `QuotaExceededException` est levée
+- Les requêtes facturées au prix Pay-per-Request sont enregistrées dans les logs d'utilisation avec le coût correspondant
 
 ---
 

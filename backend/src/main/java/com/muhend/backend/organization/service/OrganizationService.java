@@ -6,6 +6,7 @@ import com.muhend.backend.invoice.service.InvoiceService;
 import com.muhend.backend.organization.dto.CreateOrganizationRequest;
 import com.muhend.backend.organization.dto.OrganizationDto;
 import com.muhend.backend.organization.dto.OrganizationUserDto;
+import com.muhend.backend.organization.dto.QuotaCheckResult;
 import com.muhend.backend.organization.dto.UpdateOrganizationRequest;
 import com.muhend.backend.organization.exception.QuotaExceededException;
 import com.muhend.backend.organization.exception.UserNotAssociatedException;
@@ -20,10 +21,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.FileWriter;
+import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -34,6 +40,28 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 public class OrganizationService {
+    
+    private static final String DEBUG_LOG_PATH = "c:\\Users\\hamoh\\Documents\\projets\\tarif\\tarif-saas\\tarif-cloak-prod\\.cursor\\debug.log";
+    private static final ObjectMapper objectMapper = new ObjectMapper();
+    
+    private static void debugLog(String location, String message, Map<String, Object> data, String hypothesisId) {
+        try {
+            Map<String, Object> logEntry = new HashMap<>();
+            logEntry.put("id", "log_" + System.currentTimeMillis() + "_" + (int)(Math.random() * 1000));
+            logEntry.put("timestamp", System.currentTimeMillis());
+            logEntry.put("location", location);
+            logEntry.put("message", message);
+            logEntry.put("data", data);
+            logEntry.put("sessionId", "debug-session");
+            logEntry.put("runId", "run1");
+            logEntry.put("hypothesisId", hypothesisId);
+            try (PrintWriter writer = new PrintWriter(new FileWriter(DEBUG_LOG_PATH, true))) {
+                writer.println(objectMapper.writeValueAsString(logEntry));
+            }
+        } catch (Exception e) {
+            // Ignorer les erreurs de logging pour ne pas perturber le flux principal
+        }
+    }
     
     private final OrganizationRepository organizationRepository;
     private final OrganizationUserRepository organizationUserRepository;
@@ -415,7 +443,7 @@ public class OrganizationService {
     
     /**
      * Vérifie si le quota mensuel d'une organisation est dépassé.
-     * Si monthlyQuota est null, le quota est illimité et cette méthode retourne toujours true.
+     * RÈGLE IMPORTANTE : Si monthlyQuota est null, le quota est illimité et cette méthode retourne toujours true.
      * Phase 4 MVP : Quotas Basiques
      * 
      * IMPORTANT : La consommation en requêtes est comptée au niveau de l'organisation.
@@ -424,8 +452,10 @@ public class OrganizationService {
      * 
      * @param organizationId ID de l'organisation
      * @return true si le quota n'est pas dépassé, false sinon
-     * @throws QuotaExceededException si le quota est dépassé
+     * @throws QuotaExceededException si le quota est dépassé (pour compatibilité avec l'ancien code)
+     * @deprecated Utiliser checkQuotaWithResult() à la place pour obtenir plus d'informations
      */
+    @Deprecated
     public boolean checkQuota(Long organizationId) {
         if (organizationId == null) {
             throw new IllegalArgumentException(
@@ -504,6 +534,128 @@ public class OrganizationService {
         log.info("✅ Quota OK pour l'organisation {} (ID: {}): {}/{} requêtes utilisées ce mois (planId: {})", 
                  organization.getName(), organizationId, currentUsage, monthlyQuota, pricingPlanId);
         return true;
+    }
+    
+    /**
+     * Vérifie si le quota mensuel d'une organisation est dépassé et retourne un résultat détaillé.
+     * RÈGLE IMPORTANTE : Si monthlyQuota est null, le quota est illimité.
+     * Si le quota est dépassé, retourne le prix Pay-per-Request correspondant au marché pour facturer les requêtes supplémentaires.
+     * 
+     * @param organizationId ID de l'organisation
+     * @return QuotaCheckResult contenant les informations sur le quota et le prix Pay-per-Request si applicable
+     */
+    @Transactional(readOnly = true)
+    public QuotaCheckResult checkQuotaWithResult(Long organizationId) {
+        if (organizationId == null) {
+            throw new IllegalArgumentException(
+                "Un utilisateur doit être associé à une organisation. organizationId ne peut pas être null."
+            );
+        }
+        
+        Organization organization = organizationRepository.findById(organizationId)
+                .orElseThrow(() -> new IllegalArgumentException("Organisation non trouvée avec l'ID: " + organizationId));
+        
+        Integer monthlyQuota = organization.getMonthlyQuota();
+        Long pricingPlanId = organization.getPricingPlanId();
+        String marketVersion = organization.getMarketVersion();
+        
+        // #region agent log
+        Map<String, Object> logDataB1 = new HashMap<>();
+        logDataB1.put("organizationId", organizationId);
+        logDataB1.put("monthlyQuota", monthlyQuota);
+        logDataB1.put("pricingPlanId", pricingPlanId);
+        debugLog("OrganizationService.java:530", "checkQuotaWithResult - entry", logDataB1, "B");
+        // #endregion
+        log.debug("Vérification du quota avec résultat pour l'organisation {} (ID: {}): quota={}, planId={}, marketVersion={}", 
+            organization.getName(), organizationId, monthlyQuota, pricingPlanId, marketVersion);
+        
+        // Vérifier si le plan actuel est pay-per-request
+        if (pricingPlanId != null) {
+            try {
+                PricingPlanDto plan = pricingPlanService.getPricingPlanById(pricingPlanId);
+                boolean hasPricePerRequest = plan.getPricePerRequest() != null && plan.getPricePerRequest().compareTo(BigDecimal.ZERO) > 0;
+                boolean hasPricePerMonth = plan.getPricePerMonth() != null && plan.getPricePerMonth().compareTo(BigDecimal.ZERO) > 0;
+                boolean isPayPerRequest = hasPricePerRequest && !hasPricePerMonth;
+                
+                if (isPayPerRequest) {
+                    // Plan pay-per-request : quota illimité
+                    log.info("✅ Quota illimité pour l'organisation {} (ID: {}): plan pay-per-request", 
+                            organization.getName(), organizationId);
+                    return new QuotaCheckResult(true, false, null, 0, null);
+                }
+            } catch (Exception e) {
+                log.warn("Impossible de récupérer le plan {} pour vérifier le type de plan: {}", pricingPlanId, e.getMessage());
+            }
+        }
+        
+        // RÈGLE IMPORTANTE : monthlyQuota = null signifie quota ILLIMITÉ
+        // Si le quota est null, il est illimité (pas de limite de requêtes)
+        // #region agent log
+        Map<String, Object> logDataB2 = new HashMap<>();
+        logDataB2.put("monthlyQuota", monthlyQuota);
+        logDataB2.put("isNull", monthlyQuota == null);
+        debugLog("OrganizationService.java:557", "checkQuotaWithResult - checking if monthlyQuota is null", logDataB2, "B");
+        // #endregion
+        if (monthlyQuota == null) {
+            log.debug("Quota illimité pour l'organisation {} (plan pay-per-request ou illimité)", organization.getName());
+            // #region agent log
+            Map<String, Object> logDataB3 = new HashMap<>();
+            logDataB3.put("monthlyQuota", monthlyQuota);
+            debugLog("OrganizationService.java:559", "checkQuotaWithResult - returning unlimited quota", logDataB3, "B");
+            // #endregion
+            return new QuotaCheckResult(true, false, null, 0, null);
+        }
+        
+        // Calculer le début et la fin du mois en cours
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime startOfMonth = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+        LocalDateTime endOfMonth = now.withDayOfMonth(now.toLocalDate().lengthOfMonth())
+                .withHour(23).withMinute(59).withSecond(59).withNano(999999999);
+        
+        // Compter les requêtes du mois en cours
+        long currentUsage = usageLogRepository.countByOrganizationIdAndTimestampBetween(
+                organizationId, startOfMonth, endOfMonth);
+        
+        log.info("🔍 Vérification du quota pour l'organisation {} (ID: {}): utilisation actuelle={}, quota={}, planId={}", 
+            organization.getName(), organizationId, currentUsage, monthlyQuota, pricingPlanId);
+        
+        // Vérifier si le quota est dépassé
+        if (currentUsage >= monthlyQuota) {
+            // Quota dépassé : chercher le plan Pay-per-Request correspondant au marché
+            BigDecimal payPerRequestPrice = null;
+            try {
+                List<PricingPlanDto> plans = pricingPlanService.getActivePricingPlans(marketVersion);
+                Optional<PricingPlanDto> payPerRequestPlan = plans.stream()
+                        .filter(plan -> {
+                            boolean hasPricePerRequest = plan.getPricePerRequest() != null && plan.getPricePerRequest().compareTo(BigDecimal.ZERO) > 0;
+                            boolean hasPricePerMonth = plan.getPricePerMonth() != null && plan.getPricePerMonth().compareTo(BigDecimal.ZERO) > 0;
+                            return hasPricePerRequest && !hasPricePerMonth; // Plan pay-per-request
+                        })
+                        .findFirst();
+                
+                if (payPerRequestPlan.isPresent()) {
+                    payPerRequestPrice = payPerRequestPlan.get().getPricePerRequest();
+                    log.info("💰 Plan Pay-per-Request trouvé pour le marché {}: prix={} {}", 
+                            marketVersion, payPerRequestPrice, payPerRequestPlan.get().getCurrency());
+                } else {
+                    log.warn("⚠️ Aucun plan Pay-per-Request trouvé pour le marché {} - utilisation du tarif de base", marketVersion);
+                }
+            } catch (Exception e) {
+                log.warn("Erreur lors de la recherche du plan Pay-per-Request pour le marché {}: {}", marketVersion, e.getMessage());
+            }
+            
+            log.info("⚠️ Quota dépassé pour l'organisation {} (ID: {}): {}/{} requêtes. " +
+                    "Les requêtes supplémentaires seront facturées au prix Pay-per-Request: {} {}", 
+                    organization.getName(), organizationId, currentUsage, monthlyQuota, 
+                    payPerRequestPrice != null ? payPerRequestPrice : "tarif de base", 
+                    organization.getMarketVersion() != null ? organization.getMarketVersion() : "DEFAULT");
+            
+            return new QuotaCheckResult(false, true, payPerRequestPrice, currentUsage, monthlyQuota);
+        }
+        
+        log.info("✅ Quota OK pour l'organisation {} (ID: {}): {}/{} requêtes utilisées ce mois", 
+                 organization.getName(), organizationId, currentUsage, monthlyQuota);
+        return new QuotaCheckResult(true, false, null, currentUsage, monthlyQuota);
     }
     
     /**
@@ -604,35 +756,82 @@ public class OrganizationService {
                 organization.setPricingPlanId(pricingPlanId);
                 // Mettre à jour le quota selon le plan
                 Integer oldQuota = organization.getMonthlyQuota();
+                // #region agent log
+                Map<String, Object> logDataA1 = new HashMap<>();
+                logDataA1.put("organizationId", organizationId);
+                logDataA1.put("oldQuota", oldQuota);
+                logDataA1.put("planMonthlyQuota", newPlan.getMonthlyQuota());
+                logDataA1.put("planName", newPlan.getName());
+                logDataA1.put("pricingPlanId", pricingPlanId);
+                debugLog("OrganizationService.java:712", "changePricingPlan - entry", logDataA1, "A");
+                // #endregion
                 log.info("🔄 Changement de plan pour l'organisation {} (ID: {}): ancien quota={}, nouveau plan={} (ID: {}), monthlyQuota du plan={}, pricePerRequest={}", 
                     organization.getName(), organizationId, oldQuota, newPlan.getName(), pricingPlanId, newPlan.getMonthlyQuota(), newPlan.getPricePerRequest());
                 
-                // Pour les plans pay-per-request (pricePerRequest != null), le quota doit être null (illimité)
-                // Pour les plans mensuels avec quota défini, utiliser le quota du plan
-                // Pour les plans mensuels sans quota défini, mettre à null (illimité)
+                // RÈGLE IMPORTANTE : monthlyQuota = null signifie quota ILLIMITÉ
+                // - Pour les plans pay-per-request (pricePerRequest != null), le quota doit être null (illimité)
+                // - Pour les plans mensuels avec quota défini (> 0), utiliser le quota du plan
+                // - Pour les plans mensuels sans quota défini (null ou 0), mettre à null (illimité)
+                // Note : monthlyQuota = 0 signifie 0 requêtes autorisées (différent de null)
                 boolean hasPricePerRequest = newPlan.getPricePerRequest() != null && newPlan.getPricePerRequest().compareTo(BigDecimal.ZERO) > 0;
                 boolean hasPricePerMonth = newPlan.getPricePerMonth() != null && newPlan.getPricePerMonth().compareTo(BigDecimal.ZERO) > 0;
                 boolean isPayPerRequest = hasPricePerRequest && !hasPricePerMonth; // Plan pay-per-request si pricePerRequest > 0 ET pricePerMonth est null ou 0
                 
+                // #region agent log
+                Map<String, Object> logDataA2 = new HashMap<>();
+                logDataA2.put("hasPricePerRequest", hasPricePerRequest);
+                logDataA2.put("hasPricePerMonth", hasPricePerMonth);
+                logDataA2.put("isPayPerRequest", isPayPerRequest);
+                logDataA2.put("planMonthlyQuota", newPlan.getMonthlyQuota());
+                debugLog("OrganizationService.java:720", "changePricingPlan - plan analysis", logDataA2, "A");
+                // #endregion
                 log.info("🔍 Analyse du plan {} (ID: {}): pricePerRequest={}, pricePerMonth={}, monthlyQuota={}, isPayPerRequest={}", 
                     newPlan.getName(), pricingPlanId, newPlan.getPricePerRequest(), newPlan.getPricePerMonth(), newPlan.getMonthlyQuota(), isPayPerRequest);
                 
+                Integer newQuotaValue = null;
                 if (isPayPerRequest) {
                     // Plan pay-per-request : quota illimité (ignorer le monthlyQuota du plan s'il existe)
+                    newQuotaValue = null;
+                    // #region agent log
+                    Map<String, Object> logDataA3 = new HashMap<>();
+                    logDataA3.put("newQuotaValue", newQuotaValue);
+                    debugLog("OrganizationService.java:727", "changePricingPlan - pay-per-request branch", logDataA3, "A");
+                    // #endregion
                     organization.setMonthlyQuota(null);
                     log.info("✅ Quota mensuel mis à null (illimité - plan pay-per-request) pour l'organisation {} (ID: {}): {} -> null (plan: {} - ID: {})", 
                         organization.getName(), organizationId, oldQuota, newPlan.getName(), pricingPlanId);
                 } else if (newPlan.getMonthlyQuota() != null && newPlan.getMonthlyQuota() > 0) {
                     // Plan mensuel avec quota défini
+                    newQuotaValue = newPlan.getMonthlyQuota();
+                    // #region agent log
+                    Map<String, Object> logDataA4 = new HashMap<>();
+                    logDataA4.put("newQuotaValue", newQuotaValue);
+                    logDataA4.put("planMonthlyQuota", newPlan.getMonthlyQuota());
+                    debugLog("OrganizationService.java:732", "changePricingPlan - monthly plan with quota", logDataA4, "A");
+                    // #endregion
                     organization.setMonthlyQuota(newPlan.getMonthlyQuota());
                     log.info("✅ Quota mensuel mis à jour pour l'organisation {} (ID: {}): {} -> {} requêtes/mois (plan: {} - ID: {})", 
                         organization.getName(), organizationId, oldQuota, newPlan.getMonthlyQuota(), newPlan.getName(), pricingPlanId);
                 } else {
                     // Plan mensuel sans quota défini : quota illimité
+                    newQuotaValue = null;
+                    // #region agent log
+                    Map<String, Object> logDataA5 = new HashMap<>();
+                    logDataA5.put("newQuotaValue", newQuotaValue);
+                    logDataA5.put("planMonthlyQuota", newPlan.getMonthlyQuota());
+                    logDataA5.put("isPayPerRequest", isPayPerRequest);
+                    debugLog("OrganizationService.java:737", "changePricingPlan - monthly plan without quota (null)", logDataA5, "A");
+                    // #endregion
                     organization.setMonthlyQuota(null);
                     log.info("✅ Quota mensuel mis à null (illimité - plan sans quota) pour l'organisation {} (ID: {}): {} -> null (plan: {} - ID: {})", 
                         organization.getName(), organizationId, oldQuota, newPlan.getName(), pricingPlanId);
                 }
+                // #region agent log
+                Map<String, Object> logDataA6 = new HashMap<>();
+                logDataA6.put("finalQuotaValue", organization.getMonthlyQuota());
+                logDataA6.put("oldQuota", oldQuota);
+                debugLog("OrganizationService.java:740", "changePricingPlan - final quota value", logDataA6, "A");
+                // #endregion
                 // Si c'est un plan d'essai, définir la date d'expiration
                 if (newPlan.getTrialPeriodDays() != null && newPlan.getTrialPeriodDays() > 0) {
                     organization.setTrialExpiresAt(LocalDateTime.now().plusDays(newPlan.getTrialPeriodDays()));
@@ -959,6 +1158,13 @@ public class OrganizationService {
         // Vérifier le quota si l'organisation en a un (seulement pour les plans d'essai gratuit)
         // Pour un plan d'essai avec quota, l'essai expire seulement quand le quota est atteint
         Integer monthlyQuota = organization.getMonthlyQuota();
+        // #region agent log
+        Map<String, Object> logDataC1 = new HashMap<>();
+        logDataC1.put("monthlyQuota", monthlyQuota);
+        logDataC1.put("isNull", monthlyQuota == null);
+        logDataC1.put("organizationId", organization.getId());
+        debugLog("OrganizationService.java:1067", "isTrialExpired - checking monthlyQuota", logDataC1, "C");
+        // #endregion
         if (monthlyQuota != null) {
             // Calculer l'utilisation actuelle
             LocalDateTime now = LocalDateTime.now();
@@ -970,6 +1176,13 @@ public class OrganizationService {
                     organization.getId(), startOfMonth, endOfMonth);
             
             // Si le quota n'est pas atteint, l'essai n'est pas expiré (même si la date est passée)
+            // #region agent log
+            Map<String, Object> logDataC2 = new HashMap<>();
+            logDataC2.put("currentUsage", currentUsage);
+            logDataC2.put("monthlyQuota", monthlyQuota);
+            logDataC2.put("isBelowQuota", currentUsage < monthlyQuota);
+            debugLog("OrganizationService.java:1078", "isTrialExpired - comparing usage with quota", logDataC2, "C");
+            // #endregion
             if (currentUsage < monthlyQuota) {
                 log.debug("Essai non expiré pour l'organisation {}: quota non atteint ({}/{})", 
                         organization.getId(), currentUsage, monthlyQuota);

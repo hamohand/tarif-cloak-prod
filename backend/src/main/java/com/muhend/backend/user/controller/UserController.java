@@ -25,9 +25,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.FileWriter;
+import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 import java.time.LocalTime;
 import java.util.*;
 
@@ -41,6 +46,28 @@ import java.util.*;
 @Slf4j
 @Tag(name = "User", description = "Endpoints utilisateurs pour consulter leur organisation et leurs statistiques")
 public class UserController {
+    
+    private static final String DEBUG_LOG_PATH = "c:\\Users\\hamoh\\Documents\\projets\\tarif\\tarif-saas\\tarif-cloak-prod\\.cursor\\debug.log";
+    private static final ObjectMapper objectMapper = new ObjectMapper();
+    
+    private static void debugLog(String location, String message, Map<String, Object> data, String hypothesisId) {
+        try {
+            Map<String, Object> logEntry = new HashMap<>();
+            logEntry.put("id", "log_" + System.currentTimeMillis() + "_" + (int)(Math.random() * 1000));
+            logEntry.put("timestamp", System.currentTimeMillis());
+            logEntry.put("location", location);
+            logEntry.put("message", message);
+            logEntry.put("data", data);
+            logEntry.put("sessionId", "debug-session");
+            logEntry.put("runId", "run1");
+            logEntry.put("hypothesisId", hypothesisId);
+            try (PrintWriter writer = new PrintWriter(new FileWriter(DEBUG_LOG_PATH, true))) {
+                writer.println(objectMapper.writeValueAsString(logEntry));
+            }
+        } catch (Exception e) {
+            // Ignorer les erreurs de logging pour ne pas perturber le flux principal
+        }
+    }
 
     private final OrganizationService organizationService;
     private final UsageLogRepository usageLogRepository;
@@ -162,16 +189,23 @@ public class UserController {
                 // Calculer l'utilisation totale de l'organisation ce mois
                 long organizationMonthlyUsage = usageLogRepository.countByOrganizationIdAndTimestampBetween(organizationId, startOfMonth, endOfMonth);
                 
-                Map<String, Object> quotaInfo = new LinkedHashMap<>();
-                quotaInfo.put("monthlyQuota", organization.getMonthlyQuota());
-                quotaInfo.put("currentUsage", organizationMonthlyUsage); // Usage total de l'organisation
-                quotaInfo.put("personalUsage", monthlyRequests); // Usage personnel
-                quotaInfo.put("remaining", organization.getMonthlyQuota() != null 
-                        ? Math.max(0, organization.getMonthlyQuota() - organizationMonthlyUsage)
-                        : -1); // -1 = illimité
-                quotaInfo.put("percentageUsed", organization.getMonthlyQuota() != null && organization.getMonthlyQuota() > 0
-                        ? (double) organizationMonthlyUsage / organization.getMonthlyQuota() * 100
-                        : 0.0);
+            Map<String, Object> quotaInfo = new LinkedHashMap<>();
+            // #region agent log
+            Map<String, Object> logDataE1 = new HashMap<>();
+            logDataE1.put("monthlyQuota", organization.getMonthlyQuota());
+            logDataE1.put("currentUsage", organizationMonthlyUsage);
+            logDataE1.put("isNull", organization.getMonthlyQuota() == null);
+            debugLog("UserController.java:166", "getMyStats - calculating quota info", logDataE1, "E");
+            // #endregion
+            quotaInfo.put("monthlyQuota", organization.getMonthlyQuota());
+            quotaInfo.put("currentUsage", organizationMonthlyUsage); // Usage total de l'organisation
+            quotaInfo.put("personalUsage", monthlyRequests); // Usage personnel
+            quotaInfo.put("remaining", organization.getMonthlyQuota() != null 
+                    ? Math.max(0, organization.getMonthlyQuota() - organizationMonthlyUsage)
+                    : -1); // -1 = illimité
+            quotaInfo.put("percentageUsed", organization.getMonthlyQuota() != null && organization.getMonthlyQuota() > 0
+                    ? (double) organizationMonthlyUsage / organization.getMonthlyQuota() * 100
+                    : 0.0);
                 stats.put("quotaInfo", quotaInfo);
             }
 
@@ -221,6 +255,13 @@ public class UserController {
             long personalUsage = usageLogRepository.countByKeycloakUserIdAndTimestampBetween(userId, startOfMonth, endOfMonth);
 
             Map<String, Object> quota = new LinkedHashMap<>();
+            // #region agent log
+            Map<String, Object> logDataE2 = new HashMap<>();
+            logDataE2.put("monthlyQuota", organization.getMonthlyQuota());
+            logDataE2.put("currentUsage", currentUsage);
+            logDataE2.put("isNull", organization.getMonthlyQuota() == null);
+            debugLog("UserController.java:223", "getMyQuota - calculating quota", logDataE2, "E");
+            // #endregion
             quota.put("hasOrganization", true);
             quota.put("organizationId", organizationId);
             quota.put("organizationName", organization.getName());
