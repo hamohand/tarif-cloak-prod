@@ -13,6 +13,9 @@ import com.muhend.backend.organization.service.OrganizationService;
 import com.muhend.backend.organization.dto.OrganizationDto;
 import com.muhend.backend.organization.dto.QuotaCheckResult;
 import com.muhend.backend.organization.exception.UserNotAssociatedException;
+import com.muhend.backend.pricing.dto.PricingPlanDto;
+import com.muhend.backend.pricing.service.PricingPlanService;
+import java.math.BigDecimal;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,6 +50,7 @@ public class RechercheController {
     private final Position6DzService position6DzService;
     private final UsageLogService usageLogService;
     private final OrganizationService organizationService;
+    private final PricingPlanService pricingPlanService;
     
     // ThreadLocal pour stocker le résultat de la vérification du quota pour la requête courante
     private static final ThreadLocal<QuotaCheckResult> currentQuotaCheck = new ThreadLocal<>();
@@ -54,7 +58,8 @@ public class RechercheController {
     @Autowired
     public RechercheController(AiService aiService, AiPrompts aiPrompts, SectionService sectionService, ChapitreService chapitreService,
                                Position4Service position4Service, Position6DzService position6DzService,
-                               UsageLogService usageLogService, OrganizationService organizationService) {
+                               UsageLogService usageLogService, OrganizationService organizationService,
+                               PricingPlanService pricingPlanService) {
         this.aiService = aiService;
         this.aiPrompts = aiPrompts;
         this.sectionService = sectionService;
@@ -63,6 +68,7 @@ public class RechercheController {
         this.position6DzService = position6DzService;
         this.usageLogService = usageLogService;
         this.organizationService = organizationService;
+        this.pricingPlanService = pricingPlanService;
     }
 
     // Enumération des différents niveaux de recherche
@@ -213,20 +219,63 @@ public class RechercheController {
             // Récupérer les informations d'utilisation depuis OpenAiService
             UsageInfo usageInfo = OpenAiService.getCurrentUsage();
             if (usageInfo != null && usageInfo.getTokens() != null && usageInfo.getTokens() > 0) {
-                // Vérifier si le quota est dépassé et utiliser le prix Pay-per-Request si applicable
+                // Récupérer l'organisation pour déterminer le type de plan
+                OrganizationDto organization = organizationService.getOrganizationById(organizationId);
                 QuotaCheckResult quotaResult = getCurrentQuotaCheck();
-                Double costToUse = usageInfo.getCostUsd();
                 
-                if (quotaResult != null && !quotaResult.isQuotaOk() && quotaResult.isCanUsePayPerRequest()) {
-                    // Quota dépassé : utiliser le prix Pay-per-Request du plan correspondant au marché
-                    if (quotaResult.getPayPerRequestPrice() != null) {
-                        costToUse = quotaResult.getPayPerRequestPrice().doubleValue();
-                        log.info("💰 Requête facturée au prix Pay-per-Request (quota dépassé): {} au lieu de {}", 
-                                costToUse, usageInfo.getCostUsd());
-                    } else {
-                        log.warn("⚠️ Quota dépassé mais prix Pay-per-Request non disponible, utilisation du tarif de base: {}", 
-                                usageInfo.getCostUsd());
+                // Déterminer le coût selon la politique de facturation
+                Double costToUse = null; // Par défaut : pas de facturation
+                String billingReason = "plan mensuel (facturation mensuelle fixe)";
+                
+                if (organization != null && organization.getPricingPlanId() != null) {
+                    try {
+                        PricingPlanDto plan = pricingPlanService.getPricingPlanById(organization.getPricingPlanId());
+                        boolean hasPricePerRequest = plan.getPricePerRequest() != null && plan.getPricePerRequest().compareTo(BigDecimal.ZERO) > 0;
+                        boolean hasPricePerMonth = plan.getPricePerMonth() != null && plan.getPricePerMonth().compareTo(BigDecimal.ZERO) > 0;
+                        boolean isPayPerRequest = hasPricePerRequest && !hasPricePerMonth;
+                        boolean isMonthlyPlan = hasPricePerMonth && !hasPricePerRequest;
+                        
+                        if (isPayPerRequest) {
+                            // Plan pay-per-request : facturer chaque requête avec le prix du plan dans sa monnaie
+                            costToUse = plan.getPricePerRequest().doubleValue();
+                            billingReason = String.format("plan pay-per-request (%s %s)", 
+                                    plan.getPricePerRequest(), plan.getCurrency() != null ? plan.getCurrency() : "EUR");
+                            log.debug("💰 Facturation par requête pour plan pay-per-request: {} {}", 
+                                    costToUse, plan.getCurrency() != null ? plan.getCurrency() : "EUR");
+                        } else if (isMonthlyPlan) {
+                            // Plan mensuel : pas de facturation par requête SAUF si quota dépassé
+                            if (quotaResult != null && !quotaResult.isQuotaOk() && quotaResult.isCanUsePayPerRequest()) {
+                                // Quota dépassé : facturer au prix Pay-per-Request du plan correspondant au marché
+                                if (quotaResult.getPayPerRequestPrice() != null) {
+                                    costToUse = quotaResult.getPayPerRequestPrice().doubleValue();
+                                    billingReason = "quota mensuel dépassé (facturation pay-per-request)";
+                                    log.info("💰 Requête facturée au prix Pay-per-Request (quota dépassé): {} au lieu de {}", 
+                                            costToUse, usageInfo.getCostUsd());
+                                } else {
+                                    log.warn("⚠️ Quota dépassé mais prix Pay-per-Request non disponible, pas de facturation");
+                                }
+                            } else {
+                                // Plan mensuel normal : pas de facturation par requête
+                                costToUse = null;
+                                log.debug("✅ Plan mensuel : pas de facturation par requête (facturation mensuelle fixe)");
+                            }
+                        } else {
+                            // Plan gratuit ou mixte : pas de facturation
+                            costToUse = null;
+                            billingReason = "plan gratuit ou mixte";
+                            log.debug("Plan gratuit ou mixte : pas de facturation");
+                        }
+                    } catch (Exception e) {
+                        log.warn("Erreur lors de la récupération du plan {} pour déterminer la facturation: {}", 
+                                organization.getPricingPlanId(), e.getMessage());
+                        // En cas d'erreur, ne pas facturer pour éviter les erreurs
+                        costToUse = null;
                     }
+                } else {
+                    // Pas de plan : pas de facturation
+                    costToUse = null;
+                    billingReason = "pas de plan tarifaire";
+                    log.debug("Organisation sans plan tarifaire : pas de facturation");
                 }
                 
                 // Le service logUsage est déjà non-bloquant, on peut l'appeler sans try-catch
@@ -238,9 +287,9 @@ public class RechercheController {
                     usageInfo.getTokens(),
                     costToUse
                 );
-                log.debug("Tentative d'enregistrement du log: userId={}, organizationId={}, endpoint={}, tokens={}, cost={} (quota dépassé: {})", 
-                         userId, organizationId, endpoint, usageInfo.getTokens(), costToUse,
-                         quotaResult != null && !quotaResult.isQuotaOk());
+                log.debug("Enregistrement du log: userId={}, organizationId={}, endpoint={}, tokens={}, cost={} ({})", 
+                         userId, organizationId, endpoint, usageInfo.getTokens(), 
+                         costToUse != null ? costToUse : "0 (non facturé)", billingReason);
             } else {
                 log.debug("Aucune information d'utilisation disponible pour l'endpoint: {} (usageInfo={})", 
                          endpoint, usageInfo != null ? "présent mais tokens=0 ou null" : "null");
