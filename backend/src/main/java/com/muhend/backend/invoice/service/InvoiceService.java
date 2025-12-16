@@ -1046,5 +1046,185 @@ public class InvoiceService {
         
         return invoiceDto;
     }
+    
+    /**
+     * Génère une facture de clôture pour un cycle mensuel complet.
+     * 
+     * @param organizationId ID de l'organisation
+     * @param plan Le plan mensuel
+     * @param startDate Date de début du cycle
+     * @param endDate Date de fin du cycle (inclus)
+     * @return La facture générée
+     */
+    @Transactional
+    public InvoiceDto generateMonthlyPlanCycleClosureInvoice(Long organizationId, PricingPlanDto plan, 
+                                                             LocalDate startDate, LocalDate endDate) {
+        OrganizationDto organization = organizationService.getOrganizationById(organizationId);
+        if (organization == null) {
+            throw new IllegalArgumentException("Organisation non trouvée avec l'ID: " + organizationId);
+        }
+        
+        // Vérifier si une facture existe déjà pour cette période
+        if (invoiceRepository.existsByOrganizationIdAndPeriodStartAndPeriodEnd(organizationId, startDate, endDate)) {
+            log.info("Une facture existe déjà pour l'organisation {} pour la période {} - {}", 
+                    organizationId, startDate, endDate);
+            return null;
+        }
+        
+        // Le montant est le prix mensuel fixe du plan
+        BigDecimal totalAmount = plan.getPricePerMonth();
+        
+        // Générer le numéro de facture
+        YearMonth yearMonth = YearMonth.from(startDate);
+        String invoiceNumber = generateInvoiceNumber(organizationId, yearMonth.getYear(), yearMonth.getMonthValue()) + "-CYCLE";
+        
+        // Vérifier l'unicité du numéro
+        int suffix = 1;
+        String finalInvoiceNumber = invoiceNumber;
+        while (invoiceRepository.findByInvoiceNumber(finalInvoiceNumber).isPresent()) {
+            finalInvoiceNumber = invoiceNumber + "-" + suffix;
+            suffix++;
+        }
+        
+        // Créer la facture
+        Invoice invoice = new Invoice();
+        invoice.setOrganizationId(organizationId);
+        invoice.setOrganizationName(organization.getName());
+        invoice.setOrganizationEmail(organization.getEmail());
+        invoice.setInvoiceNumber(finalInvoiceNumber);
+        invoice.setPeriodStart(startDate);
+        invoice.setPeriodEnd(endDate);
+        invoice.setTotalAmount(totalAmount);
+        invoice.setStatus(Invoice.InvoiceStatus.PENDING);
+        invoice.setDueDate(endDate.plusDays(30));
+        invoice.setNotes(String.format("Facture de cycle mensuel - Plan %s (du %s au %s inclus)", 
+                plan.getName(), startDate, endDate));
+        
+        invoice = invoiceRepository.save(invoice);
+        
+        // Créer une ligne de facture
+        InvoiceItem item = new InvoiceItem();
+        item.setInvoice(invoice);
+        item.setDescription(String.format("Plan %s - Cycle mensuel (du %s au %s inclus)", 
+                plan.getName(), startDate, endDate));
+        item.setQuantity(1);
+        item.setUnitPrice(totalAmount);
+        item.setTotalPrice(totalAmount);
+        item.setItemType("MONTHLY_PLAN_CYCLE");
+        
+        invoiceItemRepository.save(item);
+        
+        log.info("Facture de cycle mensuel générée: {} pour l'organisation {} (plan: {}, montant: {} {})",
+                finalInvoiceNumber, organization.getName(), plan.getName(), totalAmount, plan.getCurrency());
+        
+        InvoiceDto invoiceDto = toDto(invoice);
+        sendInvoiceNotificationEmail(invoiceDto, organization);
+        
+        return invoiceDto;
+    }
+    
+    /**
+     * Génère une facture pour un cycle mensuel (reconduction automatique).
+     * 
+     * @param organizationId ID de l'organisation
+     * @param plan Le plan mensuel
+     * @param startDate Date de début du cycle
+     * @param endDate Date de fin du cycle (inclus)
+     * @return La facture générée
+     */
+    @Transactional
+    public InvoiceDto generateMonthlyPlanCycleInvoice(Long organizationId, PricingPlanDto plan, 
+                                                      LocalDate startDate, LocalDate endDate) {
+        // Même logique que generateMonthlyPlanCycleClosureInvoice
+        return generateMonthlyPlanCycleClosureInvoice(organizationId, plan, startDate, endDate);
+    }
+    
+    /**
+     * Génère une facture de clôture pour un plan Pay-per-Request (depuis la dernière facture jusqu'à aujourd'hui).
+     * 
+     * @param organizationId ID de l'organisation
+     * @param plan Le plan Pay-per-Request
+     * @param startDate Date de début (dernière facture)
+     * @param endDate Date de fin (aujourd'hui)
+     * @return La facture générée
+     */
+    @Transactional
+    public InvoiceDto generatePayPerRequestClosureInvoice(Long organizationId, PricingPlanDto plan, 
+                                                         LocalDate startDate, LocalDate endDate) {
+        OrganizationDto organization = organizationService.getOrganizationById(organizationId);
+        if (organization == null) {
+            throw new IllegalArgumentException("Organisation non trouvée avec l'ID: " + organizationId);
+        }
+        
+        // Vérifier si une facture existe déjà pour cette période
+        if (invoiceRepository.existsByOrganizationIdAndPeriodStartAndPeriodEnd(organizationId, startDate, endDate)) {
+            log.info("Une facture existe déjà pour l'organisation {} pour la période {} - {}", 
+                    organizationId, startDate, endDate);
+            return null;
+        }
+        
+        // Récupérer les logs d'utilisation pour la période
+        LocalDateTime startDateTime = startDate.atStartOfDay();
+        LocalDateTime endDateTime = endDate.atTime(LocalTime.MAX);
+        
+        List<UsageLog> usageLogs = usageLogRepository.findByOrganizationIdAndTimestampBetween(
+                organizationId, startDateTime, endDateTime);
+        
+        // Si aucune utilisation, ne pas générer de facture
+        if (usageLogs.isEmpty()) {
+            log.info("Aucune utilisation trouvée pour l'organisation {} sur la période {} - {}. Facture non générée.",
+                    organizationId, startDate, endDate);
+            return null;
+        }
+        
+        // Calculer le total (somme des coûts des requêtes)
+        BigDecimal totalAmount = usageLogs.stream()
+                .filter(log -> log.getCostUsd() != null)
+                .map(UsageLog::getCostUsd)
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .setScale(2, RoundingMode.HALF_UP);
+        
+        // Générer le numéro de facture
+        YearMonth yearMonth = YearMonth.from(startDate);
+        String invoiceNumber = generateInvoiceNumber(organizationId, yearMonth.getYear(), yearMonth.getMonthValue()) + "-PPR-CLOSURE";
+        
+        // Vérifier l'unicité du numéro
+        int suffix = 1;
+        String finalInvoiceNumber = invoiceNumber;
+        while (invoiceRepository.findByInvoiceNumber(finalInvoiceNumber).isPresent()) {
+            finalInvoiceNumber = invoiceNumber + "-" + suffix;
+            suffix++;
+        }
+        
+        // Créer la facture
+        Invoice invoice = new Invoice();
+        invoice.setOrganizationId(organizationId);
+        invoice.setOrganizationName(organization.getName());
+        invoice.setOrganizationEmail(organization.getEmail());
+        invoice.setInvoiceNumber(finalInvoiceNumber);
+        invoice.setPeriodStart(startDate);
+        invoice.setPeriodEnd(endDate);
+        invoice.setTotalAmount(totalAmount);
+        invoice.setStatus(Invoice.InvoiceStatus.PENDING);
+        invoice.setDueDate(endDate.plusDays(14));
+        invoice.setNotes(String.format("Facture de clôture Pay-per-Request - Plan %s (du %s au %s)", 
+                plan.getName(), startDate, endDate));
+        
+        invoice = invoiceRepository.save(invoice);
+        
+        // Créer les lignes de facture
+        List<InvoiceItem> items = createInvoiceItems(invoice, usageLogs);
+        if (!items.isEmpty()) {
+            invoiceItemRepository.saveAll(items);
+        }
+        
+        log.info("Facture de clôture Pay-per-Request générée: {} pour l'organisation {} (plan: {}, montant: {} {})",
+                finalInvoiceNumber, organization.getName(), plan.getName(), totalAmount, plan.getCurrency());
+        
+        InvoiceDto invoiceDto = toDto(invoice);
+        sendInvoiceNotificationEmail(invoiceDto, organization);
+        
+        return invoiceDto;
+    }
 }
 

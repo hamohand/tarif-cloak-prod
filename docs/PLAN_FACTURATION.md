@@ -4,36 +4,124 @@
 
 Ce document décrit le système de facturation complet pour l'application HS-Code, incluant les différents types de plans tarifaires et leurs règles de facturation.
 
+**Politique de facturation mise à jour** : Février 2025
+
 ---
 
 ## 💰 Types de Plans Tarifaires
 
-### 1. Plans Mensuels (avec quota)
+### 1. Plan Essai Gratuit
 
 **Caractéristiques :**
-- `pricePerMonth` : Prix mensuel fixe
-- `monthlyQuota` : Nombre de requêtes autorisées par mois
-- `pricePerRequest` : `null`
-
-**Facturation :**
-- Facture mensuelle générée en fin de mois
-- Proratisation lors du changement de plan en cours de mois
-
-### 2. Plans Pay-per-Request (facturation à la requête)
-
-**Caractéristiques :**
-- `pricePerRequest` : Prix par requête
-- `monthlyQuota` : `null` (pas de limite)
+- `trialPeriodDays` > 0 : Nombre de jours d'essai
 - `pricePerMonth` : `null`
+- `pricePerRequest` : `null`
+- `monthlyQuota` : Quota de requêtes non facturées pendant la période d'essai
+
+**Règles :**
+- Une organisation ne peut utiliser le plan d'essai qu'**une seule fois**
+- Une fois utilisé, le plan d'essai n'est plus disponible pour cette organisation
+- À l'issue du plan d'essai, l'organisation doit choisir un plan payant
 
 **Facturation :**
-- Facture bihebdomadaire (toutes les 2 semaines)
-- Génération automatique tous les lundis à 8h00
-- Période facturée : 14 derniers jours (du lundi il y a 2 semaines au dimanche dernier)
+- Aucune facturation pendant la période d'essai
+- Les requêtes sont comptabilisées mais non facturées
+
+### 2. Plans Mensuels
+
+**Caractéristiques :**
+- `pricePerMonth` : Prix mensuel fixe (dans la devise du marché)
+- `monthlyQuota` : Nombre de requêtes autorisées par cycle mensuel (null = illimité)
+- `pricePerRequest` : `null`
+- `currency` : Devise du marché (ex: EUR, DZD)
+
+**Cycle mensuel :**
+- Le cycle mensuel commence le jour J et se termine le jour J-1 du mois suivant (inclus)
+- Exemple : Si le cycle commence le 15 janvier, il se termine le 14 février (inclus)
+- Le quota est réinitialisé le 15 février (jour suivant la fin du cycle)
+
+**Facturation :**
+- **Aucune facturation par requête** pour les plans mensuels
+- Facture mensuelle générée à la fin de chaque cycle pour le montant fixe du plan
+- Reconduction tacite automatique à la fin de chaque cycle
+- Les requêtes hors quota sont facturées au tarif du plan "Paiement à la requête"
+
+### 3. Plans Pay-per-Request (Paiement à la requête)
+
+**Caractéristiques :**
+- `pricePerRequest` : Prix par requête (dans la devise du marché)
+- `monthlyQuota` : `null` (quota illimité)
+- `pricePerMonth` : `null`
+- `currency` : Devise du marché
+
+**Facturation :**
+- Facturation à chaque requête
+- Toutes les requêtes utilisées sont dues
+- Facture de clôture générée lors du passage vers un plan mensuel (depuis la dernière facture jusqu'à la date de changement)
 
 ---
 
 ## 🔄 Règles de Changement de Plan
+
+**Règle fondamentale** : Une organisation ne peut avoir qu'**un seul plan à la fois**.
+
+### Cas 1 : Plan Essai Gratuit → Autre plan
+
+- ✅ **Effet immédiat**
+- Le plan d'essai ne peut être utilisé qu'une seule fois
+- Si l'organisation a déjà utilisé l'essai, le passage vers un plan d'essai est refusé
+
+### Cas 2 : Plan Mensuel → Plan Mensuel
+
+- ⚠️ **Changement en attente** (prend effet à la fin du cycle en cours)
+- Le changement ne prend effet qu'au terme du plan mensuel en cours
+- Le nouveau plan est enregistré comme "en attente" (`pendingMonthlyPlanId`)
+- Le changement peut être annulé avant la date d'effet
+- À la fin du cycle, le scheduler applique automatiquement le changement :
+  - Génère une facture de clôture pour l'ancien plan (cycle complet)
+  - Applique le nouveau plan et initialise un nouveau cycle
+
+### Cas 3 : Plan Mensuel → Pay-per-Request
+
+**Deux scénarios possibles :**
+
+#### 3a. Changement automatique et provisoire (quota dépassé)
+- ⚠️ **Automatique et provisoire** : Si l'utilisateur dépasse son quota mensuel avant la fin du cycle, les requêtes supplémentaires sont facturées au tarif Pay-per-Request
+- **Ce n'est PAS un changement de plan** : Le plan reste mensuel, seule la facturation change temporairement
+- Le quota du plan mensuel sera réinitialisé au début du nouveau cycle
+- Aucune facture de clôture n'est générée dans ce cas
+
+#### 3b. Changement de plan demandé par l'utilisateur
+- **Si le quota est déjà dépassé** : ✅ **Effet immédiat**
+  - Génère une facture de clôture pour le cycle mensuel en cours
+  - Le plan Pay-per-Request prend effet immédiatement
+  
+- **Si le quota n'est pas dépassé** : ⚠️ **Changement en attente**
+  - Le changement est enregistré en attente (`pendingPayPerRequestPlanId`)
+  - Le changement prendra effet :
+    - **Immédiatement** si le quota est dépassé avant la fin du cycle
+    - **À la fin du cycle mensuel** si le quota n'est pas dépassé
+  - Le scheduler vérifie quotidiennement si le quota est dépassé pour appliquer le changement
+
+### Cas 4 : Pay-per-Request → Plan Mensuel
+
+- ✅ **Effet immédiat**
+- Génère une facture de clôture Pay-per-Request depuis la dernière facture (`lastPayPerRequestInvoiceDate`) jusqu'à aujourd'hui
+- Le plan mensuel prend effet immédiatement
+- Initialise un nouveau cycle mensuel (du jour J au jour J-1 du mois suivant inclus)
+
+### Cas 5 : Pay-per-Request → Pay-per-Request
+
+- ✅ **Effet immédiat**
+- Changement de tarif immédiat (tous les paramètres sont remplacés)
+
+### Règle de remplacement
+
+**Lors d'un changement de plan, TOUS les paramètres de l'ancien plan sont remplacés par ceux du nouveau plan** :
+- `pricingPlanId`
+- `monthlyQuota`
+- `monthlyPlanStartDate` / `monthlyPlanEndDate` (pour plans mensuels)
+- Tous les autres paramètres du plan
 
 ### Cas 1 : Deux plans mensuels
 
@@ -68,68 +156,65 @@ Ce document décrit le système de facturation complet pour l'application HS-Cod
 - Facture mensuelle complète générée pour le nouveau plan
 - Pas de facture de clôture pour Pay-per-Request
 
-### Cas 3 : Quota mensuel entièrement consommé
+### Cas 6 : Quota mensuel dépassé (plans mensuels)
 
-**✅ Implémenté** : Lorsque le quota mensuel d'un plan mensuel est entièrement consommé, les requêtes supplémentaires sont automatiquement facturées au prix du plan Pay-per-Request correspondant au marché de l'organisation.
+**✅ Implémenté** : Lorsque le quota mensuel d'un plan mensuel est dépassé, les requêtes supplémentaires sont automatiquement facturées au prix du plan Pay-per-Request correspondant au marché de l'organisation.
 
 - Le système recherche automatiquement le plan Pay-per-Request actif pour le marché de l'organisation
-- Si un plan Pay-per-Request est trouvé, les requêtes supplémentaires sont facturées à ce prix
-- Si aucun plan Pay-per-Request n'est disponible pour le marché, une exception `QuotaExceededException` est levée
+- Si un plan Pay-per-Request est trouvé, les requêtes supplémentaires sont facturées à ce prix (dans la devise du marché)
 - Les requêtes facturées au prix Pay-per-Request sont enregistrées dans les logs d'utilisation avec le coût correspondant
+- Le quota mensuel reste valable pour le cycle en cours, seules les requêtes hors quota sont facturées
 
 ---
 
 ## 📅 Calendrier de Facturation
 
-### Factures Mensuelles (plans avec quota)
+### Factures Mensuelles (plans mensuels)
 
-- **Période** : Du 1er au dernier jour du mois
-- **Génération** : Manuelle ou automatique en fin de mois
-- **Échéance** : 30 jours après la fin de la période
+- **Période** : Cycle mensuel (du jour J au jour J-1 du mois suivant inclus)
+- **Génération automatique** : À la fin de chaque cycle (par le scheduler quotidien)
+- **Montant** : Prix mensuel fixe du plan (dans la devise du marché)
+- **Échéance** : 30 jours après la fin du cycle
+- **Reconduction** : Tacite et automatique à la fin de chaque cycle
 
-### Factures Bihebdomadaires (plans Pay-per-Request)
+### Factures Pay-per-Request
 
-- **Période** : 14 jours consécutifs
-- **Génération automatique** : Tous les lundis à 8h00
-- **Période facturée** : Du lundi il y a 2 semaines au dimanche dernier
-- **Échéance** : 14 jours après la fin de la période
-- **Format du numéro** : `ORG-{organizationId}-{YYYYMMDD}-BIWEEKLY`
+- **Facturation** : À chaque requête (coût enregistré dans les logs)
+- **Facture de clôture** : Générée lors du passage vers un plan mensuel
+- **Période de clôture** : Depuis la dernière facture (`lastPayPerRequestInvoiceDate`) jusqu'à la date de changement
+- **Devise** : Devise du marché de l'organisation
 
 ---
 
 ## 🧮 Calcul des Coûts
 
-### Coût par requête
+### Plans Mensuels
 
-Chaque requête est facturée selon la formule :
-
+**Facture mensuelle :**
 ```
-Coût total = Tarif de base (BASE_REQUEST_PRICE_EUR) + Coût des tokens IA
-```
-
-**Détail du coût des tokens :**
-- Prix input : 0.15 USD par million de tokens
-- Prix output : 0.60 USD par million de tokens
-- Taux de change USD → EUR : 0.92 (configurable)
-
-**Exemple :**
-- Tarif de base : 0.01 EUR
-- Tokens input : 1000 tokens
-- Tokens output : 500 tokens
-- Coût tokens = (1000 × 0.15/1M + 500 × 0.60/1M) × 0.92 = 0.000414 EUR
-- **Coût total = 0.01 + 0.000414 = 0.010414 EUR**
-
-### Facture mensuelle
-
-```
-Total facture = Σ (Coût de chaque requête du mois)
+Total facture = Prix mensuel fixe du plan (dans la devise du marché)
 ```
 
-### Facture bihebdomadaire
+**Requêtes hors quota (facturées au tarif Pay-per-Request) :**
+- Seules les requêtes dépassant le quota mensuel sont facturées
+- Prix : Tarif du plan Pay-per-Request du marché (dans la devise du marché)
 
+### Plans Pay-per-Request
+
+**Coût par requête :**
 ```
-Total facture = Σ (Coût de chaque requête des 14 derniers jours)
+Coût total = Prix par requête du plan (dans la devise du marché)
 ```
+
+**Facture de clôture :**
+```
+Total facture = Σ (Coût de chaque requête depuis la dernière facture jusqu'à la date de changement)
+```
+
+### Plans Essai Gratuit
+
+- Aucune facturation pendant la période d'essai
+- Les requêtes sont comptabilisées mais non facturées
 
 ---
 
@@ -170,9 +255,13 @@ Total facture = Σ (Coût de chaque requête des 14 derniers jours)
 
 ### Schedulers Spring
 
-1. **Génération factures bihebdomadaires**
-   - Cron : `0 0 8 * * MON` (Tous les lundis à 8h00)
-   - Méthode : `generateBiweeklyInvoicesForPayPerRequestPlans()`
+1. **Traitement des cycles mensuels** (`MonthlyPlanSchedulerService`)
+   - Cron : `0 0 0 * * ?` (Tous les jours à minuit)
+   - Méthode : `processMonthlyPlanCycles()`
+   - Actions :
+     - Applique les changements de plan mensuel en attente (dont la date d'effet est arrivée)
+     - Reconduit automatiquement les plans mensuels expirés
+     - Génère les factures de reconduction
 
 2. **Marquage factures en retard**
    - Cron : `0 0 9 * * ?` (Tous les jours à 9h00)
@@ -192,64 +281,132 @@ USD_TO_EUR_RATE=0.92
 
 ## 📊 Exemples de Scénarios
 
-### Scénario 1 : Changement de plan mensuel vers un quota supérieur
+### Scénario 1 : Cycle mensuel et reconduction
 
-**Date** : 15 janvier  
-**Ancien plan** : 300 requêtes/mois  
-**Nouveau plan** : 500 requêtes/mois  
-**Requêtes consommées** : 100 requêtes
-
-**Résultat** :
-- ✅ Changement autorisé immédiatement
-- Nouveau quota : 500 - 100 = **400 requêtes** pour le reste du mois
-- Facture de clôture proratisée pour l'ancien plan (1er-14 janvier)
-- Facture de démarrage proratisée pour le nouveau plan (15-31 janvier)
-
-### Scénario 2 : Passage vers Pay-per-Request
-
-**Date** : 15 janvier  
-**Ancien plan** : Plan mensuel 300 requêtes/mois  
-**Nouveau plan** : Pay-per-Request
+**Date de début** : 15 janvier  
+**Plan** : Plan mensuel 500 requêtes/mois, 50 EUR/mois  
+**Cycle** : Du 15 janvier au 14 février (inclus)
 
 **Résultat** :
-- ✅ Changement autorisé immédiatement
-- Facture mensuelle complète générée pour l'ancien plan (mois entier)
-- Pas de facture de démarrage
-- Factures bihebdomadaires générées automatiquement à partir du lundi suivant
+- Le quota de 500 requêtes est valable du 15 janvier au 14 février
+- Le 15 février à minuit, le scheduler :
+  - Génère une facture de 50 EUR pour le cycle écoulé
+  - Reconduit automatiquement le plan
+  - Initialise un nouveau cycle : du 15 février au 14 mars (inclus)
+  - Réinitialise le quota à 500 requêtes
 
-### Scénario 3 : Facture bihebdomadaire Pay-per-Request
+### Scénario 2 : Changement de plan mensuel → mensuel (en attente)
 
-**Date d'exécution** : Lundi 20 janvier à 8h00  
-**Période facturée** : Du lundi 6 janvier au dimanche 19 janvier  
-**Requêtes effectuées** : 150 requêtes  
-**Coût moyen par requête** : 0.05 EUR
+**Date** : 20 janvier  
+**Cycle actuel** : Du 15 janvier au 14 février (inclus)  
+**Ancien plan** : Plan mensuel 300 requêtes/mois, 30 EUR/mois  
+**Nouveau plan** : Plan mensuel 500 requêtes/mois, 50 EUR/mois
 
 **Résultat** :
-- Facture générée : **7.50 EUR** (150 × 0.05)
-- Numéro de facture : `ORG-123-20240106-BIWEEKLY`
-- Échéance : Dimanche 2 février (14 jours après la fin de période)
+- ✅ Changement enregistré en attente
+- Le plan actuel reste actif jusqu'au 14 février
+- Le 15 février à minuit, le scheduler :
+  - Génère une facture de clôture de 30 EUR pour l'ancien plan (cycle complet)
+  - Applique le nouveau plan
+  - Initialise un nouveau cycle : du 15 février au 14 mars (inclus)
+  - Nouveau quota : 500 requêtes
+
+### Scénario 3 : Passage Pay-per-Request → Plan Mensuel
+
+**Date** : 10 février  
+**Ancien plan** : Pay-per-Request, 0.05 EUR/requête  
+**Dernière facture** : 1er février  
+**Requêtes depuis le 1er février** : 200 requêtes  
+**Nouveau plan** : Plan mensuel 500 requêtes/mois, 50 EUR/mois
+
+**Résultat** :
+- ✅ Changement immédiat
+- Facture de clôture Pay-per-Request : 200 × 0.05 = **10 EUR** (du 1er au 10 février)
+- Le plan mensuel prend effet immédiatement
+- Nouveau cycle initialisé : du 10 février au 9 mars (inclus)
+- Quota : 500 requêtes pour le nouveau cycle
+
+### Scénario 4 : Changement Plan Mensuel → Pay-per-Request (quota non dépassé)
+
+**Date** : 20 janvier  
+**Cycle actuel** : Du 15 janvier au 14 février (inclus)  
+**Plan actuel** : Plan mensuel 500 requêtes/mois, 50 EUR/mois  
+**Requêtes utilisées** : 300 requêtes (quota non dépassé)  
+**Nouveau plan** : Pay-per-Request, 0.05 EUR/requête
+
+**Résultat** :
+- ⚠️ Changement enregistré en attente
+- Le plan mensuel reste actif jusqu'au 14 février
+- Le scheduler vérifie quotidiennement si le quota est dépassé
+- Si le quota est dépassé avant le 14 février : changement immédiat + facture de clôture
+- Si le quota n'est pas dépassé : changement à la fin du cycle (15 février) + facture de clôture
+
+### Scénario 5 : Changement Plan Mensuel → Pay-per-Request (quota dépassé)
+
+**Date** : 20 janvier  
+**Cycle actuel** : Du 15 janvier au 14 février (inclus)  
+**Plan actuel** : Plan mensuel 500 requêtes/mois, 50 EUR/mois  
+**Requêtes utilisées** : 600 requêtes (quota dépassé)  
+**Nouveau plan** : Pay-per-Request, 0.05 EUR/requête
+
+**Résultat** :
+- ✅ Changement immédiat
+- Facture de clôture mensuelle : **50 EUR** (cycle complet du 15 janvier au 14 février)
+- Le plan Pay-per-Request prend effet immédiatement
+- Les 100 requêtes supplémentaires (600 - 500) sont déjà facturées au tarif Pay-per-Request
+
+### Scénario 6 : Quota mensuel dépassé (facturation automatique provisoire)
+
+**Date** : 25 janvier  
+**Cycle** : Du 15 janvier au 14 février (inclus)  
+**Plan** : Plan mensuel 500 requêtes/mois, 50 EUR/mois  
+**Requêtes utilisées** : 600 requêtes  
+**Plan Pay-per-Request du marché** : 0.05 EUR/requête
+
+**Résultat** :
+- Les 500 premières requêtes sont incluses dans le plan mensuel (non facturées par requête)
+- Les 100 requêtes supplémentaires sont facturées automatiquement : 100 × 0.05 = **5 EUR**
+- **Le plan reste mensuel** : Ce n'est pas un changement de plan, seulement une facturation provisoire
+- Le quota reste valable jusqu'au 14 février
+- À la fin du cycle :
+  - Facture mensuelle de **50 EUR** (montant fixe du plan)
+  - Les 5 EUR de requêtes hors quota sont déjà facturées dans les logs
+  - Le quota est réinitialisé à 500 requêtes pour le nouveau cycle
 
 ---
 
 ## 📝 Notes Importantes
 
-1. **Proratisation** : Seulement pour les changements entre deux plans mensuels
-2. **Facturation complète** : Toujours appliquée lorsqu'un plan Pay-per-Request est impliqué
-3. **Quota dépassé** : Actuellement, une exception est levée. Le passage automatique vers Pay-per-Request n'est pas activé.
-4. **Factures vides** : Les factures bihebdomadaires ne sont pas générées si aucune requête n'a été effectuée pendant la période.
+1. **Cycle mensuel** : Les plans mensuels utilisent un cycle personnalisé (du jour J au jour J-1 du mois suivant inclus), pas le mois calendaire
+2. **Reconduction tacite** : Les plans mensuels sont automatiquement reconduits à la fin de chaque cycle
+3. **Changement en attente** : Les changements de plan mensuel → mensuel peuvent être annulés avant la date d'effet
+4. **Facturation mensuelle** : Les plans mensuels ne sont PAS facturés par requête, seulement le montant fixe mensuel
+5. **Requêtes hors quota** : Pour les plans mensuels, les requêtes dépassant le quota sont facturées au tarif Pay-per-Request
+6. **Devise** : Toutes les facturations se font dans la devise du marché de l'organisation
+7. **Plan d'essai** : Ne peut être utilisé qu'une seule fois par organisation
 
 ---
 
-## 🔄 Évolutions Futures Possibles
+## 🔄 API et Endpoints
 
-- [ ] Passage automatique vers Pay-per-Request lorsque le quota mensuel est dépassé
-- [ ] Configuration personnalisable de la fréquence des factures bihebdomadaires
-- [ ] Support de factures trimestrielles ou annuelles
-- [ ] Système de remises et promotions
-- [ ] Export des factures en PDF
-- [ ] Intégration avec des systèmes de paiement (Stripe, PayPal, etc.)
+### Changement de plan
+
+- **Endpoint** : `PUT /api/organizations/{organizationId}/pricing-plan`
+- **Body** : `{ "pricingPlanId": <id> }`
+- **Comportement** : Selon les règles de changement de plan décrites ci-dessus
+- **Cas particulier** : Pour Plan Mensuel → Pay-per-Request :
+  - Si quota dépassé : effet immédiat
+  - Si quota non dépassé : changement en attente (effet immédiat si quota dépassé avant la fin du cycle, sinon à la fin du cycle)
+
+### Annulation d'un changement en attente
+
+- **Endpoint pour plan mensuel** : `DELETE /api/organizations/{organizationId}/pending-plan-change`
+- **Comportement** : Annule un changement de plan mensuel en attente
+
+- **Endpoint pour Pay-per-Request** : `DELETE /api/organizations/{organizationId}/pending-pay-per-request-change`
+- **Comportement** : Annule un changement vers Pay-per-Request en attente
 
 ---
 
-**Dernière mise à jour** : Janvier 2025
+**Dernière mise à jour** : Février 2025
 

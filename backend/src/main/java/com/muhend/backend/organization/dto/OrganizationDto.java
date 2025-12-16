@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
@@ -26,6 +27,13 @@ public class OrganizationDto {
     private String marketVersion; // Version du marché (ex: DEFAULT, DZ)
     private LocalDateTime trialExpiresAt; // Date d'expiration du plan d'essai (null si pas un plan d'essai)
     private Boolean trialPermanentlyExpired; // true si l'essai est définitivement terminé (ne peut plus être réactivé)
+    private LocalDate monthlyPlanStartDate; // Date de début du cycle mensuel actuel
+    private LocalDate monthlyPlanEndDate; // Date de fin du cycle mensuel (inclus)
+    private Long pendingMonthlyPlanId; // Plan mensuel en attente (prendra effet à la fin du cycle)
+    private LocalDate pendingMonthlyPlanChangeDate; // Date à laquelle le changement prendra effet
+    private LocalDate lastPayPerRequestInvoiceDate; // Date de la dernière facture pay-per-request
+    private Long pendingPayPerRequestPlanId; // Plan Pay-per-Request en attente (prendra effet si quota dépassé immédiatement, sinon à la fin du cycle)
+    private LocalDate pendingPayPerRequestChangeDate; // Date à laquelle le changement vers Pay-per-Request prendra effet
     private LocalDateTime createdAt;
     
     // Pour les réponses avec le nombre d'utilisateurs

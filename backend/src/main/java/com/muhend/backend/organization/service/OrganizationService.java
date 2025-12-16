@@ -606,15 +606,42 @@ public class OrganizationService {
             return new QuotaCheckResult(true, false, null, 0, null);
         }
         
-        // Calculer le début et la fin du mois en cours
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime startOfMonth = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
-        LocalDateTime endOfMonth = now.withDayOfMonth(now.toLocalDate().lengthOfMonth())
-                .withHour(23).withMinute(59).withSecond(59).withNano(999999999);
+        // Pour les plans mensuels, utiliser le cycle mensuel du plan (du startDate au endDate inclus)
+        // Pour les autres plans, utiliser le mois calendaire
+        LocalDateTime startDateTime;
+        LocalDateTime endDateTime;
         
-        // Compter les requêtes du mois en cours
+        PricingPlanDto plan = null;
+        boolean isMonthlyPlan = false;
+        if (pricingPlanId != null) {
+            try {
+                plan = pricingPlanService.getPricingPlanById(pricingPlanId);
+                isMonthlyPlan = plan.getPricePerMonth() != null && plan.getPricePerMonth().compareTo(BigDecimal.ZERO) > 0;
+            } catch (Exception e) {
+                log.warn("Impossible de récupérer le plan pour déterminer le type: {}", e.getMessage());
+            }
+        }
+        
+        if (isMonthlyPlan && organization.getMonthlyPlanStartDate() != null && organization.getMonthlyPlanEndDate() != null) {
+            // Utiliser le cycle mensuel du plan (du startDate au endDate inclus)
+            LocalDate startDate = organization.getMonthlyPlanStartDate();
+            LocalDate endDate = organization.getMonthlyPlanEndDate();
+            startDateTime = startDate.atStartOfDay();
+            endDateTime = endDate.atTime(23, 59, 59, 999999999);
+            log.debug("Utilisation du cycle mensuel pour l'organisation {}: du {} au {} (inclus)", 
+                    organizationId, startDate, endDate);
+        } else {
+            // Utiliser le mois calendaire (pour plans pay-per-request ou essai)
+            LocalDateTime now = LocalDateTime.now();
+            startDateTime = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+            endDateTime = now.withDayOfMonth(now.toLocalDate().lengthOfMonth())
+                    .withHour(23).withMinute(59).withSecond(59).withNano(999999999);
+            log.debug("Utilisation du mois calendaire pour l'organisation {}", organizationId);
+        }
+        
+        // Compter les requêtes dans la période
         long currentUsage = usageLogRepository.countByOrganizationIdAndTimestampBetween(
-                organizationId, startOfMonth, endOfMonth);
+                organizationId, startDateTime, endDateTime);
         
         log.info("🔍 Vérification du quota pour l'organisation {} (ID: {}): utilisation actuelle={}, quota={}, planId={}", 
             organization.getName(), organizationId, currentUsage, monthlyQuota, pricingPlanId);
@@ -681,20 +708,27 @@ public class OrganizationService {
     }
     
     /**
-     * Change le plan tarifaire d'une organisation.
+     * Change le plan tarifaire d'une organisation selon la nouvelle politique de facturation.
+     * 
+     * Règles :
+     * - Plan Essai gratuit : effet immédiat, une seule utilisation possible
+     * - Plan mensuel → Plan mensuel : changement en attente (prend effet à la fin du cycle)
+     * - Plan mensuel → Pay-per-Request : effet immédiat + facture de clôture mensuelle
+     * - Pay-per-Request → Plan mensuel : effet immédiat + facture de clôture pay-per-request (depuis dernière facture)
+     * - Pay-per-Request → Pay-per-Request : effet immédiat
      */
     @Transactional
     public OrganizationDto changePricingPlan(Long organizationId, Long pricingPlanId) {
         Organization organization = organizationRepository.findById(organizationId)
                 .orElseThrow(() -> new IllegalArgumentException("Organisation non trouvée avec l'ID: " + organizationId));
         
-        // Récupérer l'ancien plan pour la notification
+        // Récupérer l'ancien plan
         PricingPlanDto oldPlan = null;
         if (organization.getPricingPlanId() != null) {
             try {
                 oldPlan = pricingPlanService.getPricingPlanById(organization.getPricingPlanId());
             } catch (Exception e) {
-                log.warn("Impossible de récupérer l'ancien plan pour la notification: {}", e.getMessage());
+                log.warn("Impossible de récupérer l'ancien plan: {}", e.getMessage());
             }
         }
         
@@ -706,183 +740,112 @@ public class OrganizationService {
             try {
                 newPlan = pricingPlanService.getPricingPlanById(pricingPlanId);
                 
-                // Vérifier si l'organisation essaie de sélectionner un plan d'essai alors qu'elle en a déjà utilisé un
-                if (newPlan.getTrialPeriodDays() != null && newPlan.getTrialPeriodDays() > 0) {
-                    // Vérifier si l'essai est définitivement terminé
-                    if (Boolean.TRUE.equals(organization.getTrialPermanentlyExpired())) {
+                // Déterminer le type de chaque plan
+                boolean isOldPlanTrial = oldPlan != null && oldPlan.getTrialPeriodDays() != null && oldPlan.getTrialPeriodDays() > 0;
+                boolean isOldPlanMonthly = oldPlan != null && oldPlan.getPricePerMonth() != null && oldPlan.getPricePerMonth().compareTo(BigDecimal.ZERO) > 0;
+                boolean isOldPlanPayPerRequest = oldPlan != null && oldPlan.getPricePerRequest() != null && !isOldPlanMonthly;
+                
+                boolean isNewPlanTrial = newPlan.getTrialPeriodDays() != null && newPlan.getTrialPeriodDays() > 0;
+                boolean isNewPlanMonthly = newPlan.getPricePerMonth() != null && newPlan.getPricePerMonth().compareTo(BigDecimal.ZERO) > 0;
+                boolean isNewPlanPayPerRequest = newPlan.getPricePerRequest() != null && !isNewPlanMonthly;
+                
+                // CAS 1 : Plan Essai gratuit → Autre plan OU Autre plan → Plan Essai gratuit
+                if (isOldPlanTrial || isNewPlanTrial) {
+                    // Vérifier que l'essai n'a pas déjà été utilisé
+                    if (isNewPlanTrial && (organization.getTrialPermanentlyExpired() || organization.getTrialExpiresAt() != null)) {
                         throw new IllegalArgumentException(
-                            "Impossible de revenir au plan d'essai. Votre essai gratuit est définitivement terminé. " +
-                            "Veuillez choisir un plan payant ou faire une demande de devis."
+                            "Le plan d'essai gratuit ne peut être utilisé qu'une seule fois. " +
+                            "Votre organisation a déjà utilisé l'essai gratuit."
                         );
                     }
-                    // Vérifier si l'organisation a déjà un essai en cours ou a déjà utilisé un essai
-                    if (organization.getTrialExpiresAt() != null) {
-                        throw new IllegalArgumentException(
-                            "Impossible de sélectionner le plan d'essai gratuit. Votre organisation a déjà utilisé l'essai gratuit. " +
-                            "Veuillez choisir un plan payant ou faire une demande de devis."
-                        );
+                    // Effet immédiat
+                    applyPlanChangeImmediately(organization, newPlan);
+                    if (isNewPlanTrial) {
+                        organization.setTrialExpiresAt(LocalDateTime.now().plusDays(newPlan.getTrialPeriodDays()));
+                        trialExpiresAtStr = organization.getTrialExpiresAt().toString();
+                    } else {
+                        organization.setTrialExpiresAt(null);
                     }
                 }
-                
-                // Vérifier si l'organisation essaie de passer d'un plan payant à un plan gratuit
-                // Un plan est gratuit si : pricePerMonth est null ou 0 ET pricePerRequest est null ou 0 ET pas de trialPeriodDays
-                boolean isNewPlanFree = (newPlan.getPricePerMonth() == null || newPlan.getPricePerMonth().compareTo(BigDecimal.ZERO) == 0)
-                        && (newPlan.getPricePerRequest() == null || newPlan.getPricePerRequest().compareTo(BigDecimal.ZERO) == 0)
-                        && (newPlan.getTrialPeriodDays() == null || newPlan.getTrialPeriodDays() == 0);
-                
-                if (isNewPlanFree) {
-                    // Vérifier si l'organisation a actuellement un plan payant
-                    boolean hasPaidPlan = false;
-                    if (oldPlan != null) {
-                        boolean oldPlanHasPricePerMonth = oldPlan.getPricePerMonth() != null && oldPlan.getPricePerMonth().compareTo(BigDecimal.ZERO) > 0;
-                        boolean oldPlanHasPricePerRequest = oldPlan.getPricePerRequest() != null && oldPlan.getPricePerRequest().compareTo(BigDecimal.ZERO) > 0;
-                        hasPaidPlan = oldPlanHasPricePerMonth || oldPlanHasPricePerRequest;
-                    }
+                // CAS 2 : Plan mensuel → Plan mensuel
+                else if (isOldPlanMonthly && isNewPlanMonthly) {
+                    // Enregistrer comme changement en attente (prendra effet à la fin du cycle)
+                    organization.setPendingMonthlyPlanId(pricingPlanId);
+                    organization.setPendingMonthlyPlanChangeDate(organization.getMonthlyPlanEndDate());
+                    log.info("Changement de plan mensuel enregistré en attente pour l'organisation {}: prendra effet le {}", 
+                            organizationId, organization.getMonthlyPlanEndDate());
+                    // Ne pas changer le plan actuel immédiatement
+                }
+                // CAS 3 : Plan mensuel → Pay-per-Request
+                else if (isOldPlanMonthly && isNewPlanPayPerRequest) {
+                    // Vérifier si le quota est dépassé
+                    QuotaCheckResult quotaCheck = checkQuotaWithResult(organizationId);
+                    boolean isQuotaExceeded = !quotaCheck.isQuotaOk();
                     
-                    // Vérifier aussi si l'organisation a déjà utilisé l'essai gratuit
-                    boolean hasUsedTrial = Boolean.TRUE.equals(organization.getTrialPermanentlyExpired()) 
-                            || organization.getTrialExpiresAt() != null;
-                    
-                    if (hasPaidPlan || hasUsedTrial) {
-                        throw new IllegalArgumentException(
-                            "Impossible de passer à un plan gratuit. " +
-                            (hasPaidPlan ? "Vous avez actuellement un plan payant. " : "") +
-                            (hasUsedTrial ? "Votre essai gratuit a déjà été utilisé. " : "") +
-                            "Veuillez choisir un plan payant ou faire une demande de devis."
-                        );
+                    if (isQuotaExceeded) {
+                        // Quota dépassé : effet immédiat + facture de clôture mensuelle
+                        log.info("Changement vers Pay-per-Request appliqué immédiatement (quota dépassé) pour l'organisation {}", organizationId);
+                        if (organization.getMonthlyPlanStartDate() != null && organization.getMonthlyPlanEndDate() != null) {
+                            generateMonthlyPlanClosureInvoice(organizationId, oldPlan, 
+                                    organization.getMonthlyPlanStartDate(), organization.getMonthlyPlanEndDate());
+                        }
+                        applyPlanChangeImmediately(organization, newPlan);
+                        // Réinitialiser les champs de changement en attente s'ils existent
+                        organization.setPendingPayPerRequestPlanId(null);
+                        organization.setPendingPayPerRequestChangeDate(null);
+                    } else {
+                        // Quota non dépassé : changement en attente jusqu'à la fin du cycle
+                        organization.setPendingPayPerRequestPlanId(pricingPlanId);
+                        organization.setPendingPayPerRequestChangeDate(organization.getMonthlyPlanEndDate());
+                        log.info("Changement vers Pay-per-Request enregistré en attente pour l'organisation {}: prendra effet le {} (fin du cycle) ou dès que le quota sera dépassé", 
+                                organizationId, organization.getMonthlyPlanEndDate());
+                        // Ne pas changer le plan actuel immédiatement
+                    }
+                }
+                // CAS 4 : Pay-per-Request → Plan mensuel
+                else if (isOldPlanPayPerRequest && isNewPlanMonthly) {
+                    // Effet immédiat + facture de clôture pay-per-request (depuis dernière facture)
+                    generatePayPerRequestClosureInvoice(organizationId, organization, oldPlan);
+                    applyPlanChangeImmediately(organization, newPlan);
+                    // Initialiser le cycle mensuel
+                    initializeMonthlyPlanCycle(organization, newPlan);
+                }
+                // CAS 5 : Pay-per-Request → Pay-per-Request
+                else if (isOldPlanPayPerRequest && isNewPlanPayPerRequest) {
+                    // Effet immédiat (changement de tarif)
+                    applyPlanChangeImmediately(organization, newPlan);
+                }
+                // CAS 6 : Pas de plan → Nouveau plan
+                else if (oldPlan == null) {
+                    applyPlanChangeImmediately(organization, newPlan);
+                    if (isNewPlanTrial) {
+                        organization.setTrialExpiresAt(LocalDateTime.now().plusDays(newPlan.getTrialPeriodDays()));
+                        trialExpiresAtStr = organization.getTrialExpiresAt().toString();
                     }
                 }
                 
-                organization.setPricingPlanId(pricingPlanId);
-                // Mettre à jour le quota selon le plan
-                Integer oldQuota = organization.getMonthlyQuota();
-                // #region agent log
-                Map<String, Object> logDataA1 = new HashMap<>();
-                logDataA1.put("organizationId", organizationId);
-                logDataA1.put("oldQuota", oldQuota);
-                logDataA1.put("planMonthlyQuota", newPlan.getMonthlyQuota());
-                logDataA1.put("planName", newPlan.getName());
-                logDataA1.put("pricingPlanId", pricingPlanId);
-                debugLog("OrganizationService.java:712", "changePricingPlan - entry", logDataA1, "A");
-                // #endregion
-                log.info("🔄 Changement de plan pour l'organisation {} (ID: {}): ancien quota={}, nouveau plan={} (ID: {}), monthlyQuota du plan={}, pricePerRequest={}", 
-                    organization.getName(), organizationId, oldQuota, newPlan.getName(), pricingPlanId, newPlan.getMonthlyQuota(), newPlan.getPricePerRequest());
-                
-                // RÈGLE IMPORTANTE : monthlyQuota = null signifie quota ILLIMITÉ
-                // - Pour les plans pay-per-request (pricePerRequest != null), le quota doit être null (illimité)
-                // - Pour les plans mensuels avec quota défini (> 0), utiliser le quota du plan
-                // - Pour les plans mensuels sans quota défini (null ou 0), mettre à null (illimité)
-                // Note : monthlyQuota = 0 signifie 0 requêtes autorisées (différent de null)
-                boolean hasPricePerRequest = newPlan.getPricePerRequest() != null && newPlan.getPricePerRequest().compareTo(BigDecimal.ZERO) > 0;
-                boolean hasPricePerMonth = newPlan.getPricePerMonth() != null && newPlan.getPricePerMonth().compareTo(BigDecimal.ZERO) > 0;
-                boolean isPayPerRequest = hasPricePerRequest && !hasPricePerMonth; // Plan pay-per-request si pricePerRequest > 0 ET pricePerMonth est null ou 0
-                
-                // #region agent log
-                Map<String, Object> logDataA2 = new HashMap<>();
-                logDataA2.put("hasPricePerRequest", hasPricePerRequest);
-                logDataA2.put("hasPricePerMonth", hasPricePerMonth);
-                logDataA2.put("isPayPerRequest", isPayPerRequest);
-                logDataA2.put("planMonthlyQuota", newPlan.getMonthlyQuota());
-                debugLog("OrganizationService.java:720", "changePricingPlan - plan analysis", logDataA2, "A");
-                // #endregion
-                log.info("🔍 Analyse du plan {} (ID: {}): pricePerRequest={}, pricePerMonth={}, monthlyQuota={}, isPayPerRequest={}", 
-                    newPlan.getName(), pricingPlanId, newPlan.getPricePerRequest(), newPlan.getPricePerMonth(), newPlan.getMonthlyQuota(), isPayPerRequest);
-                
-                Integer newQuotaValue = null;
-                if (isPayPerRequest) {
-                    // Plan pay-per-request : quota illimité (ignorer le monthlyQuota du plan s'il existe)
-                    newQuotaValue = null;
-                    // #region agent log
-                    Map<String, Object> logDataA3 = new HashMap<>();
-                    logDataA3.put("newQuotaValue", newQuotaValue);
-                    debugLog("OrganizationService.java:727", "changePricingPlan - pay-per-request branch", logDataA3, "A");
-                    // #endregion
-                    organization.setMonthlyQuota(null);
-                    log.info("✅ Quota mensuel mis à null (illimité - plan pay-per-request) pour l'organisation {} (ID: {}): {} -> null (plan: {} - ID: {})", 
-                        organization.getName(), organizationId, oldQuota, newPlan.getName(), pricingPlanId);
-                } else if (newPlan.getMonthlyQuota() != null && newPlan.getMonthlyQuota() > 0) {
-                    // Plan mensuel avec quota défini
-                    newQuotaValue = newPlan.getMonthlyQuota();
-                    // #region agent log
-                    Map<String, Object> logDataA4 = new HashMap<>();
-                    logDataA4.put("newQuotaValue", newQuotaValue);
-                    logDataA4.put("planMonthlyQuota", newPlan.getMonthlyQuota());
-                    debugLog("OrganizationService.java:732", "changePricingPlan - monthly plan with quota", logDataA4, "A");
-                    // #endregion
-                    organization.setMonthlyQuota(newPlan.getMonthlyQuota());
-                    log.info("✅ Quota mensuel mis à jour pour l'organisation {} (ID: {}): {} -> {} requêtes/mois (plan: {} - ID: {})", 
-                        organization.getName(), organizationId, oldQuota, newPlan.getMonthlyQuota(), newPlan.getName(), pricingPlanId);
-                } else {
-                    // Plan mensuel sans quota défini : quota illimité
-                    newQuotaValue = null;
-                    // #region agent log
-                    Map<String, Object> logDataA5 = new HashMap<>();
-                    logDataA5.put("newQuotaValue", newQuotaValue);
-                    logDataA5.put("planMonthlyQuota", newPlan.getMonthlyQuota());
-                    logDataA5.put("isPayPerRequest", isPayPerRequest);
-                    debugLog("OrganizationService.java:737", "changePricingPlan - monthly plan without quota (null)", logDataA5, "A");
-                    // #endregion
-                    organization.setMonthlyQuota(null);
-                    log.info("✅ Quota mensuel mis à null (illimité - plan sans quota) pour l'organisation {} (ID: {}): {} -> null (plan: {} - ID: {})", 
-                        organization.getName(), organizationId, oldQuota, newPlan.getName(), pricingPlanId);
-                }
-                // #region agent log
-                Map<String, Object> logDataA6 = new HashMap<>();
-                logDataA6.put("finalQuotaValue", organization.getMonthlyQuota());
-                logDataA6.put("oldQuota", oldQuota);
-                debugLog("OrganizationService.java:740", "changePricingPlan - final quota value", logDataA6, "A");
-                // #endregion
-                // Si c'est un plan d'essai, définir la date d'expiration
-                if (newPlan.getTrialPeriodDays() != null && newPlan.getTrialPeriodDays() > 0) {
-                    organization.setTrialExpiresAt(LocalDateTime.now().plusDays(newPlan.getTrialPeriodDays()));
-                    trialExpiresAtStr = organization.getTrialExpiresAt().toString();
-                    log.info("Plan d'essai activé pour l'organisation {}: expiration dans {} jours", 
-                        organization.getName(), newPlan.getTrialPeriodDays());
-                } else {
-                    // Si c'est un plan payant, réinitialiser la date d'expiration et le flag trialPermanentlyExpired
-                    organization.setTrialExpiresAt(null);
-                    // Si l'organisation passe à un plan payant, réinitialiser le flag trialPermanentlyExpired
-                    boolean isPaidPlan = (newPlan.getPricePerMonth() != null && newPlan.getPricePerMonth().compareTo(BigDecimal.ZERO) > 0)
-                            || (newPlan.getPricePerRequest() != null && newPlan.getPricePerRequest().compareTo(BigDecimal.ZERO) > 0);
-                    if (isPaidPlan && Boolean.TRUE.equals(organization.getTrialPermanentlyExpired())) {
-                        organization.setTrialPermanentlyExpired(false);
-                        log.info("Flag trialPermanentlyExpired réinitialisé pour l'organisation {} (plan payant sélectionné)", 
-                                organization.getName());
-                    }
-                }
             } catch (IllegalArgumentException e) {
-                throw new IllegalArgumentException("Plan tarifaire invalide: " + e.getMessage());
+                throw e;
+            } catch (Exception e) {
+                throw new IllegalArgumentException("Erreur lors du changement de plan: " + e.getMessage());
             }
         } else {
             // Permettre de retirer le plan tarifaire
             organization.setPricingPlanId(null);
             organization.setTrialExpiresAt(null);
+            organization.setMonthlyPlanStartDate(null);
+            organization.setMonthlyPlanEndDate(null);
+            organization.setPendingMonthlyPlanId(null);
+            organization.setPendingMonthlyPlanChangeDate(null);
         }
         
         organization = organizationRepository.save(organization);
         log.info("💾 Plan tarifaire changé pour l'organisation {} (ID: {}): planId={}, nouveau quota={}", 
             organization.getName(), organizationId, pricingPlanId, organization.getMonthlyQuota());
         
-        // Forcer le flush pour s'assurer que les changements sont persistés
-        organizationRepository.flush();
-        
-        // Vérifier que le quota a bien été mis à jour en récupérant l'organisation depuis la base de données
-        Organization savedOrg = organizationRepository.findById(organizationId).orElse(null);
-        if (savedOrg != null) {
-            log.info("🔍 Vérification après sauvegarde - Organisation {} (ID: {}): quota={}, planId={}", 
-                savedOrg.getName(), organizationId, savedOrg.getMonthlyQuota(), savedOrg.getPricingPlanId());
-            if (!java.util.Objects.equals(savedOrg.getMonthlyQuota(), organization.getMonthlyQuota())) {
-                log.error("❌ ERREUR: Le quota sauvegardé ({}) ne correspond pas au quota attendu ({})", 
-                    savedOrg.getMonthlyQuota(), organization.getMonthlyQuota());
-            }
-        } else {
-            log.error("❌ ERREUR: Impossible de récupérer l'organisation {} après la sauvegarde", organizationId);
-        }
-        
         // Si l'essai était expiré et qu'un plan payant est maintenant sélectionné, réactiver les collaborateurs
         boolean wasTrialExpired = isTrialExpired(organization);
         if (wasTrialExpired && newPlan != null) {
-            // Vérifier si c'est un plan payant
             boolean isPaidPlan = (newPlan.getPricePerMonth() != null && newPlan.getPricePerMonth().compareTo(BigDecimal.ZERO) > 0)
                     || (newPlan.getPricePerRequest() != null && newPlan.getPricePerRequest().compareTo(BigDecimal.ZERO) > 0);
             if (isPaidPlan && canOrganizationMakeRequests(organization)) {
@@ -892,47 +855,12 @@ public class OrganizationService {
             }
         }
         
-        // Créer les factures pour le changement de plan
-        LocalDate changeDate = LocalDate.now();
-        try {
-            // 1. Créer une facture de clôture pour l'ancien plan (si un ancien plan existait)
-            if (oldPlan != null && oldPlan.getPricePerMonth() != null && oldPlan.getPricePerMonth().compareTo(java.math.BigDecimal.ZERO) > 0) {
-                try {
-                    invoiceService.generatePlanClosureInvoice(organizationId, oldPlan, changeDate);
-                    log.info("Facture de clôture créée pour l'ancien plan {} de l'organisation {}", 
-                        oldPlan.getName(), organization.getName());
-                } catch (Exception e) {
-                    log.error("Erreur lors de la création de la facture de clôture pour l'organisation {}: {}", 
-                        organizationId, e.getMessage(), e);
-                    // Ne pas faire échouer la transaction si la facture de clôture échoue
-                }
-            }
-            
-            // 2. Créer une facture de démarrage pour le nouveau plan (si un nouveau plan existe)
-            if (newPlan != null && newPlan.getPricePerMonth() != null && newPlan.getPricePerMonth().compareTo(java.math.BigDecimal.ZERO) > 0) {
-                try {
-                    invoiceService.generatePlanStartInvoice(organizationId, newPlan, changeDate);
-                    log.info("Facture de démarrage créée pour le nouveau plan {} de l'organisation {}", 
-                        newPlan.getName(), organization.getName());
-                } catch (Exception e) {
-                    log.error("Erreur lors de la création de la facture de démarrage pour l'organisation {}: {}", 
-                        organizationId, e.getMessage(), e);
-                    // Ne pas faire échouer la transaction si la facture de démarrage échoue
-                }
-            }
-        } catch (Exception e) {
-            log.error("Erreur lors de la création des factures pour le changement de plan de l'organisation {}: {}", 
-                organizationId, e.getMessage(), e);
-            // Ne pas faire échouer la transaction si les factures échouent
-        }
-        
         // Envoyer l'email de notification
         try {
             sendPricingPlanChangeNotification(organization, oldPlan, newPlan, trialExpiresAtStr);
         } catch (Exception e) {
             log.error("Erreur lors de l'envoi de l'email de notification de changement de plan pour l'organisation {}: {}", 
                     organizationId, e.getMessage(), e);
-            // Ne pas faire échouer la transaction si l'email échoue
         }
         
         return toDtoWithUserCount(organization);
@@ -1030,6 +958,13 @@ public class OrganizationService {
         dto.setMarketVersion(organization.getMarketVersion());
         dto.setTrialExpiresAt(organization.getTrialExpiresAt());
         dto.setTrialPermanentlyExpired(organization.getTrialPermanentlyExpired());
+        dto.setMonthlyPlanStartDate(organization.getMonthlyPlanStartDate());
+        dto.setMonthlyPlanEndDate(organization.getMonthlyPlanEndDate());
+        dto.setPendingMonthlyPlanId(organization.getPendingMonthlyPlanId());
+        dto.setPendingMonthlyPlanChangeDate(organization.getPendingMonthlyPlanChangeDate());
+        dto.setLastPayPerRequestInvoiceDate(organization.getLastPayPerRequestInvoiceDate());
+        dto.setPendingPayPerRequestPlanId(organization.getPendingPayPerRequestPlanId());
+        dto.setPendingPayPerRequestChangeDate(organization.getPendingPayPerRequestChangeDate());
         dto.setCreatedAt(organization.getCreatedAt());
         return dto;
     }
@@ -1322,6 +1257,117 @@ public class OrganizationService {
             log.info("L'essai de l'organisation {} est expiré. Suspension des collaborateurs.", organization.getId());
             suspendAllCollaborators(organization);
         }
+    }
+    
+    /**
+     * Initialise un nouveau cycle mensuel pour une organisation.
+     * Le cycle va du jour J au jour J-1 du mois suivant (inclus).
+     * Exemple : si aujourd'hui est le 15 janvier, le cycle va du 15 janvier au 14 février (inclus).
+     */
+    private void initializeMonthlyPlanCycle(Organization org, PricingPlanDto plan) {
+        LocalDate today = LocalDate.now();
+        org.setMonthlyPlanStartDate(today);
+        // Calculer la date de fin : même jour du mois suivant, exclu (donc jour-1 inclus)
+        LocalDate endDate = today.plusMonths(1).minusDays(1);
+        org.setMonthlyPlanEndDate(endDate);
+        org.setMonthlyQuota(plan.getMonthlyQuota());
+        log.info("Cycle mensuel initialisé pour l'organisation {}: du {} au {} (inclus)", 
+                org.getId(), today, endDate);
+    }
+    
+    /**
+     * Applique un changement de plan immédiatement (remplace tous les paramètres).
+     * Méthode publique pour permettre l'utilisation par le scheduler.
+     */
+    public void applyPlanChangeImmediately(Organization org, PricingPlanDto plan) {
+        // Remplacer TOUS les paramètres de l'ancien plan par ceux du nouveau
+        org.setPricingPlanId(plan.getId());
+        org.setMonthlyQuota(plan.getMonthlyQuota());
+        
+        // Réinitialiser les champs de cycle mensuel si nécessaire
+        if (plan.getPricePerMonth() != null && plan.getPricePerMonth().compareTo(BigDecimal.ZERO) > 0) {
+            initializeMonthlyPlanCycle(org, plan);
+        } else {
+            org.setMonthlyPlanStartDate(null);
+            org.setMonthlyPlanEndDate(null);
+        }
+        
+        // Réinitialiser tous les changements en attente
+        org.setPendingMonthlyPlanId(null);
+        org.setPendingMonthlyPlanChangeDate(null);
+        org.setPendingPayPerRequestPlanId(null);
+        org.setPendingPayPerRequestChangeDate(null);
+    }
+    
+    /**
+     * Génère une facture de clôture pour un plan mensuel (cycle complet).
+     */
+    private void generateMonthlyPlanClosureInvoice(Long organizationId, PricingPlanDto plan, 
+                                                    LocalDate startDate, LocalDate endDate) {
+        try {
+            invoiceService.generateMonthlyPlanCycleClosureInvoice(organizationId, plan, startDate, endDate);
+        } catch (Exception e) {
+            log.error("Erreur lors de la génération de la facture de clôture mensuelle pour l'organisation {}: {}", 
+                    organizationId, e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * Génère une facture de clôture pour un plan pay-per-request (depuis la dernière facture jusqu'à aujourd'hui).
+     */
+    private void generatePayPerRequestClosureInvoice(Long organizationId, Organization org, PricingPlanDto plan) {
+        try {
+            LocalDate startDate = org.getLastPayPerRequestInvoiceDate() != null 
+                    ? org.getLastPayPerRequestInvoiceDate() 
+                    : org.getCreatedAt().toLocalDate();
+            LocalDate endDate = LocalDate.now();
+            invoiceService.generatePayPerRequestClosureInvoice(organizationId, plan, startDate, endDate);
+            // Mettre à jour la date de dernière facture
+            org.setLastPayPerRequestInvoiceDate(endDate);
+        } catch (Exception e) {
+            log.error("Erreur lors de la génération de la facture de clôture pay-per-request pour l'organisation {}: {}", 
+                    organizationId, e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * Annule un changement de plan mensuel en attente.
+     */
+    @Transactional
+    public OrganizationDto cancelPendingPlanChange(Long organizationId) {
+        Organization organization = organizationRepository.findById(organizationId)
+                .orElseThrow(() -> new IllegalArgumentException("Organisation non trouvée avec l'ID: " + organizationId));
+        
+        if (organization.getPendingMonthlyPlanId() == null) {
+            throw new IllegalArgumentException("Aucun changement de plan mensuel en attente pour cette organisation");
+        }
+        
+        organization.setPendingMonthlyPlanId(null);
+        organization.setPendingMonthlyPlanChangeDate(null);
+        organization = organizationRepository.save(organization);
+        
+        log.info("Changement de plan mensuel annulé pour l'organisation {}", organizationId);
+        return toDto(organization);
+    }
+    
+    /**
+     * Annule un changement vers Pay-per-Request en attente.
+     */
+    @Transactional
+    public OrganizationDto cancelPendingPayPerRequestChange(Long organizationId) {
+        Organization organization = organizationRepository.findById(organizationId)
+                .orElseThrow(() -> new IllegalArgumentException("Organisation non trouvée avec l'ID: " + organizationId));
+        
+        if (organization.getPendingPayPerRequestPlanId() == null) {
+            throw new IllegalArgumentException("Aucun changement vers Pay-per-Request en attente pour cette organisation");
+        }
+        
+        organization.setPendingPayPerRequestPlanId(null);
+        organization.setPendingPayPerRequestChangeDate(null);
+        organization = organizationRepository.save(organization);
+        
+        log.info("Changement vers Pay-per-Request annulé pour l'organisation {}", organizationId);
+        return toDto(organization);
     }
 }
 

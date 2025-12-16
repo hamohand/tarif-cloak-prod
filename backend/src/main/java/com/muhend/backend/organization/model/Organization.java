@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
@@ -60,6 +61,27 @@ public class Organization {
     
     @Column(name = "market_version", length = 10)
     private String marketVersion; // Version du marché (ex: DEFAULT, DZ) - référence à market_profile
+    
+    @Column(name = "monthly_plan_start_date", nullable = true)
+    private LocalDate monthlyPlanStartDate; // Date de début du cycle mensuel actuel (du jour J au jour J-1 du mois suivant inclus)
+    
+    @Column(name = "monthly_plan_end_date", nullable = true)
+    private LocalDate monthlyPlanEndDate; // Date de fin du cycle mensuel (inclus, réinitialisation le jour suivant)
+    
+    @Column(name = "pending_monthly_plan_id", nullable = true)
+    private Long pendingMonthlyPlanId; // Plan mensuel en attente (prendra effet à la fin du cycle en cours)
+    
+    @Column(name = "pending_monthly_plan_change_date", nullable = true)
+    private LocalDate pendingMonthlyPlanChangeDate; // Date à laquelle le changement de plan prendra effet
+    
+    @Column(name = "last_pay_per_request_invoice_date", nullable = true)
+    private LocalDate lastPayPerRequestInvoiceDate; // Date de la dernière facture pay-per-request (pour facturer depuis cette date lors du passage vers mensuel)
+    
+    @Column(name = "pending_pay_per_request_plan_id", nullable = true)
+    private Long pendingPayPerRequestPlanId; // Plan Pay-per-Request en attente (prendra effet si quota dépassé immédiatement, sinon à la fin du cycle mensuel)
+    
+    @Column(name = "pending_pay_per_request_change_date", nullable = true)
+    private LocalDate pendingPayPerRequestChangeDate; // Date à laquelle le changement vers Pay-per-Request prendra effet (fin du cycle si quota non dépassé)
     
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
