@@ -653,9 +653,9 @@ public class OrganizationService {
             try {
                 List<PricingPlanDto> plans = pricingPlanService.getActivePricingPlans(marketVersion);
                 Optional<PricingPlanDto> payPerRequestPlan = plans.stream()
-                        .filter(plan -> {
-                            boolean hasPricePerRequest = plan.getPricePerRequest() != null && plan.getPricePerRequest().compareTo(BigDecimal.ZERO) > 0;
-                            boolean hasPricePerMonth = plan.getPricePerMonth() != null && plan.getPricePerMonth().compareTo(BigDecimal.ZERO) > 0;
+                        .filter(p -> {
+                            boolean hasPricePerRequest = p.getPricePerRequest() != null && p.getPricePerRequest().compareTo(BigDecimal.ZERO) > 0;
+                            boolean hasPricePerMonth = p.getPricePerMonth() != null && p.getPricePerMonth().compareTo(BigDecimal.ZERO) > 0;
                             return hasPricePerRequest && !hasPricePerMonth; // Plan pay-per-request
                         })
                         .findFirst();
