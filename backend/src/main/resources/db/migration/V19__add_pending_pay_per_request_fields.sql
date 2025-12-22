@@ -14,3 +14,5 @@ COMMENT ON COLUMN organization.pending_pay_per_request_plan_id IS 'Plan Pay-per-
 COMMENT ON COLUMN organization.pending_pay_per_request_change_date IS 'Date à laquelle le changement vers Pay-per-Request prendra effet (fin du cycle si quota non dépassé)';
 
 
+
+

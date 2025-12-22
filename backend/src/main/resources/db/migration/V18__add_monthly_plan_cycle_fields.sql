@@ -23,3 +23,5 @@ COMMENT ON COLUMN organization.pending_monthly_plan_change_date IS 'Date à laqu
 COMMENT ON COLUMN organization.last_pay_per_request_invoice_date IS 'Date de la dernière facture pay-per-request (pour facturer depuis cette date lors du passage vers mensuel)';
 
 
+
+
