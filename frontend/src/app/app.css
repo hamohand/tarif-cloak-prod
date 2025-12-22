@@ -7,11 +7,15 @@
   min-height: calc(100vh - 80px); /* Ajuster pour la navbar */
   box-sizing: border-box;
   transition: margin-left 0.3s ease;
+  position: relative;
 }
 
 .container.with-sidebar {
   margin-left: 220px;
   width: calc(100% - 220px);
+  max-width: calc(100vw - 220px);
+  padding-left: 20px;
+  padding-right: 20px;
 }
 
 @media (min-width: 1200px) {
@@ -21,6 +25,7 @@
   
   .container.with-sidebar {
     max-width: calc(1200px - 220px);
+    width: calc(100% - 220px);
   }
 }
 
@@ -31,6 +36,7 @@
   
   .container.with-sidebar {
     max-width: calc(1400px - 220px);
+    width: calc(100% - 220px);
   }
 }
 
@@ -38,5 +44,6 @@
   .container.with-sidebar {
     margin-left: 180px;
     width: calc(100% - 180px);
+    max-width: calc(100vw - 180px);
   }
 }

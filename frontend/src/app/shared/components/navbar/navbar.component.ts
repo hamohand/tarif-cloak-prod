@@ -508,6 +508,7 @@ import { of } from 'rxjs';
       z-index: 998;
       overflow-y: auto;
       padding-top: 80px; /* Espace pour la navbar principale */
+      box-sizing: border-box;
     }
 
     .organization-navbar::after {
