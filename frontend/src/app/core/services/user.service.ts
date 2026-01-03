@@ -14,6 +14,13 @@ export interface Organization {
   createdAt: string;
   userCount?: number;
   marketVersion?: string | null;
+  monthlyPlanStartDate?: string | null;
+  monthlyPlanEndDate?: string | null;
+  pendingMonthlyPlanId?: number | null;
+  pendingMonthlyPlanChangeDate?: string | null;
+  lastPayPerRequestInvoiceDate?: string | null;
+  pendingPayPerRequestPlanId?: number | null;
+  pendingPayPerRequestChangeDate?: string | null;
 }
 
 export interface UserUsageStats {

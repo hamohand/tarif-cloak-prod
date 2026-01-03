@@ -25,3 +25,5 @@ COMMENT ON COLUMN organization.last_pay_per_request_invoice_date IS 'Date de la 
 
 
 
+
+

@@ -98,6 +98,9 @@ Chart.register(...registerables);
                     <p><strong>Période d'essai:</strong> Valable {{ currentPlan.trialPeriodDays }} jours</p>
                   } @else if (currentPlan.monthlyQuota) {
                     <p><strong>Quota:</strong> {{ currentPlan.monthlyQuota | number }} requêtes/mois</p>
+                    @if (organization.monthlyPlanEndDate) {
+                      <p><strong>Prochain renouvellement:</strong> {{ formatRenewalDate(organization.monthlyPlanEndDate) }}</p>
+                    }
                   } @else if (currentPlan.pricePerRequest !== null && currentPlan.pricePerRequest !== undefined) {
                     <p><strong>Quota:</strong> Facturation à la requête</p>
                   } @else {
@@ -1067,6 +1070,16 @@ export class OrganizationStatsComponent implements OnInit {
     if (!dateString) return '';
     const date = new Date(dateString);
     return date.toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  }
+
+  formatRenewalDate(endDateString: string): string {
+    if (!endDateString) return '';
+    // La date de fin est incluse, le renouvellement se fait le jour suivant
+    const endDate = new Date(endDateString);
+    const renewalDate = new Date(endDate);
+    renewalDate.setDate(renewalDate.getDate() + 1);
+    // Formater seulement le jour et le mois
+    return renewalDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
   }
 
   formatCurrency(amount: number): string {
