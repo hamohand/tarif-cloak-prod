@@ -52,6 +52,14 @@ Application SaaS de recherche de codes tarifaires HS-code avec authentification 
 - `pricingPlanId` : ID du plan tarifaire actif
 - `trialExpiresAt` : Date d'expiration de l'essai gratuit
 - `trialPermanentlyExpired` : Flag indiquant si l'essai est définitivement terminé
+- `monthlyPlanStartDate` : Date de début du cycle mensuel actuel (pour plans mensuels)
+- `monthlyPlanEndDate` : Date de fin du cycle mensuel (inclus, réinitialisation le jour suivant)
+- `pendingMonthlyPlanId` : Plan mensuel en attente (prendra effet à la fin du cycle)
+- `pendingMonthlyPlanChangeDate` : Date à laquelle le changement de plan prendra effet
+- `lastPayPerRequestInvoiceDate` : Date de la dernière facture pay-per-request
+- `pendingPayPerRequestPlanId` : Plan Pay-per-Request en attente (si changement demandé)
+- `pendingPayPerRequestChangeDate` : Date d'effet du changement vers Pay-per-Request
+- `marketVersion` : Version du marché (ex: DEFAULT, DZ)
 
 #### OrganizationUser (Liaison Utilisateur-Organisation)
 - `id` : Identifiant unique
@@ -129,17 +137,25 @@ Vérification:
 ```
 Frontend → OrganizationAccountController → OrganizationService.changePricingPlan()
     ↓
-Mise à jour:
-- pricingPlanId
-- monthlyQuota (selon le plan)
-- trialExpiresAt (si plan d'essai)
-- trialPermanentlyExpired (réinitialisé si plan payant)
+Mise à jour selon le type de changement:
+- Plan Mensuel → Plan Mensuel : Changement en attente (pendingMonthlyPlanId)
+- Plan Mensuel → Pay-per-Request : Immédiat si quota dépassé, sinon en attente
+- Pay-per-Request → Plan Mensuel : Immédiat + initialisation cycle mensuel
+- Autres changements : Immédiat
 ```
 
-**Règles de changement de quota** :
+**Règles de changement de plan** :
 - Plan pay-per-request (`pricePerRequest > 0` et `pricePerMonth = null`) → `monthlyQuota = null`
-- Plan mensuel avec quota → `monthlyQuota = plan.monthlyQuota`
-- Plan mensuel sans quota → `monthlyQuota = null`
+- Plan mensuel avec quota → `monthlyQuota = plan.monthlyQuota` + cycle mensuel initialisé
+- Plan mensuel sans quota → `monthlyQuota = null` + cycle mensuel initialisé
+- Changements mensuels → mensuels : Enregistrés en attente jusqu'à la fin du cycle
+- Changements mensuels → Pay-per-Request : Immédiat si quota dépassé, sinon en attente
+
+**Cycle mensuel** :
+- Le cycle commence le jour J et se termine le jour J-1 du mois suivant (inclus)
+- Exemple : Cycle du 15 janvier au 14 février (inclus), renouvellement le 15 février
+- Reconduction tacite automatique à la fin de chaque cycle
+- La date de renouvellement est affichée dans l'interface utilisateur
 
 ## 🔐 Sécurité
 
@@ -264,10 +280,13 @@ Toutes les configurations sont centralisées dans `.env`. Voir `CONFIGURATION.md
 - Essai gratuit avec limite
 - Blocage automatique si quota dépassé
 
-### Phase 5 : Facturation (En cours)
-- Génération de factures
+### Phase 5 : Facturation ✅
+- Génération de factures mensuelles et Pay-per-Request
 - Historique des factures
 - Export PDF
+- Factures de clôture lors des changements de plan
+- Reconduction tacite des plans mensuels
+- Gestion des changements de plan en attente
 
 ## 📝 Notes d'Implémentation
 
@@ -290,5 +309,5 @@ Toutes les configurations sont centralisées dans `.env`. Voir `CONFIGURATION.md
 
 ---
 
-*Dernière mise à jour : Phase 4 complétée*
+*Dernière mise à jour : Phase 5 complétée - Système de facturation complet avec cycles mensuels et reconduction tacite*
 

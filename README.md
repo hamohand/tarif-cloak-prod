@@ -21,7 +21,12 @@ Une application SaaS moderne construite avec Angular, Spring Boot, Keycloak et P
 - ✅ **Authentification complète** avec Keycloak (OAuth 2.0 / OpenID Connect)
 - ✅ **Gestion des utilisateurs** : Inscription, connexion, profils
 - ✅ **Gestion multi-organisations** : Création et gestion d'organisations avec utilisateurs
-- ✅ **Plans tarifaires** : Système de facturation avec quotas et essai gratuit
+- ✅ **Plans tarifaires** : Système de facturation complet avec quotas et essai gratuit
+  - Plans mensuels avec cycles personnalisés et reconduction tacite automatique
+  - Plans Pay-per-Request avec facturation à la requête
+  - Affichage de la date de renouvellement automatique pour les plans mensuels
+  - Gestion des changements de plan en attente
+  - Factures de clôture lors des changements de plan
 - ✅ **Recherche de codes HS-code** : Recherche intelligente avec IA (OpenAI, Anthropic, Ollama)
 - ✅ **Tracking d'utilisation** : Enregistrement automatique des requêtes et coûts
 - ✅ **API REST sécurisée** avec Spring Boot et JWT
@@ -312,6 +317,8 @@ docker exec -i saasessai2-db psql -U muhend saasessai2-db < backup.sql
 
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** : Architecture complète de l'application, modèle de données, flux principaux
 - **[CONFIGURATION.md](CONFIGURATION.md)** : Configuration complète, variables d'environnement, thème Keycloak
+- **[docs/PLAN_FACTURATION.md](docs/PLAN_FACTURATION.md)** : Système de facturation complet, types de plans tarifaires, règles de changement de plan, cycles mensuels
+- **[docs/MARKET_PROFILE.md](docs/MARKET_PROFILE.md)** : Gestion des profils de marché (devises, langues, fuseaux horaires)
 
 ## 🔧 Troubleshooting
 
