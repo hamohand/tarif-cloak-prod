@@ -96,8 +96,13 @@ Chart.register(...registerables);
                   </p>
                   @if (currentPlan.trialPeriodDays) {
                     <p><strong>Période d'essai:</strong> Valable {{ currentPlan.trialPeriodDays }} jours</p>
-                  } @else if (currentPlan.monthlyQuota) {
-                    <p><strong>Quota:</strong> {{ currentPlan.monthlyQuota | number }} requêtes/mois</p>
+                  } @else if (currentPlan.pricePerMonth !== null && currentPlan.pricePerMonth !== undefined && currentPlan.pricePerMonth > 0) {
+                    <!-- Plan mensuel -->
+                    @if (currentPlan.monthlyQuota) {
+                      <p><strong>Quota:</strong> {{ currentPlan.monthlyQuota | number }} requêtes/mois</p>
+                    } @else {
+                      <p><strong>Quota:</strong> Illimité</p>
+                    }
                     @if (organization.monthlyPlanEndDate) {
                       <p><strong>Prochain renouvellement:</strong> {{ formatRenewalDate(organization.monthlyPlanEndDate) }}</p>
                     }
