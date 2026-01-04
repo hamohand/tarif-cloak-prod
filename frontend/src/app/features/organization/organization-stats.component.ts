@@ -100,6 +100,7 @@ Chart.register(...registerables);
                     <!-- Plan mensuel -->
                     @if (currentPlan.monthlyQuota) {
                       <p><strong>Quota:</strong> {{ currentPlan.monthlyQuota | number }} requêtes/mois</p>
+                      <p><strong>Prochain renouvellement:</strong> {{ formatRenewalDate(organization?.monthlyPlanEndDate) }}</p>
                     } @else {
                       <p><strong>Quota:</strong> Illimité</p>
                     }
