@@ -355,6 +355,12 @@ Chart.register(...registerables);
               <h4>📅 Requêtes ce mois</h4>
               <p class="stat-value">{{ stats.monthlyRequests }}</p>
             </div>
+            @if (organization?.monthlyPlanEndDate) {
+              <div class="stat-item">
+                <h4>🔄 Prochaine réinitialisation</h4>
+                <p class="stat-value">{{ formatRenewalDate(organization.monthlyPlanEndDate) }}</p>
+              </div>
+            }
           </div>
 
           <!-- Filtres -->
