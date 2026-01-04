@@ -104,7 +104,7 @@ Chart.register(...registerables);
                       <p><strong>Quota:</strong> Illimité</p>
                     }
                     @if (organization.monthlyPlanEndDate) {
-                      <p><strong>Prochain renouvellement:</strong> {{ formatRenewalDate(organization.monthlyPlanEndDate) }}</p>
+                      <p><strong>Prochain renouvellement:</strong> {{ formatRenewalDate(organization?.monthlyPlanEndDate) }}</p>
                     }
                   } @else if (currentPlan.pricePerRequest !== null && currentPlan.pricePerRequest !== undefined) {
                     <p><strong>Quota:</strong> Facturation à la requête</p>
@@ -358,7 +358,7 @@ Chart.register(...registerables);
             @if (organization?.monthlyPlanEndDate) {
               <div class="stat-item">
                 <h4>🔄 Prochaine réinitialisation</h4>
-                <p class="stat-value">{{ formatRenewalDate(organization.monthlyPlanEndDate) }}</p>
+                <p class="stat-value">{{ formatRenewalDate(organization?.monthlyPlanEndDate) }}</p>
               </div>
             }
           </div>
@@ -523,7 +523,7 @@ export class OrganizationStatsComponent implements OnInit {
         console.error('❌ OrganizationStatsComponent: Erreur lors du chargement de la devise:', err);
       }
     });
-    
+
     // Charger aussi le code de devise pour formatCurrency
     this.currencyService.getCurrencyCode().pipe(take(1)).subscribe({
       next: (code) => {
@@ -535,7 +535,7 @@ export class OrganizationStatsComponent implements OnInit {
         console.error('❌ OrganizationStatsComponent: Erreur lors du chargement du code devise:', err);
       }
     });
-    
+
     this.loadOrganization();
     this.loadQuota();
     // Charger les logs d'utilisation qui recalculeront automatiquement les stats
@@ -545,19 +545,19 @@ export class OrganizationStatsComponent implements OnInit {
   loadOrganization() {
     this.loadingOrg = true;
     this.errorMessage = '';
-    
+
     // Charger d'abord le statut pour avoir l'état réel (met à jour trialPermanentlyExpired si nécessaire)
     this.organizationAccountService.getOrganizationStatus().subscribe({
       next: (status) => {
         console.log('📊 Statut de l\'organisation:', status);
         console.log('🔍 isTrialExpired:', status.isTrialExpired);
         console.log('🔍 trialPermanentlyExpired (status):', status.trialPermanentlyExpired);
-        
+
         // Charger ensuite les détails de l'organisation
         this.userService.getMyOrganization().subscribe({
           next: (org) => {
             console.log('🏢 Organisation chargée:', org);
-            
+
             // Mettre à jour trialPermanentlyExpired avec la valeur du statut (plus à jour)
             if (org && status.trialPermanentlyExpired !== undefined && status.trialPermanentlyExpired !== null) {
               org.trialPermanentlyExpired = status.trialPermanentlyExpired;
@@ -565,7 +565,7 @@ export class OrganizationStatsComponent implements OnInit {
             } else if (org) {
               console.log('🔍 trialPermanentlyExpired depuis l\'organisation:', org.trialPermanentlyExpired);
             }
-            
+
             this.organization = org;
             this.selectedPlanId = org?.pricingPlanId || null;
             this.loadingOrg = false;
@@ -616,21 +616,21 @@ export class OrganizationStatsComponent implements OnInit {
     const organizationId = this.organization?.id;
     // Convertir null en undefined pour correspondre au type attendu
     const marketVersion = this.organization?.marketVersion ?? undefined;
-    
+
     // Utiliser le nouvel endpoint qui exclut automatiquement le plan d'essai si déjà utilisé
     this.pricingPlanService.getAvailablePricingPlans(marketVersion, organizationId).subscribe({
       next: (plans) => {
         console.log('📋 Plans disponibles reçus du serveur:', plans.length, plans);
         console.log('🔍 Organization trialPermanentlyExpired:', this.organization?.trialPermanentlyExpired);
-        
+
         // Le backend exclut déjà le plan d'essai et les plans gratuits si l'organisation les a déjà utilisés
         // Mais on peut ajouter un filtre supplémentaire côté frontend pour s'assurer
         // que seuls les plans payants sont proposés si l'essai est définitivement terminé ou si l'organisation a un plan payant
         const hasUsedTrial = this.organization?.trialPermanentlyExpired || this.organization?.trialExpiresAt;
-        const hasPaidPlan = this.currentPlan && 
+        const hasPaidPlan = this.currentPlan &&
           ((this.currentPlan.pricePerMonth !== null && this.currentPlan.pricePerMonth !== undefined && this.currentPlan.pricePerMonth > 0) ||
-           (this.currentPlan.pricePerRequest !== null && this.currentPlan.pricePerRequest !== undefined && this.currentPlan.pricePerRequest > 0));
-        
+            (this.currentPlan.pricePerRequest !== null && this.currentPlan.pricePerRequest !== undefined && this.currentPlan.pricePerRequest > 0));
+
         if (hasUsedTrial || hasPaidPlan) {
           // Filtrer pour ne garder que les plans payants (exclure les plans gratuits et d'essai)
           const filteredPlans = plans.filter(plan => {
@@ -639,19 +639,19 @@ export class OrganizationStatsComponent implements OnInit {
               console.log('❌ Plan exclu (essai):', plan.name);
               return false;
             }
-            
+
             // Exclure les plans gratuits
             const hasPaidMonthlyPrice = plan.pricePerMonth !== null && plan.pricePerMonth !== undefined && plan.pricePerMonth > 0;
             const hasPaidPerRequestPrice = plan.pricePerRequest !== null && plan.pricePerRequest !== undefined && plan.pricePerRequest > 0;
             const isPaidPlan = hasPaidMonthlyPrice || hasPaidPerRequestPrice;
-            
+
             if (!isPaidPlan) {
               console.log('❌ Plan exclu (gratuit):', plan.name);
             }
-            
+
             return isPaidPlan;
           });
-          
+
           console.log('📊 Plans filtrés (payants uniquement):', filteredPlans.length, filteredPlans);
           this.pricingPlans = filteredPlans;
         } else {
@@ -662,16 +662,16 @@ export class OrganizationStatsComponent implements OnInit {
         if (this.organization?.pricingPlanId) {
           this.updateCurrentPlan(this.organization.pricingPlanId);
         }
-        
+
         // Si l'essai est terminé, toujours forcer la sélection d'un plan payant
         if (this.organization?.trialPermanentlyExpired) {
           // Vérifier si le plan actuel est un plan payant ET s'il est dans la liste filtrée
-          const currentPlanIsPaid = this.currentPlan && 
+          const currentPlanIsPaid = this.currentPlan &&
             ((this.currentPlan.pricePerMonth !== null && this.currentPlan.pricePerMonth !== undefined && this.currentPlan.pricePerMonth > 0) ||
-             (this.currentPlan.pricePerRequest !== null && this.currentPlan.pricePerRequest !== undefined && this.currentPlan.pricePerRequest > 0));
-          
+              (this.currentPlan.pricePerRequest !== null && this.currentPlan.pricePerRequest !== undefined && this.currentPlan.pricePerRequest > 0));
+
           const currentPlanInFilteredList = this.currentPlan && this.currentPlan.id ? this.pricingPlans.some(p => p.id === this.currentPlan!.id) : false;
-          
+
           // Si le plan actuel n'est pas payant OU n'est pas dans la liste filtrée, sélectionner le premier plan payant disponible
           if ((!currentPlanIsPaid || !currentPlanInFilteredList) && this.pricingPlans.length > 0 && this.pricingPlans[0].id) {
             console.log('🔄 Plan actuel non valide, sélection du premier plan payant:', this.pricingPlans[0].id);
@@ -746,7 +746,7 @@ export class OrganizationStatsComponent implements OnInit {
 
     // Convertir selectedPlanId en number car il peut venir du select HTML comme string
     const planId = typeof this.selectedPlanId === 'string' ? parseInt(this.selectedPlanId, 10) : this.selectedPlanId;
-    
+
     // S'assurer que selectedPlanId est un number
     if (typeof this.selectedPlanId === 'string') {
       this.selectedPlanId = planId;
@@ -779,7 +779,7 @@ export class OrganizationStatsComponent implements OnInit {
       this.notificationService.error('Plan sélectionné introuvable. Veuillez sélectionner un plan dans la liste.');
       return;
     }
-    
+
     // Si l'essai est définitivement terminé, forcer le changement même si c'est le même plan (cas où l'ancien plan était gratuit)
     if (this.selectedPlanId === this.organization?.pricingPlanId && !this.organization?.trialPermanentlyExpired) {
       this.notificationService.info('Le plan sélectionné est déjà votre plan actuel.');
@@ -790,13 +790,13 @@ export class OrganizationStatsComponent implements OnInit {
     if (this.organization?.trialPermanentlyExpired) {
       const isPaidPlan = (selectedPlan.pricePerMonth !== null && selectedPlan.pricePerMonth !== undefined && selectedPlan.pricePerMonth > 0)
         || (selectedPlan.pricePerRequest !== null && selectedPlan.pricePerRequest !== undefined && selectedPlan.pricePerRequest > 0);
-      
+
       if (!isPaidPlan && (!selectedPlan.trialPeriodDays || selectedPlan.trialPeriodDays <= 0)) {
         // Plan gratuit sans essai - pas autorisé
         this.notificationService.error('Vous devez sélectionner un plan payant. Les plans gratuits ne sont plus disponibles après la fin de l\'essai.');
         return;
       }
-      
+
       if (selectedPlan.trialPeriodDays && selectedPlan.trialPeriodDays > 0) {
         // Plan d'essai - pas autorisé
         this.notificationService.error('Les plans d\'essai ne sont plus disponibles. Veuillez sélectionner un plan payant.');
@@ -845,7 +845,7 @@ export class OrganizationStatsComponent implements OnInit {
 
     // Utiliser selectedPlanForConfirmation si selectedPlanId n'est pas défini
     let planIdToUse = this.selectedPlanId || this.selectedPlanForConfirmation?.id;
-    
+
     if (!planIdToUse) {
       console.error('❌ Aucun plan sélectionné');
       this.notificationService.error('Veuillez sélectionner un plan tarifaire.');
@@ -988,7 +988,7 @@ export class OrganizationStatsComponent implements OnInit {
     this.loadingUsageLogs = true;
     const startDate = this.startDate || undefined;
     const endDate = this.endDate || undefined;
-    
+
     this.organizationAccountService.getOrganizationUsageLogs(startDate, endDate).subscribe({
       next: (logs) => {
         this.organizationUsageLogs = logs;
@@ -1083,7 +1083,7 @@ export class OrganizationStatsComponent implements OnInit {
     return date.toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   }
 
-  formatRenewalDate(endDateString: string): string {
+  formatRenewalDate(endDateString: string | null | undefined): string {
     if (!endDateString) return '';
     // La date de fin est incluse, le renouvellement se fait le jour suivant
     const endDate = new Date(endDateString);
@@ -1095,13 +1095,13 @@ export class OrganizationStatsComponent implements OnInit {
 
   formatCurrency(amount: number): string {
     if (amount == null || isNaN(amount)) return '0.00';
-    
+
     // Utiliser la devise du marché stockée dans currentCurrencyCode
     // Pour DZD, le symbole est placé après le montant
     if (this.currentCurrencyCode === 'DZD' || this.currentCurrencyCode === 'MAD') {
       return `${amount.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${this.currentCurrencySymbol}`;
     }
-    
+
     // Pour les autres devises, utiliser Intl.NumberFormat ou le symbole avant
     try {
       return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: this.currentCurrencyCode }).format(amount);
@@ -1113,9 +1113,9 @@ export class OrganizationStatsComponent implements OnInit {
 
   formatCost(amount: number): string {
     if (amount == null || isNaN(amount)) return '0.00000';
-    return new Intl.NumberFormat('fr-FR', { 
-      minimumFractionDigits: 5, 
-      maximumFractionDigits: 5 
+    return new Intl.NumberFormat('fr-FR', {
+      minimumFractionDigits: 5,
+      maximumFractionDigits: 5
     }).format(amount);
   }
 
