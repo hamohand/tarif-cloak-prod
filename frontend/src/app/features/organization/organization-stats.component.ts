@@ -103,6 +103,9 @@ Chart.register(...registerables);
                     } @else {
                       <p><strong>Quota:</strong> Illimité</p>
                     }
+                    @if (organization.monthlyPlanEndDate) {
+                      <p><strong>Prochaine reconduction:</strong> {{ formatRenewalDate(organization.monthlyPlanEndDate) }}</p>
+                    }
                   } @else if (currentPlan.pricePerRequest !== null && currentPlan.pricePerRequest !== undefined) {
                     <p><strong>Quota:</strong> Facturation à la requête</p>
                   } @else {
@@ -276,11 +279,6 @@ Chart.register(...registerables);
           </div>
         </div>
       }
-
-      
-      <h4>🔄 Prochaine reconduction</h4>
-                <p class="stat-value">{{ formatRenewalDate(organization?.monthlyPlanEndDate) }}</p>
-
 
       <!-- Quota organisation -->
       <div class="quota-card" *ngIf="quota || loadingQuota">
