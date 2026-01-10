@@ -61,6 +61,7 @@ import { NotificationService } from '../../../core/services/notification.service
             <thead>
               <tr>
                 <th>Nom</th>
+                <th>Statut</th>
                 <th>Email</th>
                 <th>Utilisateurs</th>
                 <th>Quota mensuel</th>
@@ -72,8 +73,15 @@ import { NotificationService } from '../../../core/services/notification.service
             </thead>
             <tbody>
               @for (org of filteredOrganizations; track org.id) {
-                <tr>
+                <tr [class.org-disabled]="org.enabled === false">
                   <td><strong>{{ org.name }}</strong></td>
+                  <td>
+                    @if (org.enabled === false) {
+                      <span class="status-badge status-disabled">Désactivée</span>
+                    } @else {
+                      <span class="status-badge status-active">Active</span>
+                    }
+                  </td>
                   <td>{{ org.email || '-' }}</td>
                   <td>{{ org.userCount || 0 }}</td>
                   <td>
@@ -105,6 +113,11 @@ import { NotificationService } from '../../../core/services/notification.service
                   <td>
                     <button class="btn btn-sm btn-secondary" (click)="toggleEdit(org)">✏️</button>
                     <button class="btn btn-sm btn-info" (click)="toggleUsers(org.id)">👥</button>
+                    @if (org.enabled === false) {
+                      <button class="btn btn-sm btn-success" (click)="enableOrganization(org)" title="Réactiver">✅</button>
+                    } @else {
+                      <button class="btn btn-sm btn-warning" (click)="disableOrganization(org)" title="Désactiver">⛔</button>
+                    }
                   </td>
                 </tr>
               }
@@ -113,10 +126,15 @@ import { NotificationService } from '../../../core/services/notification.service
         } @else {
           <!-- Vue cartes -->
           @for (org of filteredOrganizations; track org.id) {
-            <div class="organization-card">
+            <div class="organization-card" [class.org-disabled]="org.enabled === false">
               <div class="org-header">
                 <div class="org-info">
-                  <h3>{{ org.name }}</h3>
+                  <h3>
+                    {{ org.name }}
+                    @if (org.enabled === false) {
+                      <span class="status-badge status-disabled">Désactivée</span>
+                    }
+                  </h3>
                   @if (org.email) {
                     <p class="org-email">📧 {{ org.email }}</p>
                   }
@@ -130,6 +148,11 @@ import { NotificationService } from '../../../core/services/notification.service
                 <div class="org-actions">
                   <button class="btn btn-sm btn-secondary" (click)="toggleEdit(org)">✏️ Modifier</button>
                   <button class="btn btn-sm btn-info" (click)="toggleUsers(org.id)">👥 Utilisateurs</button>
+                  @if (org.enabled === false) {
+                    <button class="btn btn-sm btn-success" (click)="enableOrganization(org)">✅ Réactiver</button>
+                  } @else {
+                    <button class="btn btn-sm btn-warning" (click)="disableOrganization(org)">⛔ Désactiver</button>
+                  }
                 </div>
               </div>
 
@@ -628,6 +651,24 @@ import { NotificationService } from '../../../core/services/notification.service
       background: #c0392b;
     }
 
+    .btn-success {
+      background: #28a745;
+      color: white;
+    }
+
+    .btn-success:hover {
+      background: #218838;
+    }
+
+    .btn-warning {
+      background: #ffc107;
+      color: #212529;
+    }
+
+    .btn-warning:hover {
+      background: #e0a800;
+    }
+
     .btn-sm {
       padding: 0.4rem 0.8rem;
       font-size: 0.9rem;
@@ -652,6 +693,38 @@ import { NotificationService } from '../../../core/services/notification.service
       text-align: center;
       padding: 2rem;
       color: #666;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .status-active {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .status-disabled {
+      background: #f8d7da;
+      color: #721c24;
+    }
+
+    .org-disabled {
+      opacity: 0.7;
+      border-left: 4px solid #dc3545;
+    }
+
+    tr.org-disabled {
+      background-color: #fff5f5 !important;
+    }
+
+    tr.org-disabled:hover {
+      background-color: #ffe0e0 !important;
     }
   `]
 })
@@ -909,6 +982,42 @@ export class OrganizationsComponent implements OnInit {
       return userId.substring(0, 37) + '...';
     }
     return userId;
+  }
+
+  disableOrganization(org: Organization) {
+    if (!confirm(`Êtes-vous sûr de vouloir désactiver l'organisation "${org.name}" ?\n\nTous les collaborateurs de cette organisation ne pourront plus utiliser l'application.`)) {
+      return;
+    }
+
+    this.adminService.disableOrganization(org.id).subscribe({
+      next: () => {
+        this.notificationService.success(`Organisation "${org.name}" désactivée avec succès`);
+        this.loadOrganizations();
+      },
+      error: (err) => {
+        const message = err.error?.message || err.message || "Erreur lors de la désactivation";
+        this.errorMessage = message;
+        this.notificationService.error(message);
+      }
+    });
+  }
+
+  enableOrganization(org: Organization) {
+    if (!confirm(`Êtes-vous sûr de vouloir réactiver l'organisation "${org.name}" ?\n\nLes collaborateurs pourront à nouveau utiliser l'application.`)) {
+      return;
+    }
+
+    this.adminService.enableOrganization(org.id).subscribe({
+      next: () => {
+        this.notificationService.success(`Organisation "${org.name}" réactivée avec succès`);
+        this.loadOrganizations();
+      },
+      error: (err) => {
+        const message = err.error?.message || err.message || "Erreur lors de la réactivation";
+        this.errorMessage = message;
+        this.notificationService.error(message);
+      }
+    });
   }
 }
 

@@ -52,6 +52,7 @@ export interface Organization {
   name: string;
   email?: string | null;
   monthlyQuota?: number | null;
+  enabled?: boolean; // false = organisation désactivée
   createdAt: string;
   userCount?: number;
   currentMonthUsage?: number; // Nombre de requêtes utilisées ce mois
@@ -224,6 +225,22 @@ export class AdminService {
    */
   getPendingRegistrations(): Observable<PendingRegistration[]> {
     return this.http.get<PendingRegistration[]>(`${this.apiUrl}/pending-registrations`);
+  }
+
+  /**
+   * Désactive une organisation.
+   * Les collaborateurs ne pourront plus utiliser l'application.
+   */
+  disableOrganization(organizationId: number): Observable<Organization> {
+    return this.http.put<Organization>(`${this.apiUrl}/organizations/${organizationId}/disable`, {});
+  }
+
+  /**
+   * Réactive une organisation.
+   * Les collaborateurs pourront à nouveau utiliser l'application.
+   */
+  enableOrganization(organizationId: number): Observable<Organization> {
+    return this.http.put<Organization>(`${this.apiUrl}/organizations/${organizationId}/enable`, {});
   }
 }
 

@@ -375,7 +375,54 @@ public class OrganizationService {
             // Ne pas faire échouer la transaction si la désactivation Keycloak échoue
         }
     }
-    
+
+    /**
+     * Désactive une organisation (interdit l'utilisation de l'application à tous ses collaborateurs).
+     * Les collaborateurs ne pourront plus effectuer de requêtes tant que l'organisation est désactivée.
+     *
+     * @param organizationId ID de l'organisation à désactiver
+     * @return L'organisation mise à jour
+     */
+    @Transactional
+    public OrganizationDto disableOrganization(Long organizationId) {
+        Organization organization = organizationRepository.findById(organizationId)
+                .orElseThrow(() -> new IllegalArgumentException("Organisation non trouvée avec l'ID: " + organizationId));
+
+        if (!Boolean.TRUE.equals(organization.getEnabled())) {
+            throw new IllegalArgumentException("L'organisation est déjà désactivée");
+        }
+
+        organization.setEnabled(false);
+        organization = organizationRepository.save(organization);
+
+        log.info("Organisation {} (ID: {}) désactivée par un administrateur", organization.getName(), organizationId);
+
+        return toDtoWithUserCount(organization);
+    }
+
+    /**
+     * Réactive une organisation (permet à nouveau l'utilisation de l'application à ses collaborateurs).
+     *
+     * @param organizationId ID de l'organisation à réactiver
+     * @return L'organisation mise à jour
+     */
+    @Transactional
+    public OrganizationDto enableOrganization(Long organizationId) {
+        Organization organization = organizationRepository.findById(organizationId)
+                .orElseThrow(() -> new IllegalArgumentException("Organisation non trouvée avec l'ID: " + organizationId));
+
+        if (Boolean.TRUE.equals(organization.getEnabled())) {
+            throw new IllegalArgumentException("L'organisation est déjà activée");
+        }
+
+        organization.setEnabled(true);
+        organization = organizationRepository.save(organization);
+
+        log.info("Organisation {} (ID: {}) réactivée par un administrateur", organization.getName(), organizationId);
+
+        return toDtoWithUserCount(organization);
+    }
+
     /**
      * Récupère toutes les organisations d'un utilisateur.
      */
@@ -965,6 +1012,7 @@ public class OrganizationService {
         dto.setLastPayPerRequestInvoiceDate(organization.getLastPayPerRequestInvoiceDate());
         dto.setPendingPayPerRequestPlanId(organization.getPendingPayPerRequestPlanId());
         dto.setPendingPayPerRequestChangeDate(organization.getPendingPayPerRequestChangeDate());
+        dto.setEnabled(organization.getEnabled());
         dto.setCreatedAt(organization.getCreatedAt());
         return dto;
     }
@@ -1171,6 +1219,11 @@ public class OrganizationService {
      */
     @Transactional(readOnly = true)
     public boolean canOrganizationMakeRequests(Organization organization) {
+        // Vérifier si l'organisation est désactivée par un administrateur
+        if (!Boolean.TRUE.equals(organization.getEnabled())) {
+            log.debug("Organisation {} désactivée par un administrateur", organization.getId());
+            return false;
+        }
         return !isTrialExpired(organization);
     }
     

@@ -164,5 +164,31 @@ public class OrganizationController {
         OrganizationDto organization = organizationService.changePricingPlan(id, request.getPricingPlanId());
         return ResponseEntity.ok(organization);
     }
+
+    @PutMapping("/{id}/disable")
+    @Operation(
+        summary = "Désactiver une organisation",
+        description = "Désactive une organisation. Tous les collaborateurs de cette organisation " +
+                     "ne pourront plus utiliser l'application tant qu'elle est désactivée. " +
+                     "Nécessite le rôle ADMIN.",
+        security = @SecurityRequirement(name = "bearerAuth")
+    )
+    public ResponseEntity<OrganizationDto> disableOrganization(@PathVariable Long id) {
+        OrganizationDto organization = organizationService.disableOrganization(id);
+        return ResponseEntity.ok(organization);
+    }
+
+    @PutMapping("/{id}/enable")
+    @Operation(
+        summary = "Réactiver une organisation",
+        description = "Réactive une organisation précédemment désactivée. " +
+                     "Les collaborateurs pourront à nouveau utiliser l'application. " +
+                     "Nécessite le rôle ADMIN.",
+        security = @SecurityRequirement(name = "bearerAuth")
+    )
+    public ResponseEntity<OrganizationDto> enableOrganization(@PathVariable Long id) {
+        OrganizationDto organization = organizationService.enableOrganization(id);
+        return ResponseEntity.ok(organization);
+    }
 }
 

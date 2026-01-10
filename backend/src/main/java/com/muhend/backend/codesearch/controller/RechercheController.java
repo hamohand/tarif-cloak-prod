@@ -340,22 +340,33 @@ public class RechercheController {
             // Si le quota de l'essai gratuit est atteint, l'essai est définitivement terminé
             // et aucune requête n'est autorisée pour tous les collaborateurs de l'organisation
             if (!organizationService.canOrganizationMakeRequests(organizationId)) {
-                // Vérifier si c'est parce que le quota est atteint et définitivement terminé
+                // Vérifier si c'est parce que l'organisation est désactivée ou le quota atteint
                 try {
                     OrganizationDto organization = organizationService.getOrganizationById(organizationId);
-                    if (organization != null && Boolean.TRUE.equals(organization.getTrialPermanentlyExpired())) {
-                        throw new IllegalStateException(
-                            "Le quota de votre essai gratuit a été atteint et est maintenant définitivement désactivé pour votre organisation. " +
-                            "Aucune requête HS-code n'est autorisée pour tous les collaborateurs. " +
-                            "Veuillez choisir un plan tarifaire ou faire une demande de devis pour continuer à utiliser le service."
-                        );
+                    if (organization != null) {
+                        // Vérifier si l'organisation est désactivée par un administrateur
+                        if (!Boolean.TRUE.equals(organization.getEnabled())) {
+                            throw new IllegalStateException(
+                                "Votre organisation a été désactivée par un administrateur. " +
+                                "Aucune requête HS-code n'est autorisée pour tous les collaborateurs. " +
+                                "Veuillez contacter l'administrateur pour plus d'informations."
+                            );
+                        }
+                        // Vérifier si c'est parce que le quota est atteint et définitivement terminé
+                        if (Boolean.TRUE.equals(organization.getTrialPermanentlyExpired())) {
+                            throw new IllegalStateException(
+                                "Le quota de votre essai gratuit a été atteint et est maintenant définitivement désactivé pour votre organisation. " +
+                                "Aucune requête HS-code n'est autorisée pour tous les collaborateurs. " +
+                                "Veuillez choisir un plan tarifaire ou faire une demande de devis pour continuer à utiliser le service."
+                            );
+                        }
                     }
                 } catch (IllegalStateException e) {
                     // Relancer l'exception si c'est déjà notre message personnalisé
                     throw e;
                 } catch (Exception e) {
                     // Si l'organisation n'est pas trouvée ou autre erreur, utiliser le message générique
-                    log.debug("Erreur lors de la vérification du statut définitif de l'essai: {}", e.getMessage());
+                    log.debug("Erreur lors de la vérification du statut de l'organisation: {}", e.getMessage());
                 }
                 throw new IllegalStateException(
                     "Votre période d'essai gratuit est terminée. Veuillez choisir un plan tarifaire ou faire une demande de devis pour continuer à utiliser le service."

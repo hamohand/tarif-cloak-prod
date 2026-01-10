@@ -82,7 +82,10 @@ public class Organization {
     
     @Column(name = "pending_pay_per_request_change_date", nullable = true)
     private LocalDate pendingPayPerRequestChangeDate; // Date à laquelle le changement vers Pay-per-Request prendra effet (fin du cycle si quota non dépassé)
-    
+
+    @Column(name = "enabled", nullable = false)
+    private Boolean enabled = true; // false = organisation désactivée (aucun collaborateur ne peut utiliser l'application)
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
     
