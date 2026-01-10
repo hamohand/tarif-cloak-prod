@@ -1,13 +1,10 @@
-import { Component, OnInit, inject, ViewChild, ElementRef, AfterViewInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { UserService, UserUsageStats, UserQuota, Organization } from '../../../core/services/user.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { CurrencyService } from '../../../core/services/currency.service';
-import { Chart, ChartConfiguration, registerables } from 'chart.js';
 import { take } from 'rxjs/operators';
-
-Chart.register(...registerables);
 
 @Component({
   selector: 'app-user-dashboard',
@@ -43,56 +40,48 @@ Chart.register(...registerables);
       </div>
 
 
-      <!-- Quota -->
+      <!-- Utilisation Organisation Ce Mois -->
       <div class="quota-card" *ngIf="quota || loadingQuota">
-        <h3>📈 Mon Quota Mensuel</h3>
+        <h3>📊 Utilisation Organisation Ce Mois</h3>
         @if (loadingQuota) {
           <p>Chargement...</p>
         } @else if (quota) {
           @if (!quota.hasOrganization) {
             <p class="no-org-message">{{ quota.message }}</p>
           } @else {
-            <div class="quota-details">
-              @if (quota.isUnlimited) {
-                <div class="quota-unlimited">
-                  <p class="quota-status">✅ Quota illimité</p>
-                  @if (quota.personalUsage !== undefined) {
-                    <p class="quota-usage">Mon utilisation personnelle: {{ quota.personalUsage }} requêtes</p>
-                  }
+            <div class="org-usage-details">
+              <div class="org-usage-stats">
+                <div class="org-usage-item">
+                  <span class="org-usage-label">Requêtes ce mois :</span>
+                  <span class="org-usage-value">{{ quota.currentUsage || 0 }}</span>
                 </div>
-              } @else {
-                <!-- Graphique circulaire du quota -->
-                <div class="quota-chart-wrapper">
-                  <canvas #quotaChart></canvas>
+                <div class="org-usage-item">
+                  <span class="org-usage-label">Quota mensuel :</span>
+                  <span class="org-usage-value">
+                    @if (quota.isUnlimited) {
+                      Illimité
+                    } @else {
+                      {{ quota.monthlyQuota || 'Non défini' }}
+                    }
+                  </span>
                 </div>
-                <div class="quota-limited">
-                  @if (quota.personalUsage !== undefined && quota.monthlyQuota) {
-                    <div class="quota-progress">
-                      <div class="quota-progress-bar">
-                        <div class="quota-progress-fill" [style.width.%]="getPersonalPercentage(quota)" 
-                             [class.quota-warning]="getPersonalPercentage(quota) >= 80"
-                             [class.quota-danger]="getPersonalPercentage(quota) >= 100">
-                        </div>
-                      </div>
-                      <p class="quota-text">
-                        {{ quota.personalUsage }} / {{ quota.monthlyQuota }} requêtes
-                        ({{ getPersonalPercentage(quota).toFixed(1) }}%)
-                      </p>
-                    </div>
-                    <p class="quota-usage-info">
-                      <span class="quota-usage-text">Mon utilisation: {{ quota.personalUsage }} requêtes</span>
-                    </p>
-                    <p class="quota-remaining">
-                      @if ((quota.monthlyQuota - quota.personalUsage) >= 0) {
-                        <span class="quota-remaining-text">⚠️ {{ quota.monthlyQuota - (quota.currentUsage || 0) }} requêtes restantes dans le plan de l'organisation</span>
-                      } @else {
-                        <span class="quota-exceeded">❌ Quota dépassé!</span>
-                      }
-                    </p>
-                  } @else {
-                    <p class="no-quota-info">Informations de quota non disponibles</p>
-                  }
-                </div>
+                @if (!quota.isUnlimited && quota.monthlyQuota) {
+                  <div class="org-usage-item">
+                    <span class="org-usage-label">Requêtes restantes :</span>
+                    <span class="org-usage-value" [class.quota-warning]="getOrgPercentage() >= 80" [class.quota-danger]="getOrgPercentage() >= 100">
+                      {{ Math.max(0, quota.monthlyQuota - (quota.currentUsage || 0)) }}
+                    </span>
+                  </div>
+                  <div class="org-usage-item">
+                    <span class="org-usage-label">Pourcentage utilisé :</span>
+                    <span class="org-usage-value" [class.quota-warning]="getOrgPercentage() >= 80" [class.quota-danger]="getOrgPercentage() >= 100">
+                      {{ getOrgPercentage().toFixed(1) }}%
+                    </span>
+                  </div>
+                }
+              </div>
+              @if (!quota.isUnlimited && quota.monthlyQuota && getOrgPercentage() >= 100) {
+                <p class="quota-exceeded-message">❌ Le quota mensuel de l'organisation a été dépassé.</p>
               }
             </div>
           }
@@ -303,6 +292,54 @@ Chart.register(...registerables);
     .quota-usage-text {
       color: #666;
       margin: 0 0.5rem;
+    }
+
+    .org-usage-details {
+      margin-top: 1rem;
+    }
+
+    .org-usage-stats {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .org-usage-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem 1rem;
+      background: #d0d0d0;
+      border-radius: 6px;
+    }
+
+    .org-usage-label {
+      font-weight: 500;
+      color: #555;
+    }
+
+    .org-usage-value {
+      font-weight: 600;
+      font-size: 1.1rem;
+      color: #2c3e50;
+    }
+
+    .org-usage-value.quota-warning {
+      color: #ff9800;
+    }
+
+    .org-usage-value.quota-danger {
+      color: #f44336;
+    }
+
+    .quota-exceeded-message {
+      margin-top: 1rem;
+      padding: 0.75rem;
+      background: #ffebee;
+      border-radius: 6px;
+      color: #c62828;
+      font-weight: 600;
+      text-align: center;
     }
 
     .stats-grid {
@@ -530,15 +567,16 @@ Chart.register(...registerables);
     }
   `]
 })
-export class UserDashboardComponent implements OnInit, AfterViewInit, OnDestroy {
+export class UserDashboardComponent implements OnInit {
   private userService = inject(UserService);
   private authService = inject(AuthService);
   private currencyService = inject(CurrencyService);
-  
+
   private currentCurrencyCode = 'EUR'; // Par défaut, sera mis à jour dans ngOnInit
   private currentCurrencySymbol = '€'; // Par défaut, sera mis à jour dans ngOnInit
 
-  @ViewChild('quotaChart', { static: false }) quotaChartRef!: ElementRef<HTMLCanvasElement>;
+  // Exposer Math pour le template
+  Math = Math;
 
   userInfo: any;
   organization: Organization | null = null;
@@ -552,8 +590,6 @@ export class UserDashboardComponent implements OnInit, AfterViewInit, OnDestroy 
 
   startDate = '';
   endDate = '';
-
-  private quotaChart: Chart | null = null;
 
   ngOnInit() {
     // Charger la devise du marché
@@ -594,10 +630,6 @@ export class UserDashboardComponent implements OnInit, AfterViewInit, OnDestroy 
       next: (quota) => {
         this.quota = quota;
         this.loadingQuota = false;
-        // Mettre à jour le graphique du quota
-        setTimeout(() => {
-          this.updateQuotaChart();
-        }, 100);
       },
       error: (err) => {
         this.errorMessage = 'Erreur lors du chargement du quota: ' + (err.error?.message || err.message);
@@ -622,88 +654,6 @@ export class UserDashboardComponent implements OnInit, AfterViewInit, OnDestroy 
       }
     });
   }
-
-  ngAfterViewInit() {
-    // Les graphiques seront créés après le chargement des données
-  }
-
-  ngOnDestroy() {
-    // Détruire les graphiques pour éviter les fuites mémoire
-    if (this.quotaChart) {
-      this.quotaChart.destroy();
-    }
-  }
-
-  updateQuotaChart() {
-    if (!this.quota || !this.quota.hasOrganization || this.quota.isUnlimited || !this.quotaChartRef) {
-      return;
-    }
-
-    const used = this.quota.personalUsage || 0;
-    const total = this.quota.monthlyQuota || 1;
-    const remaining = Math.max(0, total - used);
-    const percentage = total > 0 ? (used / total) * 100 : 0;
-
-    // Déterminer les couleurs selon le pourcentage
-    let usedColor = 'rgba(46, 204, 113, 0.8)'; // Vert
-    if (percentage >= 100) {
-      usedColor = 'rgba(231, 76, 60, 0.8)'; // Rouge
-    } else if (percentage >= 80) {
-      usedColor = 'rgba(243, 156, 18, 0.8)'; // Orange
-    }
-
-    if (this.quotaChart) {
-      this.quotaChart.destroy();
-    }
-
-    const config: ChartConfiguration = {
-      type: 'doughnut',
-      data: {
-        labels: ['Utilisé', 'Restant'],
-        datasets: [{
-          data: [used, remaining],
-          backgroundColor: [
-            usedColor,
-            'rgba(189, 195, 199, 0.3)'
-          ],
-          borderColor: [
-            usedColor,
-            'rgba(189, 195, 199, 0.5)'
-          ],
-          borderWidth: 2
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: true,
-        plugins: {
-          legend: {
-            position: 'bottom',
-            labels: {
-              padding: 15,
-              font: {
-                size: 12
-              }
-            }
-          },
-          tooltip: {
-            callbacks: {
-              label: (context) => {
-                const label = context.label || '';
-                const value = context.parsed || 0;
-                const total = used + remaining;
-                const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0';
-                return `${label}: ${value} requêtes (${percentage}%)`;
-              }
-            }
-          }
-        }
-      }
-    };
-
-    this.quotaChart = new Chart(this.quotaChartRef.nativeElement, config);
-  }
-
 
   resetFilters() {
     this.startDate = '';
@@ -751,11 +701,11 @@ export class UserDashboardComponent implements OnInit, AfterViewInit, OnDestroy 
     return term;
   }
 
-  getPersonalPercentage(quota: UserQuota): number {
-    if (!quota.personalUsage || !quota.monthlyQuota) {
+  getOrgPercentage(): number {
+    if (!this.quota || !this.quota.currentUsage || !this.quota.monthlyQuota) {
       return 0;
     }
-    return (quota.personalUsage / quota.monthlyQuota) * 100;
+    return (this.quota.currentUsage / this.quota.monthlyQuota) * 100;
   }
 
   isAdmin(): boolean {
