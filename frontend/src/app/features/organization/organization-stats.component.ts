@@ -100,12 +100,8 @@ Chart.register(...registerables);
                     <!-- Plan mensuel -->
                     @if (currentPlan.monthlyQuota) {
                       <p><strong>Quota:</strong> {{ currentPlan.monthlyQuota | number }} requêtes/mois</p>
-                      <p><strong>Prochain renouvellement:</strong> {{ formatRenewalDate(organization?.monthlyPlanEndDate) }}</p>
                     } @else {
                       <p><strong>Quota:</strong> Illimité</p>
-                    }
-                    @if (organization.monthlyPlanEndDate) {
-                      <p><strong>Prochain renouvellement:</strong> {{ formatRenewalDate(organization?.monthlyPlanEndDate) }}</p>
                     }
                   } @else if (currentPlan.pricePerRequest !== null && currentPlan.pricePerRequest !== undefined) {
                     <p><strong>Quota:</strong> Facturation à la requête</p>
@@ -356,9 +352,9 @@ Chart.register(...registerables);
               <h4>📅 Requêtes ce mois</h4>
               <p class="stat-value">{{ stats.monthlyRequests }}</p>
             </div>
-            @if (organization?.monthlyPlanEndDate) {
+            @if (organization?.monthlyPlanEndDate && currentPlan && currentPlan.pricePerMonth !== null && currentPlan.pricePerMonth !== undefined && currentPlan.pricePerMonth > 0) {
               <div class="stat-item">
-                <h4>🔄 Prochaine réinitialisation</h4>
+                <h4>🔄 Prochaine reconduction</h4>
                 <p class="stat-value">{{ formatRenewalDate(organization?.monthlyPlanEndDate) }}</p>
               </div>
             }
