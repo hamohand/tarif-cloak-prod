@@ -277,6 +277,11 @@ Chart.register(...registerables);
         </div>
       }
 
+      
+      <h4>🔄 Prochaine reconduction</h4>
+                <p class="stat-value">{{ formatRenewalDate(organization?.monthlyPlanEndDate) }}</p>
+
+
       <!-- Quota organisation -->
       <div class="quota-card" *ngIf="quota || loadingQuota">
         <h3>📈 Utilisation Organisation Ce Mois</h3>
