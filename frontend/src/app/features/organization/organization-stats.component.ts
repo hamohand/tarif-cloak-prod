@@ -376,40 +376,6 @@ Chart.register(...registerables);
             <button class="btn btn-secondary" (click)="resetFilters()">Réinitialiser</button>
           </div>
 
-          <!-- Utilisations récentes -->
-          @if (stats.recentUsage && stats.recentUsage.length > 0) {
-            <div class="recent-usage">
-              <h4>🔍 Utilisations Récentes</h4>
-              <table class="usage-table">
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Endpoint</th>
-                    <th>Recherche</th>
-                    @if (isAdmin()) {
-                      <th>Tokens</th>
-                    }
-                    <th>Prix requête</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (usage of stats.recentUsage; track usage.id) {
-                    <tr>
-                      <td>{{ formatDate(usage.timestamp) }}</td>
-                      <td>{{ usage.endpoint }}</td>
-                      <td class="search-term">{{ truncateSearchTerm(usage.searchTerm) }}</td>
-                      @if (isAdmin()) {
-                        <td>{{ formatNumber(usage.tokensUsed) }}</td>
-                      }
-                      <td>{{ formatCurrency(usage.costUsd || 0) }}</td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
-            </div>
-          } @else {
-            <p class="empty-message">Aucune utilisation récente.</p>
-          }
         }
       </div>
 
@@ -451,14 +417,18 @@ Chart.register(...registerables);
                     </td>
                   }
                   <td>
-                    <strong>
-                      {{ formatCost(log.totalCostUsd || 0) }} 
-                      @if (currencySymbol$ | async; as symbol) {
-                        {{ symbol }}
-                      } @else {
-                        €
-                      }
-                    </strong>
+                    @if (log.totalCostUsd === null || log.totalCostUsd === undefined || log.totalCostUsd === 0) {
+                      <span class="forfait-badge">Forfait</span>
+                    } @else {
+                      <strong>
+                        {{ formatCost(log.totalCostUsd) }}
+                        @if (currencySymbol$ | async; as symbol) {
+                          {{ symbol }}
+                        } @else {
+                          €
+                        }
+                      </strong>
+                    }
                   </td>
                 </tr>
               }
