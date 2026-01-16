@@ -1,0 +1,25 @@
+# Maven
+target/
+!target/*.jar
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.swp
+
+# Git
+.git/
+.gitignore
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docs
+*.md
+docs/

@@ -89,11 +89,28 @@ x-common-bd-keycloak-vars: &common-bd-keycloak-vars
   POSTGRES_USER: "${KEYCLOAK_DB_USER:-keycloak}"
   POSTGRES_PASSWORD: "${KEYCLOAK_DB_PASSWORD}"
 
-#x-common-bd-app-keycloak-vars: &common-bd-app-keycloak-vars
-#  POSTGRES_DB: "${POSTGRES_DB}"
-#  POSTGRES_USER: "${POSTGRES_USER}"
-#  POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+# Variables RabbitMQ communes
+x-common-rabbitmq-vars: &common-rabbitmq-vars
+  RABBITMQ_HOST: "rabbitmq"
+  RABBITMQ_PORT: "5672"
+  RABBITMQ_USERNAME: "${RABBITMQ_USER:-admin}"
+  RABBITMQ_PASSWORD: "${RABBITMQ_PASSWORD:-admin}"
 
+# Labels Traefik pour le search-service (priorité plus haute que backend pour /api/recherche)
+x-traefik-search-labels: &traefik-search-labels
+  traefik.enable: "true"
+  traefik.docker.network: "webproxy"
+  # Route /api/recherche vers search-service (priorité haute)
+  "traefik.http.routers.search-service-secure.rule": "(Host(`${FRONTEND_DOMAIN}`) || Host(`${WWW_FRONTEND_DOMAIN}`)) && PathPrefix(`/api/recherche`)"
+  "traefik.http.routers.search-service-secure.entrypoints": "websecure"
+  "traefik.http.routers.search-service-secure.tls.certresolver": "${TRAEFIK_CERT_RESOLVER:-myresolver}"
+  "traefik.http.routers.search-service-secure.middlewares": "search-api-stripprefix"
+  "traefik.http.routers.search-service-secure.service": "search-service"
+  "traefik.http.routers.search-service-secure.priority": "20"
+  # Middleware pour strip /api
+  "traefik.http.middlewares.search-api-stripprefix.stripprefix.prefixes": "/api"
+  # Service
+  "traefik.http.services.search-service.loadbalancer.server.port": "8082"
 
 services:
 
@@ -207,6 +224,8 @@ services:
         condition: service_healthy
       keycloak:
         condition: service_started
+      rabbitmq:
+        condition: service_healthy
 #    ports:
 #      - "${BACKEND_INTERNAL_PORT:-8081}:8081"
     environment:
@@ -253,6 +272,8 @@ services:
       EMAIL_ADMIN_HSCODE: "${EMAIL_ADMIN_HSCODE:-}"
       # Configuration Tarification
       BASE_REQUEST_PRICE: "${BASE_REQUEST_PRICE:-0.01}"
+      # Configuration RabbitMQ (communication micro-services)
+      <<: *common-rabbitmq-vars
     labels:
       <<: *traefik-backend-labels
     restart: unless-stopped
@@ -290,6 +311,101 @@ services:
       - default
       - webproxy
 
+  # ===============================================================
+  # RABBITMQ - MESSAGE BROKER (Communication micro-services)
+  # ===============================================================
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: "${PROJECT_NAME:-app}-rabbitmq"
+    environment:
+      RABBITMQ_DEFAULT_USER: "${RABBITMQ_USER:-admin}"
+      RABBITMQ_DEFAULT_PASS: "${RABBITMQ_PASSWORD:-admin}"
+    ports:
+      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"  # Management UI (optionnel)
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - default
+
+  # ===============================================================
+  # REDIS - CACHE (pour search-service)
+  # ===============================================================
+  redis:
+    image: redis:7-alpine
+    container_name: "${PROJECT_NAME:-app}-redis"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - default
+
+  # ===============================================================
+  # SEARCH SERVICE - MICRO-SERVICE DE RECHERCHE HS CODES
+  # ===============================================================
+  search-service:
+    build:
+      context: ./search-service
+      dockerfile: Dockerfile
+    container_name: "${PROJECT_NAME:-app}-search-service"
+    deploy:
+      replicas: ${SEARCH_SERVICE_REPLICAS:-1}
+    environment:
+      # Configuration Spring Boot
+      SPRING_PROFILES_ACTIVE: "${SPRING_PROFILES_ACTIVE:-prod}"
+      # Base de données (partagée avec le monolithe)
+      DATABASE_URL: "jdbc:postgresql://app-db:${POSTGRES_PORT:-5432}/${POSTGRES_DB}"
+      DATABASE_USERNAME: "${POSTGRES_USER}"
+      DATABASE_PASSWORD: "${POSTGRES_PASSWORD}"
+      # RabbitMQ
+      <<: *common-rabbitmq-vars
+      # Redis
+      REDIS_HOST: "redis"
+      REDIS_PORT: "6379"
+      # Backend (monolithe) pour quota-check
+      BACKEND_URL: "http://backend:${BACKEND_INTERNAL_PORT:-8081}"
+      # Keycloak
+      KEYCLOAK_ISSUER_URI: "${KEYCLOAK_EXTERNAL_URL}/realms/${KEYCLOAK_REALM}"
+      KEYCLOAK_JWK_SET_URI: "${KEYCLOAK_INTERNAL_URL:-http://keycloak:8080}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/certs"
+      # Configuration IA
+      OPENAI_API_KEY: "${OPENAI_API_KEY}"
+      ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY}"
+      AI_PROVIDER: "${AI_PROVIDER:-openai}"
+      OLLAMA_BASE_URL: "${OLLAMA_BASE_URL:-http://host.docker.internal:11434}"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      app-db:
+        condition: service_healthy
+      backend:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8082/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    labels:
+      <<: *traefik-search-labels
+    restart: unless-stopped
+    networks:
+      - default
+      - webproxy
+
 # ===============================================================
 # VOLUMES PERSISTANTS
 # ===============================================================
@@ -298,6 +414,10 @@ volumes:
     name: "${PROJECT_NAME:-app}-app-data"
   keycloak-database-data:
     name: "${PROJECT_NAME:-app}-keycloak-data"
+  rabbitmq-data:
+    name: "${PROJECT_NAME:-app}-rabbitmq-data"
+  redis-data:
+    name: "${PROJECT_NAME:-app}-redis-data"
 
 # ===============================================================
 # RÉSEAUX
