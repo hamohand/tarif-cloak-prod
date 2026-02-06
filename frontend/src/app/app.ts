@@ -20,10 +20,9 @@ export class App implements OnInit {
 
   hasOrganizationSidebar$ = combineLatest([
     this.authService.isAuthenticated(),
-    this.authService.isOrganizationAccount(),
-    this.authService.isCollaboratorAccount()
+    this.authService.isOrganizationAccount()
   ]).pipe(
-    map(([isAuth, isOrg, isCollab]) => isAuth && (isOrg || isCollab))
+    map(([isAuth, isOrg]) => isAuth && isOrg)
   );
 
   ngOnInit() {

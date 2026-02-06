@@ -93,7 +93,7 @@ import { QuoteRequestFormComponent } from '../pricing/quote-request-form.compone
     }
 
     .header h2 {
-      color: #2c3e50;
+      color: #e2e8f0;
       margin: 0;
     }
 
@@ -108,35 +108,36 @@ import { QuoteRequestFormComponent } from '../pricing/quote-request-form.compone
     }
 
     .btn-primary {
-      background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
-      color: white;
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #0f172a;
     }
 
     .btn-primary:hover {
-      background: linear-gradient(135deg, #2980b9 0%, #1f6391 100%);
       transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+      box-shadow: 0 4px 16px rgba(245, 158, 11, 0.35);
     }
 
     .loading, .error {
       text-align: center;
       padding: 2rem;
       font-size: 1.2rem;
+      color: #94a3b8;
     }
 
     .error {
-      color: #e74c3c;
+      color: #f87171;
     }
 
     .empty-state {
       text-align: center;
       padding: 4rem 2rem;
-      background: #f8f9fa;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
       border-radius: 12px;
     }
 
     .empty-state p {
-      color: #7f8c8d;
+      color: #94a3b8;
       margin-bottom: 1.5rem;
       font-size: 1.1rem;
     }
@@ -148,33 +149,33 @@ import { QuoteRequestFormComponent } from '../pricing/quote-request-form.compone
     }
 
     .quote-request-card {
-      background: white;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 12px;
       padding: 1.5rem;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      border-left: 4px solid #95a5a6;
+      border-left: 4px solid rgba(255, 255, 255, 0.15);
       transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
 
     .quote-request-card:hover {
       transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+      background: rgba(255, 255, 255, 0.07);
     }
 
     .quote-request-card.status-pending {
-      border-left-color: #f39c12;
+      border-left-color: #f59e0b;
     }
 
     .quote-request-card.status-in_review {
-      border-left-color: #3498db;
+      border-left-color: #38bdf8;
     }
 
     .quote-request-card.status-responded {
-      border-left-color: #27ae60;
+      border-left-color: #4ade80;
     }
 
     .quote-request-card.status-closed {
-      border-left-color: #95a5a6;
+      border-left-color: rgba(255, 255, 255, 0.2);
     }
 
     .card-header {
@@ -183,17 +184,17 @@ import { QuoteRequestFormComponent } from '../pricing/quote-request-form.compone
       align-items: flex-start;
       margin-bottom: 1rem;
       padding-bottom: 1rem;
-      border-bottom: 1px solid #ecf0f1;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     }
 
     .card-header h3 {
       margin: 0 0 0.5rem 0;
-      color: #2c3e50;
+      color: #e2e8f0;
       font-size: 1.3rem;
     }
 
     .date {
-      color: #7f8c8d;
+      color: #94a3b8;
       font-size: 0.9rem;
       margin: 0;
     }
@@ -207,23 +208,23 @@ import { QuoteRequestFormComponent } from '../pricing/quote-request-form.compone
     }
 
     .status-badge.status-pending {
-      background: #fff3cd;
-      color: #856404;
+      background: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
     }
 
     .status-badge.status-in_review {
-      background: #d1ecf1;
-      color: #0c5460;
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
     }
 
     .status-badge.status-responded {
-      background: #d4edda;
-      color: #155724;
+      background: rgba(74, 222, 128, 0.15);
+      color: #4ade80;
     }
 
     .status-badge.status-closed {
-      background: #e2e3e5;
-      color: #383d41;
+      background: rgba(255, 255, 255, 0.08);
+      color: #94a3b8;
     }
 
     .card-body {
@@ -238,28 +239,28 @@ import { QuoteRequestFormComponent } from '../pricing/quote-request-form.compone
     }
 
     .info-row strong {
-      color: #2c3e50;
+      color: #e2e8f0;
       min-width: 120px;
     }
 
     .info-row span {
-      color: #7f8c8d;
+      color: #94a3b8;
     }
 
     .message-section, .admin-notes-section {
       padding: 1rem;
-      background: #f8f9fa;
+      background: rgba(255, 255, 255, 0.04);
       border-radius: 6px;
     }
 
     .message-section strong, .admin-notes-section strong {
       display: block;
-      color: #2c3e50;
+      color: #e2e8f0;
       margin-bottom: 0.5rem;
     }
 
     .message-section p, .admin-notes-section p {
-      color: #7f8c8d;
+      color: #94a3b8;
       margin: 0;
       white-space: pre-wrap;
     }

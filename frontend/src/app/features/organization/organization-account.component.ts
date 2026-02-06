@@ -180,13 +180,13 @@ import { Observable } from 'rxjs';
 
     h1 {
       margin: 0;
-      color: #1f2937;
+      color: #f8fafc;
     }
 
     .card {
-      background: #ffffff;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 12px;
-      box-shadow: 0 4px 24px rgba(15, 23, 42, 0.08);
       overflow: hidden;
     }
 
@@ -195,7 +195,7 @@ import { Observable } from 'rxjs';
       justify-content: space-between;
       align-items: center;
       padding: 1.5rem 2rem;
-      border-bottom: 1px solid #e5e7eb;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
       gap: 1rem;
     }
 
@@ -205,7 +205,7 @@ import { Observable } from 'rxjs';
 
     .subtitle {
       margin: 0;
-      color: #6b7280;
+      color: #94a3b8;
     }
 
     .stats {
@@ -217,11 +217,11 @@ import { Observable } from 'rxjs';
       display: block;
       font-size: 1.5rem;
       font-weight: 600;
-      color: #2563eb;
+      color: #f59e0b;
     }
 
     .stat-label {
-      color: #6b7280;
+      color: #94a3b8;
       font-size: 0.875rem;
     }
 
@@ -233,12 +233,12 @@ import { Observable } from 'rxjs';
 
     .info-grid h3 {
       margin-bottom: 0.25rem;
-      color: #374151;
+      color: #e2e8f0;
     }
 
     .info-grid p {
       margin: 0;
-      color: #4b5563;
+      color: #94a3b8;
     }
 
     .form-grid {
@@ -256,21 +256,23 @@ import { Observable } from 'rxjs';
 
     label {
       font-weight: 600;
-      color: #1f2937;
+      color: #e2e8f0;
     }
 
     input {
       padding: 0.75rem 1rem;
-      border: 1px solid #d1d5db;
+      border: 1px solid rgba(255, 255, 255, 0.15);
       border-radius: 8px;
       font-size: 1rem;
+      background: rgba(255, 255, 255, 0.06);
+      color: #f8fafc;
       transition: border-color 0.2s ease;
     }
 
     input:focus {
       outline: none;
-      border-color: #2563eb;
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+      border-color: #f59e0b;
+      box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
     }
 
     input.error {
@@ -284,13 +286,14 @@ import { Observable } from 'rxjs';
 
     button {
       padding: 0.75rem 1.5rem;
-      background-color: #2563eb;
-      color: #fff;
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #0f172a;
       border: none;
       border-radius: 8px;
       font-size: 1rem;
+      font-weight: 600;
       cursor: pointer;
-      transition: background-color 0.2s ease;
+      transition: all 0.2s ease;
       min-width: 140px;
     }
 
@@ -300,17 +303,17 @@ import { Observable } from 'rxjs';
     }
 
     button:not(:disabled):hover {
-      background-color: #1d4ed8;
+      box-shadow: 0 4px 16px rgba(245, 158, 11, 0.35);
     }
 
     .error-message {
-      color: #dc2626;
+      color: #f87171;
       font-size: 0.875rem;
       margin: 0;
     }
 
     .success-message {
-      color: #16a34a;
+      color: #4ade80;
       font-weight: 500;
       margin: 0;
     }
@@ -325,10 +328,10 @@ import { Observable } from 'rxjs';
       padding: 3rem;
       margin: 2rem;
       text-align: center;
-      background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
-      color: white;
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(217, 119, 6, 0.1));
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      color: #e2e8f0;
       border-radius: 12px;
-      box-shadow: 0 12px 32px rgba(249, 115, 22, 0.35);
     }
 
     .collaborators-table {
@@ -340,16 +343,16 @@ import { Observable } from 'rxjs';
     .collaborators-table td {
       padding: 0.75rem;
       text-align: left;
-      border-bottom: 1px solid #e5e7eb;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     }
 
     .collaborators-table th {
       font-weight: 600;
-      color: #374151;
+      color: #f59e0b;
     }
 
     .empty-state {
-      color: #6b7280;
+      color: #94a3b8;
       margin: 0;
     }
 
@@ -438,7 +441,7 @@ import { Observable } from 'rxjs';
       left: 0;
       right: 0;
       bottom: 0;
-      background-color: #ccc;
+      background-color: rgba(255, 255, 255, 0.2);
       transition: 0.3s;
       border-radius: 24px;
     }

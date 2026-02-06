@@ -85,20 +85,14 @@ import { of } from 'rxjs';
       </div>
     </nav>
     
-    @if ((isAuthenticated$ | async) && ((isOrganizationAccount$ | async) || (isCollaboratorAccount$ | async))) {
+    @if ((isAuthenticated$ | async) && (isOrganizationAccount$ | async)) {
       @if (!(canMakeRequests$ | async)) {
         <div class="trial-expired-banner">
           <p>
-            ⚠️ 
-            @if (isOrganizationAccount$ | async) {
-              Le quota de votre essai gratuit a été atteint et est maintenant définitivement désactivé pour votre organisation. 
-              Aucune requête HS-code n'est autorisée pour tous les collaborateurs. 
-              Veuillez <a routerLink="/organization/stats">choisir un plan tarifaire</a> ou <a routerLink="/organization/quote-requests">faire une demande de devis</a> pour continuer à utiliser le service.
-            } @else {
-              Le quota de l'essai gratuit de votre organisation a été atteint et est maintenant définitivement désactivé. 
-              Aucune requête HS-code n'est autorisée. 
-              Veuillez contacter votre administrateur d'organisation pour choisir un plan tarifaire ou faire une demande de devis.
-            }
+            ⚠️
+            Le quota de votre essai gratuit a été atteint et est maintenant définitivement désactivé pour votre organisation.
+            Aucune requête HS-code n'est autorisée pour tous les collaborateurs.
+            Veuillez <a routerLink="/organization/stats">choisir un plan tarifaire</a> ou <a routerLink="/organization/quote-requests">faire une demande de devis</a> pour continuer à utiliser le service.
           </p>
         </div>
       }
