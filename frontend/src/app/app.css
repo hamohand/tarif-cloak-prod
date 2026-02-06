@@ -17,6 +17,7 @@
   max-width: calc(100vw - 220px);
   padding-left: 20px;
   padding-right: 20px;
+  overflow-x: hidden;
 }
 
 @media (min-width: 1200px) {
