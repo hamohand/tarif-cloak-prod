@@ -3,8 +3,9 @@
   max-width: 100%;
   width: 100%;
   margin: 0 auto;
-  background-color: #e8e8e8; /* Fond plus assombri */
-  min-height: calc(100vh - 80px); /* Ajuster pour la navbar */
+  background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+  min-height: calc(100vh - 80px);
+  color: #f8fafc;
   box-sizing: border-box;
   transition: margin-left 0.3s ease;
   position: relative;

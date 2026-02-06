@@ -273,7 +273,10 @@ services:
       # Configuration Tarification
       BASE_REQUEST_PRICE: "${BASE_REQUEST_PRICE:-0.01}"
       # Configuration RabbitMQ (communication micro-services)
-      <<: *common-rabbitmq-vars
+      RABBITMQ_HOST: "rabbitmq"
+      RABBITMQ_PORT: "5672"
+      RABBITMQ_USERNAME: "${RABBITMQ_USER:-admin}"
+      RABBITMQ_PASSWORD: "${RABBITMQ_PASSWORD:-admin}"
     labels:
       <<: *traefik-backend-labels
     restart: unless-stopped

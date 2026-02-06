@@ -33,6 +33,6 @@ public class SectionService {
     }
 
     public boolean existsByCode(String code) {
-        return sectionRepository.existsByCode(code);
+        return sectionRepository.findByCode(code).isPresent();
     }
 }
