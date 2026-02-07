@@ -33,6 +33,9 @@ public class EmailService {
     @Value("${FRONTEND_URL:https://hscode.enclume-numerique.com}")
     private String frontendUrl;
 
+    @Value("${spring.profiles.active:prod}")
+    private String activeProfile;
+
     /**
      * Envoie un email de notification pour une nouvelle facture.
      *
@@ -219,8 +222,13 @@ public class EmailService {
         // Vérifier que la configuration SMTP est valide
         String smtpUsername = System.getenv("SMTP_USERNAME");
         String smtpPassword = System.getenv("SMTP_PASSWORD");
-        if (smtpUsername == null || smtpUsername.trim().isEmpty() || 
+        if (smtpUsername == null || smtpUsername.trim().isEmpty() ||
             smtpPassword == null || smtpPassword.trim().isEmpty()) {
+            if ("dev".equals(activeProfile)) {
+                log.warn("SMTP non configuré (mode dev) - Email non envoyé à {}. URL de confirmation : {}",
+                        organizationEmail, confirmationUrl);
+                return;
+            }
             log.error("Configuration SMTP incomplète : SMTP_USERNAME et/ou SMTP_PASSWORD ne sont pas définis. " +
                      "Veuillez configurer ces variables d'environnement dans votre fichier .env");
             throw new IllegalStateException(
