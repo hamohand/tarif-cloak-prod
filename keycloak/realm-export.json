@@ -789,11 +789,13 @@
       "clientAuthenticatorType": "client-secret",
       "redirectUris": [
           "https://hscode.enclume-numerique.com/*",
-          "https://www.hscode.enclume-numerique.com/*"
+          "https://www.hscode.enclume-numerique.com/*",
+          "http://localhost:4200/*"
       ],
       "webOrigins": [
           "https://hscode.enclume-numerique.com",
-          "https://www.hscode.enclume-numerique.com"
+          "https://www.hscode.enclume-numerique.com",
+          "http://localhost:4200"
       ],
       "notBefore": 0,
       "bearerOnly": false,
