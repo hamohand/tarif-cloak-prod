@@ -177,12 +177,12 @@ import { take } from 'rxjs/operators';
     }
 
     h2 {
-      color: #2c3e50;
+      color: #f8fafc;
       margin-bottom: 2rem;
     }
 
     h3 {
-      color: #2c3e50;
+      color: #e2e8f0;
       margin-top: 0;
       margin-bottom: 1rem;
     }
@@ -191,21 +191,22 @@ import { take } from 'rxjs/operators';
     .organization-card,
     .quota-card,
     .stats-card {
-      background: #e0e0e0;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
       border-radius: 8px;
       padding: 1.5rem;
       margin-bottom: 1.5rem;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     }
 
     .org-details p,
     .user-info-card p {
       margin: 0.5rem 0;
-      color: #555;
+      color: #94a3b8;
     }
 
     .no-org-message {
-      color: #888;
+      color: #64748b;
       font-style: italic;
     }
 
@@ -215,13 +216,13 @@ import { take } from 'rxjs/operators';
 
     .quota-unlimited {
       padding: 1rem;
-      background: #e8f5e9;
+      background: rgba(46, 125, 50, 0.15);
       border-radius: 4px;
     }
 
     .quota-status {
       font-weight: 600;
-      color: #2e7d32;
+      color: #4caf50;
       margin: 0.5rem 0;
     }
 
@@ -236,7 +237,7 @@ import { take } from 'rxjs/operators';
     .quota-progress-bar {
       width: 100%;
       height: 30px;
-      background: #e0e0e0;
+      background: rgba(255, 255, 255, 0.1);
       border-radius: 15px;
       overflow: hidden;
       margin-bottom: 0.5rem;
@@ -259,7 +260,7 @@ import { take } from 'rxjs/operators';
     .quota-text {
       text-align: center;
       font-weight: 600;
-      color: #2c3e50;
+      color: #e2e8f0;
       margin: 0.5rem 0;
     }
 
@@ -279,7 +280,7 @@ import { take } from 'rxjs/operators';
     }
 
     .quota-usage {
-      color: #666;
+      color: #94a3b8;
       margin: 0.5rem 0;
     }
 
@@ -290,7 +291,7 @@ import { take } from 'rxjs/operators';
     }
 
     .quota-usage-text {
-      color: #666;
+      color: #94a3b8;
       margin: 0 0.5rem;
     }
 
@@ -309,19 +310,19 @@ import { take } from 'rxjs/operators';
       justify-content: space-between;
       align-items: center;
       padding: 0.75rem 1rem;
-      background: #d0d0d0;
+      background: rgba(255, 255, 255, 0.06);
       border-radius: 6px;
     }
 
     .org-usage-label {
       font-weight: 500;
-      color: #555;
+      color: #94a3b8;
     }
 
     .org-usage-value {
       font-weight: 600;
       font-size: 1.1rem;
-      color: #2c3e50;
+      color: #e2e8f0;
     }
 
     .org-usage-value.quota-warning {
@@ -335,9 +336,9 @@ import { take } from 'rxjs/operators';
     .quota-exceeded-message {
       margin-top: 1rem;
       padding: 0.75rem;
-      background: #ffebee;
+      background: rgba(198, 40, 40, 0.15);
       border-radius: 6px;
-      color: #c62828;
+      color: #ef5350;
       font-weight: 600;
       text-align: center;
     }
@@ -350,23 +351,23 @@ import { take } from 'rxjs/operators';
     }
 
     .stat-item {
-      background: #d0d0d0;
+      background: rgba(255, 255, 255, 0.06);
       padding: 1rem;
       border-radius: 8px;
       text-align: center;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     }
 
     .stat-item h4 {
       margin: 0 0 0.5rem 0;
-      color: #666;
+      color: #94a3b8;
       font-size: 0.9rem;
     }
 
     .stat-value {
       font-size: 1.5rem;
       font-weight: 600;
-      color: #2c3e50;
+      color: #f59e0b;
       margin: 0;
     }
 
@@ -386,14 +387,16 @@ import { take } from 'rxjs/operators';
 
     .filter-group label {
       font-weight: 600;
-      color: #2c3e50;
+      color: #e2e8f0;
       font-size: 0.9rem;
     }
 
     .filter-group input {
       padding: 0.5rem;
-      border: 1px solid #ddd;
+      border: 1px solid rgba(255, 255, 255, 0.15);
       border-radius: 4px;
+      background: rgba(255, 255, 255, 0.06);
+      color: #e2e8f0;
     }
 
     .recent-usage {
@@ -407,7 +410,7 @@ import { take } from 'rxjs/operators';
     .usage-table {
       width: 100%;
       border-collapse: collapse;
-      background: white;
+      background: rgba(255, 255, 255, 0.03);
       border-radius: 4px;
       overflow: hidden;
     }
@@ -416,13 +419,14 @@ import { take } from 'rxjs/operators';
     .usage-table td {
       padding: 0.75rem;
       text-align: left;
-      border-bottom: 1px solid #ddd;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      color: #cbd5e1;
     }
 
     .usage-table th {
-      background: #d5d5d5;
+      background: rgba(245, 158, 11, 0.15);
       font-weight: 600;
-      color: #2c3e50;
+      color: #f59e0b;
     }
 
     .search-term {
@@ -442,24 +446,25 @@ import { take } from 'rxjs/operators';
     }
 
     .btn-secondary {
-      background: #95a5a6;
-      color: white;
+      background: rgba(255, 255, 255, 0.1);
+      color: #e2e8f0;
+      border: 1px solid rgba(255, 255, 255, 0.15);
     }
 
     .btn-secondary:hover {
-      background: #7f8c8d;
+      background: rgba(255, 255, 255, 0.15);
     }
 
     .empty-message {
-      color: #888;
+      color: #64748b;
       font-style: italic;
       text-align: center;
       padding: 2rem;
     }
 
     .error-message {
-      background: #e74c3c;
-      color: white;
+      background: rgba(231, 76, 60, 0.2);
+      color: #ef5350;
       padding: 1rem;
       border-radius: 4px;
       margin-top: 1rem;
@@ -468,14 +473,15 @@ import { take } from 'rxjs/operators';
     .chart-section {
       margin: 2rem 0;
       padding: 1.5rem;
-      background: #e0e0e0;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
       border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     }
 
     .chart-section h4 {
       margin: 0 0 1rem 0;
-      color: #2c3e50;
+      color: #e2e8f0;
     }
 
     .chart-wrapper {
@@ -497,73 +503,81 @@ import { take } from 'rxjs/operators';
     }
 
     .pricing-plan-card {
-      background: white;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
       border-radius: 12px;
       padding: 2rem;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
       margin-bottom: 2rem;
     }
 
     .pricing-plan-card h3 {
       margin-top: 0;
       margin-bottom: 1.5rem;
-      color: #2c3e50;
+      color: #e2e8f0;
     }
 
     .current-plan {
       margin-bottom: 2rem;
       padding: 1rem;
-      background: #f8f9fa;
+      background: rgba(255, 255, 255, 0.06);
       border-radius: 8px;
     }
 
     .plan-info p {
       margin: 0.5rem 0;
-      color: #2c3e50;
+      color: #cbd5e1;
     }
 
     .no-plan-message, .no-plans-message {
-      color: #7f8c8d;
+      color: #64748b;
       font-style: italic;
     }
 
     .change-plan-section {
       margin-top: 2rem;
       padding-top: 2rem;
-      border-top: 2px solid #e1e8ed;
+      border-top: 2px solid rgba(255, 255, 255, 0.1);
     }
 
     .change-plan-section h4 {
       margin-bottom: 1rem;
-      color: #2c3e50;
+      color: #e2e8f0;
     }
 
     .plan-select {
       width: 100%;
       padding: 0.75rem;
-      border: 2px solid #e1e8ed;
+      border: 2px solid rgba(255, 255, 255, 0.15);
       border-radius: 6px;
       font-size: 1rem;
       margin-bottom: 1rem;
-      background: white;
+      background: rgba(255, 255, 255, 0.06);
+      color: #e2e8f0;
+    }
+
+    .plan-select option {
+      background: #1e293b;
+      color: #e2e8f0;
     }
 
     .plan-select:focus {
       outline: none;
-      border-color: #3498db;
+      border-color: #f59e0b;
     }
 
     .view-all-plans-link {
       display: block;
       margin-top: 1rem;
       text-align: center;
-      color: #3498db;
+      color: #f59e0b;
       text-decoration: none;
       font-size: 0.9rem;
     }
 
     .view-all-plans-link:hover {
       text-decoration: underline;
+      color: #fbbf24;
     }
   `]
 })
