@@ -26,13 +26,18 @@ public class AiPrompts {
     }
 
     private static final String SYSTEM_MESSAGE_TEMPLATE = """
-            Extraction intelligente de codes douaniers
-              Vous êtes un assistant multilingue spécialisé dans le domaine de la recherche des codes douaniers du commerce international.
+            Extraction intelligente de codes douaniers / Intelligent customs code extraction
+
+               Vous êtes un assistant multilingue spécialisé dans la recherche des codes douaniers du commerce international.
+               Vous comprenez et traitez les requêtes en toute langue (français, anglais, arabe, espagnol, etc.).
+               Le produit peut être décrit dans n'importe quelle langue ; les descriptions des codes douaniers sont en français.
+               Vous devez faire la correspondance sémantique entre la langue du produit et les descriptions en français.
+
                Tâche :
-               À partir d'une liste complète ou partielle de codes douaniers (codes SH/HS/Harmonized System), identifie tous les codes et leurs descriptions qui pourraient raisonnablement s'appliquer au produit suivant :
-               Produit cible : {décrire précisément le produit, ses caractéristiques, son usage, ses matériaux, sa nature, etc.}
+               À partir de la liste de codes douaniers (codes SH/HS) fournie dans le message utilisateur, identifie tous les codes dont la description pourrait raisonnablement s'appliquer au produit recherché.
 
                Instructions :
+               - Traduis mentalement le produit recherché en français si nécessaire pour le comparer aux descriptions.
                - Analyse sémantiquement la description du produit.
                - Scanne la liste des codes douaniers fournie.
                - Sélectionne tous les codes dont les descriptions sont susceptibles de s'appliquer au produit, que ce soit de manière :
@@ -40,16 +45,17 @@ public class AiPrompts {
                     * ou indirecte (correspondance potentielle selon l'usage ou le matériau).
                - Pour chaque code sélectionné, fournis :{instruction_details}
 
-               Format de sortie attendu un tableau JSON :
+               Format de sortie : un tableau JSON uniquement, sans aucun texte avant ou après.
                Exemples de sortie :
            {format_example}
 
                Remarques :
-                   Si plusieurs codes sont pertinents selon des contextes ou des interprétations différentes (ex : selon matière, usage, ou destination du produit), indique-les tous.
-                   Ne sélectionne aucun code hors sujet, même si une partie du libellé semble correspondre.
+                   Si plusieurs codes sont pertinents, indique-les tous.
+                   Ne sélectionne aucun code hors sujet.
+                   Les justifications doivent toujours être en français.
 
-               Veuillez répondre uniquement au format JSON avec les clés {json_keys}.\s
-               Toujours retourner un tableau JSON, même s'il ne contient qu'un seul élément ou est vide.
+               IMPORTANT : Réponds UNIQUEMENT avec le tableau JSON (clés {json_keys}), sans aucun texte explicatif.
+               Toujours retourner un tableau JSON, même s'il ne contient qu'un seul élément ou est vide [].
 
                Voir exemples ci-dessous :
            {examples}
@@ -82,27 +88,37 @@ public class AiPrompts {
     private static final String JSON_KEYS_JUSTIFIED = "`code` et `justification`";
 
     private static final String EXAMPLES_JUSTIFIED = """
-               Exemple 1 :
+               Exemple 1 (français) :
                     USER : Pommes.
                     ASSISTANT :\s
                     [
                        {
                                 "code": "08",
-                                "justification": "C'est un code précis"
+                                "justification": "Chapitre des fruits comestibles"
                        }
                    ]
 
-               Exemple 2 :
+               Exemple 2 (français) :
                     USER : T-shirt à manches courtes, en coton 100%, destiné aux hommes.
                     ASSISTANT :\s
                     [
                        {
                                 "code": "6109 10",
-                                "justification": "C'est le code le plus précis pour les t-shirts en coton."
+                                "justification": "Code pour les t-shirts en coton."
                        },
                        {
                                 "code": "6109 90",
                                 "justification": "Alternative si mélange de fibres."
+                       }
+                    ]
+
+               Exemple 3 (anglais → justification en français) :
+                    USER : Frozen chicken wings.
+                    ASSISTANT :\s
+                    [
+                       {
+                                "code": "0207",
+                                "justification": "Viandes et abats comestibles de volailles, congelés."
                        }
                     ]
                """;
@@ -148,6 +164,15 @@ public class AiPrompts {
                        },
                        {
                                 "code": "6109 90"
+                       }
+                    ]
+
+               Exemple 3 (anglais) :
+                    USER : Frozen chicken wings.
+                    ASSISTANT :\s
+                    [
+                       {
+                                "code": "0207"
                        }
                     ]
                """;
