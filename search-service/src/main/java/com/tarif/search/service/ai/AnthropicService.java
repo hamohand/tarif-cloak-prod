@@ -21,17 +21,19 @@ public class AnthropicService implements AiProvider {
 
     private final String apiKey;
     private final String model;
-    private final String apiUrl = "https://api.anthropic.com/v1/messages";
-    private final int maxTokens = 1000;
+    private final String apiUrl;
+    private final int maxTokens = 4096;
     private final float temperature = 0.1F;
 
     private static final ThreadLocal<UsageInfo> currentUsage = new ThreadLocal<>();
 
     public AnthropicService(
             @Value("${ai.anthropic.api-key:}") String apiKey,
-            @Value("${ai.anthropic.model:claude-3-haiku-20240307}") String model) {
+            @Value("${ai.anthropic.model:claude-3-haiku-20240307}") String model,
+            @Value("${ai.anthropic.base-url:https://api.anthropic.com/v1}") String baseUrl) {
         this.apiKey = apiKey;
         this.model = model;
+        this.apiUrl = baseUrl + "/messages";
         log.info("AnthropicService initialisé avec le modèle: {}", model);
     }
 
@@ -112,8 +114,12 @@ public class AnthropicService implements AiProvider {
             log.warn("Structure de réponse inattendue: {}", responseBody);
             return "";
 
+        } catch (org.springframework.web.client.HttpClientErrorException e) {
+            log.error("Erreur HTTP API Anthropic - Status: {}, Body: {}", e.getStatusCode(), e.getResponseBodyAsString());
+            currentUsage.remove();
+            return "";
         } catch (Exception e) {
-            log.error("Erreur lors de la requête à l'API Anthropic: {}", e.getMessage());
+            log.error("Erreur lors de la requête à l'API Anthropic: {}", e.getMessage(), e);
             currentUsage.remove();
             return "";
         }
