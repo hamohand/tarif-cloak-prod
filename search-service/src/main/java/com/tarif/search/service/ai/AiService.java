@@ -54,11 +54,14 @@ public class AiService {
     }
 
     private String construirePrompt(StringBuilder ragString, String termeRecherche) {
-        return "En utilisant la liste suivante : \n" +
+        return "Produit recherché : \"" + termeRecherche + "\"\n\n" +
+                "Voici la liste complète des codes douaniers à analyser :\n" +
+                "<codes_douaniers>\n" +
                 ragString + "\n" +
-                "Recherchez tous les items qui contiennent la catégorie qui correspond à : \"" +
-                termeRecherche + "\"." +
-                "L'aspect qui nous intéresse est la valeur du code.";
+                "</codes_douaniers>\n\n" +
+                "À partir de cette liste, identifiez tous les codes dont la description correspond au produit \"" +
+                termeRecherche + "\". " +
+                "Répondez uniquement avec le tableau JSON, sans aucun texte avant ou après.";
     }
 
     private String obtenirReponseJsonDeIA(String titre, StringBuilder ragString, String termeRecherche) {
