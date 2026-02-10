@@ -32,8 +32,10 @@ import { of } from 'rxjs';
           @if ((isOrganizationAccount$ | async) || (isCollaboratorAccount$ | async)) {
             @if (canMakeRequests$ | async) {
               <a routerLink="/" class="nav-link">HS-code</a>
+              <a routerLink="/tarif/batch-search" class="nav-link">📦 Recherche par Lots</a>
             } @else {
               <span class="nav-link disabled" title="Le quota de l'essai gratuit de votre organisation a été atteint. Aucune requête HS-code n'est autorisée. Veuillez contacter votre administrateur d'organisation pour choisir un plan tarifaire.">HS-code</span>
+              <span class="nav-link disabled" title="Le quota de l'essai gratuit de votre organisation a été atteint. Aucune requête HS-code n'est autorisée. Veuillez contacter votre administrateur d'organisation pour choisir un plan tarifaire.">📦 Recherche par Lots</span>
             }
           } @else {
             <a routerLink="/" class="nav-link">Accueil</a>
