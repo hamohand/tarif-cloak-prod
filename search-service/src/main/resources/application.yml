@@ -80,6 +80,15 @@ ai:
   # Provider actif: openai, anthropic, ollama
   provider: ${AI_PROVIDER:openai}
 
+  # Configuration des Batches (Message Batches API)
+  # Les batches permettent de traiter plusieurs requêtes de manière asynchrone avec une réduction de 50% du coût
+  # Utilisez les endpoints /batch-search/* pour soumettre et gérer les batches
+  # Délai de traitement : 1 à 24 heures
+  # Limite : 100,000 requêtes par batch
+  batch:
+    enabled: ${AI_BATCH_ENABLED:true}
+    max-requests-per-batch: ${AI_BATCH_MAX_REQUESTS:1000}
+
 # RabbitMQ Exchanges et Queues
 messaging:
   exchange:
