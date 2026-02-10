@@ -29,7 +29,7 @@ public class AnthropicService implements AiProvider {
 
     public AnthropicService(
             @Value("${ai.anthropic.api-key:}") String apiKey,
-            @Value("${ai.anthropic.model:claude-3-haiku-20240307}") String model,
+            @Value("${ai.anthropic.model:claude-sonnet-4-5-20250929}") String model,
             @Value("${ai.anthropic.base-url:https://api.anthropic.com/v1}") String baseUrl) {
         this.apiKey = apiKey;
         this.model = model;
