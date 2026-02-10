@@ -1,0 +1,234 @@
+<div class="batch-search-container">
+  <div class="page-header">
+    <h1>🔍 Recherche par Lots (Batch)</h1>
+    <p class="subtitle">
+      Recherchez des codes HS pour plusieurs produits simultanément avec une réduction de 50% sur les coûts
+    </p>
+  </div>
+
+  <div class="batch-layout">
+    <!-- Section gauche : Formulaire de soumission -->
+    <div class="submission-panel">
+      <div class="card">
+        <h2>📤 Soumettre un nouveau batch</h2>
+
+        <!-- Option 1 : Saisie manuelle -->
+        <div class="input-section">
+          <h3>Option 1 : Saisie manuelle</h3>
+          <textarea
+            [(ngModel)]="manualSearchTerms"
+            placeholder="Entrez les termes de recherche, un par ligne.&#10;Exemple:&#10;Pommes fraîches&#10;T-shirt en coton&#10;Ordinateur portable"
+            rows="8"
+            class="form-control"
+            [disabled]="isSubmitting"
+          ></textarea>
+        </div>
+
+        <!-- OU -->
+        <div class="divider">
+          <span>OU</span>
+        </div>
+
+        <!-- Option 2 : Upload de fichier -->
+        <div class="input-section">
+          <h3>Option 2 : Import de fichier</h3>
+          <div class="file-upload">
+            <input
+              type="file"
+              (change)="onFileSelected($event)"
+              accept=".txt,.csv"
+              class="file-input"
+              id="fileInput"
+              [disabled]="isSubmitting"
+            />
+            <label for="fileInput" class="file-label">
+              <span *ngIf="!selectedFile">📁 Choisir un fichier (.txt ou .csv)</span>
+              <span *ngIf="selectedFile">✅ {{ selectedFile.name }}</span>
+            </label>
+          </div>
+          <p class="help-text">
+            Format: un terme de recherche par ligne, maximum 1000 lignes
+          </p>
+        </div>
+
+        <!-- Bouton de soumission -->
+        <button
+          (click)="submitBatch()"
+          [disabled]="isSubmitting || (!manualSearchTerms.trim() && !fileContent)"
+          class="btn btn-primary btn-submit"
+        >
+          <span *ngIf="!isSubmitting">🚀 Soumettre le batch</span>
+          <span *ngIf="isSubmitting">⏳ Envoi en cours...</span>
+        </button>
+
+        <!-- Info économie -->
+        <div class="info-box">
+          <h4>💰 Économie de 50%</h4>
+          <p>
+            L'API Batch coûte moitié prix par rapport à l'API standard.<br/>
+            Délai de traitement : quelques minutes à 24 heures.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section droite : Liste et résultats des batches -->
+    <div class="results-panel">
+      <!-- Liste des batches -->
+      <div class="card">
+        <h2>📋 Mes batches</h2>
+
+        <div *ngIf="batches.length === 0" class="empty-state">
+          <p>Aucun batch soumis pour le moment.</p>
+          <p>Commencez par soumettre votre premier batch !</p>
+        </div>
+
+        <div *ngIf="batches.length > 0" class="batch-list">
+          <div
+            *ngFor="let batch of batches"
+            class="batch-item"
+            [class.selected]="selectedBatch?.batchId === batch.batchId"
+            (click)="selectBatch(batch)"
+          >
+            <div class="batch-header">
+              <span class="batch-id">{{ batch.batchId }}</span>
+              <span
+                class="batch-status"
+                [class.status-in-progress]="batch.status?.status === 'in_progress'"
+                [class.status-ended]="batch.status?.status === 'ended'"
+              >
+                {{ batch.status?.status === 'in_progress' ? '⏳ En cours' : '✅ Terminé' }}
+              </span>
+            </div>
+            <div class="batch-info">
+              <small>Soumis le {{ batch.submittedAt | date:'dd/MM/yyyy à HH:mm' }}</small>
+              <div *ngIf="batch.status" class="batch-counts">
+                <span class="count-success">✅ {{ batch.status.requestCounts.succeeded }}</span>
+                <span class="count-processing">⏳ {{ batch.status.requestCounts.processing }}</span>
+                <span class="count-error" *ngIf="batch.status.requestCounts.errored > 0">
+                  ❌ {{ batch.status.requestCounts.errored }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Détails du batch sélectionné -->
+      <div *ngIf="selectedBatch" class="card batch-details">
+        <div class="details-header">
+          <h2>🔎 Détails du batch</h2>
+          <div class="details-actions">
+            <button
+              *ngIf="selectedBatch.status?.status === 'in_progress'"
+              (click)="refreshBatchStatus(selectedBatch.batchId)"
+              class="btn btn-sm btn-secondary"
+            >
+              🔄 Actualiser
+            </button>
+            <button
+              *ngIf="selectedBatch.status?.status === 'in_progress'"
+              (click)="cancelBatch(selectedBatch.batchId)"
+              class="btn btn-sm btn-danger"
+            >
+              ❌ Annuler
+            </button>
+            <button
+              *ngIf="selectedBatch.results"
+              (click)="downloadResultsAsCsv(selectedBatch)"
+              class="btn btn-sm btn-success"
+            >
+              📥 Télécharger CSV
+            </button>
+          </div>
+        </div>
+
+        <div class="batch-metadata">
+          <div class="metadata-item">
+            <strong>ID:</strong>
+            <code>{{ selectedBatch.batchId }}</code>
+          </div>
+          <div class="metadata-item">
+            <strong>Soumis le:</strong>
+            {{ selectedBatch.submittedAt | date:'dd/MM/yyyy à HH:mm:ss' }}
+          </div>
+          <div *ngIf="selectedBatch.status" class="metadata-item">
+            <strong>Statut:</strong>
+            {{ selectedBatch.status.message }}
+          </div>
+        </div>
+
+        <!-- Chargement des résultats -->
+        <div *ngIf="isLoadingResults" class="loading">
+          <div class="spinner"></div>
+          <p>Chargement des résultats...</p>
+        </div>
+
+        <!-- Affichage des résultats -->
+        <div *ngIf="selectedBatch.results && !isLoadingResults" class="results">
+          <h3>📊 Résultats</h3>
+
+          <div class="results-summary">
+            <div class="summary-item">
+              <span class="summary-label">Total:</span>
+              <span class="summary-value">{{ selectedBatch.results.totalResults }}</span>
+            </div>
+            <div class="summary-item success">
+              <span class="summary-label">Succès:</span>
+              <span class="summary-value">{{ selectedBatch.results.successCount }}</span>
+            </div>
+            <div class="summary-item error" *ngIf="selectedBatch.results.errorCount > 0">
+              <span class="summary-label">Erreurs:</span>
+              <span class="summary-value">{{ selectedBatch.results.errorCount }}</span>
+            </div>
+          </div>
+
+          <div class="results-list">
+            <div *ngFor="let result of selectedBatch.results.results" class="result-item">
+              <div class="result-header">
+                <span class="result-id">{{ result.customId }}</span>
+                <span
+                  class="result-status"
+                  [class.status-success]="result.resultType === 'succeeded'"
+                  [class.status-error]="result.resultType === 'errored'"
+                >
+                  {{ result.resultType === 'succeeded' ? '✅ Succès' : '❌ Erreur' }}
+                </span>
+              </div>
+
+              <div *ngIf="result.resultType === 'succeeded' && result.content" class="result-content">
+                <div *ngFor="let code of parseResultContent(result.content)" class="hs-code">
+                  <div class="code-value">
+                    <strong>Code HS:</strong> {{ code.code }}
+                  </div>
+                  <div *ngIf="code.justification" class="code-justification">
+                    <strong>Justification:</strong> {{ code.justification }}
+                  </div>
+                </div>
+                <div class="result-tokens">
+                  <small>📊 Tokens: {{ result.inputTokens }} entrée / {{ result.outputTokens }} sortie</small>
+                </div>
+              </div>
+
+              <div *ngIf="result.resultType === 'errored'" class="result-error">
+                <strong>Erreur:</strong> {{ result.errorMessage }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Message si pas encore de résultats -->
+        <div *ngIf="!selectedBatch.results && selectedBatch.status?.status === 'in_progress'" class="waiting">
+          <div class="spinner"></div>
+          <p>⏳ Le batch est en cours de traitement...</p>
+          <p><small>Les résultats seront disponibles dans quelques minutes.</small></p>
+        </div>
+
+        <!-- Erreur -->
+        <div *ngIf="selectedBatch.error" class="alert alert-error">
+          <strong>Erreur:</strong> {{ selectedBatch.error }}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
