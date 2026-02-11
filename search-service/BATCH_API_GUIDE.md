@@ -7,7 +7,7 @@ L'API Message Batches permet de traiter plusieurs recherches de codes HS de mani
 ### Cas d'usage recommandés
 
 ✅ **Adapté pour :**
-- Import de fichiers Excel/CSV avec plusieurs produits
+- Import de fichiers Excel/CSV/TSV avec plusieurs produits
 - Analyse de catalogues entiers (centaines ou milliers de produits)
 - Exports de recherches multiples pour analyse
 - Traitements nocturnes ou en arrière-plan
@@ -309,6 +309,13 @@ export class BatchSearchService {
    - Fournir un contexte RAG pertinent pour chaque recherche
    - Éviter les contextes trop volumineux (> 50 KB)
    - Réutiliser le même contexte pour des recherches similaires
+
+5. **Formats de fichiers supportés**
+   - **TXT** : Un terme de recherche par ligne
+   - **CSV** : Première colonne extraite (format: `"terme1","autre_info"`)
+   - **TSV** : Première colonne extraite (séparateur: tabulation)
+   - Maximum 1000 lignes par fichier
+   - Encodage recommandé : UTF-8
 
 ## 🛠️ Tests et validation
 

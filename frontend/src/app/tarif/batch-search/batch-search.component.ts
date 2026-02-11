@@ -99,11 +99,8 @@ export class BatchSearchComponent implements OnInit, OnDestroy {
         .map(term => term.trim())
         .filter(term => term.length > 0);
     } else if (this.fileContent) {
-      // Mode fichier : split par ligne
-      searchTerms = this.fileContent
-        .split('\n')
-        .map(term => term.trim())
-        .filter(term => term.length > 0);
+      // Mode fichier : détecter le format et parser en conséquence
+      searchTerms = this.parseFileContent(this.fileContent, this.selectedFile?.name || '');
     }
 
     if (searchTerms.length === 0) {
@@ -329,6 +326,44 @@ export class BatchSearchComponent implements OnInit, OnDestroy {
       }
     } catch (e) {
       console.warn('Impossible de charger les batches depuis localStorage:', e);
+    }
+  }
+
+  /**
+   * Parse le contenu d'un fichier selon son extension.
+   * Supporte .txt, .csv et .tsv
+   */
+  private parseFileContent(content: string, fileName: string): string[] {
+    const extension = fileName.split('.').pop()?.toLowerCase();
+
+    if (extension === 'tsv') {
+      // Fichier TSV : extraire la première colonne de chaque ligne
+      return content
+        .split('\n')
+        .map(line => {
+          const columns = line.split('\t');
+          // Prendre la première colonne (ou toute la ligne si pas de tabulation)
+          return columns[0].trim();
+        })
+        .filter(term => term.length > 0);
+    } else if (extension === 'csv') {
+      // Fichier CSV : extraire la première colonne de chaque ligne
+      // Note: pour un parsing CSV plus robuste (avec guillemets, etc.),
+      // utilisez une bibliothèque comme PapaParse
+      return content
+        .split('\n')
+        .map(line => {
+          // Simple parsing CSV : split par virgule
+          const columns = line.split(',');
+          return columns[0].trim().replace(/^["']|["']$/g, ''); // Enlever les guillemets
+        })
+        .filter(term => term.length > 0);
+    } else {
+      // Fichier TXT ou autre : une ligne = un terme
+      return content
+        .split('\n')
+        .map(term => term.trim())
+        .filter(term => term.length > 0);
     }
   }
 

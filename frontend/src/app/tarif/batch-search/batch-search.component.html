@@ -36,18 +36,18 @@
             <input
               type="file"
               (change)="onFileSelected($event)"
-              accept=".txt,.csv"
+              accept=".txt,.csv,.tsv"
               class="file-input"
               id="fileInput"
               [disabled]="isSubmitting"
             />
             <label for="fileInput" class="file-label">
-              <span *ngIf="!selectedFile">📁 Choisir un fichier (.txt ou .csv)</span>
+              <span *ngIf="!selectedFile">📁 Choisir un fichier (.txt, .csv ou .tsv)</span>
               <span *ngIf="selectedFile">✅ {{ selectedFile.name }}</span>
             </label>
           </div>
           <p class="help-text">
-            Format: un terme de recherche par ligne, maximum 1000 lignes
+            Format: un terme de recherche par ligne (TXT/CSV) ou par colonne (TSV), maximum 1000 lignes
           </p>
         </div>
 

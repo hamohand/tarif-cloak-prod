@@ -94,6 +94,9 @@ public class AnthropicService implements AiProvider {
                 if (contentNode.isArray() && !contentNode.isEmpty()) {
                     String assistantMessage = contentNode.get(0).path("text").asText();
 
+                    // Nettoyer la réponse : enlever les marqueurs markdown ```json si présents
+                    String cleanedMessage = cleanJsonResponse(assistantMessage);
+
                     // Récupérer les tokens si disponibles
                     int inputTokens = rootNode.path("usage").path("input_tokens").asInt(0);
                     int outputTokens = rootNode.path("usage").path("output_tokens").asInt(0);
@@ -107,7 +110,7 @@ public class AnthropicService implements AiProvider {
                     );
                     currentUsage.set(usageInfo);
 
-                    return assistantMessage;
+                    return cleanedMessage;
                 }
             }
 
@@ -133,5 +136,33 @@ public class AnthropicService implements AiProvider {
     @Override
     public void clearUsageInfo() {
         currentUsage.remove();
+    }
+
+    /**
+     * Nettoie la réponse JSON en enlevant les marqueurs markdown si présents.
+     * Claude retourne parfois le JSON enveloppé dans des blocs markdown ```json
+     *
+     * @param response La réponse brute de l'API
+     * @return Le JSON nettoyé
+     */
+    private String cleanJsonResponse(String response) {
+        if (response == null || response.isEmpty()) {
+            return response;
+        }
+
+        String cleaned = response.trim();
+
+        // Enlever les marqueurs markdown ```json et ```
+        if (cleaned.startsWith("```json")) {
+            cleaned = cleaned.substring(7); // Enlever "```json"
+        } else if (cleaned.startsWith("```")) {
+            cleaned = cleaned.substring(3); // Enlever "```"
+        }
+
+        if (cleaned.endsWith("```")) {
+            cleaned = cleaned.substring(0, cleaned.length() - 3); // Enlever "```" à la fin
+        }
+
+        return cleaned.trim();
     }
 }

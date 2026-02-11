@@ -251,7 +251,10 @@ public class AnthropicBatchService {
                                 JsonNode messageContent = resultContent.path("message")
                                     .path("content");
                                 if (messageContent.isArray() && messageContent.size() > 0) {
-                                    result.setContent(messageContent.get(0).path("text").asText());
+                                    String rawContent = messageContent.get(0).path("text").asText();
+                                    // Nettoyer la réponse : enlever les marqueurs markdown ```json si présents
+                                    String cleanedContent = cleanJsonResponse(rawContent);
+                                    result.setContent(cleanedContent);
                                 }
 
                                 // Extraire les informations d'utilisation
@@ -345,6 +348,34 @@ public class AnthropicBatchService {
               .append("L'aspect qui nous intéresse est la valeur du code.");
 
         return prompt.toString();
+    }
+
+    /**
+     * Nettoie la réponse JSON en enlevant les marqueurs markdown si présents.
+     * Claude retourne parfois le JSON enveloppé dans des blocs markdown ```json
+     *
+     * @param response La réponse brute de l'API
+     * @return Le JSON nettoyé
+     */
+    private String cleanJsonResponse(String response) {
+        if (response == null || response.isEmpty()) {
+            return response;
+        }
+
+        String cleaned = response.trim();
+
+        // Enlever les marqueurs markdown ```json et ```
+        if (cleaned.startsWith("```json")) {
+            cleaned = cleaned.substring(7); // Enlever "```json"
+        } else if (cleaned.startsWith("```")) {
+            cleaned = cleaned.substring(3); // Enlever "```"
+        }
+
+        if (cleaned.endsWith("```")) {
+            cleaned = cleaned.substring(0, cleaned.length() - 3); // Enlever "```" à la fin
+        }
+
+        return cleaned.trim();
     }
 
     // ========================================================================================
