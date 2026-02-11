@@ -457,7 +457,8 @@ export class BatchSearchComponent implements OnInit, OnDestroy {
     });
 
     const csvContent = csvLines.join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    // Ajouter le BOM UTF-8 pour que les accents s'affichent correctement dans Excel
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);

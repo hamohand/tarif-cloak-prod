@@ -356,19 +356,58 @@ curl -s http://localhost:8082/batch-search/results/$BATCH_ID \
   -H "Authorization: Bearer $JWT_TOKEN" | jq '.'
 ```
 
+## Providers Supportés
+
+L'API Batch supporte actuellement deux providers :
+
+### Anthropic (Claude)
+- **Modèle** : claude-sonnet-4-5-20250929
+- **Endpoint** : `/v1/messages/batches`
+- **Réduction de coût** : 50%
+- **Configuration** : `AI_PROVIDER=anthropic`
+
+### OpenAI (GPT)
+- **Modèle** : gpt-4o-mini (configurable via `OPENAI_MODEL`)
+- **Endpoint** : `/v1/batches` (avec upload de fichiers JSONL)
+- **Réduction de coût** : 50%
+- **Configuration** : `AI_PROVIDER=openai`
+
+### Configuration du provider
+
+Pour choisir le provider, définir la variable d'environnement :
+
+```bash
+# Utiliser OpenAI pour batch
+export AI_PROVIDER=openai
+
+# Utiliser Anthropic pour batch
+export AI_PROVIDER=anthropic
+```
+
+**Note** : Le même provider sera utilisé pour les recherches standards et batch.
+
 ## 📚 Références
 
 - [Documentation officielle Anthropic Batches API](https://docs.anthropic.com/en/api/batches)
+- [Documentation officielle OpenAI Batch API](https://platform.openai.com/docs/guides/batch)
 - [Pricing Anthropic](https://www.anthropic.com/pricing)
+- [Pricing OpenAI](https://openai.com/pricing)
 - Code source :
-  - Service : `search-service/src/main/java/com/tarif/search/service/ai/AnthropicBatchService.java`
+  - Interface : `search-service/src/main/java/com/tarif/search/service/ai/batch/BatchProvider.java`
+  - Orchestrateur : `search-service/src/main/java/com/tarif/search/service/ai/batch/BatchService.java`
+  - Provider Anthropic : `search-service/src/main/java/com/tarif/search/service/ai/batch/AnthropicBatchProvider.java`
+  - Provider OpenAI : `search-service/src/main/java/com/tarif/search/service/ai/batch/OpenAiBatchProvider.java`
   - Contrôleur : `search-service/src/main/java/com/tarif/search/controller/BatchSearchController.java`
 
 ## 🐛 Dépannage
 
-### Erreur : "Clé API Anthropic non configurée"
-- Vérifier que `ANTHROPIC_API_KEY` est définie dans vos variables d'environnement
+### Erreur : "Clé API non configurée"
+- Vérifier que `ANTHROPIC_API_KEY` ou `OPENAI_API_KEY` est définie selon le provider actif
 - Redémarrer le service après avoir modifié la configuration
+
+### Erreur : "Le provider actuel ne supporte pas les opérations batch"
+- Vérifier que `AI_PROVIDER` est défini à `openai` ou `anthropic`
+- Le provider `ollama` ne supporte pas les opérations batch
 
 ### Erreur : "Batch introuvable"
 - Vérifier que l'ID du batch est correct

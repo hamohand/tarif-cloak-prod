@@ -77,14 +77,17 @@ ai:
   ollama:
     base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
     model: ${OLLAMA_MODEL:llama3}
-  # Provider actif: openai, anthropic, ollama
+  # Provider actif pour les requêtes standard ET batch
+  # Valeurs supportées pour batch : openai, anthropic
+  # Note : ollama ne supporte pas les opérations batch
   provider: ${AI_PROVIDER:openai}
 
   # Configuration des Batches (Message Batches API)
   # Les batches permettent de traiter plusieurs requêtes de manière asynchrone avec une réduction de 50% du coût
   # Utilisez les endpoints /batch-search/* pour soumettre et gérer les batches
   # Délai de traitement : 1 à 24 heures
-  # Limite : 100,000 requêtes par batch
+  # Providers supportés : openai (Batch API /v1/batches), anthropic (Message Batches /v1/messages/batches)
+  # Les deux offrent une réduction de 50% du coût
   batch:
     enabled: ${AI_BATCH_ENABLED:true}
     max-requests-per-batch: ${AI_BATCH_MAX_REQUESTS:1000}

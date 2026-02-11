@@ -1,6 +1,9 @@
 package com.tarif.search.controller;
 
-import com.tarif.search.service.ai.AnthropicBatchService;
+import com.tarif.search.service.ai.batch.BatchService;
+import com.tarif.search.service.ai.batch.models.BatchResult;
+import com.tarif.search.service.ai.batch.models.BatchStatus;
+import com.tarif.search.service.ai.batch.models.SearchRequest;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -15,6 +18,7 @@ import java.util.Map;
 
 /**
  * Contrôleur REST pour gérer les recherches de codes HS par lots (batch).
+ * Supporte plusieurs providers AI (Anthropic, OpenAI) via le BatchService orchestrateur.
  *
  * Endpoints disponibles :
  * - POST /batch-search/submit : Soumettre un batch de recherches
@@ -27,9 +31,9 @@ import java.util.Map;
 @Slf4j
 public class BatchSearchController {
 
-    private final AnthropicBatchService batchService;
+    private final BatchService batchService;
 
-    public BatchSearchController(AnthropicBatchService batchService) {
+    public BatchSearchController(BatchService batchService) {
         this.batchService = batchService;
     }
 
@@ -69,9 +73,9 @@ public class BatchSearchController {
         }
 
         // Convertir les requêtes en format attendu par le service
-        List<AnthropicBatchService.SearchRequest> searchRequests = new ArrayList<>();
+        List<SearchRequest> searchRequests = new ArrayList<>();
         for (SearchItem item : request.getSearches()) {
-            AnthropicBatchService.SearchRequest searchRequest = AnthropicBatchService.SearchRequest.builder()
+            SearchRequest searchRequest = SearchRequest.builder()
                 .customId(item.getCustomId())
                 .searchTerm(item.getSearchTerm())
                 .ragContext(item.getRagContext())
@@ -79,20 +83,29 @@ public class BatchSearchController {
             searchRequests.add(searchRequest);
         }
 
-        // Créer le batch
-        String batchId = batchService.createBatch(searchRequests);
+        // Créer le batch via le provider actif
+        try {
+            String batchId = batchService.createBatch(searchRequests);
 
-        if (batchId != null) {
-            log.info("Batch créé avec succès: {}", batchId);
-            return ResponseEntity.ok(new BatchSubmitResponse(
-                batchId,
-                "Batch créé avec succès. Utilisez l'ID pour suivre le statut.",
-                HttpStatus.OK.value()
-            ));
-        } else {
-            log.error("Échec de la création du batch");
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new BatchSubmitResponse(null, "Erreur lors de la création du batch", HttpStatus.INTERNAL_SERVER_ERROR.value()));
+            if (batchId != null) {
+                log.info("Batch créé avec succès: {} (provider: {})", batchId, batchService.getActiveProviderName());
+                return ResponseEntity.ok(new BatchSubmitResponse(
+                    batchId,
+                    "Batch créé avec succès. Utilisez l'ID pour suivre le statut.",
+                    HttpStatus.OK.value()
+                ));
+            } else {
+                log.error("Échec de la création du batch");
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new BatchSubmitResponse(null, "Erreur lors de la création du batch", HttpStatus.INTERNAL_SERVER_ERROR.value()));
+            }
+
+        } catch (UnsupportedOperationException e) {
+            log.error("Opération batch non supportée: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED)
+                .body(new BatchSubmitResponse(null,
+                    "Le provider actuel ne supporte pas les opérations batch",
+                    HttpStatus.NOT_IMPLEMENTED.value()));
         }
     }
 
@@ -107,23 +120,29 @@ public class BatchSearchController {
     public ResponseEntity<BatchStatusResponse> getBatchStatus(@PathVariable String batchId) {
         log.debug("Demande de statut pour le batch: {}", batchId);
 
-        AnthropicBatchService.BatchStatus status = batchService.getBatchStatus(batchId);
+        try {
+            BatchStatus status = batchService.getBatchStatus(batchId);
 
-        if (status != null) {
-            BatchStatusResponse response = new BatchStatusResponse();
-            response.setBatchId(status.getId());
-            response.setStatus(status.getProcessingStatus());
-            response.setRequestCounts(status.getRequestCounts());
-            response.setCreatedAt(status.getCreatedAt());
-            response.setEndedAt(status.getEndedAt());
-            response.setResultsAvailable(status.isEnded() && status.getResultsUrl() != null);
-            response.setMessage(buildStatusMessage(status));
+            if (status != null) {
+                BatchStatusResponse response = new BatchStatusResponse();
+                response.setBatchId(status.getId());
+                response.setStatus(status.getProcessingStatus());
+                response.setRequestCounts(status.getRequestCounts());
+                response.setCreatedAt(status.getCreatedAt());
+                response.setEndedAt(status.getEndedAt());
+                response.setResultsAvailable(status.isEnded() && status.getResultsUrl() != null);
+                response.setMessage(buildStatusMessage(status));
 
-            return ResponseEntity.ok(response);
-        } else {
-            log.error("Impossible de récupérer le statut du batch: {}", batchId);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(null);
+                return ResponseEntity.ok(response);
+            } else {
+                log.error("Impossible de récupérer le statut du batch: {}", batchId);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(null);
+            }
+
+        } catch (UnsupportedOperationException e) {
+            log.error("Opération batch non supportée: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
         }
     }
 
@@ -138,48 +157,54 @@ public class BatchSearchController {
     public ResponseEntity<BatchResultsResponse> getBatchResults(@PathVariable String batchId) {
         log.debug("Demande de résultats pour le batch: {}", batchId);
 
-        // Récupérer d'abord le statut pour obtenir l'URL des résultats
-        AnthropicBatchService.BatchStatus status = batchService.getBatchStatus(batchId);
+        try {
+            // Récupérer d'abord le statut pour vérifier que le batch est terminé
+            BatchStatus status = batchService.getBatchStatus(batchId);
 
-        if (status == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(new BatchResultsResponse(batchId, null, "Batch introuvable"));
-        }
+            if (status == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new BatchResultsResponse(batchId, null, "Batch introuvable"));
+            }
 
-        if (!status.isEnded()) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(new BatchResultsResponse(
+            if (!status.isEnded()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new BatchResultsResponse(
+                        batchId,
+                        null,
+                        "Le batch n'est pas encore terminé. Statut: " + status.getProcessingStatus()
+                    ));
+            }
+
+            if (status.getResultsUrl() == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new BatchResultsResponse(batchId, null, "Résultats non disponibles"));
+            }
+
+            // Récupérer les résultats via le provider actif (prend batchId, pas resultsUrl)
+            List<BatchResult> results = batchService.getBatchResults(batchId);
+
+            if (results != null) {
+                BatchResultsResponse response = new BatchResultsResponse(
                     batchId,
-                    null,
-                    "Le batch n'est pas encore terminé. Statut: " + status.getProcessingStatus()
-                ));
-        }
+                    results,
+                    "Résultats récupérés avec succès"
+                );
+                response.setTotalResults(results.size());
+                response.setSuccessCount((int) results.stream().filter(BatchResult::isSuccess).count());
+                response.setErrorCount((int) results.stream().filter(r -> !r.isSuccess()).count());
 
-        if (status.getResultsUrl() == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(new BatchResultsResponse(batchId, null, "URL de résultats non disponible"));
-        }
+                log.info("Résultats récupérés pour le batch {}: {} résultats ({} succès, {} erreurs)",
+                        batchId, results.size(), response.getSuccessCount(), response.getErrorCount());
 
-        // Récupérer les résultats
-        List<AnthropicBatchService.BatchResult> results = batchService.getBatchResults(status.getResultsUrl());
+                return ResponseEntity.ok(response);
+            } else {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new BatchResultsResponse(batchId, null, "Erreur lors de la récupération des résultats"));
+            }
 
-        if (results != null) {
-            BatchResultsResponse response = new BatchResultsResponse(
-                batchId,
-                results,
-                "Résultats récupérés avec succès"
-            );
-            response.setTotalResults(results.size());
-            response.setSuccessCount((int) results.stream().filter(AnthropicBatchService.BatchResult::isSuccess).count());
-            response.setErrorCount((int) results.stream().filter(r -> !r.isSuccess()).count());
-
-            log.info("Résultats récupérés pour le batch {}: {} résultats ({} succès, {} erreurs)",
-                    batchId, results.size(), response.getSuccessCount(), response.getErrorCount());
-
-            return ResponseEntity.ok(response);
-        } else {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new BatchResultsResponse(batchId, null, "Erreur lors de la récupération des résultats"));
+        } catch (UnsupportedOperationException e) {
+            log.error("Opération batch non supportée: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
         }
     }
 
@@ -194,24 +219,30 @@ public class BatchSearchController {
     public ResponseEntity<Map<String, Object>> cancelBatch(@PathVariable String batchId) {
         log.info("Demande d'annulation du batch: {}", batchId);
 
-        boolean success = batchService.cancelBatch(batchId);
+        try {
+            boolean success = batchService.cancelBatch(batchId);
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("batchId", batchId);
-        response.put("canceled", success);
-        response.put("message", success ? "Batch annulé avec succès" : "Échec de l'annulation du batch");
+            Map<String, Object> response = new HashMap<>();
+            response.put("batchId", batchId);
+            response.put("canceled", success);
+            response.put("message", success ? "Batch annulé avec succès" : "Échec de l'annulation du batch");
 
-        if (success) {
-            return ResponseEntity.ok(response);
-        } else {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+            if (success) {
+                return ResponseEntity.ok(response);
+            } else {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+            }
+
+        } catch (UnsupportedOperationException e) {
+            log.error("Opération batch non supportée: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
         }
     }
 
     /**
      * Construit un message de statut lisible.
      */
-    private String buildStatusMessage(AnthropicBatchService.BatchStatus status) {
+    private String buildStatusMessage(BatchStatus status) {
         if (status.isEnded()) {
             Map<String, Integer> counts = status.getRequestCounts();
             int total = counts.values().stream().mapToInt(Integer::intValue).sum();
@@ -288,13 +319,13 @@ public class BatchSearchController {
     @Data
     public static class BatchResultsResponse {
         private String batchId;
-        private List<AnthropicBatchService.BatchResult> results;
+        private List<BatchResult> results;
         private String message;
         private Integer totalResults;
         private Integer successCount;
         private Integer errorCount;
 
-        public BatchResultsResponse(String batchId, List<AnthropicBatchService.BatchResult> results, String message) {
+        public BatchResultsResponse(String batchId, List<BatchResult> results, String message) {
             this.batchId = batchId;
             this.results = results;
             this.message = message;
