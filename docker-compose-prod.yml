@@ -96,12 +96,12 @@ x-common-rabbitmq-vars: &common-rabbitmq-vars
   RABBITMQ_USERNAME: "${RABBITMQ_USER:-admin}"
   RABBITMQ_PASSWORD: "${RABBITMQ_PASSWORD:-admin}"
 
-# Labels Traefik pour le search-service (priorité plus haute que backend pour /api/recherche)
+# Labels Traefik pour le search-service (priorité plus haute que backend pour /api/recherche et /api/batch-search)
 x-traefik-search-labels: &traefik-search-labels
   traefik.enable: "true"
   traefik.docker.network: "webproxy"
-  # Route /api/recherche vers search-service (priorité haute)
-  "traefik.http.routers.search-service-secure.rule": "(Host(`${FRONTEND_DOMAIN}`) || Host(`${WWW_FRONTEND_DOMAIN}`)) && PathPrefix(`/api/recherche`)"
+  # Route /api/recherche et /api/batch-search vers search-service (priorité haute)
+  "traefik.http.routers.search-service-secure.rule": "(Host(`${FRONTEND_DOMAIN}`) || Host(`${WWW_FRONTEND_DOMAIN}`)) && (PathPrefix(`/api/recherche`) || PathPrefix(`/api/batch-search`))"
   "traefik.http.routers.search-service-secure.entrypoints": "websecure"
   "traefik.http.routers.search-service-secure.tls.certresolver": "${TRAEFIK_CERT_RESOLVER:-myresolver}"
   "traefik.http.routers.search-service-secure.middlewares": "search-api-stripprefix"
