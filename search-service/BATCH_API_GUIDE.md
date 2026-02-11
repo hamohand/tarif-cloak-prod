@@ -314,6 +314,8 @@ export class BatchSearchService {
    - **TXT** : Un terme de recherche par ligne
    - **CSV** : Première colonne extraite (format: `"terme1","autre_info"`)
    - **TSV** : Première colonne extraite (séparateur: tabulation)
+   - **Excel (.xls, .xlsx)** : Première colonne de la première feuille extraite
+   - **OpenDocument (.ods)** : Première colonne de la première feuille extraite
    - Maximum 1000 lignes par fichier
    - Encodage recommandé : UTF-8
 

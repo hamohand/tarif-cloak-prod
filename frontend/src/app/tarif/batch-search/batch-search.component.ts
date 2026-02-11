@@ -8,6 +8,7 @@ import {
   BatchResultsResponse
 } from '../services/batch-search.service';
 import { Subscription } from 'rxjs';
+import * as XLSX from 'xlsx';
 
 interface BatchInfo {
   batchId: string;
@@ -15,6 +16,7 @@ interface BatchInfo {
   status?: BatchStatusResponse;
   results?: BatchResultsResponse;
   error?: string;
+  searchTermsMap?: Map<string, string>; // customId -> searchTerm
 }
 
 @Component({
@@ -74,15 +76,43 @@ export class BatchSearchComponent implements OnInit, OnDestroy {
 
   /**
    * Lit le contenu du fichier sélectionné.
+   * Pour Excel/ODS: utilise ArrayBuffer
+   * Pour TXT/CSV/TSV: utilise Text
    */
   private readFile(): void {
     if (!this.selectedFile) return;
 
+    const extension = this.selectedFile.name.split('.').pop()?.toLowerCase();
+    const isExcelOrOds = ['xls', 'xlsx', 'ods'].includes(extension || '');
+
     const reader = new FileReader();
-    reader.onload = (e) => {
-      this.fileContent = e.target?.result as string;
-    };
-    reader.readAsText(this.selectedFile);
+
+    if (isExcelOrOds) {
+      // Pour Excel/ODS: lire comme ArrayBuffer
+      reader.onload = (e) => {
+        const data = e.target?.result as ArrayBuffer;
+        if (data) {
+          try {
+            const workbook = XLSX.read(data, { type: 'array' });
+            // Prendre la première feuille
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
+            // Convertir en CSV (avec tabulation comme séparateur)
+            this.fileContent = XLSX.utils.sheet_to_csv(worksheet, { FS: '\t' });
+          } catch (error) {
+            console.error('Erreur lors de la lecture du fichier Excel/ODS:', error);
+            alert('Erreur lors de la lecture du fichier. Assurez-vous que c\'est un fichier Excel/ODS valide.');
+          }
+        }
+      };
+      reader.readAsArrayBuffer(this.selectedFile);
+    } else {
+      // Pour TXT/CSV/TSV: lire comme texte
+      reader.onload = (e) => {
+        this.fileContent = e.target?.result as string;
+      };
+      reader.readAsText(this.selectedFile);
+    }
   }
 
   /**
@@ -113,12 +143,17 @@ export class BatchSearchComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Créer les items de recherche
-    const searches: SearchItem[] = searchTerms.map((term, index) => ({
-      customId: `search-${Date.now()}-${index}`,
-      searchTerm: term,
-      ragContext: this.buildDefaultRagContext() // RAG simplifié pour l'exemple
-    }));
+    // Créer les items de recherche et le mapping customId -> searchTerm
+    const searchTermsMap = new Map<string, string>();
+    const searches: SearchItem[] = searchTerms.map((term, index) => {
+      const customId = `search-${Date.now()}-${index}`;
+      searchTermsMap.set(customId, term);
+      return {
+        customId: customId,
+        searchTerm: term,
+        ragContext: this.buildDefaultRagContext() // RAG simplifié pour l'exemple
+      };
+    });
 
     // Soumettre le batch
     this.isSubmitting = true;
@@ -127,10 +162,11 @@ export class BatchSearchComponent implements OnInit, OnDestroy {
       next: (response) => {
         console.log('Batch soumis avec succès:', response);
 
-        // Créer une entrée de batch
+        // Créer une entrée de batch avec le mapping des termes de recherche
         const batchInfo: BatchInfo = {
           batchId: response.batchId,
-          submittedAt: new Date()
+          submittedAt: new Date(),
+          searchTermsMap: searchTermsMap
         };
 
         this.batches.unshift(batchInfo);
@@ -304,7 +340,9 @@ export class BatchSearchComponent implements OnInit, OnDestroy {
       const batchesToSave = this.batches.map(b => ({
         batchId: b.batchId,
         submittedAt: b.submittedAt,
-        status: b.status
+        status: b.status,
+        // Convertir Map en objet pour la sérialisation JSON
+        searchTermsMap: b.searchTermsMap ? Object.fromEntries(b.searchTermsMap) : undefined
       }));
       localStorage.setItem('batches', JSON.stringify(batchesToSave));
     } catch (e) {
@@ -321,7 +359,9 @@ export class BatchSearchComponent implements OnInit, OnDestroy {
       if (saved) {
         this.batches = JSON.parse(saved).map((b: any) => ({
           ...b,
-          submittedAt: new Date(b.submittedAt)
+          submittedAt: new Date(b.submittedAt),
+          // Reconvertir l'objet en Map
+          searchTermsMap: b.searchTermsMap ? new Map(Object.entries(b.searchTermsMap)) : undefined
         }));
       }
     } catch (e) {
@@ -331,13 +371,14 @@ export class BatchSearchComponent implements OnInit, OnDestroy {
 
   /**
    * Parse le contenu d'un fichier selon son extension.
-   * Supporte .txt, .csv et .tsv
+   * Supporte .txt, .csv, .tsv, .xls, .xlsx, .ods
    */
   private parseFileContent(content: string, fileName: string): string[] {
     const extension = fileName.split('.').pop()?.toLowerCase();
 
-    if (extension === 'tsv') {
-      // Fichier TSV : extraire la première colonne de chaque ligne
+    // Excel et ODS sont convertis en TSV dans readFile(), donc on les traite comme TSV
+    if (extension === 'tsv' || extension === 'xls' || extension === 'xlsx' || extension === 'ods') {
+      // Fichier TSV/Excel/ODS : extraire la première colonne de chaque ligne
       return content
         .split('\n')
         .map(line => {
@@ -386,15 +427,18 @@ export class BatchSearchComponent implements OnInit, OnDestroy {
     ];
 
     batch.results.results.forEach(result => {
+      // Récupérer le terme de recherche original depuis le mapping
+      const searchTerm = batch.searchTermsMap?.get(result.customId) || '';
+
       if (result.resultType === 'succeeded' && result.content) {
         const codes = this.parseResultContent(result.content);
         codes.forEach(code => {
           csvLines.push([
             result.customId,
-            '', // On n'a pas le terme original
+            `"${searchTerm.replace(/"/g, '""')}"`, // Échapper les guillemets pour CSV
             'Succès',
             code.code || '',
-            (code.justification || '').replace(/,/g, ';'),
+            `"${(code.justification || '').replace(/"/g, '""')}"`, // Échapper les guillemets
             result.inputTokens || 0,
             result.outputTokens || 0
           ].join(','));
@@ -402,10 +446,10 @@ export class BatchSearchComponent implements OnInit, OnDestroy {
       } else {
         csvLines.push([
           result.customId,
-          '',
+          `"${searchTerm.replace(/"/g, '""')}"`, // Terme de recherche aussi pour les erreurs
           'Erreur',
           '',
-          (result.errorMessage || '').replace(/,/g, ';'),
+          `"${(result.errorMessage || '').replace(/"/g, '""')}"`, // Échapper les guillemets
           0,
           0
         ].join(','));

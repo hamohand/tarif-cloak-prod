@@ -36,18 +36,18 @@
             <input
               type="file"
               (change)="onFileSelected($event)"
-              accept=".txt,.csv,.tsv"
+              accept=".txt,.csv,.tsv,.xls,.xlsx,.ods"
               class="file-input"
               id="fileInput"
               [disabled]="isSubmitting"
             />
             <label for="fileInput" class="file-label">
-              <span *ngIf="!selectedFile">📁 Choisir un fichier (.txt, .csv ou .tsv)</span>
+              <span *ngIf="!selectedFile">📁 Choisir un fichier (.txt, .csv, .tsv, .xls, .xlsx, .ods)</span>
               <span *ngIf="selectedFile">✅ {{ selectedFile.name }}</span>
             </label>
           </div>
           <p class="help-text">
-            Format: un terme de recherche par ligne (TXT/CSV) ou par colonne (TSV), maximum 1000 lignes
+            Format: un terme de recherche par ligne (TXT/CSV/TSV) ou première colonne (Excel/ODS), maximum 1000 lignes
           </p>
         </div>
 
@@ -186,7 +186,12 @@
           <div class="results-list">
             <div *ngFor="let result of selectedBatch.results.results" class="result-item">
               <div class="result-header">
-                <span class="result-id">{{ result.customId }}</span>
+                <div class="result-info">
+                  <span class="result-search-term" *ngIf="selectedBatch.searchTermsMap?.get(result.customId)">
+                    🔍 {{ selectedBatch.searchTermsMap.get(result.customId) }}
+                  </span>
+                  <span class="result-id">{{ result.customId }}</span>
+                </div>
                 <span
                   class="result-status"
                   [class.status-success]="result.resultType === 'succeeded'"

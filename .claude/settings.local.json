@@ -3,6 +3,9 @@
     "additionalDirectories": [
       "c:\\Users\\hamoh\\Documents\\projets\\tarif\\tarif-micros\\search-service\\src\\main\\java\\com\\tarif\\search\\repository",
       "c:\\Users\\hamoh\\Documents\\projets\\tarif\\tarif-micros\\docs"
+    ],
+    "allow": [
+      "Bash(npm install:*)"
     ]
   }
 }

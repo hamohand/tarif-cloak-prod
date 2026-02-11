@@ -405,10 +405,22 @@
   border-bottom: 1px solid #e0e0e0;
 }
 
+.result-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.result-search-term {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+}
+
 .result-id {
   font-family: monospace;
-  font-size: 0.875rem;
-  color: #666;
+  font-size: 0.75rem;
+  color: #999;
 }
 
 .result-status {
