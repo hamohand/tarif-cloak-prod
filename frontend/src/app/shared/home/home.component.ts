@@ -61,7 +61,7 @@ import { map, switchMap, catchError, distinctUntilChanged } from 'rxjs/operators
             <div class="api-feature">
               <div class="api-icon">📱</div>
               <h3>Responsive</h3>
-              <p>Une interface adaptée à tous les usages : Ordinateurs de bureau, tablettes et smartphones.</p>
+              <p>Une interface adaptée à tous les usages : Ordinateurs, tablettes et smartphones.</p>
             </div>
 
             <div class="api-feature">
@@ -77,7 +77,7 @@ import { map, switchMap, catchError, distinctUntilChanged } from 'rxjs/operators
               <div class="endpoint-item">
                 <code class="endpoint-method">Produit recherché</code>
                 <code class="endpoint-path">سيارة كهربائية</code>
-                <code class="response-method">Réponse HS-Code</code>
+                <code class="response-method">Réponse HS-Code :</code>
                 <span class="endpoint-desc">
                 <b>code</b>: "8703 80" <br>
                 <b>description</b>: "Véhicules, équipés uniquement d'un moteur électrique pour la propulsion"
@@ -86,21 +86,21 @@ import { map, switchMap, catchError, distinctUntilChanged } from 'rxjs/operators
               <div class="endpoint-item">
                 <code class="endpoint-method">Produit recherché</code>
                 <code class="endpoint-path">dattes</code>
-                <code class="response-method">Réponse HS-Code</code>
+                <code class="response-method">Réponse HS-Code :</code>
                 <span class="endpoint-desc"><b>code</b>: "0804 10" <br>
                 <b>description</b>: "Dattes"</span>
               </div>
               <div class="endpoint-item">
                 <code class="endpoint-method">Produit recherché</code>
                 <code class="endpoint-path">Smart phone</code>
-                <code class="response-method">Réponse HS-Code</code>
+                <code class="response-method">Réponse HS-Code :</code>
                 <span class="endpoint-desc"><b>code</b>: "8517 13" <br>
                   <b>description</b>: "Postes téléphoniques d'usagers, y compris les téléphones intelligents et autres téléphones pour réseaux cellulaires et pour autres réseaux sans fil: - Téléphones intelligents"</span>
               </div>
               <div class="endpoint-item">
                 <code class="endpoint-method">Produit recherché</code>
                 <code class="endpoint-path">笔记本电脑</code>
-                <code class="response-method">Réponse HS-Code</code>
+                <code class="response-method">Réponse HS-Code :</code>
                 <span class="endpoint-desc"><b>code</b>: "8471.30" <br>
                 <b>description</b>: "Ordinateurs portables ..."</span>
               </div>
@@ -145,10 +145,10 @@ import { map, switchMap, catchError, distinctUntilChanged } from 'rxjs/operators
 
             <div class="feature-card request-card">
               <div class="request-icon">📋</div>
-              <h3>Recherche par lots (bientôt disponible)</h3>
+              <h3>Recherche par listes (bientôt disponible)</h3>
               <p>Traitez une liste de produits simultanément avec l'outil de recherche par lots.</p>
               <a [routerLink]="['/recherche/searchListLots']" class="cta-button secondary">
-                Rechercher par lots
+                Rechercher par listes
               </a>
             </div>
           </div>
@@ -558,7 +558,7 @@ import { map, switchMap, catchError, distinctUntilChanged } from 'rxjs/operators
     }
 
     .response-method {
-      color: #f59e0b;
+      color: #fffff0;
       padding: 0.35rem 0.75rem;
       border-radius: 4px;
       font-weight: 600;
