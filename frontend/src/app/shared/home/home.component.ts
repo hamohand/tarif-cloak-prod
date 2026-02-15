@@ -16,7 +16,8 @@ import { map, switchMap, catchError, distinctUntilChanged } from 'rxjs/operators
       <section class="hero">
         <div class="hero-glow"></div>
         <h1>Enclume-Numérique</h1>
-        <p class="hero-subtitle">Votre solution complète pour la conformité tarifaire</p>
+        <p class="hero-subtitle">Votre solution complète pour la recherche de position tarifaire (HS code)
+ </p>
         <p class="hero-desc">Identifiez les codes HS de vos produits en quelques secondes grâce à notre moteur de recherche intelligent et multilingue.</p>
         <div class="hero-cta" *ngIf="!(isAuthenticated$ | async)">
           <a routerLink="/auth/register" class="cta-button primary">Commencer gratuitement</a>
@@ -36,7 +37,7 @@ import { map, switchMap, catchError, distinctUntilChanged } from 'rxjs/operators
             <div class="api-feature">
               <div class="api-icon">🌍</div>
               <h3>Recherche Multilingue</h3>
-              <p>Recherchez des codes HS dans plusieurs langues : français, anglais, chinois, arabe et plus encore.</p>
+              <p>Recherchez des codes HS dans toutes les langues.</p>
             </div>
 
             <div class="api-feature">
@@ -48,19 +49,19 @@ import { map, switchMap, catchError, distinctUntilChanged } from 'rxjs/operators
             <div class="api-feature">
               <div class="api-icon">📊</div>
               <h3>Hiérarchie Complète</h3>
-              <p>Accédez à tous les niveaux : Sections, Chapitres, Positions 4 chiffres et Positions 6 chiffres.</p>
-            </div>
-
-            <div class="api-feature">
-              <div class="api-icon">⚡</div>
-              <h3>Recherche en Cascade</h3>
-              <p>Algorithme intelligent qui explore automatiquement les différents niveaux de classification pour trouver le code le plus précis.</p>
+              <p>Accédez à tous les niveaux : Section, Chapitre, Position et Sous-Position.</p>
             </div>
 
             <div class="api-feature">
               <div class="api-icon">📋</div>
-              <h3>Recherche par Lots</h3>
-              <p>Traitez plusieurs produits simultanément avec l'outil de recherche par lots pour optimiser votre workflow.</p>
+              <h3>Recherche par Listes</h3>
+              <p>Traitez plusieurs produits simultanément avec l'outil de recherche par listes pour optimiser votre flux de travail.</p>
+            </div>
+
+            <div class="api-feature">
+              <div class="api-icon">📱</div>
+              <h3>Responsive</h3>
+              <p>Une interface adaptée à tous les usages : Ordinateurs de bureau, tablettes et smartphones.</p>
             </div>
 
             <div class="api-feature">
@@ -76,7 +77,7 @@ import { map, switchMap, catchError, distinctUntilChanged } from 'rxjs/operators
               <div class="endpoint-item">
                 <code class="endpoint-method">Produit recherché</code>
                 <code class="endpoint-path">سيارة كهربائية</code>
-                <code class="endpoint-method">Réponse HS-Code</code>
+                <code class="response-method">Réponse HS-Code</code>
                 <span class="endpoint-desc">
                 <b>code</b>: "8703 80" <br>
                 <b>description</b>: "Véhicules, équipés uniquement d'un moteur électrique pour la propulsion"
@@ -85,21 +86,21 @@ import { map, switchMap, catchError, distinctUntilChanged } from 'rxjs/operators
               <div class="endpoint-item">
                 <code class="endpoint-method">Produit recherché</code>
                 <code class="endpoint-path">dattes</code>
-                <code class="endpoint-method">Réponse HS-Code</code>
+                <code class="response-method">Réponse HS-Code</code>
                 <span class="endpoint-desc"><b>code</b>: "0804 10" <br>
                 <b>description</b>: "Dattes"</span>
               </div>
               <div class="endpoint-item">
                 <code class="endpoint-method">Produit recherché</code>
                 <code class="endpoint-path">Smart phone</code>
-                <code class="endpoint-method">Réponse HS-Code</code>
+                <code class="response-method">Réponse HS-Code</code>
                 <span class="endpoint-desc"><b>code</b>: "8517 13" <br>
                   <b>description</b>: "Postes téléphoniques d'usagers, y compris les téléphones intelligents et autres téléphones pour réseaux cellulaires et pour autres réseaux sans fil: - Téléphones intelligents"</span>
               </div>
               <div class="endpoint-item">
                 <code class="endpoint-method">Produit recherché</code>
                 <code class="endpoint-path">笔记本电脑</code>
-                <code class="endpoint-method">Réponse HS-Code</code>
+                <code class="response-method">Réponse HS-Code</code>
                 <span class="endpoint-desc"><b>code</b>: "8471.30" <br>
                 <b>description</b>: "Ordinateurs portables ..."</span>
               </div>
@@ -164,24 +165,10 @@ import { map, switchMap, catchError, distinctUntilChanged } from 'rxjs/operators
         </div>
       </section>
 
-      <div class="features secondary" *ngIf="!(isAuthenticated$ | async)">
-        <div class="feature-card">
-          <h3>Sécurité</h3>
-          <p>Authentification et gestion fine des rôles.</p>
-        </div>
-        <div class="feature-card">
-          <h3>Performance</h3>
-          <p>Moteur de recherche optimisé pour la réglementation douanière.</p>
-        </div>
-        <div class="feature-card">
-          <h3>Responsive</h3>
-          <p>Une interface adaptée à tous les usages.</p>
-        </div>
-      </div>
-
       <footer class="home-footer">
         <p>Micro-entreprise de développement d'applications pour les entreprises<br>
         Contact : med&#64;forge-numerique.com <br>
+        WathsApp : +33 6 22 56 38 41 <br>
         <a href="https://www.forge-numerique.com">Enclume-Numérique</a></p>
       </footer>
     </div>
@@ -560,6 +547,17 @@ import { map, switchMap, catchError, distinctUntilChanged } from 'rxjs/operators
 
     .endpoint-method {
       background: rgba(245, 158, 11, 0.15);
+      color: #f59e0b;
+      padding: 0.35rem 0.75rem;
+      border-radius: 4px;
+      font-weight: 600;
+      font-size: 0.8rem;
+      min-width: 60px;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .response-method {
       color: #f59e0b;
       padding: 0.35rem 0.75rem;
       border-radius: 4px;

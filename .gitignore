@@ -36,6 +36,9 @@ node_modules/
 ../tci/tarif-essais250912/demo/.env
 /sql
 
+# Dans search-service/.gitignore
+nul
+
 ### IntelliJ IDEA ###
 .idea/
 *.iws
