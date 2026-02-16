@@ -227,7 +227,9 @@ public class PricingPlanService {
         plan.setMarketVersion(request.getMarketVersion() != null ? request.getMarketVersion() : "DEFAULT");
         plan.setCurrency(request.getCurrency() != null ? request.getCurrency() : "EUR");
         plan.setIsCustom(request.getIsCustom() != null ? request.getIsCustom() : false);
-        plan.setOrganizationId(request.getOrganizationId());
+        // Traiter organizationId = 0 comme null (pas d'organisation associée)
+        Long orgId = request.getOrganizationId();
+        plan.setOrganizationId(orgId != null && orgId > 0 ? orgId : null);
 
         PricingPlan savedPlan = pricingPlanRepository.save(plan);
         log.info("Plan tarifaire créé: id={}, name={}, marketVersion={}", savedPlan.getId(), savedPlan.getName(), savedPlan.getMarketVersion());

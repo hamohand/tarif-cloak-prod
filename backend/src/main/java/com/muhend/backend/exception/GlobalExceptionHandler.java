@@ -42,6 +42,24 @@ public class GlobalExceptionHandler {
      * Renvoie une réponse HTTP 403 (Forbidden) avec un message d'erreur.
      * Un utilisateur DOIT toujours être associé à une organisation dans cette application.
      */
+    /**
+     * Gère les exceptions d'argument invalide.
+     * Renvoie une réponse HTTP 400 (Bad Request) avec un message d'erreur.
+     */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, Object>> handleIllegalArgumentException(IllegalArgumentException ex) {
+        log.warn("Argument invalide: {}", ex.getMessage());
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("error", "BAD_REQUEST");
+        response.put("message", ex.getMessage());
+        response.put("status", HttpStatus.BAD_REQUEST.value());
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(response);
+    }
+
     @ExceptionHandler(UserNotAssociatedException.class)
     public ResponseEntity<Map<String, Object>> handleUserNotAssociatedException(UserNotAssociatedException ex) {
         log.warn("Utilisateur non associé à une organisation: {}", ex.getMessage());
