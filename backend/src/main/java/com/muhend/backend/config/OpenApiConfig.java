@@ -1,6 +1,7 @@
 package com.muhend.backend.config;
 
 import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.servers.Server;
 import io.swagger.v3.oas.models.Components;
@@ -48,6 +49,7 @@ public class OpenApiConfig {
 
         return new OpenAPI()
                 .servers(List.of(server))
+                .addSecurityItem(new SecurityRequirement().addList("bearerAuth"))
                 .components(new Components()
                         .addSecuritySchemes("bearerAuth", bearerAuth));
     }
