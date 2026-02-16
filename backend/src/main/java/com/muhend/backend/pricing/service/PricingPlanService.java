@@ -2,6 +2,7 @@ package com.muhend.backend.pricing.service;
 
 import com.muhend.backend.organization.model.Organization;
 import com.muhend.backend.organization.repository.OrganizationRepository;
+import com.muhend.backend.pricing.dto.CreatePricingPlanRequest;
 import com.muhend.backend.pricing.dto.PricingPlanDto;
 import com.muhend.backend.pricing.dto.UpdatePricingPlanRequest;
 import com.muhend.backend.pricing.model.PricingPlan;
@@ -203,6 +204,49 @@ public class PricingPlanService {
                 .orElseThrow(() -> new IllegalArgumentException("Plan tarifaire introuvable: " + id));
     }
     
+    /**
+     * Crée un nouveau plan tarifaire.
+     */
+    @Transactional
+    public PricingPlanDto createPricingPlan(CreatePricingPlanRequest request) {
+        // Vérifier l'unicité du nom
+        if (pricingPlanRepository.existsByName(request.getName())) {
+            throw new IllegalArgumentException("Un plan tarifaire avec ce nom existe déjà: " + request.getName());
+        }
+
+        PricingPlan plan = new PricingPlan();
+        plan.setName(request.getName());
+        plan.setDescription(request.getDescription());
+        plan.setPricePerMonth(request.getPricePerMonth());
+        plan.setPricePerRequest(request.getPricePerRequest());
+        plan.setMonthlyQuota(request.getMonthlyQuota());
+        plan.setTrialPeriodDays(request.getTrialPeriodDays());
+        plan.setFeatures(request.getFeatures());
+        plan.setIsActive(request.getIsActive() != null ? request.getIsActive() : true);
+        plan.setDisplayOrder(request.getDisplayOrder());
+        plan.setMarketVersion(request.getMarketVersion() != null ? request.getMarketVersion() : "DEFAULT");
+        plan.setCurrency(request.getCurrency() != null ? request.getCurrency() : "EUR");
+        plan.setIsCustom(request.getIsCustom() != null ? request.getIsCustom() : false);
+        plan.setOrganizationId(request.getOrganizationId());
+
+        PricingPlan savedPlan = pricingPlanRepository.save(plan);
+        log.info("Plan tarifaire créé: id={}, name={}, marketVersion={}", savedPlan.getId(), savedPlan.getName(), savedPlan.getMarketVersion());
+
+        return toDto(savedPlan);
+    }
+
+    /**
+     * Récupère tous les plans tarifaires (actifs et inactifs) pour une version de marché donnée.
+     */
+    @Transactional(readOnly = true)
+    public List<PricingPlanDto> getPlansByMarketVersion(String marketVersion) {
+        List<PricingPlan> plans = pricingPlanRepository.findByMarketVersionAndIsActiveTrueAndIsCustomFalseOrderByDisplayOrderAsc(marketVersion);
+        log.info("Récupération des plans pour marketVersion='{}': {} plan(s)", marketVersion, plans.size());
+        return plans.stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
+    }
+
     /**
      * Met à jour un plan tarifaire.
      */

@@ -1,5 +1,6 @@
 package com.muhend.backend.pricing.controller;
 
+import com.muhend.backend.pricing.dto.CreatePricingPlanRequest;
 import com.muhend.backend.pricing.dto.PricingPlanDto;
 import com.muhend.backend.pricing.dto.UpdatePricingPlanRequest;
 import com.muhend.backend.pricing.service.PricingPlanService;
@@ -8,6 +9,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -92,6 +94,31 @@ public class PricingPlanController {
         return ResponseEntity.ok(plan);
     }
     
+    @GetMapping("/market/{marketVersion}")
+    @Operation(
+        summary = "Récupérer les plans tarifaires par version de marché",
+        description = "Retourne la liste des plans tarifaires actifs et standards (non personnalisés) pour une version de marché donnée."
+    )
+    public ResponseEntity<List<PricingPlanDto>> getPlansByMarketVersion(@PathVariable String marketVersion) {
+        log.info("Requête GET /pricing-plans/market/{}", marketVersion);
+        List<PricingPlanDto> plans = pricingPlanService.getPlansByMarketVersion(marketVersion);
+        return ResponseEntity.ok(plans);
+    }
+
+    @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(
+        summary = "Créer un nouveau plan tarifaire",
+        description = "Crée un nouveau plan tarifaire. Réservé aux administrateurs. " +
+                     "Les champs obligatoires sont : name, displayOrder."
+    )
+    public ResponseEntity<PricingPlanDto> createPricingPlan(
+            @Valid @RequestBody CreatePricingPlanRequest request) {
+        log.info("Requête POST /pricing-plans - Création du plan: {}", request.getName());
+        PricingPlanDto createdPlan = pricingPlanService.createPricingPlan(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(createdPlan);
+    }
+
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(
