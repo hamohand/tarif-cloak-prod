@@ -292,7 +292,19 @@ public class PricingPlanService {
         if (request.getDisplayOrder() != null) {
             plan.setDisplayOrder(request.getDisplayOrder());
         }
-        
+        if (request.getMarketVersion() != null) {
+            plan.setMarketVersion(request.getMarketVersion());
+        }
+        if (request.getCurrency() != null) {
+            plan.setCurrency(request.getCurrency());
+        }
+        if (request.getIsCustom() != null) {
+            plan.setIsCustom(request.getIsCustom());
+        }
+        if (request.getOrganizationId() != null) {
+            plan.setOrganizationId(request.getOrganizationId() > 0 ? request.getOrganizationId() : null);
+        }
+
         // Les champs updatedAt sont mis à jour automatiquement par @PreUpdate
         PricingPlan updatedPlan = pricingPlanRepository.save(plan);
         log.info("Plan tarifaire mis à jour: id={}, name={}", updatedPlan.getId(), updatedPlan.getName());

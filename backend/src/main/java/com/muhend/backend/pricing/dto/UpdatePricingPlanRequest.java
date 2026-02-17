@@ -42,5 +42,15 @@ public class UpdatePricingPlanRequest {
     
     @Min(value = 0, message = "L'ordre d'affichage doit être positif ou nul")
     private Integer displayOrder; // Ordre d'affichage
+
+    @Size(max = 10, message = "La version de marché ne peut pas dépasser 10 caractères")
+    private String marketVersion; // DEFAULT, DZ, etc.
+
+    @Size(max = 3, message = "La devise ne peut pas dépasser 3 caractères")
+    private String currency; // EUR, DZD, etc.
+
+    private Boolean isCustom;
+
+    private Long organizationId;
 }
 
