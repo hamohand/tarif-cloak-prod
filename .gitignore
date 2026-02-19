@@ -34,7 +34,6 @@ node_modules/
 .env
 .env.*
 tarif-cloak-prod
-../tci/tarif-essais250912/demo/.env
 /sql
 
 # Dans search-service/.gitignore
