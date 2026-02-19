@@ -166,10 +166,11 @@ import { map, switchMap, catchError, distinctUntilChanged } from 'rxjs/operators
       </section>
 
       <footer class="home-footer">
-        <p>Micro-entreprise de développement d'applications pour les entreprises<br>
+        <p>Développement d'applications pour les entreprises</p>
+        <p>Micro-entreprise <a href="https://www.forge-numerique.com">Enclume-Numérique</a><br>
         Contact : med&#64;forge-numerique.com <br>
-        WathsApp : +33 6 22 56 38 41 <br>
-        <a href="https://www.forge-numerique.com">Enclume-Numérique</a></p>
+        WathsApp : +33 6 22 56 38 41 </p>
+        
       </footer>
     </div>
   `,
