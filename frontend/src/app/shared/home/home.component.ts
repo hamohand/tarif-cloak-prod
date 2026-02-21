@@ -152,6 +152,15 @@ import { map, switchMap, catchError, distinctUntilChanged } from 'rxjs/operators
               </a>
             </div>
 
+            <div class="feature-card request-card">
+              <div class="request-icon">⚡</div>
+              <h3>Recherche par lots</h3>
+              <p>Soumettez jusqu'à 1000 articles en une seule fois. Traitement asynchrone avec 50% de réduction.</p>
+              <a [routerLink]="['/recherche/batch-search']" class="cta-button secondary">
+                Rechercher par lots
+              </a>
+            </div>
+
           </div>
         }
 
