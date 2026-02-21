@@ -111,6 +111,31 @@ WWW_FRONTEND_DOMAIN=...
 
 Le fichier `.env.dev` sert de template — copier vers `.env` sur le VPS et adapter.
 
+## Navigation Frontend (tarif module)
+
+Les 3 modes de recherche sont accessibles via :
+- **Onglets** dans `frontend/.../tarif/home/tarif.component.ts` (barre de navigation persistante)
+- **Cartes** sur la page d'accueil `frontend/.../shared/home/home.component.ts`
+
+Routes :
+- `/recherche/search` → Recherche d'article unique
+- `/recherche/searchListLots` → Recherche par liste
+- `/recherche/batch-search` → Recherche par lots (async)
+
+## Facturation — Stratégie actuelle
+
+- **Pas de pay-per-request** : modèle supprimé, seuls les plans mensuels et l'essai gratuit subsistent
+- **Pas de renouvellement automatique** : le plan expire à `monthlyPlanEndDate`, l'accès HS-code est bloqué
+- **Blocage dans 2 cas** : plan expiré (1 mois écoulé) OU quota consommé avant terme
+- **Réactivation** : le client choisit manuellement un nouveau plan ou renouvelle l'actuel
+- Point d'entrée du contrôle d'accès : `InternalController.checkQuota()` → `OrganizationService.canOrganizationMakeRequests()`
+
+## Fichiers sensibles
+
+- `tarif-cloak-prod` (à la racine) : fichier `.env` de production mal nommé — ignoré par git, ne jamais commiter
+- `.env` et `.env.*` : ignorés par git
+- Le vrai `.env` de production est uniquement sur le VPS
+
 ## Conventions de code
 
 - **Backend** : DTOs avec Lombok (`@Data @Builder`), validation Jakarta (`@NotBlank`, `@Size`)
