@@ -3,14 +3,37 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 
+export interface DecodeCodeItem {
+  code: string;
+  description: string;
+}
+
+export interface DecodeResult {
+  codeRecherche: string;
+  niveau: 'CHAPITRE' | 'POSITION4' | 'POSITION6';
+  section: DecodeCodeItem;
+  chapitre: DecodeCodeItem;
+  position4: DecodeCodeItem | null;
+  positions6: DecodeCodeItem[];
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class SearchService {
   private apiUrl = '/api/recherche';
   private conversionApiUrl = '/api/conversion';
+  private decodeApiUrl = '/api/decode';
 
   constructor(private http: HttpClient) { }
+
+  decodeCode(code: string): Observable<DecodeResult> {
+    return this.http.get<DecodeResult>(this.decodeApiUrl, {
+      params: { code }
+    }).pipe(
+      catchError(this.handleError)
+    );
+  }
 
   searchCodes(searchTerm: string): Observable<any[]> {
 
@@ -55,6 +78,11 @@ export class SearchService {
       errorMessage = 'Session expirée. Veuillez vous reconnecter.';
     } else if (error.status === 403) {
       errorMessage = 'Accès refusé. Vous n\'avez pas les permissions nécessaires.';
+    } else if (error.status === 404) {
+      errorMessage = 'Code HS introuvable dans la base de données.';
+    } else if (error.status === 400) {
+      const msg = error.error?.message || error.error;
+      errorMessage = typeof msg === 'string' ? msg : 'Code HS invalide. Saisissez 2, 4 ou 6 chiffres.';
     } else if (error.status >= 500) {
       errorMessage = 'Erreur serveur. Veuillez réessayer plus tard.';
     } else if (error.error) {

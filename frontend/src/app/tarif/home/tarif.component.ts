@@ -1,10 +1,11 @@
 import {Component, OnInit} from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { DecodeComponent } from '../decode/decode.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, DecodeComponent],
   template: `
     <div class="container">
     <header>
@@ -16,6 +17,7 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
       <a routerLink="search" routerLinkActive="active">Recherche d'article unique</a>
       <a routerLink="searchListLots" routerLinkActive="active">Recherche par liste</a>
       <a routerLink="batch-search" routerLinkActive="active">Recherche par lots</a>
+      <a routerLink="decode" routerLinkActive="active">Décoder un code HS</a>
     </nav>
     <main>
       <router-outlet></router-outlet>

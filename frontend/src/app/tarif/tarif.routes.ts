@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { SearchComponent } from './search/search.component';
 import {SearchListLotsComponent} from "./search-list-lots/search-list-lots.component";
 import {BatchSearchComponent} from "./batch-search/batch-search.component";
+import {DecodeComponent} from "./decode/decode.component";
 
 export const TARIF_ROUTES: Routes = [
     // Article unique
@@ -14,6 +15,7 @@ export const TARIF_ROUTES: Routes = [
     { path: 'search', component: SearchComponent },
     { path: 'searchListLots', component: SearchListLotsComponent },
     { path: 'batch-search', component: BatchSearchComponent }, // Recherche par lots asynchrone (Batch API)
+    { path: 'decode', component: DecodeComponent },            // Recherche inverse : code HS → description
     { path: '**', redirectTo: 'search'}
 
     ///////////////////
