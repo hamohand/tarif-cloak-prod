@@ -31,8 +31,7 @@ import { of } from 'rxjs';
         @if (isAuthenticated$ | async) {
           @if ((isOrganizationAccount$ | async) || (isCollaboratorAccount$ | async)) {
             @if (canMakeRequests$ | async) {
-              <a routerLink="/" class="nav-link">HS-code</a>
-              <a routerLink="/recherche/batch-search" class="nav-link">📦 Recherche par Lots</a>
+              <a routerLink="/" class="nav-link hscode-link">HS-code</a>
             } @else {
               <span class="nav-link disabled" title="Le quota de l'essai gratuit de votre organisation a été atteint. Aucune requête HS-code n'est autorisée. Veuillez contacter votre administrateur d'organisation pour choisir un plan tarifaire.">HS-code</span>
               <span class="nav-link disabled" title="Le quota de l'essai gratuit de votre organisation a été atteint. Aucune requête HS-code n'est autorisée. Veuillez contacter votre administrateur d'organisation pour choisir un plan tarifaire.">📦 Recherche par Lots</span>
@@ -257,6 +256,19 @@ import { of } from 'rxjs';
     .user-info {
       margin-right: 1rem;
       font-weight: 500;
+      padding: 0.5rem 1rem;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .hscode-link {
+      margin-right: 1rem;
+      font-weight: 800;
       padding: 0.5rem 1rem;
       background: rgba(255, 255, 255, 0.1);
       border-radius: 20px;

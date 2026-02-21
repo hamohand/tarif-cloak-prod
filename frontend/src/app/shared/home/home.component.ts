@@ -146,7 +146,7 @@ import { map, switchMap, catchError, distinctUntilChanged } from 'rxjs/operators
             <div class="feature-card request-card">
               <div class="request-icon">📋</div>
               <h3>Recherche par liste</h3>
-              <p>Traitez une liste de produits simultanément avec l'outil de recherche par lots.</p>
+              <p>Traitez une liste de produits simultanément.</p>
               <a [routerLink]="['/recherche/searchListLots']" class="cta-button secondary">
                 Rechercher par liste
               </a>
