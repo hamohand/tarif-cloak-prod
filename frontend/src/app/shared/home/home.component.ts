@@ -145,10 +145,19 @@ import { map, switchMap, catchError, distinctUntilChanged } from 'rxjs/operators
 
             <div class="feature-card request-card">
               <div class="request-icon">📋</div>
-              <h3>Recherche par listes (bientôt disponible)</h3>
+              <h3>Recherche par liste</h3>
               <p>Traitez une liste de produits simultanément avec l'outil de recherche par lots.</p>
               <a [routerLink]="['/recherche/searchListLots']" class="cta-button secondary">
-                Rechercher par listes
+                Rechercher par liste
+              </a>
+            </div>
+
+            <div class="feature-card request-card">
+              <div class="request-icon">⚡</div>
+              <h3>Recherche par lots</h3>
+              <p>Soumettez jusqu'à 1000 articles en une seule fois. Traitement asynchrone avec 50% de réduction.</p>
+              <a [routerLink]="['/recherche/batch-search']" class="cta-button secondary">
+                Rechercher par lots
               </a>
             </div>
           </div>

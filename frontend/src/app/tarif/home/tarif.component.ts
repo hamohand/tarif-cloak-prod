@@ -1,18 +1,22 @@
 import {Component, OnInit} from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive],
   template: `
     <div class="container">
     <header>
       <h1>Universal Customs Tariff for International Trade</h1>
         <h2>Harmonised System : HS Code</h2>
       <h3>Recherche multilingue - Multilingual search - 多语言搜索 - بحث متعدد اللغات</h3>
-
     </header>
+    <nav class="search-nav">
+      <a routerLink="search" routerLinkActive="active">Recherche d'article unique</a>
+      <a routerLink="searchListLots" routerLinkActive="active">Recherche par liste</a>
+      <a routerLink="batch-search" routerLinkActive="active">Recherche par lots</a>
+    </nav>
     <main>
       <router-outlet></router-outlet>
 
@@ -70,11 +74,45 @@ import { RouterOutlet } from '@angular/router';
       }
       footer {
           margin-top: 30px;
-          border-top: 1px solid hsl(210, 15%, 90%); /* Bordure plus fine et plus claire */
+          border-top: 1px solid hsl(210, 15%, 90%);
           padding-top: 15px;
           text-align: center;
-          color: hsl(210, 10%, 60%); /* Gris doux pour le pied de page */
-          font-size: 0.85rem; /* Légèrement plus petit pour la discrétion */
+          color: hsl(210, 10%, 60%);
+          font-size: 0.85rem;
+      }
+
+      .search-nav {
+          display: flex;
+          gap: 4px;
+          margin: 16px 0 0 0;
+          border-bottom: 2px solid hsl(210, 15%, 80%);
+          padding-bottom: 0;
+      }
+
+      .search-nav a {
+          padding: 10px 20px;
+          text-decoration: none;
+          color: hsl(210, 10%, 45%);
+          border-radius: 6px 6px 0 0;
+          border: 1px solid transparent;
+          border-bottom: none;
+          font-size: 0.92rem;
+          font-weight: 500;
+          transition: background 0.15s, color 0.15s;
+          position: relative;
+          bottom: -2px;
+      }
+
+      .search-nav a:hover {
+          background: hsl(210, 20%, 88%);
+          color: hsl(210, 100%, 35%);
+      }
+
+      .search-nav a.active {
+          background: #e8e8e8;
+          color: hsl(210, 100%, 35%);
+          border-color: hsl(210, 15%, 80%);
+          font-weight: 600;
       }
 
   `]
