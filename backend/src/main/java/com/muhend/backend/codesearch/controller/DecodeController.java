@@ -109,9 +109,11 @@ public class DecodeController {
         }
 
         // --- Niveau POSITION6 (6 chiffres) ---
-        Position6Dz position6 = position6DzRepository.findByCode(normalized)
+        // Les codes position6 sont stockés au format "XXXX XX" (espace après les 4 premiers chiffres)
+        String pos6DbCode = normalized.substring(0, 4) + " " + normalized.substring(4, 6);
+        Position6Dz position6 = position6DzRepository.findByCode(pos6DbCode)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "Code HS introuvable : " + normalized));
+                        "Code HS introuvable : " + pos6DbCode));
 
         return ResponseEntity.ok(DecodeResult.builder()
                 .codeRecherche(code)
