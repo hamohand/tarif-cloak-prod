@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
+@Table(name = "position6_dz")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
