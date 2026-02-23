@@ -14,7 +14,7 @@ import { OAuthService } from 'angular-oauth2-oidc';
         <input
           type="text"
           [(ngModel)]="codeInput"
-          placeholder="Ex : 08, 0808, 080810"
+          placeholder="Ex : 08, 0808, 080810, 87031010"
           class="search-input"
           (keydown.enter)="decode()"
           maxlength="10"
@@ -28,7 +28,7 @@ import { OAuthService } from 'angular-oauth2-oidc';
         </button>
       </div>
 
-      <p class="hint">Saisissez 2 chiffres (chapitre), 4 chiffres (position) ou 6 chiffres (code HS complet).</p>
+      <p class="hint">Saisissez 2 chiffres (chapitre), 4 chiffres (position), 6 chiffres (sous-position HS) ou 8 chiffres (code national).</p>
 
       @if (isLoading) {
         <div class="loading">Recherche en cours...</div>
@@ -65,15 +65,24 @@ import { OAuthService } from 'angular-oauth2-oidc';
                 <span class="level-desc">{{ result.position4.description }}</span>
               </div>
             }
+
+            <!-- Sous-position 6 (uniquement pour niveau POSITION8) -->
+            @if (result.niveau === 'POSITION8' && result.positions6?.length) {
+              <div class="level level-position6">
+                <span class="level-label">Sous-pos.</span>
+                <span class="level-code">{{ result.positions6[0].code }}</span>
+                <span class="level-desc">{{ result.positions6[0].description }}</span>
+              </div>
+            }
           </div>
 
-          <!-- Liste des sous-positions -->
-          @if (result.positions6 && result.positions6.length > 0) {
+          <!-- Liste des sous-positions (niveaux CHAPITRE, POSITION4, POSITION6) -->
+          @if (result.positions6 && result.positions6.length > 0 && result.niveau !== 'POSITION8') {
             <div class="subpositions">
               <h4>
                 @if (result.niveau === 'CHAPITRE') { Positions sous ce chapitre }
                 @if (result.niveau === 'POSITION4') { Codes HS sous cette position }
-                @if (result.niveau === 'POSITION6') { Code HS complet }
+                @if (result.niveau === 'POSITION6') { Code HS 6 chiffres }
               </h4>
               <table>
                 <thead>
@@ -86,6 +95,32 @@ import { OAuthService } from 'angular-oauth2-oidc';
                   @for (item of result.positions6; track item.code) {
                     <tr>
                       <td class="code-cell">{{ item.code }}</td>
+                      <td>{{ item.description }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+
+          <!-- Codes à 8 chiffres (enfants de POSITION6, ou code exact de POSITION8) -->
+          @if (result.positions8 && result.positions8.length > 0) {
+            <div class="subpositions">
+              <h4>
+                @if (result.niveau === 'POSITION6') { Subdivisions nationales (8 chiffres) }
+                @if (result.niveau === 'POSITION8') { Code national complet (8 chiffres) }
+              </h4>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Code</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (item of result.positions8; track item.code) {
+                    <tr>
+                      <td class="code-cell code-cell-8">{{ item.code }}</td>
                       <td>{{ item.description }}</td>
                     </tr>
                   }
@@ -261,6 +296,12 @@ import { OAuthService } from 'angular-oauth2-oidc';
       margin-left: 32px;
     }
 
+    .level-position6 {
+      background: #fdf2e9;
+      border-left-color: #e67e22;
+      margin-left: 48px;
+    }
+
     .level-label {
       font-size: 0.75rem;
       font-weight: 700;
@@ -331,6 +372,10 @@ import { OAuthService } from 'angular-oauth2-oidc';
       color: #27ae60;
       font-size: 0.95rem;
     }
+
+    .code-cell-8 {
+      color: #e67e22;
+    }
   `]
 })
 export class DecodeComponent {
@@ -353,10 +398,10 @@ export class DecodeComponent {
       return;
     }
 
-    // Validation locale : 2, 4 ou 6 chiffres après normalisation
+    // Validation locale : 2, 4, 6 ou 8 chiffres après normalisation
     const normalized = this.codeInput.replace(/[^0-9]/g, '');
-    if (normalized.length !== 2 && normalized.length !== 4 && normalized.length !== 6) {
-      this.error = 'Le code doit contenir 2, 4 ou 6 chiffres (ex: 08, 0808, 080810).';
+    if (![2, 4, 6, 8].includes(normalized.length)) {
+      this.error = 'Le code doit contenir 2, 4, 6 ou 8 chiffres (ex: 08, 0808, 080810, 87031010).';
       return;
     }
 

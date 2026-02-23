@@ -10,11 +10,12 @@ export interface DecodeCodeItem {
 
 export interface DecodeResult {
   codeRecherche: string;
-  niveau: 'CHAPITRE' | 'POSITION4' | 'POSITION6';
+  niveau: 'CHAPITRE' | 'POSITION4' | 'POSITION6' | 'POSITION8';
   section: DecodeCodeItem;
   chapitre: DecodeCodeItem;
   position4: DecodeCodeItem | null;
   positions6: DecodeCodeItem[];
+  positions8?: DecodeCodeItem[]; // enfants à 8 chiffres (si POSITION6), ou code exact (si POSITION8)
 }
 
 @Injectable({
@@ -82,7 +83,7 @@ export class SearchService {
       errorMessage = 'Code HS introuvable dans la base de données.';
     } else if (error.status === 400) {
       const msg = error.error?.message || error.error;
-      errorMessage = typeof msg === 'string' ? msg : 'Code HS invalide. Saisissez 2, 4 ou 6 chiffres.';
+      errorMessage = typeof msg === 'string' ? msg : 'Code HS invalide. Saisissez 2, 4, 6 ou 8 chiffres.';
     } else if (error.status >= 500) {
       errorMessage = 'Erreur serveur. Veuillez réessayer plus tard.';
     } else if (error.error) {
