@@ -277,6 +277,10 @@ services:
       RABBITMQ_PORT: "5672"
       RABBITMQ_USERNAME: "${RABBITMQ_USER:-admin}"
       RABBITMQ_PASSWORD: "${RABBITMQ_PASSWORD:-admin}"
+      # Configuration Paiement
+      PAYMENT_PROVIDER: "${PAYMENT_PROVIDER:-stripe}"
+      CHARGILY_SECRET_KEY: "${CHARGILY_SECRET_KEY:-}"
+      CHARGILY_WEBHOOK_SECRET: "${CHARGILY_WEBHOOK_SECRET:-}"
     labels:
       <<: *traefik-backend-labels
     restart: unless-stopped
