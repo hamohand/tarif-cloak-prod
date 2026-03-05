@@ -159,6 +159,19 @@ stripe:
   currency: ${STRIPE_CURRENCY:EUR}
 
 # ===================================================
+# CONFIGURATION CHARGILY PAY (Paiement Algérie — DZD)
+# ===================================================
+chargily:
+  secret-key: ${CHARGILY_SECRET_KEY:}
+  webhook-secret: ${CHARGILY_WEBHOOK_SECRET:}
+  api-url: ${CHARGILY_API_URL:https://pay.chargily.net/api/v2}
+  currency: ${CHARGILY_CURRENCY:dzd}
+
+# Provider actif : "stripe" | "chargily"
+payment:
+  provider: ${PAYMENT_PROVIDER:stripe}
+
+# ===================================================
 # CONFIGURATION CORS
 # ===================================================
 cors:

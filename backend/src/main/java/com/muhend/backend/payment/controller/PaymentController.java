@@ -5,6 +5,7 @@ import com.muhend.backend.payment.dto.CheckoutSessionResponse;
 import com.muhend.backend.payment.dto.CreateCheckoutSessionRequest;
 import com.muhend.backend.payment.dto.PayInvoiceRequest;
 import com.muhend.backend.payment.dto.PaymentDto;
+import com.muhend.backend.payment.service.ChargilyService;
 import com.muhend.backend.payment.service.PaymentService;
 import com.muhend.backend.payment.service.StripeService;
 import com.stripe.exception.StripeException;
@@ -15,6 +16,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -36,8 +38,12 @@ import java.util.Map;
 public class PaymentController {
     
     private final StripeService stripeService;
+    private final ChargilyService chargilyService;
     private final PaymentService paymentService;
     private final OrganizationService organizationService;
+
+    @Value("${payment.provider:stripe}")
+    private String paymentProvider;
     
     /**
      * Récupère l'ID de l'utilisateur Keycloak depuis le contexte de sécurité.
@@ -56,13 +62,13 @@ public class PaymentController {
     }
     
     /**
-     * Crée une session de checkout Stripe pour un plan tarifaire.
+     * Crée une session de checkout pour un plan tarifaire (Stripe ou Chargily selon le provider actif).
      */
     @PostMapping("/checkout")
     @PreAuthorize("isAuthenticated()")
     @Operation(
             summary = "Créer une session de checkout",
-            description = "Crée une session de checkout Stripe pour souscrire à un plan tarifaire.",
+            description = "Crée une session de checkout pour souscrire à un plan tarifaire (Stripe ou Chargily selon la configuration).",
             security = @SecurityRequirement(name = "bearerAuth")
     )
     public ResponseEntity<CheckoutSessionResponse> createCheckoutSession(
@@ -72,24 +78,26 @@ public class PaymentController {
             if (userId == null) {
                 return ResponseEntity.badRequest().build();
             }
-            
+
             Long organizationId = organizationService.getOrganizationIdByUserId(userId);
             if (organizationId == null) {
                 return ResponseEntity.badRequest().build();
             }
-            
-            CheckoutSessionResponse response = stripeService.createCheckoutSession(organizationId, request);
+
+            CheckoutSessionResponse response = "chargily".equals(paymentProvider)
+                    ? chargilyService.createCheckoutSession(organizationId, request)
+                    : stripeService.createCheckoutSession(organizationId, request);
             return ResponseEntity.ok(response);
-            
+
         } catch (StripeException e) {
-            log.error("Erreur lors de la création de la session de checkout Stripe", e);
+            log.error("Erreur Stripe lors de la création du checkout", e);
             return ResponseEntity.internalServerError().build();
         } catch (IllegalArgumentException e) {
-            log.error("Erreur de validation lors de la création de la session de checkout", e);
+            log.error("Erreur de validation lors de la création du checkout", e);
             return ResponseEntity.badRequest().build();
         } catch (IllegalStateException e) {
-            log.error("Stripe n'est pas configuré", e);
-            return ResponseEntity.status(503).build(); // Service Unavailable
+            log.error("Provider de paiement non configuré", e);
+            return ResponseEntity.status(503).build();
         }
     }
     
@@ -150,19 +158,22 @@ public class PaymentController {
     }
     
     /**
-     * Récupère le statut d'une session de checkout.
+     * Récupère le statut d'une session de checkout Stripe (non disponible pour Chargily).
      */
     @GetMapping("/checkout-session/{sessionId}")
     @PreAuthorize("isAuthenticated()")
     @Operation(
             summary = "Récupérer le statut d'une session de checkout",
-            description = "Récupère les informations d'une session de checkout Stripe.",
+            description = "Récupère les informations d'une session de checkout Stripe (non disponible pour Chargily).",
             security = @SecurityRequirement(name = "bearerAuth")
     )
     public ResponseEntity<Map<String, Object>> getCheckoutSessionStatus(@PathVariable String sessionId) {
+        if ("chargily".equals(paymentProvider)) {
+            return ResponseEntity.status(503).body(Map.of("error", "Non disponible avec le provider Chargily"));
+        }
         try {
             Session session = stripeService.getCheckoutSession(sessionId);
-            
+
             Map<String, Object> response = Map.of(
                     "id", session.getId(),
                     "status", session.getStatus(),
@@ -170,9 +181,9 @@ public class PaymentController {
                     "customerId", session.getCustomer() != null ? session.getCustomer() : "",
                     "subscriptionId", session.getSubscription() != null ? session.getSubscription() : ""
             );
-            
+
             return ResponseEntity.ok(response);
-            
+
         } catch (StripeException e) {
             log.error("Erreur lors de la récupération de la session de checkout", e);
             return ResponseEntity.internalServerError().build();
@@ -208,12 +219,13 @@ public class PaymentController {
             String cancelUrl = request != null && request.getCancelUrl() != null ? 
                     request.getCancelUrl() : null;
             
-            CheckoutSessionResponse response = stripeService.createInvoiceCheckoutSession(
-                    organizationId, invoiceId, successUrl, cancelUrl);
+            CheckoutSessionResponse response = "chargily".equals(paymentProvider)
+                    ? chargilyService.createInvoiceCheckoutSession(organizationId, invoiceId, successUrl, cancelUrl)
+                    : stripeService.createInvoiceCheckoutSession(organizationId, invoiceId, successUrl, cancelUrl);
             return ResponseEntity.ok(response);
-            
+
         } catch (StripeException e) {
-            log.error("Erreur lors de la création de la session de checkout pour la facture", e);
+            log.error("Erreur Stripe lors du paiement de la facture", e);
             return ResponseEntity.internalServerError().build();
         } catch (IllegalArgumentException | IllegalStateException e) {
             log.error("Erreur de validation lors du paiement de la facture", e);

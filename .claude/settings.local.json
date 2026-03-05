@@ -1,11 +1,13 @@
 {
   "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "WebFetch(domain:www.douane.gov.dz)",
+      "WebFetch(domain:taxation-customs.ec.europa.eu)"
+    ],
     "additionalDirectories": [
       "c:\\Users\\hamoh\\Documents\\projets\\tarif\\tarif-micros\\search-service\\src\\main\\java\\com\\tarif\\search\\repository",
       "c:\\Users\\hamoh\\Documents\\projets\\tarif\\tarif-micros\\docs"
-    ],
-    "allow": [
-      "Bash(npm install:*)"
     ]
   }
 }
