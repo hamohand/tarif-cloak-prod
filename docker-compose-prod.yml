@@ -281,6 +281,7 @@ services:
       PAYMENT_PROVIDER: "${PAYMENT_PROVIDER:-stripe}"
       CHARGILY_SECRET_KEY: "${CHARGILY_SECRET_KEY:-}"
       CHARGILY_WEBHOOK_SECRET: "${CHARGILY_WEBHOOK_SECRET:-}"
+      CHARGILY_API_URL: "${CHARGILY_API_URL:-https://pay.chargily.net/api/v2}"
     labels:
       <<: *traefik-backend-labels
     restart: unless-stopped
