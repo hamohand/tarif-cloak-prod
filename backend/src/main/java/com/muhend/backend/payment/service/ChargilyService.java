@@ -144,6 +144,9 @@ public class ChargilyService {
      * Envoie la requête de création de checkout à l'API Chargily.
      */
     private CheckoutSessionResponse doCreateCheckout(Map<String, Object> body) {
+        // Chargily envoie le webhook à cette URL après chaque paiement
+        body.put("webhook_url", baseUrl + "/api/webhooks/chargily");
+
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(config.getSecretKey());
         headers.setContentType(MediaType.APPLICATION_JSON);

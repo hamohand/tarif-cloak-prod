@@ -44,10 +44,10 @@ public class ChargilyWebhookController {
             @RequestBody String payload,
             @RequestHeader("signature") String signature) {
 
-        if (!config.isConfigured() || config.getWebhookSecret().isEmpty()) {
-            log.error("Chargily webhook secret non configuré");
+        if (!config.isConfigured()) {
+            log.error("Chargily non configuré (clé API manquante)");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Webhook secret not configured");
+                    .body("Chargily not configured");
         }
 
         if (!verifySignature(payload, signature)) {
@@ -199,7 +199,7 @@ public class ChargilyWebhookController {
         try {
             Mac mac = Mac.getInstance("HmacSHA256");
             mac.init(new SecretKeySpec(
-                    config.getWebhookSecret().getBytes(StandardCharsets.UTF_8),
+                    config.getSecretKey().getBytes(StandardCharsets.UTF_8),
                     "HmacSHA256"));
             byte[] hash = mac.doFinal(payload.getBytes(StandardCharsets.UTF_8));
             String computed = HexFormat.of().formatHex(hash);
