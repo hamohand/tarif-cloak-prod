@@ -35,6 +35,14 @@ h2,h3{color:#e2e8f0;margin:0 0 1rem}
 .empty-message{color:#94a3b8;text-align:center}
 .error-message{background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);color:#f87171;padding:.5rem;border-radius:8px}
 .trial-expired-alert{background:linear-gradient(135deg,rgba(245,158,11,0.15),rgba(217,119,6,0.1));border:1px solid rgba(245,158,11,0.3);padding:1rem;margin-bottom:1rem;border-radius:12px}
+.renewal-alert{background:linear-gradient(135deg,rgba(239,68,68,0.15),rgba(220,38,38,0.1));border:1px solid rgba(239,68,68,0.4);padding:1.25rem;margin-bottom:1rem;border-radius:12px}
+.renewal-alert .alert-content h3{color:#f87171}
+.btn-renew{margin-top:.75rem;padding:.75rem 1.5rem;background:linear-gradient(135deg,#dc2626,#b91c1c);color:#fff;border:none;border-radius:8px;font-size:1rem;font-weight:600;cursor:pointer;transition:all .2s ease}
+.btn-renew:hover:not(:disabled){box-shadow:0 4px 16px rgba(220,38,38,.4)}
+.btn-renew:disabled{opacity:.6;cursor:not-allowed}
+.renewal-actions{display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap;margin-top:.75rem}
+.btn-change-plan{padding:.75rem 1.5rem;background:rgba(255,255,255,0.1);color:#e2e8f0;border:2px solid rgba(255,255,255,0.3);border-radius:8px;font-size:1rem;font-weight:600;cursor:pointer;transition:all .2s ease}
+.btn-change-plan:hover{background:rgba(255,255,255,0.2)}
 .alert-content{color:#e2e8f0;text-align:center}
 .alert-content h3{font-weight:700;color:#f59e0b}
 .alert-action{background:rgba(245,158,11,0.1);padding:.5rem;border-radius:8px}

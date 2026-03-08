@@ -29,12 +29,42 @@ Chart.register(...registerables);
           <div class="alert-content">
             <h3>⚠️ Action requise : Choisissez un plan tarifaire</h3>
             <p>
-              Le quota de votre essai gratuit a été atteint et est maintenant <strong>définitivement désactivé</strong> pour votre organisation. 
+              Le quota de votre essai gratuit a été atteint et est maintenant <strong>définitivement désactivé</strong> pour votre organisation.
               Aucune requête HS-code n'est autorisée pour tous les collaborateurs jusqu'à ce qu'un nouveau plan soit sélectionné.
             </p>
             <p class="alert-action">
               <strong>Veuillez sélectionner un plan tarifaire ci-dessous pour continuer à utiliser le service.</strong>
             </p>
+          </div>
+        </div>
+      }
+
+      <!-- Bannière de renouvellement : plan expiré ou quota épuisé -->
+      @if (organization && !organization.trialPermanentlyExpired && (isPlanExpired() || isQuotaExhausted())) {
+        <div class="renewal-alert">
+          <div class="alert-content">
+            @if (isPlanExpired()) {
+              <h3>Plan expiré — accès bloqué</h3>
+              <p>Votre plan a expiré le <strong>{{ formatDate(organization.monthlyPlanEndDate) }}</strong>. Aucune requête HS-code n'est autorisée jusqu'au renouvellement.</p>
+            } @else {
+              <h3>Quota épuisé — accès bloqué</h3>
+              <p>Le quota de requêtes de votre plan est atteint. Aucune requête supplémentaire n'est autorisée jusqu'au renouvellement.</p>
+            }
+            @if (currentPlan) {
+              <p class="alert-action">Plan actuel : <strong>{{ currentPlan.name }}</strong>
+                @if (currentPlan.pricePerMonth != null && currentPlan.pricePerMonth > 0) {
+                  — {{ currentPlan.pricePerMonth }} DA/mois
+                }
+              </p>
+            }
+            <div class="renewal-actions">
+              <button class="btn btn-renew" (click)="renewCurrentPlan()" [disabled]="isRenewing">
+                @if (isRenewing) { Redirection en cours... } @else { Renouveler le plan actuel }
+              </button>
+              <button class="btn btn-change-plan" (click)="scrollToChangePlan()">
+                Changer de plan
+              </button>
+            </div>
           </div>
         </div>
       }
@@ -483,6 +513,7 @@ export class OrganizationStatsComponent implements OnInit {
   isChangingPlan = false;
   showConfirmModal = false;
   selectedPlanForConfirmation: PricingPlan | null = null;
+  isRenewing = false;
 
   private quotaChart: Chart | null = null;
 
@@ -889,6 +920,45 @@ export class OrganizationStatsComponent implements OnInit {
         }
       });
     }
+  }
+
+  isPlanExpired(): boolean {
+    if (!this.organization?.monthlyPlanEndDate) return false;
+    return new Date(this.organization.monthlyPlanEndDate) < new Date();
+  }
+
+  isQuotaExhausted(): boolean {
+    if (!this.quota || this.quota.isUnlimited) return false;
+    return (this.quota.remaining ?? 1) <= 0;
+  }
+
+  scrollToChangePlan() {
+    const el = document.querySelector('.change-plan-section');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }
+
+  renewCurrentPlan() {
+    if (!this.organization?.pricingPlanId) {
+      this.notificationService.error('Aucun plan actuel à renouveler.');
+      return;
+    }
+    this.isRenewing = true;
+    this.paymentService.createCheckout({
+      pricingPlanId: this.organization.pricingPlanId,
+      successUrl: `${window.location.origin}/organization/stats`,
+      cancelUrl: `${window.location.origin}/organization/stats`
+    }).subscribe({
+      next: (response) => {
+        window.location.href = response.url;
+      },
+      error: (err) => {
+        const errorMessage = err.error?.message || err.message || 'Une erreur est survenue';
+        this.notificationService.error('Erreur lors du renouvellement: ' + errorMessage);
+        this.isRenewing = false;
+      }
+    });
   }
 
   loadQuota() {

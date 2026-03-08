@@ -7,6 +7,8 @@ import { InvoiceService } from '../../../core/services/invoice.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { MarketProfileService } from '../../../core/services/market-profile.service';
 import { OrganizationAccountService } from '../../../core/services/organization-account.service';
+import { PaymentService } from '../../../core/services/payment.service';
+import { UserService } from '../../../core/services/user.service';
 import { environment } from '../../../../environments/environment';
 import { AsyncPipe, CommonModule } from '@angular/common';
 import { take, map, catchError, switchMap } from 'rxjs/operators';
@@ -29,12 +31,15 @@ import { of } from 'rxjs';
 
       <div class="nav-links">
         @if (isAuthenticated$ | async) {
-          @if ((isOrganizationAccount$ | async) || (isCollaboratorAccount$ | async)) {
+          @if (isOrganizationAccount$ | async) {
             @if (canMakeRequests$ | async) {
               <a routerLink="/" class="nav-link hscode-link">HS-code</a>
             } @else {
-              <span class="nav-link disabled" title="Le quota de l'essai gratuit de votre organisation a été atteint. Aucune requête HS-code n'est autorisée. Veuillez contacter votre administrateur d'organisation pour choisir un plan tarifaire.">HS-code</span>
-              <span class="nav-link disabled" title="Le quota de l'essai gratuit de votre organisation a été atteint. Aucune requête HS-code n'est autorisée. Veuillez contacter votre administrateur d'organisation pour choisir un plan tarifaire.">📦 Recherche par Lots</span>
+              <button class="nav-link hscode-link-blocked" (click)="openRenewalModal()">HS-code ⚠️</button>
+            }
+          } @else if (isCollaboratorAccount$ | async) {
+            @if (canMakeRequests$ | async) {
+              <a routerLink="/" class="nav-link hscode-link">HS-code</a>
             }
           } @else {
             <a routerLink="/" class="nav-link">Accueil</a>
@@ -86,15 +91,35 @@ import { of } from 'rxjs';
       </div>
     </nav>
     
+    <!-- Modal renouvellement / changement de plan -->
+    @if (showRenewalModal) {
+      <div class="renewal-modal-overlay" (click)="closeRenewalModal()">
+        <div class="renewal-modal" (click)="$event.stopPropagation()">
+          <button class="modal-close-btn" (click)="closeRenewalModal()">✕</button>
+          <h3>Accès HS-code suspendu</h3>
+          <p>Votre plan est expiré ou votre quota de requêtes est épuisé.</p>
+          <div class="renewal-modal-actions">
+            <button class="btn-modal btn-modal-primary" (click)="renewCurrentPlan()" [disabled]="isRenewing">
+              @if (isRenewing) { Redirection... } @else { Renouveler le plan actuel }
+            </button>
+            <a routerLink="/organization/stats" class="btn-modal btn-modal-secondary" (click)="closeRenewalModal()">
+              Changer de plan
+            </a>
+          </div>
+        </div>
+      </div>
+    }
+
     @if ((isAuthenticated$ | async) && (isOrganizationAccount$ | async)) {
       @if (!(canMakeRequests$ | async)) {
         <div class="trial-expired-banner">
-          <p>
-            ⚠️
-            Le quota de votre essai gratuit a été atteint et est maintenant définitivement désactivé pour votre organisation.
-            Aucune requête HS-code n'est autorisée pour tous les collaborateurs.
-            Veuillez <a routerLink="/organization/stats">choisir un plan tarifaire</a> ou <a routerLink="/organization/quote-requests">faire une demande de devis</a> pour continuer à utiliser le service.
-          </p>
+          <p>⚠️ L'accès HS-code est suspendu (plan expiré ou quota épuisé).</p>
+          <div class="banner-actions">
+            <button class="btn-banner btn-banner-primary" (click)="openRenewalModal()" [disabled]="isRenewing">
+              Renouveler le plan actuel
+            </button>
+            <a routerLink="/organization/stats" class="btn-banner btn-banner-secondary">Changer de plan</a>
+          </div>
         </div>
       }
       <nav class="organization-navbar">
@@ -654,6 +679,157 @@ import { of } from 'rxjs';
         font-size: 0.85rem;
       }
     }
+
+    .hscode-link-blocked {
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid rgba(239, 68, 68, 0.5);
+      color: white;
+      cursor: pointer;
+      font-weight: 700;
+      margin-right: 1rem;
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      transition: background 0.2s ease;
+    }
+
+    .hscode-link-blocked:hover {
+      background: rgba(239, 68, 68, 0.35);
+    }
+
+    .banner-actions {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: center;
+      margin-top: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .btn-banner {
+      padding: 0.5rem 1.25rem;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      text-decoration: none;
+      border: none;
+      transition: all 0.2s ease;
+      display: inline-block;
+    }
+
+    .btn-banner-primary {
+      background: white;
+      color: #1e3c72;
+    }
+
+    .btn-banner-primary:hover:not(:disabled) {
+      background: #f0f0f0;
+    }
+
+    .btn-banner-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .btn-banner-secondary {
+      background: transparent;
+      color: white;
+      border: 2px solid white;
+    }
+
+    .btn-banner-secondary:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .renewal-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .renewal-modal {
+      background: #1e3c72;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 16px;
+      padding: 2rem;
+      max-width: 420px;
+      width: 90%;
+      text-align: center;
+      color: white;
+      position: relative;
+    }
+
+    .renewal-modal h3 {
+      margin-bottom: 0.75rem;
+      font-size: 1.25rem;
+      color: #f87171;
+    }
+
+    .renewal-modal p {
+      color: #cbd5e1;
+      margin-bottom: 1.5rem;
+    }
+
+    .renewal-modal-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .btn-modal {
+      padding: 0.75rem 1.5rem;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      text-decoration: none;
+      border: none;
+      transition: all 0.2s ease;
+      display: block;
+    }
+
+    .btn-modal-primary {
+      background: linear-gradient(135deg, #3498db, #2980b9);
+      color: white;
+    }
+
+    .btn-modal-primary:hover:not(:disabled) {
+      opacity: 0.9;
+    }
+
+    .btn-modal-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .btn-modal-secondary {
+      background: transparent;
+      color: white;
+      border: 2px solid rgba(255, 255, 255, 0.4);
+    }
+
+    .btn-modal-secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .modal-close-btn {
+      position: absolute;
+      top: 0.75rem;
+      right: 0.75rem;
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      font-size: 1.25rem;
+      cursor: pointer;
+      padding: 0.25rem 0.5rem;
+    }
+
+    .modal-close-btn:hover {
+      color: white;
+    }
   `]
 })
 export class NavbarComponent implements OnInit, OnDestroy {
@@ -664,6 +840,12 @@ export class NavbarComponent implements OnInit, OnDestroy {
   private notificationService = inject(NotificationService);
   private marketProfileService = inject(MarketProfileService);
   private organizationAccountService = inject(OrganizationAccountService);
+  private paymentService = inject(PaymentService);
+  private userService = inject(UserService);
+
+  showRenewalModal = false;
+  isRenewing = false;
+  orgPricingPlanId: number | null = null;
 
   isAuthenticated$!: Observable<boolean>;
   isOrganizationAccount$!: Observable<boolean>;
@@ -843,6 +1025,45 @@ export class NavbarComponent implements OnInit, OnDestroy {
       } else {
         this.overdueInvoicesCount = 0;
         this.previousOverdueInvoicesCount = null;
+      }
+    });
+  }
+
+  openRenewalModal() {
+    if (!this.orgPricingPlanId) {
+      this.userService.getMyOrganization().pipe(take(1)).subscribe({
+        next: (org) => {
+          this.orgPricingPlanId = org?.pricingPlanId ?? null;
+          this.showRenewalModal = true;
+        },
+        error: () => { this.showRenewalModal = true; }
+      });
+    } else {
+      this.showRenewalModal = true;
+    }
+  }
+
+  closeRenewalModal() {
+    this.showRenewalModal = false;
+  }
+
+  renewCurrentPlan() {
+    if (!this.orgPricingPlanId) {
+      this.router.navigate(['/organization/stats']);
+      this.closeRenewalModal();
+      return;
+    }
+    this.isRenewing = true;
+    this.paymentService.createCheckout({
+      pricingPlanId: this.orgPricingPlanId,
+      successUrl: `${window.location.origin}/organization/stats`,
+      cancelUrl: `${window.location.origin}/organization/stats`
+    }).subscribe({
+      next: (response) => { window.location.href = response.url; },
+      error: () => {
+        this.isRenewing = false;
+        this.router.navigate(['/organization/stats']);
+        this.closeRenewalModal();
       }
     });
   }
