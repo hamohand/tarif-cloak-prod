@@ -130,6 +130,29 @@ Routes :
 - **Réactivation** : le client choisit manuellement un nouveau plan via paiement Chargily
 - Point d'entrée du contrôle d'accès : `InternalController.checkQuota()` → `OrganizationService.canOrganizationMakeRequests()`
 
+### Logique de blocage — `canOrganizationMakeRequests()`
+
+Vérifications dans l'ordre :
+
+1. Organisation désactivée par l'admin → `false`
+2. Essai gratuit expiré (`isTrialExpired()`) → `false`
+3. Plan mensuel expiré (`LocalDate.now().isAfter(monthlyPlanEndDate)`) → `false`
+4. Quota mensuel épuisé (pour les plans payants avec `monthlyQuota != null`) → `false`
+5. Sinon → `true`
+
+### UX frontend selon le rôle (plan bloqué)
+
+| Rôle | Navbar | Page d'accueil |
+| --- | --- | --- |
+| ORGANIZATION | Bouton "HS-code ⚠️" → modal avec "Renouveler" + "Changer de plan" | Message blocage + liens vers stats |
+| COLLABORATOR | **Bouton HS-code masqué complètement** | Message blocage + "contacter l'admin" |
+
+- Modal de renouvellement : également accessible depuis `/organization/stats` via bannière de blocage
+- `renewCurrentPlan()` : déclenche Chargily checkout avec le `pricingPlanId` actuel
+- `scrollToChangePlan()` : fait défiler vers la section de sélection de plan dans stats
+- Service frontend : `frontend/.../core/services/payment.service.ts` — `createCheckout(request)`
+- Plans gratuits (prix = 0) : activés directement via `PUT /api/user/organization/pricing-plan` sans Chargily
+
 ## Paiement Chargily Pay
 
 Intégration Chargily Pay v2 pour les paiements en DZD (CIB / EDAHABIA).
