@@ -1224,7 +1224,37 @@ public class OrganizationService {
             log.debug("Organisation {} désactivée par un administrateur", organization.getId());
             return false;
         }
-        return !isTrialExpired(organization);
+
+        // Essai expiré (quota atteint ou date dépassée)
+        if (isTrialExpired(organization)) {
+            return false;
+        }
+
+        // Plan mensuel payant expiré
+        if (organization.getMonthlyPlanEndDate() != null
+                && LocalDate.now().isAfter(organization.getMonthlyPlanEndDate())) {
+            log.debug("Organisation {} bloquée : plan mensuel expiré le {}",
+                    organization.getId(), organization.getMonthlyPlanEndDate());
+            return false;
+        }
+
+        // Quota mensuel épuisé (plans payants avec cycle mensuel défini)
+        Integer monthlyQuota = organization.getMonthlyQuota();
+        if (monthlyQuota != null
+                && organization.getMonthlyPlanStartDate() != null
+                && organization.getMonthlyPlanEndDate() != null) {
+            LocalDateTime start = organization.getMonthlyPlanStartDate().atStartOfDay();
+            LocalDateTime end = organization.getMonthlyPlanEndDate().atTime(23, 59, 59);
+            long currentUsage = usageLogRepository.countByOrganizationIdAndTimestampBetween(
+                    organization.getId(), start, end);
+            if (currentUsage >= monthlyQuota) {
+                log.debug("Organisation {} bloquée : quota mensuel épuisé ({}/{})",
+                        organization.getId(), currentUsage, monthlyQuota);
+                return false;
+            }
+        }
+
+        return true;
     }
     
     /**
