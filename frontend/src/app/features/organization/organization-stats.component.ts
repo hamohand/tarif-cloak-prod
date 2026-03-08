@@ -8,6 +8,7 @@ import { PricingPlanService, PricingPlan } from '../../core/services/pricing-pla
 import { NotificationService } from '../../core/services/notification.service';
 import { OrganizationAccountService, OrganizationUsageLog } from '../../core/services/organization-account.service';
 import { CurrencyService } from '../../core/services/currency.service';
+import { PaymentService } from '../../core/services/payment.service';
 import { Chart, ChartConfiguration, registerables } from 'chart.js';
 import { take } from 'rxjs/operators';
 
@@ -179,9 +180,9 @@ Chart.register(...registerables);
                 [disabled]="isChangingPlan || !selectedPlanId"
                 [title]="(!selectedPlanId && organization.trialPermanentlyExpired) ? 'Sélectionnez un plan payant pour continuer' : ''">
                 @if (isChangingPlan) {
-                  <span>Changement en cours...</span>
+                  <span>Redirection en cours...</span>
                 } @else if (organization.trialPermanentlyExpired && selectedPlanId) {
-                  <span>🔴 Valider le nouveau plan (obligatoire)</span>
+                  <span>Payer et activer le plan</span>
                 } @else if (organization.trialPermanentlyExpired && !selectedPlanId) {
                   <span>Sélectionnez un plan payant</span>
                 } @else {
@@ -268,9 +269,11 @@ Chart.register(...registerables);
               </button>
               <button class="btn btn-primary" [class.btn-required]="organization && organization.trialPermanentlyExpired" (click)="changePricingPlan()" [disabled]="isChangingPlan">
                 @if (isChangingPlan) {
-                  <span>Changement en cours...</span>
+                  <span>Redirection en cours...</span>
+                } @else if (selectedPlanForConfirmation && ((selectedPlanForConfirmation.pricePerMonth != null && selectedPlanForConfirmation.pricePerMonth > 0) || (selectedPlanForConfirmation.pricePerRequest != null && selectedPlanForConfirmation.pricePerRequest > 0))) {
+                  <span>Payer avec Chargily</span>
                 } @else if (organization && organization.trialPermanentlyExpired) {
-                  <span>✅ Valider le plan payant (obligatoire)</span>
+                  <span>Valider le plan</span>
                 } @else {
                   <span>Confirmer le changement</span>
                 }
@@ -453,6 +456,7 @@ export class OrganizationStatsComponent implements OnInit {
   private notificationService = inject(NotificationService);
   private organizationAccountService = inject(OrganizationAccountService);
   private currencyService = inject(CurrencyService);
+  private paymentService = inject(PaymentService);
 
   organization: Organization | null = null;
   currencySymbol$ = this.currencyService.getCurrencySymbol();
@@ -834,40 +838,57 @@ export class OrganizationStatsComponent implements OnInit {
 
     this.isChangingPlan = true;
     this.errorMessage = '';
-    // Ne pas fermer la modal immédiatement, attendre la réponse
-    // this.showConfirmModal = false;
 
-    console.log('📤 Envoi de la requête de changement de plan avec planId:', planIdToUse);
+    const isPaidPlan = this.selectedPlanForConfirmation &&
+      ((this.selectedPlanForConfirmation.pricePerMonth != null && this.selectedPlanForConfirmation.pricePerMonth > 0) ||
+       (this.selectedPlanForConfirmation.pricePerRequest != null && this.selectedPlanForConfirmation.pricePerRequest > 0));
 
-    this.pricingPlanService.changeMyOrganizationPricingPlan(planIdToUse).subscribe({
-      next: (updatedOrg) => {
-        console.log('✅ Changement de plan réussi:', updatedOrg);
-        this.organization = updatedOrg;
-        this.updateCurrentPlan(updatedOrg.pricingPlanId || 0);
-        this.isChangingPlan = false;
-        this.selectedPlanForConfirmation = null;
-        this.showConfirmModal = false; // Fermer la modal seulement après succès
-        this.notificationService.success('Plan tarifaire changé avec succès');
-        this.loadQuota();
-        // Recharger les plans pour mettre à jour le filtre si nécessaire
-        this.loadPricingPlans();
-      },
-      error: (err) => {
-        console.error('❌ Erreur lors du changement de plan:', err);
-        console.error('❌ Détails de l\'erreur:', {
-          status: err.status,
-          statusText: err.statusText,
-          error: err.error,
-          message: err.message
-        });
-        const errorMessage = err.error?.message || err.error?.error || err.message || 'Une erreur est survenue';
-        this.errorMessage = 'Erreur lors du changement de plan: ' + errorMessage;
-        this.isChangingPlan = false;
-        this.notificationService.error('Erreur lors du changement de plan: ' + errorMessage);
-        // Garder la modal ouverte en cas d'erreur pour permettre une nouvelle tentative
-        // this.showConfirmModal reste true
-      }
-    });
+    if (isPaidPlan) {
+      // Plan payant → paiement via Chargily
+      console.log('💳 Plan payant détecté, redirection vers Chargily');
+      this.paymentService.createCheckout({
+        pricingPlanId: planIdToUse,
+        successUrl: `${window.location.origin}/organization/stats`,
+        cancelUrl: `${window.location.origin}/organization/stats`
+      }).subscribe({
+        next: (response) => {
+          console.log('✅ Checkout Chargily créé, redirection vers:', response.url);
+          this.isChangingPlan = false;
+          this.showConfirmModal = false;
+          window.location.href = response.url;
+        },
+        error: (err) => {
+          console.error('❌ Erreur lors de la création du checkout:', err);
+          const errorMessage = err.error?.message || err.message || 'Une erreur est survenue';
+          this.errorMessage = 'Erreur lors du paiement: ' + errorMessage;
+          this.isChangingPlan = false;
+          this.notificationService.error('Erreur lors du paiement: ' + errorMessage);
+        }
+      });
+    } else {
+      // Plan gratuit ou essai → changement direct
+      console.log('📤 Plan gratuit, changement direct sans paiement');
+      this.pricingPlanService.changeMyOrganizationPricingPlan(planIdToUse).subscribe({
+        next: (updatedOrg) => {
+          console.log('✅ Changement de plan réussi:', updatedOrg);
+          this.organization = updatedOrg;
+          this.updateCurrentPlan(updatedOrg.pricingPlanId || 0);
+          this.isChangingPlan = false;
+          this.selectedPlanForConfirmation = null;
+          this.showConfirmModal = false;
+          this.notificationService.success('Plan tarifaire changé avec succès');
+          this.loadQuota();
+          this.loadPricingPlans();
+        },
+        error: (err) => {
+          console.error('❌ Erreur lors du changement de plan:', err);
+          const errorMessage = err.error?.message || err.error?.error || err.message || 'Une erreur est survenue';
+          this.errorMessage = 'Erreur lors du changement de plan: ' + errorMessage;
+          this.isChangingPlan = false;
+          this.notificationService.error('Erreur lors du changement de plan: ' + errorMessage);
+        }
+      });
+    }
   }
 
   loadQuota() {

@@ -66,13 +66,21 @@ Point d'entrée : `InternalController.checkQuota()` → `OrganizationService.can
 ### Flux complet
 
 ```
-Frontend → POST /api/payments/chargily/checkout
-         ← checkout_url (redirection vers page Chargily)
+Utilisateur sélectionne un plan payant dans /organization/stats
+→ Clic "Payer avec Chargily"
+Frontend → POST /api/payments/chargily/checkout  { pricingPlanId, successUrl, cancelUrl }
+         ← { url: "https://pay.chargily.com/..." }
+Frontend redirige vers url (window.location.href)
 Utilisateur paie (CIB ou EDAHABIA)
 Chargily → POST /api/webhooks/chargily  (checkout.paid)
 Backend  → OrganizationService.activatePlanAfterPayment()
          → Plan activé, monthlyPlanStartDate/EndDate initialisés
+Utilisateur redirigé vers /organization/stats (successUrl)
 ```
+
+### Plans gratuits / essai
+
+Les plans sans prix (`pricePerMonth = 0` ou `null`) sont activés directement sans paiement via `PUT /api/user/organization/pricing-plan`.
 
 ### Metadata transmises à Chargily
 
