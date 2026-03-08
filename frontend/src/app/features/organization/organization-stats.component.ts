@@ -45,7 +45,7 @@ Chart.register(...registerables);
           <div class="alert-content">
             @if (isPlanExpired()) {
               <h3>Plan expiré — accès bloqué</h3>
-              <p>Votre plan a expiré le <strong>{{ formatDate(organization.monthlyPlanEndDate) }}</strong>. Aucune requête HS-code n'est autorisée jusqu'au renouvellement.</p>
+              <p>Votre plan a expiré le <strong>{{ formatDate(organization.monthlyPlanEndDate!) }}</strong>. Aucune requête HS-code n'est autorisée jusqu'au renouvellement.</p>
             } @else {
               <h3>Quota épuisé — accès bloqué</h3>
               <p>Le quota de requêtes de votre plan est atteint. Aucune requête supplémentaire n'est autorisée jusqu'au renouvellement.</p>
