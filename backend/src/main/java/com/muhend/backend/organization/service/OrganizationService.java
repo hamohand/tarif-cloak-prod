@@ -1329,6 +1329,19 @@ public class OrganizationService {
     }
     
     /**
+     * Active un plan tarifaire pour une organisation après confirmation de paiement Chargily.
+     */
+    @Transactional
+    public void activatePlanAfterPayment(Long organizationId, Long planId) {
+        Organization org = organizationRepository.findById(organizationId)
+                .orElseThrow(() -> new IllegalArgumentException("Organisation introuvable: " + organizationId));
+        PricingPlanDto plan = pricingPlanService.getPricingPlanById(planId);
+        applyPlanChangeImmediately(org, plan);
+        organizationRepository.save(org);
+        log.info("Plan {} activé pour l'organisation {} après paiement Chargily", planId, organizationId);
+    }
+
+    /**
      * Applique un changement de plan immédiatement (remplace tous les paramètres).
      * Méthode publique pour permettre l'utilisation par le scheduler.
      */
