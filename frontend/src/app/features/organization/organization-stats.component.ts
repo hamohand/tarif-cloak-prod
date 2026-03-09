@@ -1001,15 +1001,28 @@ export class OrganizationStatsComponent implements OnInit {
     }
 
     const logs = this.organizationUsageLogs.usageLogs;
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    // Utiliser le cycle du plan si disponible, sinon mois calendaire (cohérent avec /api/user/quota)
+    let periodStart: Date;
+    let periodEnd: Date;
+    if (this.organization?.monthlyPlanStartDate && this.organization?.monthlyPlanEndDate) {
+      periodStart = new Date(this.organization.monthlyPlanStartDate);
+      periodStart.setHours(0, 0, 0, 0);
+      periodEnd = new Date(this.organization.monthlyPlanEndDate);
+      periodEnd.setHours(23, 59, 59, 999);
+    } else {
+      const now = new Date();
+      periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    }
+
     const monthlyRequests = logs.filter((log: OrganizationUsageLog) => {
       const logDate = new Date(log.timestamp);
-      return logDate >= startOfMonth;
+      return logDate >= periodStart && logDate <= periodEnd;
     }).length;
 
-    // Calculer le total des requêtes
-    const totalRequests = logs.length;
+    // Total du cycle actuel (cohérent avec le quota affiché)
+    const totalRequests = monthlyRequests;
 
     // Calculer le coût total
     const totalCostUsd = logs.reduce((sum: number, log: OrganizationUsageLog) => {
