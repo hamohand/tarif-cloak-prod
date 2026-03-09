@@ -1238,17 +1238,26 @@ public class OrganizationService {
             return false;
         }
 
-        // Quota mensuel épuisé
+        // Quota mensuel épuisé — période = cycle du plan (monthlyPlanStartDate → monthlyPlanEndDate)
+        // Quota lu depuis le plan (source de vérité), fallback sur l'organisation
         Integer monthlyQuota = organization.getMonthlyQuota();
+        if (organization.getPricingPlanId() != null) {
+            try {
+                PricingPlanDto plan = pricingPlanService.getPricingPlanById(organization.getPricingPlanId());
+                monthlyQuota = plan.getMonthlyQuota();
+            } catch (Exception e) {
+                log.warn("Impossible de récupérer le plan {} pour vérifier le quota: {}",
+                        organization.getPricingPlanId(), e.getMessage());
+            }
+        }
         if (monthlyQuota != null) {
             LocalDateTime start;
             LocalDateTime end;
             if (organization.getMonthlyPlanStartDate() != null && organization.getMonthlyPlanEndDate() != null) {
-                // Utiliser le cycle du plan (du startDate au endDate inclus)
                 start = organization.getMonthlyPlanStartDate().atStartOfDay();
                 end = organization.getMonthlyPlanEndDate().atTime(23, 59, 59);
             } else {
-                // Fallback : mois calendaire (cohérent avec /api/user/quota)
+                // Fallback mois calendaire si le cycle n'est pas encore initialisé
                 LocalDate today = LocalDate.now();
                 start = today.withDayOfMonth(1).atStartOfDay();
                 end = today.withDayOfMonth(today.lengthOfMonth()).atTime(23, 59, 59);
