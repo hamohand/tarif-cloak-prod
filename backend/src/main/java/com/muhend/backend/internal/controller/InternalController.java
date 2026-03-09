@@ -61,6 +61,7 @@ public class InternalController {
 
             return ResponseEntity.ok(QuotaCheckResponse.builder()
                     .canSearch(canSearch)
+                    .quotaOk(canSearch)
                     .organizationId(organizationId)
                     .message(message)
                     .build());

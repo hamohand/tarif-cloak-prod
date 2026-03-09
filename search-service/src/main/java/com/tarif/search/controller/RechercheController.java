@@ -95,10 +95,6 @@ public class RechercheController {
                     : "Quota dépassé");
         }
 
-        if (!response.isQuotaOk() && !response.isCanUsePayPerRequest()) {
-            throw new QuotaExceededException("Quota mensuel dépassé. Aucun plan pay-per-request disponible.");
-        }
-
         log.debug("Quota OK - Usage: {}/{}", response.getCurrentUsage(), response.getMonthlyQuota());
         return response;
     }
