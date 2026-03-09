@@ -9,7 +9,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.muhend.backend.internal.dto.QuotaCheckResponse;
-import com.muhend.backend.organization.dto.QuotaCheckResult;
 import com.muhend.backend.organization.exception.UserNotAssociatedException;
 import com.muhend.backend.organization.service.OrganizationService;
 
@@ -54,38 +53,17 @@ public class InternalController {
                         .build());
             }
 
-            // Vérifier si l'organisation peut faire des requêtes
-            if (!organizationService.canOrganizationMakeRequests(organizationId)) {
-                return ResponseEntity.ok(QuotaCheckResponse.builder()
-                        .canSearch(false)
-                        .organizationId(organizationId)
-                        .message("Organisation désactivée ou essai expiré")
-                        .build());
-            }
+            // Vérifier si l'organisation peut faire des requêtes (plan actif, quota non épuisé)
+            boolean canSearch = organizationService.canOrganizationMakeRequests(organizationId);
+            String message = canSearch ? null : "Plan expiré ou quota mensuel épuisé.";
 
-            // Vérifier le quota avec détails
-            QuotaCheckResult quotaResult = organizationService.checkQuotaWithResult(organizationId);
+            log.debug("Quota check pour org {}: canSearch={}", organizationId, canSearch);
 
-            QuotaCheckResponse response = QuotaCheckResponse.builder()
-                    .canSearch(true)
-                    .quotaOk(quotaResult.isQuotaOk())
-                    .canUsePayPerRequest(quotaResult.isCanUsePayPerRequest())
+            return ResponseEntity.ok(QuotaCheckResponse.builder()
+                    .canSearch(canSearch)
                     .organizationId(organizationId)
-                    .currentUsage(Math.toIntExact(quotaResult.getCurrentUsage()))
-                    .monthlyQuota(quotaResult.getMonthlyQuota())
-                    .payPerRequestPrice(quotaResult.getPayPerRequestPrice())
-                    .build();
-
-            // Si quota dépassé et pas de pay-per-request, bloquer
-            if (!quotaResult.isQuotaOk() && !quotaResult.isCanUsePayPerRequest()) {
-                response.setCanSearch(false);
-                response.setMessage("Quota mensuel dépassé. Aucun plan pay-per-request disponible.");
-            }
-
-            log.debug("Quota check pour org {}: canSearch={}, quotaOk={}",
-                    organizationId, response.isCanSearch(), response.isQuotaOk());
-
-            return ResponseEntity.ok(response);
+                    .message(message)
+                    .build());
 
         } catch (Exception e) {
             log.error("Erreur lors de la vérification du quota: {}", e.getMessage());

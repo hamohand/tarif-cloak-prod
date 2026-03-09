@@ -1238,13 +1238,21 @@ public class OrganizationService {
             return false;
         }
 
-        // Quota mensuel épuisé (plans payants avec cycle mensuel défini)
+        // Quota mensuel épuisé
         Integer monthlyQuota = organization.getMonthlyQuota();
-        if (monthlyQuota != null
-                && organization.getMonthlyPlanStartDate() != null
-                && organization.getMonthlyPlanEndDate() != null) {
-            LocalDateTime start = organization.getMonthlyPlanStartDate().atStartOfDay();
-            LocalDateTime end = organization.getMonthlyPlanEndDate().atTime(23, 59, 59);
+        if (monthlyQuota != null) {
+            LocalDateTime start;
+            LocalDateTime end;
+            if (organization.getMonthlyPlanStartDate() != null && organization.getMonthlyPlanEndDate() != null) {
+                // Utiliser le cycle du plan (du startDate au endDate inclus)
+                start = organization.getMonthlyPlanStartDate().atStartOfDay();
+                end = organization.getMonthlyPlanEndDate().atTime(23, 59, 59);
+            } else {
+                // Fallback : mois calendaire (cohérent avec /api/user/quota)
+                LocalDate today = LocalDate.now();
+                start = today.withDayOfMonth(1).atStartOfDay();
+                end = today.withDayOfMonth(today.lengthOfMonth()).atTime(23, 59, 59);
+            }
             long currentUsage = usageLogRepository.countByOrganizationIdAndTimestampBetween(
                     organization.getId(), start, end);
             if (currentUsage >= monthlyQuota) {
