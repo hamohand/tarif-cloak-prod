@@ -16,6 +16,13 @@ import com.muhend.backend.organization.repository.OrganizationRepository;
 import com.muhend.backend.organization.repository.OrganizationUserRepository;
 import com.muhend.backend.pricing.dto.PricingPlanDto;
 import com.muhend.backend.pricing.service.PricingPlanService;
+import com.muhend.backend.alert.repository.QuotaAlertRepository;
+import com.muhend.backend.invoice.repository.InvoiceItemRepository;
+import com.muhend.backend.invoice.repository.InvoiceRepository;
+import com.muhend.backend.payment.repository.PaymentRepository;
+import com.muhend.backend.payment.repository.SubscriptionRepository;
+import com.muhend.backend.pricing.repository.PricingPlanRepository;
+import com.muhend.backend.pricing.repository.QuoteRequestRepository;
 import com.muhend.backend.usage.repository.UsageLogRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -70,14 +77,28 @@ public class OrganizationService {
     private final PricingPlanService pricingPlanService;
     private final EmailService emailService;
     private final InvoiceService invoiceService;
-    
+    private final InvoiceRepository invoiceRepository;
+    private final InvoiceItemRepository invoiceItemRepository;
+    private final PaymentRepository paymentRepository;
+    private final SubscriptionRepository subscriptionRepository;
+    private final QuoteRequestRepository quoteRequestRepository;
+    private final QuotaAlertRepository quotaAlertRepository;
+    private final PricingPlanRepository pricingPlanRepository;
+
     public OrganizationService(OrganizationRepository organizationRepository,
                               OrganizationUserRepository organizationUserRepository,
                               UsageLogRepository usageLogRepository,
                               KeycloakAdminService keycloakAdminService,
                               PricingPlanService pricingPlanService,
                               EmailService emailService,
-                              InvoiceService invoiceService) {
+                              InvoiceService invoiceService,
+                              InvoiceRepository invoiceRepository,
+                              InvoiceItemRepository invoiceItemRepository,
+                              PaymentRepository paymentRepository,
+                              SubscriptionRepository subscriptionRepository,
+                              QuoteRequestRepository quoteRequestRepository,
+                              QuotaAlertRepository quotaAlertRepository,
+                              PricingPlanRepository pricingPlanRepository) {
         this.organizationRepository = organizationRepository;
         this.organizationUserRepository = organizationUserRepository;
         this.usageLogRepository = usageLogRepository;
@@ -85,6 +106,13 @@ public class OrganizationService {
         this.pricingPlanService = pricingPlanService;
         this.emailService = emailService;
         this.invoiceService = invoiceService;
+        this.invoiceRepository = invoiceRepository;
+        this.invoiceItemRepository = invoiceItemRepository;
+        this.paymentRepository = paymentRepository;
+        this.subscriptionRepository = subscriptionRepository;
+        this.quoteRequestRepository = quoteRequestRepository;
+        this.quotaAlertRepository = quotaAlertRepository;
+        this.pricingPlanRepository = pricingPlanRepository;
     }
     
     /**
@@ -1403,6 +1431,33 @@ public class OrganizationService {
         return toDto(organization);
     }
     
+    /**
+     * Supprime définitivement une organisation et toutes ses données associées.
+     * Ordre de suppression respectant les contraintes FK.
+     */
+    @Transactional
+    public void deleteOrganization(Long id) {
+        Organization org = organizationRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Organisation introuvable: " + id));
+
+        usageLogRepository.deleteByOrganizationId(id);
+        quotaAlertRepository.deleteByOrganizationId(id);
+
+        List<com.muhend.backend.invoice.model.Invoice> invoices =
+                invoiceRepository.findByOrganizationIdOrderByCreatedAtDesc(id);
+        invoices.forEach(inv -> invoiceItemRepository.deleteByInvoiceId(inv.getId()));
+        invoiceRepository.deleteByOrganizationId(id);
+
+        paymentRepository.deleteByOrganizationId(id);
+        subscriptionRepository.deleteByOrganizationId(id);
+        quoteRequestRepository.deleteByOrganizationId(id);
+        organizationUserRepository.deleteByOrganizationId(id);
+        pricingPlanRepository.deleteByOrganizationId(id);
+        organizationRepository.delete(org);
+
+        log.info("Organisation supprimée: id={}, name={}", id, org.getName());
+    }
+
     /**
      * Annule un changement vers Pay-per-Request en attente.
      */

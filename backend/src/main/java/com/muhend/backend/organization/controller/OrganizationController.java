@@ -190,5 +190,16 @@ public class OrganizationController {
         OrganizationDto organization = organizationService.enableOrganization(id);
         return ResponseEntity.ok(organization);
     }
+
+    @DeleteMapping("/{id}")
+    @Operation(
+        summary = "Supprimer une organisation",
+        description = "Supprime définitivement une organisation et toutes ses données (factures, paiements, collaborateurs, etc.). Action irréversible. Nécessite le rôle ADMIN.",
+        security = @SecurityRequirement(name = "bearerAuth")
+    )
+    public ResponseEntity<Void> deleteOrganization(@PathVariable Long id) {
+        organizationService.deleteOrganization(id);
+        return ResponseEntity.noContent().build();
+    }
 }
 
