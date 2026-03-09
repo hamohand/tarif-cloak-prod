@@ -8,6 +8,7 @@ import { PricingPlanService, PricingPlan } from '../../core/services/pricing-pla
 import { NotificationService } from '../../core/services/notification.service';
 import { OrganizationAccountService, OrganizationUsageLog } from '../../core/services/organization-account.service';
 import { CurrencyService } from '../../core/services/currency.service';
+import { PaymentService } from '../../core/services/payment.service';
 import { Chart, ChartConfiguration, registerables } from 'chart.js';
 import { take } from 'rxjs/operators';
 
@@ -28,12 +29,42 @@ Chart.register(...registerables);
           <div class="alert-content">
             <h3>⚠️ Action requise : Choisissez un plan tarifaire</h3>
             <p>
-              Le quota de votre essai gratuit a été atteint et est maintenant <strong>définitivement désactivé</strong> pour votre organisation. 
+              Le quota de votre essai gratuit a été atteint et est maintenant <strong>définitivement désactivé</strong> pour votre organisation.
               Aucune requête HS-code n'est autorisée pour tous les collaborateurs jusqu'à ce qu'un nouveau plan soit sélectionné.
             </p>
             <p class="alert-action">
               <strong>Veuillez sélectionner un plan tarifaire ci-dessous pour continuer à utiliser le service.</strong>
             </p>
+          </div>
+        </div>
+      }
+
+      <!-- Bannière de renouvellement : plan expiré ou quota épuisé -->
+      @if (organization && !organization.trialPermanentlyExpired && (isPlanExpired() || isQuotaExhausted())) {
+        <div class="renewal-alert">
+          <div class="alert-content">
+            @if (isPlanExpired()) {
+              <h3>Plan expiré — accès bloqué</h3>
+              <p>Votre plan a expiré le <strong>{{ formatDate(organization.monthlyPlanEndDate!) }}</strong>. Aucune requête HS-code n'est autorisée jusqu'au renouvellement.</p>
+            } @else {
+              <h3>Quota épuisé — accès bloqué</h3>
+              <p>Le quota de requêtes de votre plan est atteint. Aucune requête supplémentaire n'est autorisée jusqu'au renouvellement.</p>
+            }
+            @if (currentPlan) {
+              <p class="alert-action">Plan actuel : <strong>{{ currentPlan.name }}</strong>
+                @if (currentPlan.pricePerMonth != null && currentPlan.pricePerMonth > 0) {
+                  — {{ currentPlan.pricePerMonth }} DA/mois
+                }
+              </p>
+            }
+            <div class="renewal-actions">
+              <button class="btn btn-renew" (click)="renewCurrentPlan()" [disabled]="isRenewing">
+                @if (isRenewing) { Redirection en cours... } @else { Renouveler le plan actuel }
+              </button>
+              <button class="btn btn-change-plan" (click)="scrollToChangePlan()">
+                Changer de plan
+              </button>
+            </div>
           </div>
         </div>
       }
@@ -179,9 +210,9 @@ Chart.register(...registerables);
                 [disabled]="isChangingPlan || !selectedPlanId"
                 [title]="(!selectedPlanId && organization.trialPermanentlyExpired) ? 'Sélectionnez un plan payant pour continuer' : ''">
                 @if (isChangingPlan) {
-                  <span>Changement en cours...</span>
+                  <span>Redirection en cours...</span>
                 } @else if (organization.trialPermanentlyExpired && selectedPlanId) {
-                  <span>🔴 Valider le nouveau plan (obligatoire)</span>
+                  <span>Payer et activer le plan</span>
                 } @else if (organization.trialPermanentlyExpired && !selectedPlanId) {
                   <span>Sélectionnez un plan payant</span>
                 } @else {
@@ -268,9 +299,11 @@ Chart.register(...registerables);
               </button>
               <button class="btn btn-primary" [class.btn-required]="organization && organization.trialPermanentlyExpired" (click)="changePricingPlan()" [disabled]="isChangingPlan">
                 @if (isChangingPlan) {
-                  <span>Changement en cours...</span>
+                  <span>Redirection en cours...</span>
+                } @else if (selectedPlanForConfirmation && ((selectedPlanForConfirmation.pricePerMonth != null && selectedPlanForConfirmation.pricePerMonth > 0) || (selectedPlanForConfirmation.pricePerRequest != null && selectedPlanForConfirmation.pricePerRequest > 0))) {
+                  <span>Payer avec Chargily</span>
                 } @else if (organization && organization.trialPermanentlyExpired) {
-                  <span>✅ Valider le plan payant (obligatoire)</span>
+                  <span>Valider le plan</span>
                 } @else {
                   <span>Confirmer le changement</span>
                 }
@@ -453,6 +486,7 @@ export class OrganizationStatsComponent implements OnInit {
   private notificationService = inject(NotificationService);
   private organizationAccountService = inject(OrganizationAccountService);
   private currencyService = inject(CurrencyService);
+  private paymentService = inject(PaymentService);
 
   organization: Organization | null = null;
   currencySymbol$ = this.currencyService.getCurrencySymbol();
@@ -479,6 +513,7 @@ export class OrganizationStatsComponent implements OnInit {
   isChangingPlan = false;
   showConfirmModal = false;
   selectedPlanForConfirmation: PricingPlan | null = null;
+  isRenewing = false;
 
   private quotaChart: Chart | null = null;
 
@@ -834,38 +869,94 @@ export class OrganizationStatsComponent implements OnInit {
 
     this.isChangingPlan = true;
     this.errorMessage = '';
-    // Ne pas fermer la modal immédiatement, attendre la réponse
-    // this.showConfirmModal = false;
 
-    console.log('📤 Envoi de la requête de changement de plan avec planId:', planIdToUse);
+    const isPaidPlan = this.selectedPlanForConfirmation &&
+      ((this.selectedPlanForConfirmation.pricePerMonth != null && this.selectedPlanForConfirmation.pricePerMonth > 0) ||
+       (this.selectedPlanForConfirmation.pricePerRequest != null && this.selectedPlanForConfirmation.pricePerRequest > 0));
 
-    this.pricingPlanService.changeMyOrganizationPricingPlan(planIdToUse).subscribe({
-      next: (updatedOrg) => {
-        console.log('✅ Changement de plan réussi:', updatedOrg);
-        this.organization = updatedOrg;
-        this.updateCurrentPlan(updatedOrg.pricingPlanId || 0);
-        this.isChangingPlan = false;
-        this.selectedPlanForConfirmation = null;
-        this.showConfirmModal = false; // Fermer la modal seulement après succès
-        this.notificationService.success('Plan tarifaire changé avec succès');
-        this.loadQuota();
-        // Recharger les plans pour mettre à jour le filtre si nécessaire
-        this.loadPricingPlans();
+    if (isPaidPlan) {
+      // Plan payant → paiement via Chargily
+      console.log('💳 Plan payant détecté, redirection vers Chargily');
+      this.paymentService.createCheckout({
+        pricingPlanId: planIdToUse,
+        successUrl: `${window.location.origin}/organization/stats`,
+        cancelUrl: `${window.location.origin}/organization/stats`
+      }).subscribe({
+        next: (response) => {
+          console.log('✅ Checkout Chargily créé, redirection vers:', response.url);
+          this.isChangingPlan = false;
+          this.showConfirmModal = false;
+          window.location.href = response.url;
+        },
+        error: (err) => {
+          console.error('❌ Erreur lors de la création du checkout:', err);
+          const errorMessage = err.error?.message || err.message || 'Une erreur est survenue';
+          this.errorMessage = 'Erreur lors du paiement: ' + errorMessage;
+          this.isChangingPlan = false;
+          this.notificationService.error('Erreur lors du paiement: ' + errorMessage);
+        }
+      });
+    } else {
+      // Plan gratuit ou essai → changement direct
+      console.log('📤 Plan gratuit, changement direct sans paiement');
+      this.pricingPlanService.changeMyOrganizationPricingPlan(planIdToUse).subscribe({
+        next: (updatedOrg) => {
+          console.log('✅ Changement de plan réussi:', updatedOrg);
+          this.organization = updatedOrg;
+          this.updateCurrentPlan(updatedOrg.pricingPlanId || 0);
+          this.isChangingPlan = false;
+          this.selectedPlanForConfirmation = null;
+          this.showConfirmModal = false;
+          this.notificationService.success('Plan tarifaire changé avec succès');
+          this.loadQuota();
+          this.loadPricingPlans();
+        },
+        error: (err) => {
+          console.error('❌ Erreur lors du changement de plan:', err);
+          const errorMessage = err.error?.message || err.error?.error || err.message || 'Une erreur est survenue';
+          this.errorMessage = 'Erreur lors du changement de plan: ' + errorMessage;
+          this.isChangingPlan = false;
+          this.notificationService.error('Erreur lors du changement de plan: ' + errorMessage);
+        }
+      });
+    }
+  }
+
+  isPlanExpired(): boolean {
+    if (!this.organization?.monthlyPlanEndDate) return false;
+    return new Date(this.organization.monthlyPlanEndDate) < new Date();
+  }
+
+  isQuotaExhausted(): boolean {
+    if (!this.quota || this.quota.isUnlimited) return false;
+    return (this.quota.remaining ?? 1) <= 0;
+  }
+
+  scrollToChangePlan() {
+    const el = document.querySelector('.change-plan-section');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }
+
+  renewCurrentPlan() {
+    if (!this.organization?.pricingPlanId) {
+      this.notificationService.error('Aucun plan actuel à renouveler.');
+      return;
+    }
+    this.isRenewing = true;
+    this.paymentService.createCheckout({
+      pricingPlanId: this.organization.pricingPlanId,
+      successUrl: `${window.location.origin}/organization/stats`,
+      cancelUrl: `${window.location.origin}/organization/stats`
+    }).subscribe({
+      next: (response) => {
+        window.location.href = response.url;
       },
       error: (err) => {
-        console.error('❌ Erreur lors du changement de plan:', err);
-        console.error('❌ Détails de l\'erreur:', {
-          status: err.status,
-          statusText: err.statusText,
-          error: err.error,
-          message: err.message
-        });
-        const errorMessage = err.error?.message || err.error?.error || err.message || 'Une erreur est survenue';
-        this.errorMessage = 'Erreur lors du changement de plan: ' + errorMessage;
-        this.isChangingPlan = false;
-        this.notificationService.error('Erreur lors du changement de plan: ' + errorMessage);
-        // Garder la modal ouverte en cas d'erreur pour permettre une nouvelle tentative
-        // this.showConfirmModal reste true
+        const errorMessage = err.error?.message || err.message || 'Une erreur est survenue';
+        this.notificationService.error('Erreur lors du renouvellement: ' + errorMessage);
+        this.isRenewing = false;
       }
     });
   }
@@ -910,15 +1001,28 @@ export class OrganizationStatsComponent implements OnInit {
     }
 
     const logs = this.organizationUsageLogs.usageLogs;
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    // Utiliser le cycle du plan si disponible, sinon mois calendaire (cohérent avec /api/user/quota)
+    let periodStart: Date;
+    let periodEnd: Date;
+    if (this.organization?.monthlyPlanStartDate && this.organization?.monthlyPlanEndDate) {
+      periodStart = new Date(this.organization.monthlyPlanStartDate);
+      periodStart.setHours(0, 0, 0, 0);
+      periodEnd = new Date(this.organization.monthlyPlanEndDate);
+      periodEnd.setHours(23, 59, 59, 999);
+    } else {
+      const now = new Date();
+      periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    }
+
     const monthlyRequests = logs.filter((log: OrganizationUsageLog) => {
       const logDate = new Date(log.timestamp);
-      return logDate >= startOfMonth;
+      return logDate >= periodStart && logDate <= periodEnd;
     }).length;
 
-    // Calculer le total des requêtes
-    const totalRequests = logs.length;
+    // Total du cycle actuel (cohérent avec le quota affiché)
+    const totalRequests = monthlyRequests;
 
     // Calculer le coût total
     const totalCostUsd = logs.reduce((sum: number, log: OrganizationUsageLog) => {

@@ -127,8 +127,65 @@ Routes :
 - **Pas de pay-per-request** : modèle supprimé, seuls les plans mensuels et l'essai gratuit subsistent
 - **Pas de renouvellement automatique** : le plan expire à `monthlyPlanEndDate`, l'accès HS-code est bloqué
 - **Blocage dans 2 cas** : plan expiré (1 mois écoulé) OU quota consommé avant terme
-- **Réactivation** : le client choisit manuellement un nouveau plan ou renouvelle l'actuel
+- **Réactivation** : le client choisit manuellement un nouveau plan via paiement Chargily
 - Point d'entrée du contrôle d'accès : `InternalController.checkQuota()` → `OrganizationService.canOrganizationMakeRequests()`
+
+### Logique de blocage — `canOrganizationMakeRequests()`
+
+Vérifications dans l'ordre :
+
+1. Organisation désactivée par l'admin → `false`
+2. Essai gratuit expiré (`isTrialExpired()`) → `false`
+3. Plan mensuel expiré (`LocalDate.now().isAfter(monthlyPlanEndDate)`) → `false`
+4. Quota mensuel épuisé (pour les plans payants avec `monthlyQuota != null`) → `false`
+5. Sinon → `true`
+
+### UX frontend selon le rôle (plan bloqué)
+
+| Rôle | Navbar | Page d'accueil |
+| --- | --- | --- |
+| ORGANIZATION | Bouton "HS-code ⚠️" → modal avec "Renouveler" + "Changer de plan" | Message blocage + liens vers stats |
+| COLLABORATOR | **Bouton HS-code masqué complètement** | Message blocage + "contacter l'admin" |
+
+- Modal de renouvellement : également accessible depuis `/organization/stats` via bannière de blocage
+- `renewCurrentPlan()` : déclenche Chargily checkout avec le `pricingPlanId` actuel
+- `scrollToChangePlan()` : fait défiler vers la section de sélection de plan dans stats
+- Service frontend : `frontend/.../core/services/payment.service.ts` — `createCheckout(request)`
+- Plans gratuits (prix = 0) : activés directement via `PUT /api/user/organization/pricing-plan` sans Chargily
+
+## Paiement Chargily Pay
+
+Intégration Chargily Pay v2 pour les paiements en DZD (CIB / EDAHABIA).
+
+### Flux de paiement
+1. Frontend appelle `POST /api/payments/chargily/checkout` → backend crée un checkout via l'API Chargily
+2. Backend retourne un `checkout_url` → frontend redirige l'utilisateur
+3. L'utilisateur paie sur la page Chargily
+4. Chargily envoie un webhook `checkout.paid` → backend active le plan automatiquement
+
+### Webhook
+- **URL** : `https://[domaine]/api/webhooks/chargily` (public, pas d'auth JWT)
+- **Contrôleur** : `ChargilyWebhookController` — vérifie la signature HMAC-SHA256
+- **Événements gérés** : `checkout.paid`, `checkout.failed`, `checkout.canceled`
+- **Activation du plan** : `OrganizationService.activatePlanAfterPayment(organizationId, planId)` appelée sur `checkout.paid`
+
+### Metadata transmises à Chargily
+```json
+{
+  "organization_id": "6",
+  "pricing_plan_id": "9",
+  "invoice_id": "1"   // optionnel
+}
+```
+
+### Configuration
+```
+CHARGILY_API_KEY=...      # Clé secrète Chargily (test ou live)
+CHARGILY_SECRET_KEY=...   # Clé de signature webhook
+```
+- Dashboard test : `https://pay.chargily.com/test/dashboard/developers-corner`
+- Dashboard live : `https://pay.chargily.com/dashboard/developers-corner`
+- Routage Traefik : `/api/webhooks/**` → backend (strip `/api`), backend voit `/webhooks/chargily`
 
 ## Fichiers sensibles
 

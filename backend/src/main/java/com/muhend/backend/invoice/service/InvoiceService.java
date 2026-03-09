@@ -1073,11 +1073,22 @@ public class InvoiceService {
         
         // Le montant est le prix mensuel fixe du plan
         BigDecimal totalAmount = plan.getPricePerMonth();
-        
+
+        // Récupérer l'historique des requêtes du cycle
+        LocalDateTime cycleStart = startDate.atStartOfDay();
+        LocalDateTime cycleEnd = endDate.atTime(LocalTime.MAX);
+        List<UsageLog> usageLogs = usageLogRepository.findByOrganizationIdAndTimestampBetween(
+                organizationId, cycleStart, cycleEnd);
+        long requestCount = usageLogs.size();
+        long totalTokens = usageLogs.stream()
+                .mapToLong(log -> log.getTokensUsed() != null ? log.getTokensUsed() : 0)
+                .sum();
+        Integer planQuota = plan.getMonthlyQuota();
+
         // Générer le numéro de facture
         YearMonth yearMonth = YearMonth.from(startDate);
         String invoiceNumber = generateInvoiceNumber(organizationId, yearMonth.getYear(), yearMonth.getMonthValue()) + "-CYCLE";
-        
+
         // Vérifier l'unicité du numéro
         int suffix = 1;
         String finalInvoiceNumber = invoiceNumber;
@@ -1085,7 +1096,7 @@ public class InvoiceService {
             finalInvoiceNumber = invoiceNumber + "-" + suffix;
             suffix++;
         }
-        
+
         // Créer la facture
         Invoice invoice = new Invoice();
         invoice.setOrganizationId(organizationId);
@@ -1097,25 +1108,43 @@ public class InvoiceService {
         invoice.setTotalAmount(totalAmount);
         invoice.setStatus(Invoice.InvoiceStatus.PENDING);
         invoice.setDueDate(endDate.plusDays(30));
-        invoice.setNotes(String.format("Facture de cycle mensuel - Plan %s (du %s au %s inclus)", 
-                plan.getName(), startDate, endDate));
-        
+        String quotaInfo = planQuota != null
+                ? String.format("%d/%d requêtes utilisées", requestCount, planQuota)
+                : String.format("%d requêtes effectuées (quota illimité)", requestCount);
+        invoice.setNotes(String.format("Facture de clôture - Plan %s (du %s au %s inclus) — %s",
+                plan.getName(), startDate.format(DATE_FORMATTER), endDate.format(DATE_FORMATTER), quotaInfo));
+
         invoice = invoiceRepository.save(invoice);
-        
-        // Créer une ligne de facture
+
+        // Ligne 1 : Abonnement mensuel (montant facturé)
         InvoiceItem item = new InvoiceItem();
         item.setInvoice(invoice);
-        item.setDescription(String.format("Plan %s - Cycle mensuel (du %s au %s inclus)", 
-                plan.getName(), startDate, endDate));
+        item.setDescription(String.format("Abonnement mensuel — Plan %s (du %s au %s inclus)",
+                plan.getName(), startDate.format(DATE_FORMATTER), endDate.format(DATE_FORMATTER)));
         item.setQuantity(1);
         item.setUnitPrice(totalAmount);
         item.setTotalPrice(totalAmount);
         item.setItemType("MONTHLY_PLAN_CYCLE");
-        
         invoiceItemRepository.save(item);
-        
-        log.info("Facture de cycle mensuel générée: {} pour l'organisation {} (plan: {}, montant: {} {})",
-                finalInvoiceNumber, organization.getName(), plan.getName(), totalAmount, plan.getCurrency());
+
+        // Ligne 2 : Récapitulatif des requêtes utilisées (informatif, montant nul)
+        InvoiceItem usageItem = new InvoiceItem();
+        usageItem.setInvoice(invoice);
+        String usageDesc = planQuota != null
+                ? String.format("Utilisation du quota : %d/%d requêtes HS-code effectuées — %d tokens",
+                        requestCount, planQuota, totalTokens)
+                : String.format("Utilisation : %d requêtes HS-code effectuées — %d tokens",
+                        requestCount, totalTokens);
+        usageItem.setDescription(usageDesc);
+        usageItem.setQuantity((int) Math.min(requestCount, Integer.MAX_VALUE));
+        usageItem.setUnitPrice(BigDecimal.ZERO);
+        usageItem.setTotalPrice(BigDecimal.ZERO);
+        usageItem.setItemType("USAGE_SUMMARY");
+        invoiceItemRepository.save(usageItem);
+
+        log.info("Facture de clôture générée: {} — org {} — plan {} — {}/{} requêtes — {} {}",
+                finalInvoiceNumber, organization.getName(), plan.getName(),
+                requestCount, planQuota != null ? planQuota : "∞", totalAmount, plan.getCurrency());
         
         InvoiceDto invoiceDto = toDto(invoice);
         sendInvoiceNotificationEmail(invoiceDto, organization);

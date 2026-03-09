@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.muhend.backend.invoice.model.Invoice;
 import com.muhend.backend.invoice.repository.InvoiceRepository;
+import com.muhend.backend.organization.service.OrganizationService;
 import com.muhend.backend.payment.config.ChargilyConfig;
 import com.muhend.backend.payment.model.Payment;
 import com.muhend.backend.payment.repository.PaymentRepository;
@@ -38,6 +39,7 @@ public class ChargilyWebhookController {
     private final PaymentRepository paymentRepository;
     private final InvoiceRepository invoiceRepository;
     private final ObjectMapper objectMapper;
+    private final OrganizationService organizationService;
 
     @PostMapping
     public ResponseEntity<String> handleWebhook(
@@ -101,6 +103,7 @@ public class ChargilyWebhookController {
 
         String orgIdStr     = metadata.get("organization_id");
         String invoiceIdStr = metadata.get("invoice_id");
+        String planIdStr    = metadata.get("pricing_plan_id");
 
         Long organizationId = orgIdStr != null ? Long.parseLong(orgIdStr) : null;
         if (organizationId == null) {
@@ -122,6 +125,17 @@ public class ChargilyWebhookController {
 
         log.info("Paiement Chargily enregistré: id={}, organizationId={}, amount={} DZD",
                 payment.getId(), organizationId, amount);
+
+        // Activer le plan tarifaire si pricing_plan_id présent
+        if (planIdStr != null) {
+            try {
+                Long planId = Long.parseLong(planIdStr);
+                organizationService.activatePlanAfterPayment(organizationId, planId);
+            } catch (Exception e) {
+                log.error("Erreur lors de l'activation du plan {} pour l'organisation {}: {}",
+                        planIdStr, organizationId, e.getMessage());
+            }
+        }
 
         // Marquer la facture comme payée si invoice_id présent
         if (invoiceIdStr != null) {

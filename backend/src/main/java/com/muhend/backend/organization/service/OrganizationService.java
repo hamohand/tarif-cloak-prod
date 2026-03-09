@@ -1252,7 +1252,54 @@ public class OrganizationService {
             log.debug("Organisation {} désactivée par un administrateur", organization.getId());
             return false;
         }
-        return !isTrialExpired(organization);
+
+        // Essai expiré (quota atteint ou date dépassée)
+        if (isTrialExpired(organization)) {
+            return false;
+        }
+
+        // Plan mensuel payant expiré
+        if (organization.getMonthlyPlanEndDate() != null
+                && LocalDate.now().isAfter(organization.getMonthlyPlanEndDate())) {
+            log.debug("Organisation {} bloquée : plan mensuel expiré le {}",
+                    organization.getId(), organization.getMonthlyPlanEndDate());
+            return false;
+        }
+
+        // Quota mensuel épuisé — période = cycle du plan (monthlyPlanStartDate → monthlyPlanEndDate)
+        // Quota lu depuis le plan (source de vérité), fallback sur l'organisation
+        Integer monthlyQuota = organization.getMonthlyQuota();
+        if (organization.getPricingPlanId() != null) {
+            try {
+                PricingPlanDto plan = pricingPlanService.getPricingPlanById(organization.getPricingPlanId());
+                monthlyQuota = plan.getMonthlyQuota();
+            } catch (Exception e) {
+                log.warn("Impossible de récupérer le plan {} pour vérifier le quota: {}",
+                        organization.getPricingPlanId(), e.getMessage());
+            }
+        }
+        if (monthlyQuota != null) {
+            LocalDateTime start;
+            LocalDateTime end;
+            if (organization.getMonthlyPlanStartDate() != null && organization.getMonthlyPlanEndDate() != null) {
+                start = organization.getMonthlyPlanStartDate().atStartOfDay();
+                end = organization.getMonthlyPlanEndDate().atTime(23, 59, 59);
+            } else {
+                // Fallback mois calendaire si le cycle n'est pas encore initialisé
+                LocalDate today = LocalDate.now();
+                start = today.withDayOfMonth(1).atStartOfDay();
+                end = today.withDayOfMonth(today.lengthOfMonth()).atTime(23, 59, 59);
+            }
+            long currentUsage = usageLogRepository.countByOrganizationIdAndTimestampBetween(
+                    organization.getId(), start, end);
+            if (currentUsage >= monthlyQuota) {
+                log.debug("Organisation {} bloquée : quota mensuel épuisé ({}/{})",
+                        organization.getId(), currentUsage, monthlyQuota);
+                return false;
+            }
+        }
+
+        return true;
     }
     
     /**
@@ -1356,6 +1403,41 @@ public class OrganizationService {
                 org.getId(), today, endDate);
     }
     
+    /**
+     * Active un plan tarifaire pour une organisation après confirmation de paiement Chargily.
+     */
+    @Transactional
+    public void activatePlanAfterPayment(Long organizationId, Long planId) {
+        Organization org = organizationRepository.findById(organizationId)
+                .orElseThrow(() -> new IllegalArgumentException("Organisation introuvable: " + organizationId));
+
+        // 1. Générer la facture de clôture pour l'ancien cycle (si plan mensuel payant avec dates)
+        if (org.getPricingPlanId() != null
+                && org.getMonthlyPlanStartDate() != null
+                && org.getMonthlyPlanEndDate() != null) {
+            try {
+                PricingPlanDto oldPlan = pricingPlanService.getPricingPlanById(org.getPricingPlanId());
+                if (oldPlan.getPricePerMonth() != null
+                        && oldPlan.getPricePerMonth().compareTo(BigDecimal.ZERO) > 0) {
+                    generateMonthlyPlanClosureInvoice(organizationId, oldPlan,
+                            org.getMonthlyPlanStartDate(), org.getMonthlyPlanEndDate());
+                }
+            } catch (Exception e) {
+                log.error("Erreur génération facture de clôture pour org {}: {}", organizationId, e.getMessage(), e);
+            }
+        }
+
+        // 2. Appliquer le nouveau plan (réinitialise les dates de cycle)
+        PricingPlanDto plan = pricingPlanService.getPricingPlanById(planId);
+        applyPlanChangeImmediately(org, plan);
+        organizationRepository.save(org);
+
+        // 3. Réinitialiser l'historique des requêtes pour le nouveau cycle (Total Requêtes = 0)
+        int deleted = usageLogRepository.deleteByOrganizationId(organizationId);
+        log.info("Plan {} activé pour l'organisation {} — {} logs supprimés pour le nouveau cycle",
+                planId, organizationId, deleted);
+    }
+
     /**
      * Applique un changement de plan immédiatement (remplace tous les paramètres).
      * Méthode publique pour permettre l'utilisation par le scheduler.

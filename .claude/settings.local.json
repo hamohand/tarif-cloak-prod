@@ -3,7 +3,8 @@
     "allow": [
       "Bash(npm install:*)",
       "WebFetch(domain:www.douane.gov.dz)",
-      "WebFetch(domain:taxation-customs.ec.europa.eu)"
+      "WebFetch(domain:taxation-customs.ec.europa.eu)",
+      "Bash(docker compose -f docker-compose-prod.yml up -d --build frontend)"
     ],
     "additionalDirectories": [
       "c:\\Users\\hamoh\\Documents\\projets\\tarif\\tarif-micros\\search-service\\src\\main\\java\\com\\tarif\\search\\repository",

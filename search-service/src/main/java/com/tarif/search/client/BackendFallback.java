@@ -15,7 +15,6 @@ public class BackendFallback implements BackendClient {
         return QuotaCheckResponse.builder()
                 .canSearch(true)
                 .quotaOk(true)
-                .canUsePayPerRequest(false)
                 .message("Mode dégradé - Backend indisponible")
                 .build();
     }

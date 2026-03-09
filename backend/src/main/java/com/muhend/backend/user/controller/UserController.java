@@ -258,18 +258,24 @@ public class UserController {
                 return ResponseEntity.notFound().build();
             }
 
-            // Calculer l'utilisation du mois en cours
-            // Note: Le quota est au niveau de l'organisation, donc on compte tous les logs de l'organisation
-            LocalDateTime now = LocalDateTime.now();
-            LocalDateTime startOfMonth = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
-            LocalDateTime endOfMonth = now.withDayOfMonth(now.toLocalDate().lengthOfMonth())
-                    .withHour(23).withMinute(59).withSecond(59).withNano(999999999);
-            
+            // Calculer l'utilisation sur la période du cycle du plan (monthlyPlanStartDate → monthlyPlanEndDate)
+            // Si le cycle n'est pas initialisé, fallback sur le mois calendaire
+            LocalDateTime periodStart;
+            LocalDateTime periodEnd;
+            if (organization.getMonthlyPlanStartDate() != null && organization.getMonthlyPlanEndDate() != null) {
+                periodStart = organization.getMonthlyPlanStartDate().atStartOfDay();
+                periodEnd = organization.getMonthlyPlanEndDate().atTime(23, 59, 59);
+            } else {
+                LocalDate today = LocalDate.now();
+                periodStart = today.withDayOfMonth(1).atStartOfDay();
+                periodEnd = today.withDayOfMonth(today.lengthOfMonth()).atTime(23, 59, 59);
+            }
+
             // Le quota est partagé entre tous les utilisateurs de l'organisation
-            long currentUsage = usageLogRepository.countByOrganizationIdAndTimestampBetween(organizationId, startOfMonth, endOfMonth);
-            
+            long currentUsage = usageLogRepository.countByOrganizationIdAndTimestampBetween(organizationId, periodStart, periodEnd);
+
             // Calculer aussi l'utilisation personnelle de l'utilisateur
-            long personalUsage = usageLogRepository.countByKeycloakUserIdAndTimestampBetween(userId, startOfMonth, endOfMonth);
+            long personalUsage = usageLogRepository.countByKeycloakUserIdAndTimestampBetween(userId, periodStart, periodEnd);
 
             // Récupérer la valeur actuelle du quota depuis le plan tarifaire (pas celle stockée dans l'organisation)
             Integer currentMonthlyQuota = organization.getMonthlyQuota(); // Valeur par défaut (pour compatibilité)
