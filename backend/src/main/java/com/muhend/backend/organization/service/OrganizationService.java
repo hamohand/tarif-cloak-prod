@@ -1382,10 +1382,32 @@ public class OrganizationService {
     public void activatePlanAfterPayment(Long organizationId, Long planId) {
         Organization org = organizationRepository.findById(organizationId)
                 .orElseThrow(() -> new IllegalArgumentException("Organisation introuvable: " + organizationId));
+
+        // 1. Générer la facture de clôture pour l'ancien cycle (si plan mensuel payant avec dates)
+        if (org.getPricingPlanId() != null
+                && org.getMonthlyPlanStartDate() != null
+                && org.getMonthlyPlanEndDate() != null) {
+            try {
+                PricingPlanDto oldPlan = pricingPlanService.getPricingPlanById(org.getPricingPlanId());
+                if (oldPlan.getPricePerMonth() != null
+                        && oldPlan.getPricePerMonth().compareTo(BigDecimal.ZERO) > 0) {
+                    generateMonthlyPlanClosureInvoice(organizationId, oldPlan,
+                            org.getMonthlyPlanStartDate(), org.getMonthlyPlanEndDate());
+                }
+            } catch (Exception e) {
+                log.error("Erreur génération facture de clôture pour org {}: {}", organizationId, e.getMessage(), e);
+            }
+        }
+
+        // 2. Appliquer le nouveau plan (réinitialise les dates de cycle)
         PricingPlanDto plan = pricingPlanService.getPricingPlanById(planId);
         applyPlanChangeImmediately(org, plan);
         organizationRepository.save(org);
-        log.info("Plan {} activé pour l'organisation {} après paiement Chargily", planId, organizationId);
+
+        // 3. Réinitialiser l'historique des requêtes pour le nouveau cycle (Total Requêtes = 0)
+        int deleted = usageLogRepository.deleteByOrganizationId(organizationId);
+        log.info("Plan {} activé pour l'organisation {} — {} logs supprimés pour le nouveau cycle",
+                planId, organizationId, deleted);
     }
 
     /**
