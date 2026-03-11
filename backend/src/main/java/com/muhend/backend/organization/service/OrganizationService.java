@@ -1430,6 +1430,10 @@ public class OrganizationService {
         // 2. Appliquer le nouveau plan (réinitialise les dates de cycle)
         PricingPlanDto plan = pricingPlanService.getPricingPlanById(planId);
         applyPlanChangeImmediately(org, plan);
+        // Un plan payant annule définitivement l'état "essai expiré"
+        if (plan.getPricePerMonth() != null && plan.getPricePerMonth().compareTo(BigDecimal.ZERO) > 0) {
+            org.setTrialPermanentlyExpired(false);
+        }
         organizationRepository.save(org);
 
         // 3. Réinitialiser l'historique des requêtes pour le nouveau cycle (Total Requêtes = 0)
