@@ -44,9 +44,9 @@ public class DecodeController {
         log.debug("Décodage du code HS: '{}' → normalisé: '{}'", code, normalized);
 
         int len = normalized.length();
-        if (len != 2 && len != 4 && len != 6) {
+        if (len != 2 && len != 4 && len != 6 && len != 10) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Le code HS doit faire 2, 4 ou 6 chiffres après normalisation. Reçu : " + normalized.length() + " chiffre(s).");
+                    "Le code HS doit faire 2, 4, 6 ou 10 chiffres après normalisation. Reçu : " + normalized.length() + " chiffre(s).");
         }
 
         // Extraction des préfixes
@@ -109,8 +109,7 @@ public class DecodeController {
         }
 
         // --- Niveau POSITION6 (6 chiffres) ---
-        // Les codes position6 sont stockés au format "XXXX XX" (espace après les 4 premiers chiffres)
-        String pos6DbCode = normalized.substring(0, 4) + " " + normalized.substring(4, 6);
+        String pos6DbCode = normalized.substring(0, 6);
         Position6Dz position6 = position6DzRepository.findByCode(pos6DbCode)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Code HS introuvable : " + pos6DbCode));
