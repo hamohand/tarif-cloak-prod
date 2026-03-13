@@ -19,10 +19,6 @@ public class Position6Dz {
     @Column(nullable = false, unique = true)
     private String code; // numéro de position
 
-    public String getCode() {
-        return code != null ? code.replaceAll("[^0-9]", "") : null;
-    }
-
     @Column(nullable = false, length = 1024) // Limitation définie ici
     private String description;
 }
