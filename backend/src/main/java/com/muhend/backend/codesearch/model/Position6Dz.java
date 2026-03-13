@@ -21,7 +21,7 @@ public class Position6Dz {
 
     @PostLoad
     void normalizeCode() {
-        if (code != null) code = code.replaceAll("\\s+", "");
+        if (code != null) code = code.replaceAll("[^0-9]", "");
     }
 
     @Column(nullable = false, length = 1024) // Limitation définie ici
