@@ -19,6 +19,11 @@ public class Position6Dz {
     @Column(nullable = false, unique = true)
     private String code; // numéro de position
 
+    @PostLoad
+    void normalizeCode() {
+        if (code != null) code = code.replaceAll("\\s+", "");
+    }
+
     @Column(nullable = false, length = 1024) // Limitation définie ici
     private String description;
 }
