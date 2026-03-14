@@ -122,6 +122,7 @@ public class SearchService {
 
         enrichWithDescriptions(positions, SearchLevel.POSITIONS6);
         reponseListLevel.addAll(positions);
+        List<Position> positionsLevel3 = new ArrayList<>(reponseListLevel);
 
         if (aiPrompts.getDefTheme().isWithCascade()) {
             reponseList.addAll(reponseListLevel);
@@ -147,6 +148,11 @@ public class SearchService {
                     reponseList.addAll(reponseListLevel);
                 }
             }
+        }
+
+        if (reponseListLevel.isEmpty()) {
+            log.info("Level 4 - Aucun résultat, utilisation Level 3");
+            reponseListLevel.addAll(positionsLevel3);
         }
 
         return aiPrompts.getDefTheme().isWithCascade() ? reponseList : reponseListLevel;
