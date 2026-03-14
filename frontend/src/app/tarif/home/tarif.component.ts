@@ -14,7 +14,8 @@ import { DecodeComponent } from '../decode/decode.component';
       <h3>Recherche multilingue - Multilingual search - 多语言搜索 - بحث متعدد اللغات</h3>
     </header>
     <nav class="search-nav">
-      <a routerLink="search" routerLinkActive="active">Recherche d'article unique</a>
+      <a routerLink="search" routerLinkActive="active">HS-code</a>
+      <a routerLink="search-position10" routerLinkActive="active">Position10</a>
       <a routerLink="searchListLots" routerLinkActive="active">Recherche par liste</a>
       <a routerLink="batch-search" routerLinkActive="active">Recherche par lots</a>
       <a routerLink="decode" routerLinkActive="active">Décoder un code HS</a>

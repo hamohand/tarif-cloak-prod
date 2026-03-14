@@ -1,8 +1,9 @@
-import {Component, inject} from '@angular/core';
+import {Component, inject, OnInit} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SearchService } from '../services/search.service';
 import {OAuthService} from 'angular-oauth2-oidc';
+import {ActivatedRoute} from '@angular/router';
 
 @Component({
   selector: 'app-search',
@@ -316,17 +317,23 @@ import {OAuthService} from 'angular-oauth2-oidc';
 
   `]
 })
-export class SearchComponent {
+export class SearchComponent implements OnInit {
   searchTerm: string = '';
-  //searchResults: string | null = null;
   searchResults: any[] | null | undefined;
   isLoading: boolean = false;
   error: string | null = null;
+  private endpoint: 'positions6' | 'positions10' = 'positions6';
 
   private searchService = inject(SearchService);
   private oauthService = inject(OAuthService);
+  private route = inject(ActivatedRoute);
 
-  //constructor(private searchService: SearchService) {}
+  ngOnInit(): void {
+    const mode = this.route.snapshot.data['mode'];
+    if (mode === 'position10') {
+      this.endpoint = 'positions10';
+    }
+  }
 
   search(): void {
     // Vérifier l'authentification
@@ -350,7 +357,7 @@ export class SearchComponent {
     this.searchResults = null;
 
     console.log('Envoi de la requête de recherche...');
-    this.searchService.searchCodes(this.searchTerm)
+    this.searchService.searchCodes(this.searchTerm, this.endpoint)
       .subscribe({
           next: (results: any) => {
             try {

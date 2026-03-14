@@ -24,9 +24,10 @@ public class SearchService {
     private final ChapitreService chapitreService;
     private final Position4Service position4Service;
     private final Position6DzService position6DzService;
+    private final Position10DzService position10DzService;
 
     public enum SearchLevel {
-        SECTIONS, CHAPITRES, POSITIONS4, POSITIONS6
+        SECTIONS, CHAPITRES, POSITIONS4, POSITIONS6, POSITIONS10
     }
 
     public List<Position> search(String termeRecherche, SearchLevel maxLevel) {
@@ -126,6 +127,28 @@ public class SearchService {
             reponseList.addAll(reponseListLevel);
         }
 
+        if (maxLevel == SearchLevel.POSITIONS6) {
+            return aiPrompts.getDefTheme().isWithCascade() ? reponseList : reponseListLevel;
+        }
+
+        // Level 4 : Positions 10
+        reponseListLevel.clear();
+        ragNiveau = ragPositions10(positions);
+        log.debug("Level 4 (Positions10) - RAG size: {}", ragNiveau.size());
+
+        if (!ragNiveau.isEmpty()) {
+            positions = executeWithRetry(SearchLevel.POSITIONS10.toString(), termeRecherche, ragNiveau, tentativesMax);
+
+            if (positions != null && !positions.isEmpty()) {
+                enrichWithDescriptions(positions, SearchLevel.POSITIONS10);
+                reponseListLevel.addAll(positions);
+
+                if (aiPrompts.getDefTheme().isWithCascade()) {
+                    reponseList.addAll(reponseListLevel);
+                }
+            }
+        }
+
         return aiPrompts.getDefTheme().isWithCascade() ? reponseList : reponseListLevel;
     }
 
@@ -154,6 +177,7 @@ public class SearchService {
                 case CHAPITRES -> chapitreService.getDescription(code);
                 case POSITIONS4 -> position4Service.getDescription(code);
                 case POSITIONS6 -> position6DzService.getDescription(code);
+                case POSITIONS10 -> position10DzService.getDescription(code);
             };
             position.setDescription(description);
         }
@@ -194,6 +218,16 @@ public class SearchService {
                 .flatMap(p -> {
                     String prefix = p.getCode() + "%";
                     return position6DzService.getPosition6DzsByPrefix(prefix).stream();
+                })
+                .map(pos -> new Position(pos.getCode(), pos.getDescription()))
+                .collect(Collectors.toList());
+    }
+
+    private List<Position> ragPositions10(List<Position> positions6Selectionnees) {
+        return positions6Selectionnees.stream()
+                .flatMap(p -> {
+                    String prefix = p.getCode() + "%";
+                    return position10DzService.getPosition10DzsByPrefix(prefix).stream();
                 })
                 .map(pos -> new Position(pos.getCode(), pos.getDescription()))
                 .collect(Collectors.toList());

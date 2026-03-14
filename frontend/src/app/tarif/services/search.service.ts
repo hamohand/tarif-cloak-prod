@@ -35,18 +35,11 @@ export class SearchService {
     );
   }
 
-  searchCodes(searchTerm: string): Observable<any[]> {
-
-    // Le backend produit 'application/json', on s'attend donc à recevoir du JSON.
-    // 'responseType: 'json'' est le comportement par défaut de HttpClient.
-    return this.http.get<any[]>(`${this.apiUrl}/positions6`, {
+  searchCodes(searchTerm: string, endpoint: 'positions6' | 'positions10' = 'positions6'): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/${endpoint}`, {
       params: { termeRecherche: searchTerm }
-      // responseType: 'text' a été supprimé ici.
     }).pipe(
-      // HttpClient parse maintenant automatiquement le JSON.
-      // La réponse est directement un tableau JavaScript.
       map((response: any) => {
-        // On s'assure juste que la réponse est bien un tableau.
         if (!Array.isArray(response)) {
           console.warn('La réponse reçue du serveur n\'est pas un tableau.', response);
           return [];

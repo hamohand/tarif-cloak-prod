@@ -51,6 +51,11 @@ public class RechercheController {
         return executeSearch(termeRecherche, SearchLevel.POSITIONS6, "/recherche/positions6");
     }
 
+    @GetMapping(value = "/positions10", produces = "application/json")
+    public List<Position> reponsePositions10(@RequestParam String termeRecherche) {
+        return executeSearch(termeRecherche, SearchLevel.POSITIONS10, "/recherche/positions10");
+    }
+
     private List<Position> executeSearch(String termeRecherche, SearchLevel level, String endpoint) {
         log.info("Requête {} pour '{}'", endpoint, termeRecherche);
         boolean searchExecuted = false;

@@ -1,0 +1,3214 @@
+[
+  {
+    "code": "1001110000",
+    "description": "- - De semence"
+  },
+  {
+    "code": "1001191000",
+    "description": "- - - Blé dur en vrac"
+  },
+  {
+    "code": "1001199000",
+    "description": "- - - Blé dur autrement présenté"
+  },
+  {
+    "code": "1001911000",
+    "description": "- - - Blé tendre"
+  },
+  {
+    "code": "1001919000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1001991000",
+    "description": "- - - Blé tendre"
+  },
+  {
+    "code": "1001999000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1002100000",
+    "description": "- De semence"
+  },
+  {
+    "code": "1002900000",
+    "description": "- Autres"
+  },
+  {
+    "code": "1003100000",
+    "description": "- De semence"
+  },
+  {
+    "code": "1003901000",
+    "description": "- - - Destiné à l’alimentation de bétails et de volailles (***) (****)"
+  },
+  {
+    "code": "1003909000",
+    "description": "- - - Autres (***) (****)"
+  },
+  {
+    "code": "1004100000",
+    "description": "- De semence"
+  },
+  {
+    "code": "1004900000",
+    "description": "- Autres"
+  },
+  {
+    "code": "1005100000",
+    "description": "- De semence"
+  },
+  {
+    "code": "1005901000",
+    "description": "- - - Destiné à l’alimentation de bétails et de volailles (****)"
+  },
+  {
+    "code": "1005909000",
+    "description": "- - - Autres (****)"
+  },
+  {
+    "code": "1006101000",
+    "description": "- - - De semence"
+  },
+  {
+    "code": "1006109000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1006201000",
+    "description": "- - - Etuvé"
+  },
+  {
+    "code": "1006209000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1006301000",
+    "description": "- - - Étuvé"
+  },
+  {
+    "code": "1006309000",
+    "description": "- - - Non étuvé"
+  },
+  {
+    "code": "1006400000",
+    "description": "- Riz en brisures"
+  },
+  {
+    "code": "1007100000",
+    "description": "- De semence"
+  },
+  {
+    "code": "1007900000",
+    "description": "- Autres"
+  },
+  {
+    "code": "1008101000",
+    "description": "- - - De semence"
+  },
+  {
+    "code": "1008109000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1008210000",
+    "description": "- - De semence"
+  },
+  {
+    "code": "1008291000",
+    "description": "- - - Millet du type utilisé pour l'alimentation humaine"
+  },
+  {
+    "code": "1008292000",
+    "description": "- - - Millet du type utilisé pour l'alimentation des oiseaux"
+  },
+  {
+    "code": "1008299000",
+    "description": "- - - Autres types de millet"
+  },
+  {
+    "code": "1008301000",
+    "description": "- - - De semence"
+  },
+  {
+    "code": "1008309000",
+    "description": "- - - Alpiste autre que de semence"
+  },
+  {
+    "code": "1008401000",
+    "description": "- - - De semence"
+  },
+  {
+    "code": "1008409000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1008501000",
+    "description": "- - - De semence"
+  },
+  {
+    "code": "1008509000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1008601000",
+    "description": "- - - De semence"
+  },
+  {
+    "code": "1008609000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1008901000",
+    "description": "- - - De semence"
+  },
+  {
+    "code": "1008909100",
+    "description": "- - - - Dari"
+  },
+  {
+    "code": "1008909900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1101001110",
+    "description": "- - - - - Farine de blé moulue par méthode traditionnelle et conditionné dans des sacs ou paquet n’excédant pas 10 kg"
+  },
+  {
+    "code": "1101001190",
+    "description": "- - - - - Autres"
+  },
+  {
+    "code": "1101001200",
+    "description": "- - - - De froment tendre"
+  },
+  {
+    "code": "1101002000",
+    "description": "- - - De méteil"
+  },
+  {
+    "code": "1102200000",
+    "description": "- Farine de maïs"
+  },
+  {
+    "code": "1102901100",
+    "description": "- - - - Farine de seigle moulue par méthode traditionnelle et conditionnée dans des sacs ou paquet n’excédant pas 10 kg"
+  },
+  {
+    "code": "1102901900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1102909110",
+    "description": "- - - - - Farine d’orge moulue par méthode traditionnelle et conditionnée dans des sacs ou paquet n’excédant pas 10 kg"
+  },
+  {
+    "code": "1102909190",
+    "description": "- - - - - Autres"
+  },
+  {
+    "code": "1102909200",
+    "description": "- - - - D’avoine"
+  },
+  {
+    "code": "1102909310",
+    "description": "- - - - - Farine de riz moulue par méthode traditionnelle et conditionnée dans des sacs ou paquet n’excédant pas 10 kg"
+  },
+  {
+    "code": "1102909390",
+    "description": "- - - - - Autres"
+  },
+  {
+    "code": "1102909900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1103111100",
+    "description": "- - - - Gruaux de blé préparé par méthode traditionnelle et conditionné dans des sacs ou paquet n’excédant pas 10 kg"
+  },
+  {
+    "code": "1103111910",
+    "description": "- - - - - De froment (blé) dur"
+  },
+  {
+    "code": "1103111920",
+    "description": "- - - - - De froment (blé) tendre et d’épeautre"
+  },
+  {
+    "code": "1103112100",
+    "description": "- - - - Semoules de blé préparé par méthode traditionnelle et conditionné dans des sacs ou paquet n’excédant pas 10 kg"
+  },
+  {
+    "code": "1103112910",
+    "description": "- - - - - De froment (blé) dur"
+  },
+  {
+    "code": "1103112920",
+    "description": "- - - - - De froment (blé) tendre et d’épeautre"
+  },
+  {
+    "code": "1103131100",
+    "description": "- - - - Gruaux"
+  },
+  {
+    "code": "1103131200",
+    "description": "- - - - semoules"
+  },
+  {
+    "code": "1103139100",
+    "description": "- - - - Gruaux"
+  },
+  {
+    "code": "1103139200",
+    "description": "- - - - semoules"
+  },
+  {
+    "code": "1103191100",
+    "description": "- - - - Gruaux"
+  },
+  {
+    "code": "1103191200",
+    "description": "- - - - Semoules"
+  },
+  {
+    "code": "1103192110",
+    "description": "- - - - - Gruaux d’orge préparée par méthode traditionnelle et conditionné dans des sacs ou paquet n’excédant pas 10 kg"
+  },
+  {
+    "code": "1103192190",
+    "description": "- - - - - Autres"
+  },
+  {
+    "code": "1103192210",
+    "description": "- - - - - Semoule d’orge préparée par méthode traditionnelle et conditionné dans des sacs ou paquet n’excédant pas 10 kg"
+  },
+  {
+    "code": "1103192290",
+    "description": "- - - - - Autres"
+  },
+  {
+    "code": "1103193100",
+    "description": "- - - - Gruaux"
+  },
+  {
+    "code": "1103193200",
+    "description": "- - - - Semoules"
+  },
+  {
+    "code": "1103194100",
+    "description": "- - - - Gruaux"
+  },
+  {
+    "code": "1103194200",
+    "description": "- - - - Semoules"
+  },
+  {
+    "code": "1103199100",
+    "description": "- - - - Gruaux"
+  },
+  {
+    "code": "1103199200",
+    "description": "- - - - Semoules"
+  },
+  {
+    "code": "1103201000",
+    "description": "- - - de seigle"
+  },
+  {
+    "code": "1103202000",
+    "description": "- - - d’orge"
+  },
+  {
+    "code": "1103203000",
+    "description": "- - - D’avoine"
+  },
+  {
+    "code": "1103204000",
+    "description": "- - - de maïs"
+  },
+  {
+    "code": "1103205000",
+    "description": "- - - de riz"
+  },
+  {
+    "code": "1103206100",
+    "description": "- - - - dur"
+  },
+  {
+    "code": "1103206200",
+    "description": "- - - - tendre"
+  },
+  {
+    "code": "1103206900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1103209000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1104121000",
+    "description": "- - - Grains aplatis"
+  },
+  {
+    "code": "1104122000",
+    "description": "- - - Flocons"
+  },
+  {
+    "code": "1104191000",
+    "description": "- - - de froment (blé)"
+  },
+  {
+    "code": "1104192000",
+    "description": "- - - de seigle"
+  },
+  {
+    "code": "1104193000",
+    "description": "- - - de maïs"
+  },
+  {
+    "code": "1104194100",
+    "description": "- - - - grains aplatis"
+  },
+  {
+    "code": "1104194200",
+    "description": "- - - - flocons"
+  },
+  {
+    "code": "1104195000",
+    "description": "- - - De sarrasin"
+  },
+  {
+    "code": "1104196000",
+    "description": "- - - De riz"
+  },
+  {
+    "code": "1104199000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1104220000",
+    "description": "- - D'avoine"
+  },
+  {
+    "code": "1104230000",
+    "description": "- - De maïs"
+  },
+  {
+    "code": "1104291000",
+    "description": "- - - D'orge"
+  },
+  {
+    "code": "1104292000",
+    "description": "- - - De froment (blé)"
+  },
+  {
+    "code": "1104293000",
+    "description": "- - - De seigle"
+  },
+  {
+    "code": "1104299000",
+    "description": "- - - D'autres céréales"
+  },
+  {
+    "code": "1104300000",
+    "description": "- Germes de céréales, entiers, aplatis, en flocons ou moulus"
+  },
+  {
+    "code": "1105100000",
+    "description": "- Farine, semoule et poudre"
+  },
+  {
+    "code": "1105200000",
+    "description": "- Flocons, granulés et agglomérés sous forme de pellets"
+  },
+  {
+    "code": "1106101000",
+    "description": "- - - Préparés par méthode traditionnelle et conditionnés dans des sacs ou paquet n’excédant pas 10 kg"
+  },
+  {
+    "code": "1106109100",
+    "description": "- - - - De pois"
+  },
+  {
+    "code": "1106109200",
+    "description": "- - - - D'haricots"
+  },
+  {
+    "code": "1106109300",
+    "description": "- - - - De lentilles"
+  },
+  {
+    "code": "1106109900",
+    "description": "- - - - D'autres légumes à cosse sec du n° 07,13"
+  },
+  {
+    "code": "1106201000",
+    "description": "- - - Dénaturées"
+  },
+  {
+    "code": "1106209000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1106301000",
+    "description": "- - - De bananes"
+  },
+  {
+    "code": "1106302000",
+    "description": "- - - De noix de coco"
+  },
+  {
+    "code": "1106303000",
+    "description": "- - - D'amandes"
+  },
+  {
+    "code": "1106304000",
+    "description": "- - - De dattes"
+  },
+  {
+    "code": "1106309000",
+    "description": "- - - D'autres produits du Chapitre 8"
+  },
+  {
+    "code": "1107101100",
+    "description": "- - - - Présenté sous forme de farine"
+  },
+  {
+    "code": "1107101900",
+    "description": "- - - - Malt de froment sous autres formes"
+  },
+  {
+    "code": "1107109100",
+    "description": "- - - - Présenté sous forme de farine"
+  },
+  {
+    "code": "1107109900",
+    "description": "- - - - Autre malt, non torréfié"
+  },
+  {
+    "code": "1107200000",
+    "description": "- Torréfié"
+  },
+  {
+    "code": "1108110000",
+    "description": "- - Amidon de froment (blé)"
+  },
+  {
+    "code": "1108120000",
+    "description": "- - Amidon de maïs"
+  },
+  {
+    "code": "1108130000",
+    "description": "- - Fécule de pomme de terre"
+  },
+  {
+    "code": "1108140000",
+    "description": "- - Fécule de manioc (cassave)"
+  },
+  {
+    "code": "1108191000",
+    "description": "- - - De riz"
+  },
+  {
+    "code": "1108199000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1108200000",
+    "description": "- Inuline"
+  },
+  {
+    "code": "1109001000",
+    "description": "- - - Sous forme liquide"
+  },
+  {
+    "code": "1109002000",
+    "description": "- - - Sous forme de poudre"
+  },
+  {
+    "code": "1109009000",
+    "description": "- - - Sous autres formes"
+  },
+  {
+    "code": "1201100000",
+    "description": "- De semence"
+  },
+  {
+    "code": "1201901000",
+    "description": "- - - Importées par l’industrie alimentaire"
+  },
+  {
+    "code": "1201909000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1202300000",
+    "description": "- De semence"
+  },
+  {
+    "code": "1202410000",
+    "description": "- - En coques"
+  },
+  {
+    "code": "1202420000",
+    "description": "- - Décortiquées, même concassées"
+  },
+  {
+    "code": "1203000000",
+    "description": "Coprah."
+  },
+  {
+    "code": "1204001000",
+    "description": "- - - De semence"
+  },
+  {
+    "code": "1204009000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1205101100",
+    "description": "- - - - De navettes"
+  },
+  {
+    "code": "1205101200",
+    "description": "- - - - De colza"
+  },
+  {
+    "code": "1205109100",
+    "description": "- - - - Graines de colza importées par l’industrie alimentaire"
+  },
+  {
+    "code": "1205109910",
+    "description": "- - - - - De navettes"
+  },
+  {
+    "code": "1205109920",
+    "description": "- - - - - De colza"
+  },
+  {
+    "code": "1205901100",
+    "description": "- - - - De navettes"
+  },
+  {
+    "code": "1205901200",
+    "description": "- - - - De colza"
+  },
+  {
+    "code": "1205909100",
+    "description": "- - - - De navettes"
+  },
+  {
+    "code": "1205909200",
+    "description": "- - - - De colza"
+  },
+  {
+    "code": "1206001000",
+    "description": "- - - De semence"
+  },
+  {
+    "code": "1206009100",
+    "description": "- - - - Importées par l’industrie alimentaire"
+  },
+  {
+    "code": "1206009910",
+    "description": "- - - - - En coques"
+  },
+  {
+    "code": "1206009920",
+    "description": "- - - - - Sans coques"
+  },
+  {
+    "code": "1206009990",
+    "description": "- - - - - Autres"
+  },
+  {
+    "code": "1207101000",
+    "description": "- - - De semence"
+  },
+  {
+    "code": "1207109000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1207210000",
+    "description": "- - De semence"
+  },
+  {
+    "code": "1207290000",
+    "description": "- - Autres"
+  },
+  {
+    "code": "1207301000",
+    "description": "- - - De semence"
+  },
+  {
+    "code": "1207309000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1207401000",
+    "description": "- - - De semence"
+  },
+  {
+    "code": "1207409000",
+    "description": "- - - Graines de sésame autres que de semence"
+  },
+  {
+    "code": "1207501000",
+    "description": "- - - De semence"
+  },
+  {
+    "code": "1207509000",
+    "description": "- - - Graines de moutarde autres que de semence"
+  },
+  {
+    "code": "1207601000",
+    "description": "- - - De semence"
+  },
+  {
+    "code": "1207609000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1207701000",
+    "description": "- - - De semence"
+  },
+  {
+    "code": "1207709000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1207911000",
+    "description": "- - - De semence"
+  },
+  {
+    "code": "1207919000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1207991000",
+    "description": "- - - De semence"
+  },
+  {
+    "code": "1207999010",
+    "description": "- - - - Graines de chanvre"
+  },
+  {
+    "code": "1207999090",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1208100000",
+    "description": "- De fèves de soja"
+  },
+  {
+    "code": "1208901000",
+    "description": "- - - Farines d’arachides"
+  },
+  {
+    "code": "1208902000",
+    "description": "- - - Farines de graines de tournesol"
+  },
+  {
+    "code": "1208903000",
+    "description": "- - - Farines de graines de colza"
+  },
+  {
+    "code": "1208904000",
+    "description": "- - - Farines de graines de navette"
+  },
+  {
+    "code": "1208905000",
+    "description": "- - - Farines de carthame"
+  },
+  {
+    "code": "1208906000",
+    "description": "- - - Farines de coprah"
+  },
+  {
+    "code": "1208907000",
+    "description": "- - - Farines de coton"
+  },
+  {
+    "code": "1208909100",
+    "description": "- - - - Farines de graines de lin"
+  },
+  {
+    "code": "1208909200",
+    "description": "- - - - Farines de noix et farines d’amandes de palmiste"
+  },
+  {
+    "code": "1208909300",
+    "description": "- - - - Farines de graines de sésame"
+  },
+  {
+    "code": "1208909400",
+    "description": "- - - - Farines de graines de melon"
+  },
+  {
+    "code": "1208909900",
+    "description": "- - - - Farines d’autres graines ou de fruits oléagineux"
+  },
+  {
+    "code": "1209100000",
+    "description": "- Graines de betteraves à sucre"
+  },
+  {
+    "code": "1209210000",
+    "description": "- - De luzerne"
+  },
+  {
+    "code": "1209220000",
+    "description": "- - De trèfle (Trifolium spp.)"
+  },
+  {
+    "code": "1209231000",
+    "description": "- - - Fétuque rouge"
+  },
+  {
+    "code": "1209232000",
+    "description": "- - - Fétuque des prés"
+  },
+  {
+    "code": "1209239000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1209240000",
+    "description": "- - Du pâturin des prés du Kentucky (Poa pratensis L.)"
+  },
+  {
+    "code": "1209250000",
+    "description": "- - De ray grass (Lolium multiflorum Lam., Lolium perenne L.)"
+  },
+  {
+    "code": "1209291000",
+    "description": "- - - Graines d'grostide"
+  },
+  {
+    "code": "1209292000",
+    "description": "- - - Graines de brome"
+  },
+  {
+    "code": "1209293000",
+    "description": "- - - Graines d'agropyrum"
+  },
+  {
+    "code": "1209294000",
+    "description": "- - - Graines de fléole des prés"
+  },
+  {
+    "code": "1209299000",
+    "description": "- - - Autres graines fourragères"
+  },
+  {
+    "code": "1209300000",
+    "description": "- Graines de plantes herbacées utilisées principalement pour leurs fleurs"
+  },
+  {
+    "code": "1209911100",
+    "description": "- - - - Graines de choux-raves (Brassica oleracea, var : caulorapa et gongylodes L)"
+  },
+  {
+    "code": "1209911200",
+    "description": "- - - - Graines de choux"
+  },
+  {
+    "code": "1209911300",
+    "description": "- - - - Graines de choux fleurs"
+  },
+  {
+    "code": "1209911900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1209912100",
+    "description": "- - - - Graines de carottes"
+  },
+  {
+    "code": "1209912200",
+    "description": "- - - - Graines de navets"
+  },
+  {
+    "code": "1209912300",
+    "description": "- - - - Graines de radis"
+  },
+  {
+    "code": "1209912400",
+    "description": "- - - - Graines de betteraves à salade ou \"betteraves rouges\""
+  },
+  {
+    "code": "1209913100",
+    "description": "- - - - Graines de citrouilles ou de courges"
+  },
+  {
+    "code": "1209913200",
+    "description": "- - - - Graines de potiron"
+  },
+  {
+    "code": "1209913300",
+    "description": "- - - - Graines de courgettes"
+  },
+  {
+    "code": "1209914000",
+    "description": "- - - Graines de tomates"
+  },
+  {
+    "code": "1209915100",
+    "description": "- - - - Graines du poivron"
+  },
+  {
+    "code": "1209915200",
+    "description": "- - - - Graines de piment"
+  },
+  {
+    "code": "1209916100",
+    "description": "- - - - Graines d'épinards"
+  },
+  {
+    "code": "1209916200",
+    "description": "- - - - Graines de laitues"
+  },
+  {
+    "code": "1209916300",
+    "description": "- - - - Graines de cardes"
+  },
+  {
+    "code": "1209916400",
+    "description": "- - - - Graines d'artichauts"
+  },
+  {
+    "code": "1209916500",
+    "description": "- - - - Graines de persil"
+  },
+  {
+    "code": "1209916600",
+    "description": "- - - - Graines de céleri"
+  },
+  {
+    "code": "1209917100",
+    "description": "- - - - Graines d'aubergine"
+  },
+  {
+    "code": "1209917200",
+    "description": "- - - - Graines du concombre"
+  },
+  {
+    "code": "1209917300",
+    "description": "- - - - Graines d'oignon"
+  },
+  {
+    "code": "1209919000",
+    "description": "- - - Graines d'autres légumes"
+  },
+  {
+    "code": "1209991000",
+    "description": "- - - Graines forestières"
+  },
+  {
+    "code": "1209992000",
+    "description": "- - - Graines de d'arbres fruitiers"
+  },
+  {
+    "code": "1209993100",
+    "description": "- - - - Graines de menthe"
+  },
+  {
+    "code": "1209993200",
+    "description": "- - - - Graines du basilic"
+  },
+  {
+    "code": "1209999000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1210100000",
+    "description": "- Cônes de houblon, non broyés ni moulus ni sous forme de pellets"
+  },
+  {
+    "code": "1210201000",
+    "description": "- - - Cônes de houblonbroyés ou moulus"
+  },
+  {
+    "code": "1210202000",
+    "description": "- - - Cônes de houblonsous forme de pellets"
+  },
+  {
+    "code": "1210203000",
+    "description": "- - - Lupuline"
+  },
+  {
+    "code": "1211201000",
+    "description": "- - - Fraiches"
+  },
+  {
+    "code": "1211202000",
+    "description": "- - - Congelées ou réfrigérées"
+  },
+  {
+    "code": "1211301000",
+    "description": "- - - Fraiche"
+  },
+  {
+    "code": "1211302000",
+    "description": "- - - Congelée ou réfrigérée"
+  },
+  {
+    "code": "1211401000",
+    "description": "- - - Fraiche"
+  },
+  {
+    "code": "1211402000",
+    "description": "- - - Congelée ou réfrigérée"
+  },
+  {
+    "code": "1211403000",
+    "description": "- - - Sèches"
+  },
+  {
+    "code": "1211501000",
+    "description": "- - - Frais"
+  },
+  {
+    "code": "1211502000",
+    "description": "- - - Congelé ou réfrigéré"
+  },
+  {
+    "code": "1211503000",
+    "description": "- - - Sec"
+  },
+  {
+    "code": "1211601000",
+    "description": "- - - Préparés par méthode traditionnelle à des fins médicinales"
+  },
+  {
+    "code": "1211609100",
+    "description": "- - - - Frais"
+  },
+  {
+    "code": "1211609200",
+    "description": "- - - - Secs"
+  },
+  {
+    "code": "1211609300",
+    "description": "- - - - Congelés ou réfrigérés"
+  },
+  {
+    "code": "1211901000",
+    "description": "- - - Préparés par méthode traditionnelle à des fins médicinales"
+  },
+  {
+    "code": "1211909100",
+    "description": "- - - - Chanvre indien et Kat (*)"
+  },
+  {
+    "code": "1211909910",
+    "description": "- - - - - Frais"
+  },
+  {
+    "code": "1211909920",
+    "description": "- - - - - Secs"
+  },
+  {
+    "code": "1211909930",
+    "description": "- - - - - Congelés ou réfrigérés"
+  },
+  {
+    "code": "1212211000",
+    "description": "- - - Fraiches ou réfrigérées"
+  },
+  {
+    "code": "1212212000",
+    "description": "- - - Congelées ou séchées"
+  },
+  {
+    "code": "1212291000",
+    "description": "- - - Souche de phytoplancton (*)"
+  },
+  {
+    "code": "1212299100",
+    "description": "- - - - Fraiches ou réfrigérées"
+  },
+  {
+    "code": "1212299200",
+    "description": "- - - - Congelées ou séchées"
+  },
+  {
+    "code": "1212911000",
+    "description": "- - - Fraiches ou réfrigérées"
+  },
+  {
+    "code": "1212912000",
+    "description": "- - - Congelées ou séchées"
+  },
+  {
+    "code": "1212921100",
+    "description": "- - - - Fraiches ou réfrigérées"
+  },
+  {
+    "code": "1212921200",
+    "description": "- - - - Congelées ou séchées"
+  },
+  {
+    "code": "1212922000",
+    "description": "- - - Caroubes concassées, en grumeaux ou en farine"
+  },
+  {
+    "code": "1212931000",
+    "description": "- - - Fraîches ou réfrigérées"
+  },
+  {
+    "code": "1212932000",
+    "description": "- - - Congelées ou séchées"
+  },
+  {
+    "code": "1212940000",
+    "description": "- - Racines de chicorée"
+  },
+  {
+    "code": "1212992100",
+    "description": "- - - - De semence"
+  },
+  {
+    "code": "1212992900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1212999100",
+    "description": "- - - - De semence"
+  },
+  {
+    "code": "1212999900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1213000000",
+    "description": "Pailles et balles de céréales brutes, même hachées, moulues, pressées ou agglomérées sous forme de pellets."
+  },
+  {
+    "code": "1214100000",
+    "description": "- Farine et agglomérés sous forme de pellets de luzerne"
+  },
+  {
+    "code": "1214901000",
+    "description": "- - - Betteraves fourragères"
+  },
+  {
+    "code": "1214902000",
+    "description": "- - - Rutabagas"
+  },
+  {
+    "code": "1214903000",
+    "description": "- - - Racines fourragères"
+  },
+  {
+    "code": "1214904000",
+    "description": "- - - Foin"
+  },
+  {
+    "code": "1214905000",
+    "description": "- - - Trèfle"
+  },
+  {
+    "code": "1214906000",
+    "description": "- - - Sainfoin"
+  },
+  {
+    "code": "1214907000",
+    "description": "- - - Choux fourragers"
+  },
+  {
+    "code": "1214908000",
+    "description": "- - - Lupin et vesces"
+  },
+  {
+    "code": "1214909000",
+    "description": "- - - Autres produits fourragers"
+  },
+  {
+    "code": "1301200000",
+    "description": "- Gomme arabique"
+  },
+  {
+    "code": "1301901000",
+    "description": "- - - Gomme laque"
+  },
+  {
+    "code": "1301902000",
+    "description": "- - - Résines de conifères"
+  },
+  {
+    "code": "1301903000",
+    "description": "- - - Baumes naturelles"
+  },
+  {
+    "code": "1301904000",
+    "description": "- - - Résine de Cannabis"
+  },
+  {
+    "code": "1301909000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1302111000",
+    "description": "- - - Concentré de paille de pavot"
+  },
+  {
+    "code": "1302119000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1302120000",
+    "description": "- - De réglisse"
+  },
+  {
+    "code": "1302130000",
+    "description": "- - De houblon"
+  },
+  {
+    "code": "1302140000",
+    "description": "- - D’éphédra"
+  },
+  {
+    "code": "1302191000",
+    "description": "- - - Extraits de gomme"
+  },
+  {
+    "code": "1302192000",
+    "description": "- - - De pyrèthre ou de racines de plantes à roténone"
+  },
+  {
+    "code": "1302193000",
+    "description": "- - - Sucs et extraits d'aloès"
+  },
+  {
+    "code": "1302194000",
+    "description": "- - - Sucs et extraits de ginseng"
+  },
+  {
+    "code": "1302199000",
+    "description": "- - - Autres sucs et extraits végétaux"
+  },
+  {
+    "code": "1302201000",
+    "description": "- - - A l’état sec"
+  },
+  {
+    "code": "1302209000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1302311000",
+    "description": "- - - Modifié"
+  },
+  {
+    "code": "1302319000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1302321000",
+    "description": "- - - Modifié"
+  },
+  {
+    "code": "1302329000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1302391000",
+    "description": "- - - Modifié"
+  },
+  {
+    "code": "1302399000",
+    "description": "- - - Autres mucilages et épaississants, non modifiés"
+  },
+  {
+    "code": "1401101000",
+    "description": "- - - Bruts ou simplement refendus"
+  },
+  {
+    "code": "1401109000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1401201000",
+    "description": "- - - Bruts ou simplement refendus"
+  },
+  {
+    "code": "1401209000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1401901000",
+    "description": "- - - Ecorces de tilleul"
+  },
+  {
+    "code": "1401909000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1404201000",
+    "description": "- - - Bruts"
+  },
+  {
+    "code": "1404202100",
+    "description": "- - - - En masse"
+  },
+  {
+    "code": "1404202900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1404901000",
+    "description": "- - - Grains durs, pépins, coques, noix à tailler"
+  },
+  {
+    "code": "1404902000",
+    "description": "- - - Alfa"
+  },
+  {
+    "code": "1404903000",
+    "description": "- - - Sparte et diss"
+  },
+  {
+    "code": "1404904000",
+    "description": "- - - Henné"
+  },
+  {
+    "code": "1404909000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1501101000",
+    "description": "- - - Destinés à des usages industriels"
+  },
+  {
+    "code": "1501109000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1501201000",
+    "description": "- - - Graisses d'os"
+  },
+  {
+    "code": "1501209100",
+    "description": "- - - - Destinées à des usages industriels"
+  },
+  {
+    "code": "1501209900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1501901000",
+    "description": "- - - Graisses d'os"
+  },
+  {
+    "code": "1501902000",
+    "description": "- - - Graisses de déchets"
+  },
+  {
+    "code": "1501909100",
+    "description": "- - - - Brutes"
+  },
+  {
+    "code": "1501909200",
+    "description": "- - - - Raffinées"
+  },
+  {
+    "code": "1502101000",
+    "description": "- - - Destinés à des usages industriels"
+  },
+  {
+    "code": "1502109000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1502901100",
+    "description": "- - - - Destinés à des usages industriels"
+  },
+  {
+    "code": "1502901900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1502902100",
+    "description": "- - - - Destinés à des usages industriels"
+  },
+  {
+    "code": "1502902900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1502903000",
+    "description": "- - - Autres, de bovins"
+  },
+  {
+    "code": "1502904000",
+    "description": "- - - Autres, d'ovins"
+  },
+  {
+    "code": "1502909000",
+    "description": "- - - Autres, de caprins"
+  },
+  {
+    "code": "1503001100",
+    "description": "- - - - Destinées à des usages industriels"
+  },
+  {
+    "code": "1503001900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1503002100",
+    "description": "- - - - Destinée à des usages industriels"
+  },
+  {
+    "code": "1503002900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1503009110",
+    "description": "- - - - - Destinée à des usages industriels"
+  },
+  {
+    "code": "1503009190",
+    "description": "- - - - - Autres"
+  },
+  {
+    "code": "1503009210",
+    "description": "- - - - - Destinée à des usages industriels"
+  },
+  {
+    "code": "1503009290",
+    "description": "- - - - - Autres"
+  },
+  {
+    "code": "1504101100",
+    "description": "- - - - Destinées à la fabrication de médicaments"
+  },
+  {
+    "code": "1504101900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1504109100",
+    "description": "- - - - Destinées à la fabrication de médicaments"
+  },
+  {
+    "code": "1504109900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1504201100",
+    "description": "- - - - Destinés à des usages industriels"
+  },
+  {
+    "code": "1504201900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1504202000",
+    "description": "- - - Acides gras polyinsaturés"
+  },
+  {
+    "code": "1504209000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1504301100",
+    "description": "- - - - Destinés à des usages industriels"
+  },
+  {
+    "code": "1504301900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1504309000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1505001000",
+    "description": "- - - Graisse de suint brute (suintine)"
+  },
+  {
+    "code": "1505009100",
+    "description": "- - - - Oléine de suint"
+  },
+  {
+    "code": "1505009200",
+    "description": "- - - - Stéarine de suint"
+  },
+  {
+    "code": "1505009300",
+    "description": "- - - - Lanoline"
+  },
+  {
+    "code": "1505009900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1506001110",
+    "description": "- - - - - Graisses d'équidés"
+  },
+  {
+    "code": "1506001190",
+    "description": "- - - - - Autres"
+  },
+  {
+    "code": "1506001200",
+    "description": "- - - - Graisses d'os et de moelle d'os"
+  },
+  {
+    "code": "1506001300",
+    "description": "- - - - Graisses de déchets"
+  },
+  {
+    "code": "1506001900",
+    "description": "- - - - Autres graisses"
+  },
+  {
+    "code": "1506002110",
+    "description": "- - - - - Destinées à des usages industriels"
+  },
+  {
+    "code": "1506002190",
+    "description": "- - - - - Autres"
+  },
+  {
+    "code": "1506002210",
+    "description": "- - - - - Destinées à des usages industriels"
+  },
+  {
+    "code": "1506002290",
+    "description": "- - - - - Autres"
+  },
+  {
+    "code": "1506002310",
+    "description": "- - - - - Pour l’utilisation en pharmaceutique ou en parfumerie"
+  },
+  {
+    "code": "1506002390",
+    "description": "- - - - - Autres"
+  },
+  {
+    "code": "1506002400",
+    "description": "- - - - Huile de jaune d'œuf"
+  },
+  {
+    "code": "1506002500",
+    "description": "- - - - Huile d'oeufs de tortue"
+  },
+  {
+    "code": "1506002900",
+    "description": "- - - - Autres huiles"
+  },
+  {
+    "code": "1507101000",
+    "description": "- - - Pour l'industrie alimentaire"
+  },
+  {
+    "code": "1507109000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1507901000",
+    "description": "- - - Destinés à des usages industriels"
+  },
+  {
+    "code": "1507909000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1508101000",
+    "description": "- - - Pour l'industrie alimentaire"
+  },
+  {
+    "code": "1508109000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1508901000",
+    "description": "- - - Destinés à des usages industriels"
+  },
+  {
+    "code": "1508909000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1509201000",
+    "description": "- - - Pour l'industrie alimentaire"
+  },
+  {
+    "code": "1509209100",
+    "description": "- - - - Extraites et préparées par méthode traditionnelle et destinées à la consommation en l'état"
+  },
+  {
+    "code": "1509209900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1509301000",
+    "description": "- - - Pour l'industrie alimentaire"
+  },
+  {
+    "code": "1509309100",
+    "description": "- - - - Extraite et préparées par méthode traditionnelle et destinées à la consommation en l'état"
+  },
+  {
+    "code": "1509309900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1509401000",
+    "description": "- - - Pour l'industrie alimentaire"
+  },
+  {
+    "code": "1509409100",
+    "description": "- - - - Extraite et préparées par méthode traditionnelle et destinées à la consommation en l'état"
+  },
+  {
+    "code": "1509409900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1509901100",
+    "description": "- - - - Destinées à des usages industriels"
+  },
+  {
+    "code": "1509901900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1509909100",
+    "description": "- - - - Destinés à des usages industriels"
+  },
+  {
+    "code": "1509909900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1510101000",
+    "description": "- - - Destinée à des usages industriels"
+  },
+  {
+    "code": "1510109000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1510901100",
+    "description": "- - - - Destinée à des usages industriels"
+  },
+  {
+    "code": "1510901900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1510902100",
+    "description": "- - - - Destinées à des usages industriels"
+  },
+  {
+    "code": "1510902910",
+    "description": "- - - - - Huiles d’olives extraite et préparée par méthode traditionnelle"
+  },
+  {
+    "code": "1510902990",
+    "description": "- - - - - Autres"
+  },
+  {
+    "code": "1510909100",
+    "description": "- - - - Destinées à des usages industriels"
+  },
+  {
+    "code": "1510909910",
+    "description": "- - - - - Extraites et préparées par méthode traditionnelle"
+  },
+  {
+    "code": "1510909990",
+    "description": "- - - - - Autres"
+  },
+  {
+    "code": "1511101000",
+    "description": "- - - Pour l'industrie alimentaire"
+  },
+  {
+    "code": "1511109000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1511901000",
+    "description": "- - - Pour l'industrie alimentaire"
+  },
+  {
+    "code": "1511909000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1512111000",
+    "description": "- - - Pour l'industrie alimentaire"
+  },
+  {
+    "code": "1512119000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1512191100",
+    "description": "- - - - Destinées à des usages industriels"
+  },
+  {
+    "code": "1512191900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1512199100",
+    "description": "- - - - Destinés à des usages industriels"
+  },
+  {
+    "code": "1512199900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1512211000",
+    "description": "- - - Pour l'industrie alimentaire"
+  },
+  {
+    "code": "1512219000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1512291100",
+    "description": "- - - - Destinées à des usages industriels"
+  },
+  {
+    "code": "1512291900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1512299100",
+    "description": "- - - - Destinés à des usages industriels"
+  },
+  {
+    "code": "1512299900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1513111000",
+    "description": "- - - Pour l'industrie alimentaire"
+  },
+  {
+    "code": "1513119000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1513191100",
+    "description": "- - - - Destinés à des usages industriels"
+  },
+  {
+    "code": "1513191900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1513199100",
+    "description": "- - - - Destinés à des usages industriels"
+  },
+  {
+    "code": "1513199900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1513211000",
+    "description": "- - - Pour l'industrie alimentaire"
+  },
+  {
+    "code": "1513219000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1513291100",
+    "description": "- - - - Destinées à des usages industriels"
+  },
+  {
+    "code": "1513291900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1513299100",
+    "description": "- - - - Destinés à des usages industriels"
+  },
+  {
+    "code": "1513299900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1514111000",
+    "description": "- - - Pour l'industrie alimentaire"
+  },
+  {
+    "code": "1514119000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1514191100",
+    "description": "- - - - Destinées à des usages industriels"
+  },
+  {
+    "code": "1514191900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1514199100",
+    "description": "- - - - Destinés à des usages industriels"
+  },
+  {
+    "code": "1514199900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1514911100",
+    "description": "- - - - Pour l'industrie alimentaire"
+  },
+  {
+    "code": "1514911900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1514919100",
+    "description": "- - - - Destinés à des usages industriels"
+  },
+  {
+    "code": "1514919900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1514991100",
+    "description": "- - - - Destinées à des usages industriels"
+  },
+  {
+    "code": "1514991900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1514999100",
+    "description": "- - - - Destinés à des usages industriels"
+  },
+  {
+    "code": "1514999900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1515111000",
+    "description": "- - - Destinées à des usages industriels"
+  },
+  {
+    "code": "1515119000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1515191100",
+    "description": "- - - - Destinées à des usages industriels"
+  },
+  {
+    "code": "1515191900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1515199100",
+    "description": "- - - - Destinés à des usages industriels"
+  },
+  {
+    "code": "1515199900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1515211000",
+    "description": "- - - Pour l'industrie alimentaire"
+  },
+  {
+    "code": "1515219000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1515291100",
+    "description": "- - - - Destinées à des usages industriels"
+  },
+  {
+    "code": "1515291900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1515299100",
+    "description": "- - - - Destinés à des usages industriels"
+  },
+  {
+    "code": "1515299900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1515301100",
+    "description": "- - - - Destinée à des usages industriels"
+  },
+  {
+    "code": "1515301900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1515309110",
+    "description": "- - - - - Destinées à des usages industriels"
+  },
+  {
+    "code": "1515309190",
+    "description": "- - - - - Autres"
+  },
+  {
+    "code": "1515309910",
+    "description": "- - - - - Destinés à des usages industriels"
+  },
+  {
+    "code": "1515309990",
+    "description": "- - - - - Autres"
+  },
+  {
+    "code": "1515501000",
+    "description": "- - - Brutes, pour l'industrie alimentaire"
+  },
+  {
+    "code": "1515502000",
+    "description": "- - - Brutes, autres"
+  },
+  {
+    "code": "1515509090",
+    "description": "- - - - - Autres"
+  },
+  {
+    "code": "1515509110",
+    "description": "- - - - - Destinées à des usages industriels"
+  },
+  {
+    "code": "1515509190",
+    "description": "- - - - - Autres"
+  },
+  {
+    "code": "1515509910",
+    "description": "- - - - - Destinés à des usages industriels"
+  },
+  {
+    "code": "1515601100",
+    "description": "- - - - Pour l'industrie alimentaire"
+  },
+  {
+    "code": "1515601900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1515609000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1515901100",
+    "description": "- - - - Pour l'industrie alimentaire"
+  },
+  {
+    "code": "1515901200",
+    "description": "- - - - Huile de tung (d'abrasin) et ses fractions"
+  },
+  {
+    "code": "1515901900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1515909110",
+    "description": "- - - - - Destinées à des usages industriels"
+  },
+  {
+    "code": "1515909190",
+    "description": "- - - - - Autres"
+  },
+  {
+    "code": "1515909910",
+    "description": "- - - - - Huile de Tung"
+  },
+  {
+    "code": "1515909920",
+    "description": "- - - - - Cire de Myrica et cire du Japon"
+  },
+  {
+    "code": "1515909930",
+    "description": "- - - - - Suif de Bornéo et suif de Chine"
+  },
+  {
+    "code": "1515909990",
+    "description": "- - - - - Autres"
+  },
+  {
+    "code": "1516101100",
+    "description": "- - - - Destinée à des usages industriels"
+  },
+  {
+    "code": "1516101900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1516109110",
+    "description": "- - - - - Destinés à des usages industriels"
+  },
+  {
+    "code": "1516109190",
+    "description": "- - - - - Autres"
+  },
+  {
+    "code": "1516109210",
+    "description": "- - - - - Destinés à des usages industriels"
+  },
+  {
+    "code": "1516109290",
+    "description": "- - - - - Autres"
+  },
+  {
+    "code": "1516109910",
+    "description": "- - - - - Destinés à des usages industriels"
+  },
+  {
+    "code": "1516109990",
+    "description": "- - - - - Autres"
+  },
+  {
+    "code": "1516201100",
+    "description": "- - - - Destinée à des usages industriels"
+  },
+  {
+    "code": "1516201900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1516202100",
+    "description": "- - - - Destinée à des usages industriels"
+  },
+  {
+    "code": "1516202900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1516209110",
+    "description": "- - - - - Destinées à des usages industriels"
+  },
+  {
+    "code": "1516209190",
+    "description": "- - - - - Huiles de palme destinées pour d'autres usages"
+  },
+  {
+    "code": "1516209210",
+    "description": "- - - - - Destinées à des usages industriels"
+  },
+  {
+    "code": "1516209290",
+    "description": "- - - - - Huiles de palmiste pour autres usages"
+  },
+  {
+    "code": "1516209310",
+    "description": "- - - - - Destinées à des usages industriels"
+  },
+  {
+    "code": "1516209390",
+    "description": "- - - - - Autres"
+  },
+  {
+    "code": "1516209910",
+    "description": "- - - - - Destinés à des usages industriels"
+  },
+  {
+    "code": "1516209990",
+    "description": "- - - - - Autres"
+  },
+  {
+    "code": "1516301000",
+    "description": "- - - Destinées à des usages industriels"
+  },
+  {
+    "code": "1516309000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1517100000",
+    "description": "- Margarine, à l'exclusion de la margarine liquide"
+  },
+  {
+    "code": "1517901000",
+    "description": "- - - Huiles végétales fixes, fluides, mélangées (*)"
+  },
+  {
+    "code": "1517902000",
+    "description": "- - - Mélanges ou préparations culinaires utilisés pour le démoulage (*)"
+  },
+  {
+    "code": "1517903000",
+    "description": "- - - Margarine liquide (*)"
+  },
+  {
+    "code": "1517909000",
+    "description": "- - - Autres (*)"
+  },
+  {
+    "code": "1518001000",
+    "description": "- - - Linoxyne"
+  },
+  {
+    "code": "1518009100",
+    "description": "- - - - Huiles cuites ou oxydées"
+  },
+  {
+    "code": "1518009200",
+    "description": "- - - - Huiles soufflées"
+  },
+  {
+    "code": "1518009300",
+    "description": "- - - - Huile de ricin déshydratée"
+  },
+  {
+    "code": "1518009400",
+    "description": "- - - - Huiles sulfurées"
+  },
+  {
+    "code": "1518009500",
+    "description": "- - - - Huiles standolisées"
+  },
+  {
+    "code": "1518009910",
+    "description": "- - - - - Huiles maléiques"
+  },
+  {
+    "code": "1518009920",
+    "description": "- - - - - Huiles siccativées"
+  },
+  {
+    "code": "1518009930",
+    "description": "- - - - - Huiles époxydées"
+  },
+  {
+    "code": "1518009940",
+    "description": "- - - - - Huiles bromées"
+  },
+  {
+    "code": "1518009950",
+    "description": "- - - - - Huiles de friture usée (**)"
+  },
+  {
+    "code": "1518009990",
+    "description": "- - - - - Autres"
+  },
+  {
+    "code": "1520001000",
+    "description": "- - - Glycérol brut"
+  },
+  {
+    "code": "1520002000",
+    "description": "- - - Eaux et lessives glycérineuses"
+  },
+  {
+    "code": "1521101000",
+    "description": "- - - Cire de carnauba"
+  },
+  {
+    "code": "1521102000",
+    "description": "- - - Cire d'ouricury"
+  },
+  {
+    "code": "1521103000",
+    "description": "- - - Cire de palmier"
+  },
+  {
+    "code": "1521104000",
+    "description": "- - - Cire de candelilla"
+  },
+  {
+    "code": "1521105000",
+    "description": "- - - Cire de canne à sucre"
+  },
+  {
+    "code": "1521106000",
+    "description": "- - - Cire de coton et cire de lin"
+  },
+  {
+    "code": "1521107000",
+    "description": "- - - Cire d'ocotilla"
+  },
+  {
+    "code": "1521108000",
+    "description": "- - - Cire de sparte"
+  },
+  {
+    "code": "1521109000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1521901100",
+    "description": "- - - - Cires d'abeilles"
+  },
+  {
+    "code": "1521901210",
+    "description": "- - - - - Cire de gomme laque"
+  },
+  {
+    "code": "1521901220",
+    "description": "- - - - - Cire dite de Chine"
+  },
+  {
+    "code": "1521901290",
+    "description": "- - - - - Autres"
+  },
+  {
+    "code": "1521909100",
+    "description": "- - - - Spermaceti, même raffiné ou coloré"
+  },
+  {
+    "code": "1521909900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1522001100",
+    "description": "- - - - Dégras naturels"
+  },
+  {
+    "code": "1522001200",
+    "description": "- - - - Dégras artificiels"
+  },
+  {
+    "code": "1522002100",
+    "description": "- - - - Lies ou fèces d'huiles"
+  },
+  {
+    "code": "1522002200",
+    "description": "- - - - Pâtes de neutralisation"
+  },
+  {
+    "code": "1522002300",
+    "description": "- - - - Brai stéarique"
+  },
+  {
+    "code": "1522002400",
+    "description": "- - - - Poix de glycérol"
+  },
+  {
+    "code": "1522002500",
+    "description": "- - - - Résidus de filtration des cires animales ou végétales"
+  },
+  {
+    "code": "1522002900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1601001000",
+    "description": "- - - De viande"
+  },
+  {
+    "code": "1601002000",
+    "description": "- - - De foie"
+  },
+  {
+    "code": "1601003000",
+    "description": "- - - De volaille"
+  },
+  {
+    "code": "1601009000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1602100000",
+    "description": "- Préparations homogénéisées"
+  },
+  {
+    "code": "1602201000",
+    "description": "- - - De foies d’oie ou de canard"
+  },
+  {
+    "code": "1602209000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1602311000",
+    "description": "- - - Non cuits"
+  },
+  {
+    "code": "1602319000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1602321000",
+    "description": "- - - Non cuits"
+  },
+  {
+    "code": "1602329000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1602391000",
+    "description": "- - - Non cuits"
+  },
+  {
+    "code": "1602399000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1602410000",
+    "description": "- - Jambons et leurs morceaux"
+  },
+  {
+    "code": "1602420000",
+    "description": "- - Epaules et leurs morceaux"
+  },
+  {
+    "code": "1602490000",
+    "description": "- - Autres, y compris les mélanges"
+  },
+  {
+    "code": "1602501000",
+    "description": "- - - Non cuits"
+  },
+  {
+    "code": "1602509000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1602901100",
+    "description": "- - - - Préparations de sang de tous animaux"
+  },
+  {
+    "code": "1602901200",
+    "description": "- - - - Autres, des espèces caprine, camélidé ou équidé"
+  },
+  {
+    "code": "1602901300",
+    "description": "- - - - Autres, de gibier ou de lapin"
+  },
+  {
+    "code": "1602901400",
+    "description": "- - - - Autres, de l'espèce ovine"
+  },
+  {
+    "code": "1602901900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1602909100",
+    "description": "- - - - Préparations de sang de tous animaux"
+  },
+  {
+    "code": "1602909200",
+    "description": "- - - - Autres, des espèces caprine, camélidé ou équidé"
+  },
+  {
+    "code": "1602909300",
+    "description": "- - - - Autres, de gibier ou de lapin"
+  },
+  {
+    "code": "1602909400",
+    "description": "- - - - Autres, de l'espèce ovine"
+  },
+  {
+    "code": "1602909900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1603001000",
+    "description": "- - - Extraits et jus de viande"
+  },
+  {
+    "code": "1603002000",
+    "description": "- - - Extraits et jus de poissons"
+  },
+  {
+    "code": "1603009000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1604111000",
+    "description": "- - - En récipients hermétiquement clos"
+  },
+  {
+    "code": "1604119000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1604121000",
+    "description": "- - - En récipients hermétiquement clos"
+  },
+  {
+    "code": "1604129000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1604131100",
+    "description": "- - - - A l'huile d'olive"
+  },
+  {
+    "code": "1604131900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1604139000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1604141100",
+    "description": "- - - - A l'huile végétale"
+  },
+  {
+    "code": "1604141200",
+    "description": "- - - - Filets dénommés \"longes\""
+  },
+  {
+    "code": "1604141900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1604142000",
+    "description": "- - - Bonites (Sarda spp)"
+  },
+  {
+    "code": "1604151000",
+    "description": "- - - En récipients hermétiquement clos"
+  },
+  {
+    "code": "1604159000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1604161000",
+    "description": "- - - En récipients hermétiquement clos"
+  },
+  {
+    "code": "1604169000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1604171000",
+    "description": "- - - En récipients hermétiquement clos"
+  },
+  {
+    "code": "1604179000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1604180000",
+    "description": "- - Ailerons de requins"
+  },
+  {
+    "code": "1604191000",
+    "description": "- - - Salmonidés, autres que les saumons"
+  },
+  {
+    "code": "1604192000",
+    "description": "- - - Poissons du genre Euthynnus, autres que les listaos [Ethynnus (Katsuwonus) pelamis]"
+  },
+  {
+    "code": "1604193000",
+    "description": "- - - Poissons de l'espèce Orcynopsis unicolor"
+  },
+  {
+    "code": "1604194000",
+    "description": "- - - Morues (Gadus morhua, Gadus ogac, Gadus macrocephalus)"
+  },
+  {
+    "code": "1604195000",
+    "description": "- - - Lieus noirs (Pollachius virens)"
+  },
+  {
+    "code": "1604196000",
+    "description": "- - - Merlus (Merluccius spp, Urophycis spp.)"
+  },
+  {
+    "code": "1604197000",
+    "description": "- - - Lieus de l'Alaska (Theragra chalcogramma) et lieus jaunes (Pollachius pollachius)"
+  },
+  {
+    "code": "1604198000",
+    "description": "- - - Tilapia, silure etcarpes"
+  },
+  {
+    "code": "1604199000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1604201000",
+    "description": "- - - Préparations de surimi"
+  },
+  {
+    "code": "1604209100",
+    "description": "- - - - De saumons"
+  },
+  {
+    "code": "1604209200",
+    "description": "- - - - De salmonidés, autres que les saumons"
+  },
+  {
+    "code": "1604209300",
+    "description": "- - - - D'anchois"
+  },
+  {
+    "code": "1604209400",
+    "description": "- - - - De sardines"
+  },
+  {
+    "code": "1604209500",
+    "description": "- - - - de thons, listaos et autres poissons du genre Euthynnus"
+  },
+  {
+    "code": "1604209600",
+    "description": "- - - - De bonites, de maquereaux des espèces scomber scombrus et scomber japonicus et poissons de l'espèce orcynopsis unicolor"
+  },
+  {
+    "code": "1604209900",
+    "description": "- - - - D'autres poissons"
+  },
+  {
+    "code": "1604310000",
+    "description": "- - Caviar"
+  },
+  {
+    "code": "1604320000",
+    "description": "- - Succédanés de caviar"
+  },
+  {
+    "code": "1605100000",
+    "description": "- Crabes"
+  },
+  {
+    "code": "1605211000",
+    "description": "- - - Présentées dans un emballage immédiat d’un contenu net n’excédant pas 2 Kg"
+  },
+  {
+    "code": "1605219000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1605290000",
+    "description": "- - Autres"
+  },
+  {
+    "code": "1605301000",
+    "description": "- - - En récipients hermétiquement clos"
+  },
+  {
+    "code": "1605309000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1605401000",
+    "description": "- - - En récipients hermétiquement clos"
+  },
+  {
+    "code": "1605409000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1605511000",
+    "description": "- - - En récipients hermétiquement clos"
+  },
+  {
+    "code": "1605519000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1605521000",
+    "description": "- - - En récipients hermétiquement clos"
+  },
+  {
+    "code": "1605529000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1605531000",
+    "description": "- - - En récipients hermétiquement clos"
+  },
+  {
+    "code": "1605539000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1605541000",
+    "description": "- - - En récipients hermétiquement clos"
+  },
+  {
+    "code": "1605549000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1605551000",
+    "description": "- - - En récipients hermétiquement clos"
+  },
+  {
+    "code": "1605559000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1605561000",
+    "description": "- - - En récipients hermétiquement clos"
+  },
+  {
+    "code": "1605569000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1605571000",
+    "description": "- - - En récipients hermétiquement clos"
+  },
+  {
+    "code": "1605579000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1605581000",
+    "description": "- - - En récipients hermétiquement clos"
+  },
+  {
+    "code": "1605589000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1605591000",
+    "description": "- - - En récipients hermétiquement clos"
+  },
+  {
+    "code": "1605599100",
+    "description": "- - - - Palourde"
+  },
+  {
+    "code": "1605599900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1605611000",
+    "description": "- - - En récipients hermétiquement clos"
+  },
+  {
+    "code": "1605619000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1605621000",
+    "description": "- - - En récipients hermétiquement clos"
+  },
+  {
+    "code": "1605629000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1605631000",
+    "description": "- - - En récipients hermétiquement clos"
+  },
+  {
+    "code": "1605639000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1605691000",
+    "description": "- - - En récipients hermétiquement clos"
+  },
+  {
+    "code": "1605699000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1701121000",
+    "description": "- - - Destinés au raffinage"
+  },
+  {
+    "code": "1701129000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1701131000",
+    "description": "- - - Destinés au raffinage"
+  },
+  {
+    "code": "1701139000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1701141000",
+    "description": "- - - Destinés au raffinage"
+  },
+  {
+    "code": "1701149000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1701910000",
+    "description": "- - Additionnés d'aromatisants ou de colorants"
+  },
+  {
+    "code": "1701991100",
+    "description": "- - - - Sucres blancs de betteraves"
+  },
+  {
+    "code": "1701991900",
+    "description": "- - - - Autres sucres blancs"
+  },
+  {
+    "code": "1701992000",
+    "description": "- - - Saccharose chimiquement pur"
+  },
+  {
+    "code": "1701999000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1702111100",
+    "description": "- - - - Aromatisé ou additionné de colorants"
+  },
+  {
+    "code": "1702111900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1702119000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1702191100",
+    "description": "- - - - Aromatisé ou additionné de colorants"
+  },
+  {
+    "code": "1702191900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1702199000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1702201100",
+    "description": "- - - - Aromatisé ou additionné de colorants"
+  },
+  {
+    "code": "1702201900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1702209000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1702301000",
+    "description": "- - - isoglucose"
+  },
+  {
+    "code": "1702309100",
+    "description": "- - - - En poudre cristalline blanche, même agglomérée"
+  },
+  {
+    "code": "1702309200",
+    "description": "- - - - Glucose sous forme liquide ou sirop de glucose"
+  },
+  {
+    "code": "1702309900",
+    "description": "- - - - Glucose sous autres formes"
+  },
+  {
+    "code": "1702401100",
+    "description": "- - - - Aromatisé ou additionné de colorants"
+  },
+  {
+    "code": "1702401900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1702409000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1702500000",
+    "description": "- Fructose chimiquement pur"
+  },
+  {
+    "code": "1702601100",
+    "description": "- - - - Aromatisé ou additionné de colorants"
+  },
+  {
+    "code": "1702601900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1702609000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1702901100",
+    "description": "- - - - Aromatisé ou additionné de colorants"
+  },
+  {
+    "code": "1702901900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1702909100",
+    "description": "- - - - Succédanés du miel, même mélangés de miel naturel"
+  },
+  {
+    "code": "1702909900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1703101000",
+    "description": "- - - Destinées à la fabrication de produits mélassés pour la nourriture des animaux"
+  },
+  {
+    "code": "1703109100",
+    "description": "- - - - Additionnés d'aromatisants ou de colorants"
+  },
+  {
+    "code": "1703109200",
+    "description": "- - - - Non additionnés d'aromatisants ou de colorants"
+  },
+  {
+    "code": "1703901000",
+    "description": "- - - En poudre"
+  },
+  {
+    "code": "1703909000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1704101000",
+    "description": "- - - Gomme base"
+  },
+  {
+    "code": "1704109000",
+    "description": "- - - Autres gommes à mâcher"
+  },
+  {
+    "code": "1704901000",
+    "description": "- - - Bonbons (y compris ceux contenant de l'extrait de malt)"
+  },
+  {
+    "code": "1704902000",
+    "description": "- - - Pastilles pour la gorge et bonbons contre la toux"
+  },
+  {
+    "code": "1704903000",
+    "description": "- - - Caramels"
+  },
+  {
+    "code": "1704904000",
+    "description": "- - - Massepain"
+  },
+  {
+    "code": "1704905000",
+    "description": "- - - Préparation dite Chocolat blanc"
+  },
+  {
+    "code": "1704906000",
+    "description": "- - - Extrait de réglisse sous toutes ses formes"
+  },
+  {
+    "code": "1704907000",
+    "description": "- - - Dragées et sucreries similaires dragéifiées"
+  },
+  {
+    "code": "1704908000",
+    "description": "- - - Halwat turque"
+  },
+  {
+    "code": "1704909100",
+    "description": "- - - - Pâtes de fondant préparées avec du saccharose"
+  },
+  {
+    "code": "1704909200",
+    "description": "- - - - Pâtes de nougat"
+  },
+  {
+    "code": "1704909300",
+    "description": "- - - - Pâte d'amande"
+  },
+  {
+    "code": "1704909900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1801001100",
+    "description": "- - - - Bruts"
+  },
+  {
+    "code": "1801001200",
+    "description": "- - - - Torréfiés"
+  },
+  {
+    "code": "1801002100",
+    "description": "- - - - Brutes"
+  },
+  {
+    "code": "1801002200",
+    "description": "- - - - Torréfiées"
+  },
+  {
+    "code": "1802001000",
+    "description": "- - - Coques et pellicules (pelures)"
+  },
+  {
+    "code": "1802002000",
+    "description": "- - - Germes de cacao"
+  },
+  {
+    "code": "1802003000",
+    "description": "- - - Poussières de cacao"
+  },
+  {
+    "code": "1802004000",
+    "description": "- - - Tourteaux résiduaires"
+  },
+  {
+    "code": "1802009000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1803100000",
+    "description": "- Non dégraissée"
+  },
+  {
+    "code": "1803200000",
+    "description": "- Complètement ou partiellement dégraissée"
+  },
+  {
+    "code": "1804001000",
+    "description": "- - - Beurre de cacao"
+  },
+  {
+    "code": "1804002000",
+    "description": "- - - Graisse et huile de cacao"
+  },
+  {
+    "code": "1805000000",
+    "description": "Poudre de cacao, sans addition de sucre ou d'autres édulcorants."
+  },
+  {
+    "code": "1806100000",
+    "description": "- Poudre de cacao, avec addition de sucre ou d'autres édulcorants"
+  },
+  {
+    "code": "1806201100",
+    "description": "- - - - En blocs"
+  },
+  {
+    "code": "1806201200",
+    "description": "- - - - En barres"
+  },
+  {
+    "code": "1806202100",
+    "description": "- - - - Liquide ou pâteux"
+  },
+  {
+    "code": "1806202200",
+    "description": "- - - - Poudres"
+  },
+  {
+    "code": "1806202900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1806310000",
+    "description": "- - Fourrés"
+  },
+  {
+    "code": "1806321000",
+    "description": "- - - Additionnés de céréales, de noix ou d'autres fruits"
+  },
+  {
+    "code": "1806329000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1806901100",
+    "description": "- - - - Bonbons au chocolat (pralines), fourrés ou non"
+  },
+  {
+    "code": "1806901910",
+    "description": "- - - - - Fourrés"
+  },
+  {
+    "code": "1806901920",
+    "description": "- - - - - Non fourrés"
+  },
+  {
+    "code": "1806902000",
+    "description": "- - - Sucreries et leurs succédanés fabriqués à partir de produits de substitution du sucre, contenant du cacao"
+  },
+  {
+    "code": "1806903000",
+    "description": "- - - Pâtes à tartiner contenant du cacao"
+  },
+  {
+    "code": "1806909000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1901101000",
+    "description": "- - - Farines lactées même sucrées, contenant de cacao"
+  },
+  {
+    "code": "1901109100",
+    "description": "- - - - Destinées à des fins médicales spéciales"
+  },
+  {
+    "code": "1901109910",
+    "description": "- - - - - Pour l'alimentation des nourrissons"
+  },
+  {
+    "code": "1901109920",
+    "description": "- - - - - Pour l'alimentation des enfants en bas d'age"
+  },
+  {
+    "code": "1901201000",
+    "description": "- - - Pâtes préparées"
+  },
+  {
+    "code": "1901202000",
+    "description": "- - - Pizzas non cuites"
+  },
+  {
+    "code": "1901203000",
+    "description": "- - - Mélanges et pâtes pour la préparation des aliments diététiques destinés à des fins médicales spéciales"
+  },
+  {
+    "code": "1901209000",
+    "description": "- - - Autres mélanges et pâtes pour la préparation des produits de la boulangerie, de la pâtisserie ou de la biscuiterie du n°19.05"
+  },
+  {
+    "code": "1901901000",
+    "description": "- - - Extraits de malt"
+  },
+  {
+    "code": "1901902000",
+    "description": "- - - Préparations alimentaires à base de lait"
+  },
+  {
+    "code": "1901909000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1902111000",
+    "description": "- - - Spaghettis et nouilles"
+  },
+  {
+    "code": "1902112000",
+    "description": "- - - Macaroni"
+  },
+  {
+    "code": "1902119000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1902191000",
+    "description": "- - - Spaghettis et nouilles"
+  },
+  {
+    "code": "1902192000",
+    "description": "- - - Macaroni"
+  },
+  {
+    "code": "1902199000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1902201000",
+    "description": "- - - Préparées par méthode traditionnelle et conditionnés dans des sacs n’excédant pas 10 KG"
+  },
+  {
+    "code": "1902209100",
+    "description": "- - - - Farcies de viandes ou d’abats"
+  },
+  {
+    "code": "1902209200",
+    "description": "- - - - Farcies de poissons, y compris le caviar et ses succédanés"
+  },
+  {
+    "code": "1902209300",
+    "description": "- - - - Farcies de crustacés et de mollusques, y compris les coquillages"
+  },
+  {
+    "code": "1902209400",
+    "description": "- - - - Farcies d'autres produits d'origine animale"
+  },
+  {
+    "code": "1902209900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1902301000",
+    "description": "- - - Séchées"
+  },
+  {
+    "code": "1902309000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1902401000",
+    "description": "- - - Non préparé"
+  },
+  {
+    "code": "1902409100",
+    "description": "- - - - Couscous fait à main conditionnés dans des sacs n’excédant pas 10 KGS"
+  },
+  {
+    "code": "1902409900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1903001000",
+    "description": "- - - Tapioca de fécule de pommes de terre"
+  },
+  {
+    "code": "1903002000",
+    "description": "- - - Tapioca de la fécule de manioc"
+  },
+  {
+    "code": "1903003000",
+    "description": "- - - Tapioca de la fécule de sagou"
+  },
+  {
+    "code": "1903009000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1904101000",
+    "description": "- - - A base de mais"
+  },
+  {
+    "code": "1904102000",
+    "description": "- - - A base de riz"
+  },
+  {
+    "code": "1904109000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1904201000",
+    "description": "- - - Musli (céréale de petit déjeuner)"
+  },
+  {
+    "code": "1904209000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1904301000",
+    "description": "- - - Conditionné pour la vente au détail"
+  },
+  {
+    "code": "1904309000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1904901000",
+    "description": "- - - A base de riz"
+  },
+  {
+    "code": "1904902000",
+    "description": "- - - A base d'orge"
+  },
+  {
+    "code": "1904909000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1905100000",
+    "description": "- Pain croustillant dit «knäckebrot»"
+  },
+  {
+    "code": "1905201000",
+    "description": "- - - Enrobés de cacao ou de chocolat"
+  },
+  {
+    "code": "1905202000",
+    "description": "- - - Glacés ou recouverts autrement de sucre"
+  },
+  {
+    "code": "1905209000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1905311000",
+    "description": "- - - Entièrement ou partiellement enrobées ou recouvertes de chocolat ou d'autres préparations contenant du cacao"
+  },
+  {
+    "code": "1905312000",
+    "description": "- - - Fourrés"
+  },
+  {
+    "code": "1905319000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1905321000",
+    "description": "- - - Entièrement ou partiellement enrobées ou recouvertes de chocolat ou d'autres préparations contenant du cacao"
+  },
+  {
+    "code": "1905329000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "1905401000",
+    "description": "- - - Biscottes"
+  },
+  {
+    "code": "1905409100",
+    "description": "- - - - Pain grillé"
+  },
+  {
+    "code": "1905409900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "1905901000",
+    "description": "- - - Hosties, cachets vides pour médicaments et similaires"
+  },
+  {
+    "code": "1905902110",
+    "description": "- - - - - Pain traditionnel et autres produits assimilés (matloue, koucha, kessra, cheair, etc.)"
+  },
+  {
+    "code": "1905902190",
+    "description": "- - - - - Autres"
+  },
+  {
+    "code": "1905902200",
+    "description": "- - - - Pain azyme ou matzé"
+  },
+  {
+    "code": "1905903100",
+    "description": "- - - Biscuits de mer et autres produits de la boulangerie ordinaire"
+  },
+  {
+    "code": "1905909100",
+    "description": "- - - - Produits de viennoiseries préparés par méthode traditionnelle (brioche, petit pain, croissant, etc.)"
+  },
+  {
+    "code": "1905909200",
+    "description": "- - - - Gâteaux traditionnels, gâteaux à base d’amandes, de noix, de pistache, etc. : beklawa, dzeriette, kenidlette, etc."
+  },
+  {
+    "code": "1905909300",
+    "description": "- - - - Gâteaux traditionnels et orientales à base de farines, kaak, gâteaux sec et mouscoutchou"
+  },
+  {
+    "code": "1905909400",
+    "description": "- - - - Pâtes cuites à l’huile (sfendj (beignets traditionnels), zalabias, kalb el louz, makrout, etc.)"
+  },
+  {
+    "code": "1905909910",
+    "description": "- - - - - Meringues"
+  },
+  {
+    "code": "1905909920",
+    "description": "- - - - - Crêpes"
+  },
+  {
+    "code": "1905909930",
+    "description": "- - - - - Quiche"
+  },
+  {
+    "code": "1905909940",
+    "description": "- - - - - Pizzas précuites ou cuites"
+  },
+  {
+    "code": "1905909990",
+    "description": "- - - - - Autres"
+  }
+]

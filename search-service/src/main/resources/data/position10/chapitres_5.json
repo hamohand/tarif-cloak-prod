@@ -1,0 +1,5070 @@
+[
+  {
+    "code": "5001000000",
+    "description": "Cocons de vers à soie propres au dévidage."
+  },
+  {
+    "code": "5002000000",
+    "description": "Soie grège (non moulinée)."
+  },
+  {
+    "code": "5003000000",
+    "description": "Déchets de soie (y compris les cocons non dévidables, les déchets de fils et les effilochés)."
+  },
+  {
+    "code": "5004001000",
+    "description": "- - - Ecrus, décrus ou blanchis"
+  },
+  {
+    "code": "5004009000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5005001000",
+    "description": "- - - Ecrus, décrus ou blanchis"
+  },
+  {
+    "code": "5005009000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5006001000",
+    "description": "- - - Fils de soie conditionnés pour la vente au détail"
+  },
+  {
+    "code": "5006002000",
+    "description": "- - - Fils de déchets de soie conditionnés pour la vente au détail"
+  },
+  {
+    "code": "5006003000",
+    "description": "- - - Poil de Messine (crin de Florence)"
+  },
+  {
+    "code": "5007201000",
+    "description": "- - - Crêpes"
+  },
+  {
+    "code": "5007202000",
+    "description": "- - - Pongés, habutaï, honan, shantung, corah et tissus similaires d'Extrême-Orient, de soie pure (non mélangée de bourre de soie ou d’autres matières textiles)"
+  },
+  {
+    "code": "5007209100",
+    "description": "- - - - Ecrus, décrus ou blanchis"
+  },
+  {
+    "code": "5007209200",
+    "description": "- - - - Teints"
+  },
+  {
+    "code": "5007209300",
+    "description": "- - - - Imprimés"
+  },
+  {
+    "code": "5007209400",
+    "description": "- - - - En fils de diverses couleurs"
+  },
+  {
+    "code": "5007209900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5007901000",
+    "description": "- - - Ecrus, décrus ou blanchis"
+  },
+  {
+    "code": "5007902000",
+    "description": "- - - Teints"
+  },
+  {
+    "code": "5007903000",
+    "description": "- - - Imprimés"
+  },
+  {
+    "code": "5007904000",
+    "description": "- - - En fils de diverses couleurs"
+  },
+  {
+    "code": "5007909000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5101111000",
+    "description": "- - - En suint"
+  },
+  {
+    "code": "5101112000",
+    "description": "- - - Lavées à dos"
+  },
+  {
+    "code": "5101191000",
+    "description": "- - - En suint"
+  },
+  {
+    "code": "5101192000",
+    "description": "- - - Lavées à dos"
+  },
+  {
+    "code": "5101211000",
+    "description": "- - - Préparés par méthode traditionnelle, conditionnés dans des sacs n’excédant pas 20 Kg"
+  },
+  {
+    "code": "5101219000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5101290000",
+    "description": "- - Autres"
+  },
+  {
+    "code": "5101301000",
+    "description": "- - - Préparés par méthode traditionnelle, conditionnés dans des sacs n’excédant pas 20 Kg"
+  },
+  {
+    "code": "5101309000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5102110000",
+    "description": "- - De chèvre de Cachemire"
+  },
+  {
+    "code": "5102191000",
+    "description": "- - - Poils de lapin angora"
+  },
+  {
+    "code": "5102192000",
+    "description": "- - - Poils d’alpaga, de lama, de vigogne, de yack, de chameau, de chèvre mohair, de chèvre du Tibet et similaires"
+  },
+  {
+    "code": "5102199000",
+    "description": "- - - Poils d’autres lapins que le lapin angora, de lièvre, de castor, de ragondin et de rat musqué"
+  },
+  {
+    "code": "5102200000",
+    "description": "- Poils grossiers"
+  },
+  {
+    "code": "5103101000",
+    "description": "- - - Préparés par méthode traditionnelle, conditionnés dans des sacs n’excédant pas 20 Kg"
+  },
+  {
+    "code": "5103109100",
+    "description": "- - - - Non carbonisées"
+  },
+  {
+    "code": "5103109200",
+    "description": "- - - - Carbonisées"
+  },
+  {
+    "code": "5103201000",
+    "description": "- - - Déchets de fils"
+  },
+  {
+    "code": "5103209100",
+    "description": "- - - - Non carbonisés"
+  },
+  {
+    "code": "5103209200",
+    "description": "- - - - Carbonisés"
+  },
+  {
+    "code": "5103301000",
+    "description": "- - - Déchets de fils"
+  },
+  {
+    "code": "5103309100",
+    "description": "- - - - Non carbonisés"
+  },
+  {
+    "code": "5103309200",
+    "description": "- - - - Carbonisés"
+  },
+  {
+    "code": "5104001100",
+    "description": "- - - - Préparés par méthode traditionnelle, conditionnés dans des sacs n’excédant pas 20 Kg"
+  },
+  {
+    "code": "5104001900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5104002100",
+    "description": "- - - - Préparés par méthode traditionnelle, conditionnés dans des sacs n’excédant pas 20 Kg"
+  },
+  {
+    "code": "5104002900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5105101000",
+    "description": "- - - Préparés par méthode traditionnelle, conditionnés dans des sacs n’excédant pas 20 Kg"
+  },
+  {
+    "code": "5105109100",
+    "description": "- - - - Ecrue, décruée ou blanchie"
+  },
+  {
+    "code": "5105109900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5105211000",
+    "description": "- - - Préparés par méthode traditionnelle, conditionnés dans des sacs n’excédant pas 20 Kg"
+  },
+  {
+    "code": "5105219100",
+    "description": "- - - - Ecrue, décruée ou blanchie"
+  },
+  {
+    "code": "5105219900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5105291110",
+    "description": "- - - - - Contenant au moins 85% en poids de laine"
+  },
+  {
+    "code": "5105291120",
+    "description": "- - - - - Contenant moins de 85% en poids de laine"
+  },
+  {
+    "code": "5105291900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5105299110",
+    "description": "- - - - - Contenant au moins 85% en poids de laine"
+  },
+  {
+    "code": "5105299120",
+    "description": "- - - - - Contenant moins de 85% en poids de laine"
+  },
+  {
+    "code": "5105299900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5105311000",
+    "description": "- - - Ecrue, décruée ou blanchie"
+  },
+  {
+    "code": "5105319000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5105391000",
+    "description": "- - - Ecrue, décruée ou blanchie"
+  },
+  {
+    "code": "5105399000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5105401000",
+    "description": "- - - Ecrue, décruée ou blanchie"
+  },
+  {
+    "code": "5105409000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5106101000",
+    "description": "- - - Préparés par méthode traditionnelle"
+  },
+  {
+    "code": "5106109110",
+    "description": "- - - - - Simples"
+  },
+  {
+    "code": "5106109120",
+    "description": "- - - - - Retors ou câblés"
+  },
+  {
+    "code": "5106109210",
+    "description": "- - - - - Simples"
+  },
+  {
+    "code": "5106109220",
+    "description": "- - - - - Retors ou câblés"
+  },
+  {
+    "code": "5106109310",
+    "description": "- - - - - Simples"
+  },
+  {
+    "code": "5106109320",
+    "description": "- - - - - Retors ou câblés"
+  },
+  {
+    "code": "5106109910",
+    "description": "- - - - - Simples"
+  },
+  {
+    "code": "5106109920",
+    "description": "- - - - - Retors ou câblés"
+  },
+  {
+    "code": "5106201100",
+    "description": "- - - - Simples"
+  },
+  {
+    "code": "5106201200",
+    "description": "- - - - Retors ou câblés"
+  },
+  {
+    "code": "5106202100",
+    "description": "- - - - Simples"
+  },
+  {
+    "code": "5106202200",
+    "description": "- - - - Retors ou câblés"
+  },
+  {
+    "code": "5106203100",
+    "description": "- - - - Simples"
+  },
+  {
+    "code": "5106203200",
+    "description": "- - - - Retors ou câblés"
+  },
+  {
+    "code": "5106209100",
+    "description": "- - - - Simples"
+  },
+  {
+    "code": "5106209200",
+    "description": "- - - - Retors ou câblés"
+  },
+  {
+    "code": "5107101000",
+    "description": "- - - Préparés par méthode traditionnelle"
+  },
+  {
+    "code": "5107109110",
+    "description": "- - - - - Simples"
+  },
+  {
+    "code": "5107109120",
+    "description": "- - - - - Retors ou câblés"
+  },
+  {
+    "code": "5107109210",
+    "description": "- - - - - Simples"
+  },
+  {
+    "code": "5107109220",
+    "description": "- - - - - Retors ou câblés"
+  },
+  {
+    "code": "5107109310",
+    "description": "- - - - - Simples"
+  },
+  {
+    "code": "5107109320",
+    "description": "- - - - - Retors ou câblés"
+  },
+  {
+    "code": "5107109910",
+    "description": "- - - - - Simples"
+  },
+  {
+    "code": "5107109920",
+    "description": "- - - - - Retors ou câblés"
+  },
+  {
+    "code": "5107201100",
+    "description": "- - - - Simples"
+  },
+  {
+    "code": "5107201200",
+    "description": "- - - - Retors ou câblés"
+  },
+  {
+    "code": "5107202100",
+    "description": "- - - - Simples"
+  },
+  {
+    "code": "5107202200",
+    "description": "- - - - Retors ou câblés"
+  },
+  {
+    "code": "5107203100",
+    "description": "- - - - Simples"
+  },
+  {
+    "code": "5107203200",
+    "description": "- - - - Retors ou câblés"
+  },
+  {
+    "code": "5107209100",
+    "description": "- - - - Simples"
+  },
+  {
+    "code": "5107209200",
+    "description": "- - - - Retors ou câblés"
+  },
+  {
+    "code": "5108101000",
+    "description": "- - - Préparés par méthode traditionnelle"
+  },
+  {
+    "code": "5108109100",
+    "description": "- - - - Ecrus"
+  },
+  {
+    "code": "5108109200",
+    "description": "- - - - Décrués"
+  },
+  {
+    "code": "5108109300",
+    "description": "- - - - Blanchis"
+  },
+  {
+    "code": "5108109900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5108201000",
+    "description": "- - - Préparés par méthode traditionnelle"
+  },
+  {
+    "code": "5108209100",
+    "description": "- - - - Ecrus"
+  },
+  {
+    "code": "5108209200",
+    "description": "- - - - Décrués"
+  },
+  {
+    "code": "5108209300",
+    "description": "- - - - Blanchis"
+  },
+  {
+    "code": "5108209900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5109101100",
+    "description": "- - - - Préparés par méthode traditionnelle dans des sacs n’excédant pas 20 Kg"
+  },
+  {
+    "code": "5109101900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5109102100",
+    "description": "- - - - Préparés par méthode traditionnelle dans des sacs n’excédant pas 20 Kg"
+  },
+  {
+    "code": "5109102900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5109900000",
+    "description": "- Autres"
+  },
+  {
+    "code": "5110001110",
+    "description": "- - - - - Préparés par méthode traditionnelle dans des sacs n’excédant pas 20 Kg"
+  },
+  {
+    "code": "5110001190",
+    "description": "- - - - - Autres"
+  },
+  {
+    "code": "5110001210",
+    "description": "- - - - - Préparés par méthode traditionnelle dans des sacs n’excédant pas 20 Kg"
+  },
+  {
+    "code": "5110001290",
+    "description": "- - - - - Autres"
+  },
+  {
+    "code": "5110002110",
+    "description": "- - - - - Préparés par méthode traditionnelle dans des sacs n’excédant pas 20 Kg"
+  },
+  {
+    "code": "5110002190",
+    "description": "- - - - - Autres"
+  },
+  {
+    "code": "5110002210",
+    "description": "- - - - - Préparés par méthode traditionnelle dans des sacs n’excédant pas 20 Kg"
+  },
+  {
+    "code": "5110002290",
+    "description": "- - - - - Autres"
+  },
+  {
+    "code": "5111110000",
+    "description": "- - D'un poids n'excédant pas 300 g/m2"
+  },
+  {
+    "code": "5111190000",
+    "description": "- - Autres"
+  },
+  {
+    "code": "5111200000",
+    "description": "- Autres, mélangés principalement ou uniquement avec des filaments synthétiques ou artificiels"
+  },
+  {
+    "code": "5111301000",
+    "description": "- - - D'un poids n'excédant pas 300 g/m2"
+  },
+  {
+    "code": "5111302000",
+    "description": "- - - D'un poids excédant 300 g/m2"
+  },
+  {
+    "code": "5111901000",
+    "description": "- - - D'un poids n'excédant pas 300 g/m2"
+  },
+  {
+    "code": "5111902000",
+    "description": "- - - D'un poids excédant 300 g/m2"
+  },
+  {
+    "code": "5112110000",
+    "description": "- - D'un poids n'excédant pas 200 g/m2"
+  },
+  {
+    "code": "5112191000",
+    "description": "- - - Préparés par méthode traditionnelle"
+  },
+  {
+    "code": "5112199000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5112200000",
+    "description": "- Autres, mélangés principalement ou uniquement avec des filaments synthétiques ou artificiels"
+  },
+  {
+    "code": "5112301000",
+    "description": "- - - D'un poids n'excédant pas 300 g/m2"
+  },
+  {
+    "code": "5112302000",
+    "description": "- - - D'un poids excédant 300 g/m2"
+  },
+  {
+    "code": "5112901000",
+    "description": "- - - D'un poids n'excédant pas 300 g/m2"
+  },
+  {
+    "code": "5112902000",
+    "description": "- - - D'un poids excédant 300 g/m2"
+  },
+  {
+    "code": "5113001100",
+    "description": "- - - - Préparés par méthode traditionnelle"
+  },
+  {
+    "code": "5113001900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5113002000",
+    "description": "- - - Tissu de crin"
+  },
+  {
+    "code": "5201001000",
+    "description": "- - - Coton hydrophile ou blanchi"
+  },
+  {
+    "code": "5201009000",
+    "description": "- - - Coton non hydrophile ni blanchi"
+  },
+  {
+    "code": "5202100000",
+    "description": "- Déchets de fils"
+  },
+  {
+    "code": "5202910000",
+    "description": "- - Effilochés"
+  },
+  {
+    "code": "5202990000",
+    "description": "- - Autres"
+  },
+  {
+    "code": "5203001000",
+    "description": "- - - Ecru, décrué ou blanchi"
+  },
+  {
+    "code": "5203009000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5204111100",
+    "description": "- - - - Teintés et conditionnés dans des sacs n’excédant pas 1Kg"
+  },
+  {
+    "code": "5204111900",
+    "description": "- - - - Autres, préparés par méthode traditionnelle"
+  },
+  {
+    "code": "5204119000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5204190000",
+    "description": "- - Autres"
+  },
+  {
+    "code": "5204201100",
+    "description": "- - - - Teintés"
+  },
+  {
+    "code": "5204201900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5204209100",
+    "description": "- - - - Contenant au moins 85 % en poids de coton"
+  },
+  {
+    "code": "5204209900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5205111000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5205112000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5205113000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5205119000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5205121000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5205122000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5205123000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5205129000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5205131000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5205132000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5205133000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5205139000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5205141000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5205142000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5205143000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5205149000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5205151000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5205152000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5205153000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5205159000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5205211000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5205212000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5205213000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5205219000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5205221000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5205222000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5205223000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5205229000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5205231000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5205232000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5205233000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5205239000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5205241000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5205242000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5205243000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5205249000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5205261000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5205262000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5205263000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5205269000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5205271000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5205272000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5205273000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5205279000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5205281000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5205282000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5205283000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5205289000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5205311000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5205312000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5205313000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5205319000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5205321000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5205322000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5205323000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5205329000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5205331000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5205332000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5205333000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5205339000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5205341000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5205342000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5205343000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5205349000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5205351000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5205352000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5205353000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5205359000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5205411000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5205412000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5205413000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5205419000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5205421000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5205422000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5205423000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5205429000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5205431000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5205432000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5205433000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5205439000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5205441000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5205442000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5205443000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5205449000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5205461000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5205462000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5205463000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5205469000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5205471000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5205472000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5205473000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5205479000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5205481000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5205482000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5205483000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5205489000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5206111000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5206112000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5206113000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5206119000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5206121000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5206122000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5206123000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5206124000",
+    "description": "- - - Fils simples de coton, teintés"
+  },
+  {
+    "code": "5206125000",
+    "description": "- - - Fils simples de coton, jaspés"
+  },
+  {
+    "code": "5206129000",
+    "description": "- - - Autres fils simples de coton"
+  },
+  {
+    "code": "5206131000",
+    "description": "- - - Ecrus (*)"
+  },
+  {
+    "code": "5206132000",
+    "description": "- - - Décrués (*)"
+  },
+  {
+    "code": "5206133000",
+    "description": "- - - Blanchis (*)"
+  },
+  {
+    "code": "5206139000",
+    "description": "- - - Autres (*)"
+  },
+  {
+    "code": "5206141000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5206142000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5206143000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5206149000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5206151000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5206152000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5206153000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5206159000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5206211000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5206212000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5206213000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5206219000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5206221000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5206222000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5206223000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5206229000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5206231000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5206232000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5206233000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5206239000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5206241000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5206242000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5206243000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5206249000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5206251000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5206252000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5206253000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5206259000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5206311000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5206312000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5206313000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5206319000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5206321000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5206322000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5206323000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5206329000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5206331000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5206332000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5206333000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5206339000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5206341000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5206342000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5206343000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5206349000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5206351000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5206352000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5206353000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5206359000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5206411000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5206412000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5206413000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5206419000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5206421000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5206422000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5206423000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5206429000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5206431000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5206432000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5206433000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5206439000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5206441000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5206442000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5206443000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5206449000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5206451000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5206452000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5206453000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5206459000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5207101100",
+    "description": "- - - - Teintés"
+  },
+  {
+    "code": "5207101900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5207109000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5207900000",
+    "description": "- Autres"
+  },
+  {
+    "code": "5208111000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5208119100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5208119900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5208121000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5208129100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5208129900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5208131000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5208139100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5208139900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5208191000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5208199100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5208199900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5208211000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5208219100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5208219900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5208221000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5208229100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5208229900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5208231000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5208239100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5208239900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5208291000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5208299100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5208299900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5208311000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5208319100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5208319900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5208321000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5208329100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5208329900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5208331000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5208339100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5208339900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5208391000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5208399100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5208399900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5208411000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5208419100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5208419900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5208421000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5208429100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5208429900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5208431000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5208439100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5208439900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5208491000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5208499100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5208499900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5208511000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5208519100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5208519900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5208521000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5208529100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5208529900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5208591000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5208599100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5208599900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5209111000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5209119100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5209119900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5209121000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5209129100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5209129900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5209191000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5209199100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5209199900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5209211000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5209219100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5209219900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5209221000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5209229100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5209229900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5209291000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5209299100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5209299900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5209311000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5209319100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5209319900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5209321000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5209329100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5209329900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5209391000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5209399100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5209399900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5209411000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5209419100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5209419900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5209421000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5209429100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5209429900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5209431000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5209439100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5209439900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5209491000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5209499100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5209499900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5209511000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5209519100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5209519900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5209521000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5209529100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5209529900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5209591000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5209599100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5209599900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5210111000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5210119100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5210119900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5210191000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5210199100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5210199900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5210211000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5210219100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5210219900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5210291000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5210299100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5210299900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5210311000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5210319100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5210319900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5210321000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5210329100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5210329900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5210391000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5210399100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5210399900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5210411000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5210419100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5210419900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5210491000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5210499100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5210499900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5210511000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5210519100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5210519900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5210591000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5210599100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5210599900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5211111000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5211119100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5211119900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5211121000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5211129100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5211129900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5211191000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5211199100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5211199900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5211200000",
+    "description": "- Blanchis"
+  },
+  {
+    "code": "5211311000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5211319100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5211319900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5211321000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5211329100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5211329900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5211391000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5211399100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5211399900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5211411000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5211419100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5211419900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5211421000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5211429100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5211429900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5211431000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5211439100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5211439900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5211491000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5211499100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5211499900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5211511000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5211519100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5211519900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5211521000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5211529100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5211529900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5211591000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5211599100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5211599900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5212111000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5212119100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5212119900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5212121000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5212129100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5212129900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5212131000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5212139100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5212139900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5212141000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5212149100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5212149900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5212151000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5212159100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5212159900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5212211000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5212219100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5212219900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5212221000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5212229100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5212229900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5212231000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5212239100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5212239900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5212241000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5212249100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5212249900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5212251000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5212259100",
+    "description": "- - - - D’une largeur n’excédant pas 85 cm"
+  },
+  {
+    "code": "5212259900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5301100000",
+    "description": "- Lin brut ou roui"
+  },
+  {
+    "code": "5301210000",
+    "description": "- - Brisé ou teillé"
+  },
+  {
+    "code": "5301291000",
+    "description": "- - - Contenant au moins 85% en poids de lin"
+  },
+  {
+    "code": "5301299000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5301301000",
+    "description": "- - - Etoupes de lin"
+  },
+  {
+    "code": "5301302000",
+    "description": "- - - Déchets de lin"
+  },
+  {
+    "code": "5302100000",
+    "description": "- Chanvre brut ou roui"
+  },
+  {
+    "code": "5302901000",
+    "description": "- - - Teillé"
+  },
+  {
+    "code": "5302902000",
+    "description": "- - - Peigné ou autrement traité, mais non filé"
+  },
+  {
+    "code": "5302903000",
+    "description": "- - - Etoupes"
+  },
+  {
+    "code": "5302904000",
+    "description": "- - - Déchets de chanvre"
+  },
+  {
+    "code": "5303101000",
+    "description": "- - - Chanvre des Indes"
+  },
+  {
+    "code": "5303109000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5303901000",
+    "description": "- - - Effilochés"
+  },
+  {
+    "code": "5303902000",
+    "description": "- - - Etoupes et déchets"
+  },
+  {
+    "code": "5305001100",
+    "description": "- - - - Brut"
+  },
+  {
+    "code": "5305001900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5305002100",
+    "description": "- - - - Brut"
+  },
+  {
+    "code": "5305002900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5305003000",
+    "description": "- - - Ramie"
+  },
+  {
+    "code": "5305004000",
+    "description": "- - - Fibres d’alfa ou de sparte"
+  },
+  {
+    "code": "5305005000",
+    "description": "- - - De sisal (Agave sisalana)"
+  },
+  {
+    "code": "5305009100",
+    "description": "- - - - Brut"
+  },
+  {
+    "code": "5305009900",
+    "description": "- - - - Autrement présentés"
+  },
+  {
+    "code": "5306101110",
+    "description": "- - - - - Teintés"
+  },
+  {
+    "code": "5306101190",
+    "description": "- - - - - Autres"
+  },
+  {
+    "code": "5306101910",
+    "description": "- - - - - Titrant 833,3 décitex ou plus (n'excédant pas 12 numéros métriques)"
+  },
+  {
+    "code": "5306101920",
+    "description": "- - - - - Titrant moins de 833,3 décitex mais pas moins de 277,8 décitex (excédant 12 numéros métriques mais n'excédant pas 36 numéros métriques)"
+  },
+  {
+    "code": "5306101930",
+    "description": "- - - - - Titrant moins de 277,8 décitex (excédant 36 numéros métriques)"
+  },
+  {
+    "code": "5306102110",
+    "description": "- - - - - Teintés"
+  },
+  {
+    "code": "5306102190",
+    "description": "- - - - - Autres"
+  },
+  {
+    "code": "5306102900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5306201000",
+    "description": "- - - Non conditionnés pour la vente au détail"
+  },
+  {
+    "code": "5306202000",
+    "description": "- - - Conditionnés pour la vente au détail"
+  },
+  {
+    "code": "5307101000",
+    "description": "- - - Conditionnés pour la vente au détail"
+  },
+  {
+    "code": "5307102000",
+    "description": "- - - Non conditionnés pour la vente au détail"
+  },
+  {
+    "code": "5307201000",
+    "description": "- - - Conditionnés pour la vente au détail (*)"
+  },
+  {
+    "code": "5307202000",
+    "description": "- - - Non conditionnés pour la vente au détail (*)"
+  },
+  {
+    "code": "5308100000",
+    "description": "- Fils de coco"
+  },
+  {
+    "code": "5308201000",
+    "description": "- - - Non conditionnés pour la vente au détail"
+  },
+  {
+    "code": "5308202000",
+    "description": "- - - Conditionnés pour la vente au détail"
+  },
+  {
+    "code": "5308901000",
+    "description": "- - - Fils de ramie non conditionnés pour la vente au détail"
+  },
+  {
+    "code": "5308902000",
+    "description": "- - - Fils de ramie conditionnés pour la vente au détail"
+  },
+  {
+    "code": "5308903100",
+    "description": "- - - - Non conditionnés pour la vente au détail"
+  },
+  {
+    "code": "5308903200",
+    "description": "- - - - Conditionnés pour la vente au détail"
+  },
+  {
+    "code": "5308909110",
+    "description": "- - - - - Non conditionnés pour la vente au détail"
+  },
+  {
+    "code": "5308909120",
+    "description": "- - - - - Conditionnés pour la vente au détail"
+  },
+  {
+    "code": "5308909910",
+    "description": "- - - - - Non conditionnés pour la vente au détail"
+  },
+  {
+    "code": "5308909920",
+    "description": "- - - - - Conditionnés pour la vente au détail"
+  },
+  {
+    "code": "5309111000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5309119100",
+    "description": "- - - - Ecrus"
+  },
+  {
+    "code": "5309119200",
+    "description": "- - - - Blanchis"
+  },
+  {
+    "code": "5309191000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5309199000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5309211000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5309219100",
+    "description": "- - - - Ecrus"
+  },
+  {
+    "code": "5309219200",
+    "description": "- - - - Blanchis"
+  },
+  {
+    "code": "5309291000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5309299000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5310101000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5310109100",
+    "description": "- - - - D’une largeur n’excédant pas 150 cm"
+  },
+  {
+    "code": "5310109200",
+    "description": "- - - - D’une largeur excédant 150 cm"
+  },
+  {
+    "code": "5310901000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5310909100",
+    "description": "- - - - D’une largeur n’excédant pas 150 cm"
+  },
+  {
+    "code": "5310909200",
+    "description": "- - - - D’une largeur excédant 150 cm"
+  },
+  {
+    "code": "5311001000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5311009110",
+    "description": "- - - - - Tissus de ramie"
+  },
+  {
+    "code": "5311009120",
+    "description": "- - - - - Tissus de chanvre"
+  },
+  {
+    "code": "5311009130",
+    "description": "- - - - - Tissus de fils de papier"
+  },
+  {
+    "code": "5311009140",
+    "description": "- - - - - Tissus de coco"
+  },
+  {
+    "code": "5311009190",
+    "description": "- - - - - Tissus d’autres fibres textiles végétales"
+  },
+  {
+    "code": "5311009210",
+    "description": "- - - - - Tissus de ramie"
+  },
+  {
+    "code": "5311009220",
+    "description": "- - - - - Tissus de chanvre"
+  },
+  {
+    "code": "5311009230",
+    "description": "- - - - - Tissus de fils de papier"
+  },
+  {
+    "code": "5311009240",
+    "description": "- - - - - Tissus de coco"
+  },
+  {
+    "code": "5311009290",
+    "description": "- - - - - Tissus d’autres fibres textiles végétales"
+  },
+  {
+    "code": "5311009910",
+    "description": "- - - - - Tissus de ramie"
+  },
+  {
+    "code": "5311009920",
+    "description": "- - - - - Tissus de chanvre"
+  },
+  {
+    "code": "5311009930",
+    "description": "- - - - - Tissus de fils de papier"
+  },
+  {
+    "code": "5311009940",
+    "description": "- - - - - Tissus de coco"
+  },
+  {
+    "code": "5311009990",
+    "description": "- - - - - Tissus d’autres fibres textiles végétales"
+  },
+  {
+    "code": "5401101110",
+    "description": "- - - - - Filaments de polyester enrobés de fibres de coton"
+  },
+  {
+    "code": "5401101190",
+    "description": "- - - - - Autres"
+  },
+  {
+    "code": "5401101910",
+    "description": "- - - - - Fils texturés"
+  },
+  {
+    "code": "5401101990",
+    "description": "- - - - - Autres"
+  },
+  {
+    "code": "5401102000",
+    "description": "- - - Conditionnés pour la vente au détail"
+  },
+  {
+    "code": "5401201000",
+    "description": "- - - Non conditionnés pour la vente au détail"
+  },
+  {
+    "code": "5401202000",
+    "description": "- - - Conditionnés pour la vente au détail"
+  },
+  {
+    "code": "5402110000",
+    "description": "- - D'aramides"
+  },
+  {
+    "code": "5402190000",
+    "description": "- - Autres"
+  },
+  {
+    "code": "5402200000",
+    "description": "- Fils à haute ténacité de polyesters, même texturés"
+  },
+  {
+    "code": "5402310000",
+    "description": "- - De nylon ou d'autres polyamides, titrant en fils simples 50 tex ou moins"
+  },
+  {
+    "code": "5402320000",
+    "description": "- - De nylon ou d'autres polyamides, titrant en fils simples plus de 50 tex"
+  },
+  {
+    "code": "5402330000",
+    "description": "- - De polyesters"
+  },
+  {
+    "code": "5402340000",
+    "description": "- - De polypropylène (*)"
+  },
+  {
+    "code": "5402391000",
+    "description": "- - - De chlorofibres"
+  },
+  {
+    "code": "5402392000",
+    "description": "- - - De polyéthylène"
+  },
+  {
+    "code": "5402399000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5402440000",
+    "description": "- - D'élastomères"
+  },
+  {
+    "code": "5402451000",
+    "description": "- - - De nylon"
+  },
+  {
+    "code": "5402459000",
+    "description": "- - - D'autres polyamides"
+  },
+  {
+    "code": "5402460000",
+    "description": "- - Autres, de polyesters, partiellement orientés"
+  },
+  {
+    "code": "5402470000",
+    "description": "- - Autres, de polyesters"
+  },
+  {
+    "code": "5402480000",
+    "description": "- - Autres, de polypropylène"
+  },
+  {
+    "code": "5402490000",
+    "description": "- - Autres"
+  },
+  {
+    "code": "5402511000",
+    "description": "- - - De nylon"
+  },
+  {
+    "code": "5402519000",
+    "description": "- - - D'autres polyamides"
+  },
+  {
+    "code": "5402520000",
+    "description": "- - De polyesters"
+  },
+  {
+    "code": "5402530000",
+    "description": "- - De polypropylène"
+  },
+  {
+    "code": "5402591000",
+    "description": "- - - D’élastomères"
+  },
+  {
+    "code": "5402592000",
+    "description": "- - - De polyéthylène"
+  },
+  {
+    "code": "5402599000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5402610000",
+    "description": "- - De nylon ou d'autres polyamides"
+  },
+  {
+    "code": "5402620000",
+    "description": "- - De polyesters"
+  },
+  {
+    "code": "5402630000",
+    "description": "- - De polypropylène (*)"
+  },
+  {
+    "code": "5402691000",
+    "description": "- - - D’élastomères"
+  },
+  {
+    "code": "5402692000",
+    "description": "- - - De polyéthylène"
+  },
+  {
+    "code": "5402699000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5403100000",
+    "description": "- Fils à haute ténacité en rayonne viscose"
+  },
+  {
+    "code": "5403310000",
+    "description": "- - De rayonne viscose, sans torsion ou d'une torsion n'excédant pas 120 tours par mètre"
+  },
+  {
+    "code": "5403320000",
+    "description": "- - De rayonne viscose, d'une torsion excédant 120 tours par mètre"
+  },
+  {
+    "code": "5403331000",
+    "description": "- - - Sans torsion ou d'une torsion n'excédant pas 120 tours par mètre"
+  },
+  {
+    "code": "5403332000",
+    "description": "- - - D'une torsion excédant 120 tours par mètre"
+  },
+  {
+    "code": "5403391000",
+    "description": "- - - Sans torsion ou d'une torsion n'excédant pas 120 tours par mètre"
+  },
+  {
+    "code": "5403392000",
+    "description": "- - - D'une torsion excédant 120 tours par mètre"
+  },
+  {
+    "code": "5403410000",
+    "description": "- - De rayonne viscose (*)"
+  },
+  {
+    "code": "5403420000",
+    "description": "- - D'acétate de cellulose"
+  },
+  {
+    "code": "5403490000",
+    "description": "- - Autres"
+  },
+  {
+    "code": "5404110000",
+    "description": "- - D'élastomères"
+  },
+  {
+    "code": "5404120000",
+    "description": "- - Autres, de polypropylène"
+  },
+  {
+    "code": "5404190000",
+    "description": "- - Autres"
+  },
+  {
+    "code": "5404901000",
+    "description": "- - - De polyéthylène ou de polypropylène"
+  },
+  {
+    "code": "5404909000",
+    "description": "- - - Autres lames et formes similaires en autres matières textiles synthétiques"
+  },
+  {
+    "code": "5405001000",
+    "description": "- - - Mono filaments"
+  },
+  {
+    "code": "5405002000",
+    "description": "- - - Lames et formes similaires"
+  },
+  {
+    "code": "5406001000",
+    "description": "- - - Fils de filaments synthétiques"
+  },
+  {
+    "code": "5406002000",
+    "description": "- - - Fils de filaments artificiels"
+  },
+  {
+    "code": "5407101000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5407109100",
+    "description": "- - - - Ecrus ou blanchis"
+  },
+  {
+    "code": "5407109900",
+    "description": "- - - - Non ecrus ni blanchis"
+  },
+  {
+    "code": "5407201000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5407209100",
+    "description": "- - - - Ecrus ou blanchis"
+  },
+  {
+    "code": "5407209900",
+    "description": "- - - - Autres tissus obtenus à partir de lames ou formes similaires"
+  },
+  {
+    "code": "5407301000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5407309100",
+    "description": "- - - - Ecrus ou blanchis"
+  },
+  {
+    "code": "5407309900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5407411000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5407419000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5407421000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5407429000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5407431000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5407439000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5407441000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5407449000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5407511000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5407519000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5407521000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5407529000",
+    "description": "- - - Tissus non élastiques"
+  },
+  {
+    "code": "5407531000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5407539000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5407541000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5407549000",
+    "description": "- - - Tissus non élastiques"
+  },
+  {
+    "code": "5407611000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5407619000",
+    "description": "- - - Tissus non élastiques"
+  },
+  {
+    "code": "5407691000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5407699000",
+    "description": "- - - Tissus non élastiques"
+  },
+  {
+    "code": "5407711000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5407719000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5407721000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5407729000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5407731000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5407739000",
+    "description": "- - - Tissus non élastiques"
+  },
+  {
+    "code": "5407741000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5407749000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5407811000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5407819000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5407821000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5407829000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5407831000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5407839000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5407841000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5407849000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5407911000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5407919000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5407921000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5407929000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5407931000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5407939000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5407941000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5407949000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5408101000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5408109000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5408211000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5408219000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5408221000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5408229000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5408231000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5408239000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5408241000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5408249000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5408311000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5408319000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5408321000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5408329000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5408331000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5408339000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5408341000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5408349000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5501110000",
+    "description": "- - D’aramides"
+  },
+  {
+    "code": "5501190000",
+    "description": "- - Autres"
+  },
+  {
+    "code": "5501200000",
+    "description": "- De polyesters"
+  },
+  {
+    "code": "5501300000",
+    "description": "- Acryliques ou modacryliques"
+  },
+  {
+    "code": "5501400000",
+    "description": "- De polypropylènes"
+  },
+  {
+    "code": "5501900000",
+    "description": "- Autres :"
+  },
+  {
+    "code": "5502100000",
+    "description": "- D’acétate de cellulose"
+  },
+  {
+    "code": "5502901000",
+    "description": "- - - De rayonne viscose"
+  },
+  {
+    "code": "5502909000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5503110000",
+    "description": "- - D'aramides"
+  },
+  {
+    "code": "5503190000",
+    "description": "- - Autres"
+  },
+  {
+    "code": "5503200000",
+    "description": "- De polyesters"
+  },
+  {
+    "code": "5503300000",
+    "description": "- Acryliques ou modacryliques"
+  },
+  {
+    "code": "5503400000",
+    "description": "- De polypropylène"
+  },
+  {
+    "code": "5503901000",
+    "description": "- - - De chlorofibres"
+  },
+  {
+    "code": "5503902000",
+    "description": "- - - De polyéthylène"
+  },
+  {
+    "code": "5503909000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5504100000",
+    "description": "- De rayonne viscose"
+  },
+  {
+    "code": "5504901000",
+    "description": "- - - D’acétates"
+  },
+  {
+    "code": "5504909000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5505101000",
+    "description": "- - - De nylon ou d’autres polyamides"
+  },
+  {
+    "code": "5505102000",
+    "description": "- - - De polyesters"
+  },
+  {
+    "code": "5505103000",
+    "description": "- - - Acryliques ou modacryliques"
+  },
+  {
+    "code": "5505104000",
+    "description": "- - - De polypropylène"
+  },
+  {
+    "code": "5505109000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5505201000",
+    "description": "- - - De rayonne viscose"
+  },
+  {
+    "code": "5505202000",
+    "description": "- - - D’acétates"
+  },
+  {
+    "code": "5505209000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5506101000",
+    "description": "- - - Contenant au moins 85% en poids de ces fibres"
+  },
+  {
+    "code": "5506102000",
+    "description": "- - - Contenant moins de 85% en poids de ces fibres"
+  },
+  {
+    "code": "5506201000",
+    "description": "- - - Contenant au moins 85% en poids de ces fibres"
+  },
+  {
+    "code": "5506202000",
+    "description": "- - - Contenant moins de 85% en poids de ces fibres"
+  },
+  {
+    "code": "5506301000",
+    "description": "- - - Contenant au moins 85% en poids de ces fibres"
+  },
+  {
+    "code": "5506302000",
+    "description": "- - - Contenant moins de 85% en poids de ces fibres"
+  },
+  {
+    "code": "5506401000",
+    "description": "- - - Contenant au moins 85% en poids de ces fibres"
+  },
+  {
+    "code": "5506402000",
+    "description": "- - - Contenant moins de 85% en poids de ces fibres"
+  },
+  {
+    "code": "5506901100",
+    "description": "- - - - Contenant au moins 85% en poids de ces fibres"
+  },
+  {
+    "code": "5506901200",
+    "description": "- - - - Contenant moins de 85% en poids de ces fibres"
+  },
+  {
+    "code": "5506902100",
+    "description": "- - - - Contenant au moins 85% en poids de ces fibres"
+  },
+  {
+    "code": "5506902200",
+    "description": "- - - - Contenant moins de 85% en poids de ces fibres"
+  },
+  {
+    "code": "5506909000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5507001100",
+    "description": "- - - - De rayonne viscose"
+  },
+  {
+    "code": "5507001200",
+    "description": "- - - - D’acétates"
+  },
+  {
+    "code": "5507001300",
+    "description": "- - - - Cupro-ammoniacales"
+  },
+  {
+    "code": "5507001900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5507002100",
+    "description": "- - - - De rayonne viscose"
+  },
+  {
+    "code": "5507002200",
+    "description": "- - - - D’acétates"
+  },
+  {
+    "code": "5507002300",
+    "description": "- - - - Cupro-ammoniacales"
+  },
+  {
+    "code": "5507002900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5508101000",
+    "description": "- - - Non conditionnés pour la vente au détail"
+  },
+  {
+    "code": "5508102000",
+    "description": "- - - Conditionnés pour la vente au détail"
+  },
+  {
+    "code": "5508201000",
+    "description": "- - - Non conditionnés pour la vente au détail"
+  },
+  {
+    "code": "5508202000",
+    "description": "- - - Conditionnés pour la vente au détail"
+  },
+  {
+    "code": "5509111000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5509112000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5509113000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5509119000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5509121000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5509122000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5509123000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5509129000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5509211000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5509212000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5509213000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5509219000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5509221000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5509222000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5509223000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5509229000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5509311000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5509312000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5509313000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5509319000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5509321000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5509322000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5509323000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5509329000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5509411000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5509412000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5509413000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5509419000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5509421000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5509422000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5509423000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5509429000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5509511000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5509512000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5509513000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5509519000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5509521000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5509522000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5509523000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5509529000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5509531000",
+    "description": "- - - Ecrus (*)"
+  },
+  {
+    "code": "5509532000",
+    "description": "- - - Décrués (*)"
+  },
+  {
+    "code": "5509533000",
+    "description": "- - - Blanchis (*)"
+  },
+  {
+    "code": "5509539000",
+    "description": "- - - Autres (*)"
+  },
+  {
+    "code": "5509591000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5509592000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5509593000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5509599000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5509611000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5509612000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5509613000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5509619000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5509621000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5509622000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5509623000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5509629000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5509691000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5509692000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5509693000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5509699000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5509911000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5509912000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5509913000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5509919000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5509921000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5509922000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5509923000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5509929000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5509991000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5509992000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5509993000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5509999000",
+    "description": "- - - Autres fils non conditionnés pour la vente au détail"
+  },
+  {
+    "code": "5510111000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5510112000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5510113000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5510119000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5510121000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5510122000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5510123000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5510129000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5510201000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5510202000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5510203000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5510209000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5510301000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5510302000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5510303000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5510309000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5510901000",
+    "description": "- - - Ecrus"
+  },
+  {
+    "code": "5510902000",
+    "description": "- - - Décrués"
+  },
+  {
+    "code": "5510903000",
+    "description": "- - - Blanchis"
+  },
+  {
+    "code": "5510909000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5511100000",
+    "description": "- De fibres synthétiques discontinues, contenant au moins 85 % en poids de ces fibres"
+  },
+  {
+    "code": "5511200000",
+    "description": "- De fibres synthétiques discontinues, contenant moins de 85 % en poids de ces fibres"
+  },
+  {
+    "code": "5511300000",
+    "description": "- De fibres artificielles discontinues"
+  },
+  {
+    "code": "5512111000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5512119000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5512191000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5512199100",
+    "description": "- - - - Imprimés"
+  },
+  {
+    "code": "5512199900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5512211000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5512219000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5512291000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5512299100",
+    "description": "- - - - Imprimés"
+  },
+  {
+    "code": "5512299900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5512911000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5512919000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5512991000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5512999100",
+    "description": "- - - - Imprimés"
+  },
+  {
+    "code": "5512999900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5513111000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5513119100",
+    "description": "- - - - D’une largeur n’excédant pas 165 cm"
+  },
+  {
+    "code": "5513119200",
+    "description": "- - - - D’une largeur excédant 165 cm"
+  },
+  {
+    "code": "5513121000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5513129000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5513131000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5513139000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5513191000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5513199000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5513211000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5513219000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5513231000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5513239000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5513291000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5513299000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5513311000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5513319000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5513391000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5513399000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5513411000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5513419000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5513491000",
+    "description": "- - - Tissus élastiques"
+  },
+  {
+    "code": "5513499000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5514110000",
+    "description": "- - En fibres discontinues de polyester, à armure toile"
+  },
+  {
+    "code": "5514120000",
+    "description": "- - En fibres discontinues de polyester, à armure sergé, y compris le croisé, dont le rapport d'armure n'excède pas 4"
+  },
+  {
+    "code": "5514191000",
+    "description": "- - - Autres tissus de fibres discontinues de polyester"
+  },
+  {
+    "code": "5514199000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5514210000",
+    "description": "- - En fibres discontinues de polyester, à armure toile"
+  },
+  {
+    "code": "5514220000",
+    "description": "- - En fibres discontinues de polyester, à armure sergé, y compris le croisé, dont le rapport d'armure n'excède pas 4"
+  },
+  {
+    "code": "5514230000",
+    "description": "- - Autres tissus de fibres discontinues de polyester"
+  },
+  {
+    "code": "5514290000",
+    "description": "- - Autres tissus"
+  },
+  {
+    "code": "5514301000",
+    "description": "- - - En fibres discontinues de polyester, à armure toile"
+  },
+  {
+    "code": "5514302000",
+    "description": "- - - En fibres discontinues de polyester, à armure sergé, y compris le croisé, dont le rapport d'armure n'excède pas 4"
+  },
+  {
+    "code": "5514303000",
+    "description": "- - - Autres tissus de fibres discontinues de polyester"
+  },
+  {
+    "code": "5514309000",
+    "description": "- - - Autres tissus"
+  },
+  {
+    "code": "5514410000",
+    "description": "- - En fibres discontinues de polyester, à armure toile"
+  },
+  {
+    "code": "5514420000",
+    "description": "- - En fibres discontinues de polyester, à armure sergé, y compris le croisé, dont le rapport d'armure n'excède pas 4"
+  },
+  {
+    "code": "5514430000",
+    "description": "- - Autres tissus de fibres discontinues de polyester"
+  },
+  {
+    "code": "5514490000",
+    "description": "- - Autres tissus"
+  },
+  {
+    "code": "5515111000",
+    "description": "- - - Ecrus ou blanchis"
+  },
+  {
+    "code": "5515112000",
+    "description": "- - - Imprimés"
+  },
+  {
+    "code": "5515113000",
+    "description": "- - - Teints"
+  },
+  {
+    "code": "5515119000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5515121000",
+    "description": "- - - Ecrus ou blanchis"
+  },
+  {
+    "code": "5515122000",
+    "description": "- - - Imprimés"
+  },
+  {
+    "code": "5515123000",
+    "description": "- - - Teints"
+  },
+  {
+    "code": "5515129000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5515131000",
+    "description": "- - - Ecrus ou blanchis"
+  },
+  {
+    "code": "5515132000",
+    "description": "- - - Imprimés"
+  },
+  {
+    "code": "5515133000",
+    "description": "- - - Teints"
+  },
+  {
+    "code": "5515139000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5515191000",
+    "description": "- - - Ecrus ou blanchis"
+  },
+  {
+    "code": "5515192000",
+    "description": "- - - Imprimés"
+  },
+  {
+    "code": "5515193000",
+    "description": "- - - Teints"
+  },
+  {
+    "code": "5515199000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5515211000",
+    "description": "- - - Ecrus ou blanchis"
+  },
+  {
+    "code": "5515212000",
+    "description": "- - - Imprimés"
+  },
+  {
+    "code": "5515213000",
+    "description": "- - - Teints"
+  },
+  {
+    "code": "5515219000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5515221000",
+    "description": "- - - Ecrus ou blanchis"
+  },
+  {
+    "code": "5515222000",
+    "description": "- - - Imprimés"
+  },
+  {
+    "code": "5515223000",
+    "description": "- - - Teints"
+  },
+  {
+    "code": "5515229000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5515291000",
+    "description": "- - - Ecrus ou blanchis"
+  },
+  {
+    "code": "5515292000",
+    "description": "- - - Imprimés"
+  },
+  {
+    "code": "5515293000",
+    "description": "- - - Teints"
+  },
+  {
+    "code": "5515299000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5515911000",
+    "description": "- - - Ecrus ou blanchis"
+  },
+  {
+    "code": "5515912000",
+    "description": "- - - Imprimés"
+  },
+  {
+    "code": "5515913000",
+    "description": "- - - Teints"
+  },
+  {
+    "code": "5515919000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5515991000",
+    "description": "- - - Ecrus ou blanchis"
+  },
+  {
+    "code": "5515992000",
+    "description": "- - - Imprimés"
+  },
+  {
+    "code": "5515993000",
+    "description": "- - - Teints"
+  },
+  {
+    "code": "5515999000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5516110000",
+    "description": "- - Ecrus ou blanchis"
+  },
+  {
+    "code": "5516120000",
+    "description": "- - Teints"
+  },
+  {
+    "code": "5516130000",
+    "description": "- - En fils de diverses couleurs"
+  },
+  {
+    "code": "5516140000",
+    "description": "- - Imprimés"
+  },
+  {
+    "code": "5516210000",
+    "description": "- - Ecrus ou blanchis"
+  },
+  {
+    "code": "5516220000",
+    "description": "- - Teints"
+  },
+  {
+    "code": "5516231000",
+    "description": "- - - Tissus jacquard d’une largeur de 140 cm ou plus (coutils à matelas)"
+  },
+  {
+    "code": "5516239000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5516240000",
+    "description": "- - Imprimés"
+  },
+  {
+    "code": "5516310000",
+    "description": "- - Ecrus ou blanchis"
+  },
+  {
+    "code": "5516320000",
+    "description": "- - Teints"
+  },
+  {
+    "code": "5516330000",
+    "description": "- - En fils de diverses couleurs"
+  },
+  {
+    "code": "5516340000",
+    "description": "- - Imprimés"
+  },
+  {
+    "code": "5516410000",
+    "description": "- - Ecrus ou blanchis"
+  },
+  {
+    "code": "5516420000",
+    "description": "- - Teints"
+  },
+  {
+    "code": "5516430000",
+    "description": "- - En fils de diverses couleurs"
+  },
+  {
+    "code": "5516440000",
+    "description": "- - Imprimés"
+  },
+  {
+    "code": "5516910000",
+    "description": "- - Ecrus ou blanchis"
+  },
+  {
+    "code": "5516920000",
+    "description": "- - Teints"
+  },
+  {
+    "code": "5516930000",
+    "description": "- - En fils de diverses couleurs"
+  },
+  {
+    "code": "5516940000",
+    "description": "- - Imprimés"
+  },
+  {
+    "code": "5601211000",
+    "description": "- - - Bandes des ouates, devant servir à la fabrication de tampons"
+  },
+  {
+    "code": "5601212100",
+    "description": "- - - - Devant servir à la fabrication de vêtements"
+  },
+  {
+    "code": "5601212900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5601213000",
+    "description": "- - - Articles en ouates"
+  },
+  {
+    "code": "5601221000",
+    "description": "- - - Rouleaux d’un diamètre inférieur ou égal à 8 mm"
+  },
+  {
+    "code": "5601229100",
+    "description": "- - - - Ouates"
+  },
+  {
+    "code": "5601229200",
+    "description": "- - - - Articles en ouates"
+  },
+  {
+    "code": "5601291000",
+    "description": "- - - Ouates"
+  },
+  {
+    "code": "5601299000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5601300000",
+    "description": "- Tontisses, nœuds et noppes (boutons) de matières textiles"
+  },
+  {
+    "code": "5602101000",
+    "description": "- - - Articles en feutre"
+  },
+  {
+    "code": "5602109000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5602211000",
+    "description": "- - - articles en feutre"
+  },
+  {
+    "code": "5602219000",
+    "description": "- - - autres"
+  },
+  {
+    "code": "5602291000",
+    "description": "- - - Feutres en pièces ou simplement découpés de forme carrée ou rectangulaire"
+  },
+  {
+    "code": "5602299000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5602901000",
+    "description": "- - - Feutres pour toitures"
+  },
+  {
+    "code": "5602909000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5603111000",
+    "description": "- - - Imprégnés, enduits, recouverts ou stratifiés"
+  },
+  {
+    "code": "5603112000",
+    "description": "- - - Non imprégnés ni enduits ni recouverts ni stratifiés"
+  },
+  {
+    "code": "5603121000",
+    "description": "- - - Imprégnés, enduits, recouverts ou stratifiés"
+  },
+  {
+    "code": "5603122000",
+    "description": "- - - Non imprégnés ni enduits ni recouverts ni stratifiés"
+  },
+  {
+    "code": "5603131000",
+    "description": "- - - Imprégnés, enduits, recouverts ou stratifiés"
+  },
+  {
+    "code": "5603132000",
+    "description": "- - - Non imprégnés ni enduits ni recouverts ni stratifiés"
+  },
+  {
+    "code": "5603141000",
+    "description": "- - - Imprégnés, enduits, recouverts ou stratifiés"
+  },
+  {
+    "code": "5603142000",
+    "description": "- - - Non imprégnés ni enduits ni recouverts ni stratifiés"
+  },
+  {
+    "code": "5603911000",
+    "description": "- - - Imprégnés, enduits, recouverts ou stratifiés"
+  },
+  {
+    "code": "5603912000",
+    "description": "- - - Non imprégnés ni enduits ni recouverts ni stratifiés"
+  },
+  {
+    "code": "5603921000",
+    "description": "- - - Imprégnés, enduits, recouverts ou stratifiés"
+  },
+  {
+    "code": "5603922000",
+    "description": "- - - Non imprégnés ni enduits ni recouverts ni stratifiés"
+  },
+  {
+    "code": "5603931000",
+    "description": "- - - Imprégnés, enduits, recouverts ou stratifiés"
+  },
+  {
+    "code": "5603932000",
+    "description": "- - - Non imprégnés ni enduits ni recouverts ni stratifiés"
+  },
+  {
+    "code": "5603941000",
+    "description": "- - - Imprégnés, enduits, recouverts ou stratifiés"
+  },
+  {
+    "code": "5603942000",
+    "description": "- - - Non imprégnés ni enduits ni recouverts ni stratifiés"
+  },
+  {
+    "code": "5604101000",
+    "description": "- - - Fils de caoutchouc, recouverts de textiles"
+  },
+  {
+    "code": "5604102000",
+    "description": "- - - Cordes de caoutchouc, recouverts de textiles"
+  },
+  {
+    "code": "5604901000",
+    "description": "- - - Imprégnés, enduits, recouverts ou gainés de caoutchouc"
+  },
+  {
+    "code": "5604902000",
+    "description": "- - - Imprégnés, enduits, recouverts ou gainés de matière plastique"
+  },
+  {
+    "code": "5605001000",
+    "description": "- - - Cordonnets pour pâtissiers"
+  },
+  {
+    "code": "5605009000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5606001000",
+    "description": "- - - Fils de chenille (*)"
+  },
+  {
+    "code": "5606002000",
+    "description": "- - - Fils dits «de chaînette»"
+  },
+  {
+    "code": "5606009000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5607210000",
+    "description": "- - Ficelles lieuses ou botteleuses"
+  },
+  {
+    "code": "5607291000",
+    "description": "- - - Cordes et cordages"
+  },
+  {
+    "code": "5607299000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5607410000",
+    "description": "- - Ficelles lieuses ou botteleuses"
+  },
+  {
+    "code": "5607491000",
+    "description": "- - - Cordes et cordages"
+  },
+  {
+    "code": "5607499000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5607501000",
+    "description": "- - - Ficelles lieuses ou botteleuses"
+  },
+  {
+    "code": "5607502000",
+    "description": "- - - Cordes et cordages"
+  },
+  {
+    "code": "5607509000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5607901000",
+    "description": "- - - Ficelles lieuses ou botteleuses"
+  },
+  {
+    "code": "5607902000",
+    "description": "- - - Cordes et cordages"
+  },
+  {
+    "code": "5607909000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5608111000",
+    "description": "- - - Dont les mailles sont égales ou inférieures à 9,2mm de nœud à nœud"
+  },
+  {
+    "code": "5608119000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5608191100",
+    "description": "- - - - Filets de camouflage"
+  },
+  {
+    "code": "5608191200",
+    "description": "- - - - Filets de sécurité"
+  },
+  {
+    "code": "5608191300",
+    "description": "- - - - Filets pour décors de théâtre"
+  },
+  {
+    "code": "5608191400",
+    "description": "- - - - Hamacs"
+  },
+  {
+    "code": "5608191500",
+    "description": "- - - - Filets de protection contre les insectes"
+  },
+  {
+    "code": "5608191600",
+    "description": "- - - - Filets confectionnés pour l’aquaculture"
+  },
+  {
+    "code": "5608191900",
+    "description": "- - - - Autres filets confectionnés"
+  },
+  {
+    "code": "5608192000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5608901000",
+    "description": "- - - Filets pour la pêche dont les mailles sont égales ou inférieures à 9,2 mm de nœud à nœud"
+  },
+  {
+    "code": "5608902000",
+    "description": "- - - Filets pour la pêche dont les mailles sont supérieures à 9,2 mm de nœud à nœud"
+  },
+  {
+    "code": "5608903000",
+    "description": "- - - Filets de protection contre les oiseaux"
+  },
+  {
+    "code": "5608909000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5609000000",
+    "description": "Articles en fils, lames ou formes similaires des n°s 54.04 ou 54.05, ficelles, cordes ou cordages, non dénommés ni compris ailleurs."
+  },
+  {
+    "code": "5701101100",
+    "description": "- - - - Tapis de pied"
+  },
+  {
+    "code": "5701101200",
+    "description": "- - - - Tapis mural"
+  },
+  {
+    "code": "5701101900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5701109100",
+    "description": "- - - - Tapis de pied"
+  },
+  {
+    "code": "5701109200",
+    "description": "- - - - Tapis mural"
+  },
+  {
+    "code": "5701109900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5701901100",
+    "description": "- - - - Tapis de pied"
+  },
+  {
+    "code": "5701901200",
+    "description": "- - - - Tapis mural"
+  },
+  {
+    "code": "5701901900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5701909100",
+    "description": "- - - - Tapis de pied"
+  },
+  {
+    "code": "5701909200",
+    "description": "- - - - Tapis mural"
+  },
+  {
+    "code": "5701909900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5702100000",
+    "description": "- Tapis dits «Kelim» ou «Kilim», «Schumacks» ou «Soumak», «Karamanie» et tapis similaires tissés à la main"
+  },
+  {
+    "code": "5702200000",
+    "description": "- Revêtements de sol en coco"
+  },
+  {
+    "code": "5702311000",
+    "description": "- - - Tapis Axminster"
+  },
+  {
+    "code": "5702319000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5702321000",
+    "description": "- - - Tapis Axminster"
+  },
+  {
+    "code": "5702329000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5702391000",
+    "description": "- - - De coton"
+  },
+  {
+    "code": "5702399000",
+    "description": "- - - D'autres matières textiles"
+  },
+  {
+    "code": "5702411000",
+    "description": "- - - Tapis Axminster"
+  },
+  {
+    "code": "5702419000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5702421000",
+    "description": "- - - Tapis Axminster"
+  },
+  {
+    "code": "5702429000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5702491000",
+    "description": "- - - De coton"
+  },
+  {
+    "code": "5702499000",
+    "description": "- - - D'autres matières textiles"
+  },
+  {
+    "code": "5702501000",
+    "description": "- - - De laine ou de poils fins"
+  },
+  {
+    "code": "5702502100",
+    "description": "- - - - De polypropylène"
+  },
+  {
+    "code": "5702502900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5702509000",
+    "description": "- - - D'autres matières textiles"
+  },
+  {
+    "code": "5702910000",
+    "description": "- - De laine ou de poils fins"
+  },
+  {
+    "code": "5702921000",
+    "description": "- - - De polypropylène"
+  },
+  {
+    "code": "5702929000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5702990000",
+    "description": "- - D'autres matières textiles"
+  },
+  {
+    "code": "5703100000",
+    "description": "- De laine ou de poils fins"
+  },
+  {
+    "code": "5703210000",
+    "description": "- - Gazon"
+  },
+  {
+    "code": "5703291100",
+    "description": "- - - - Carreaux dont la superficie n'excède pas 1 m2"
+  },
+  {
+    "code": "5703291900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5703299100",
+    "description": "- - - - Carreaux dont la superficie n'excède pas 1 m2"
+  },
+  {
+    "code": "5703299900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5703310000",
+    "description": "- - Gazon"
+  },
+  {
+    "code": "5703391100",
+    "description": "- - - - Carreaux dont la superficie n'excède pas 1 m2"
+  },
+  {
+    "code": "5703391900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5703399100",
+    "description": "- - - - Carreaux dont la superficie n'excède pas 1 m2"
+  },
+  {
+    "code": "5703399900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5703901000",
+    "description": "- - - Carreaux dont la superficie n'excède pas 1 m2"
+  },
+  {
+    "code": "5703909000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5704100000",
+    "description": "- Carreaux dont la surface n'excède pas 0,3 m2"
+  },
+  {
+    "code": "5704201000",
+    "description": "- - - Faits à la main"
+  },
+  {
+    "code": "5704209100",
+    "description": "- - - - Pour véhicules automobiles"
+  },
+  {
+    "code": "5704209900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5704901000",
+    "description": "- - - Faits à la main"
+  },
+  {
+    "code": "5704909100",
+    "description": "- - - - Pour véhicules automobiles"
+  },
+  {
+    "code": "5704909900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5705001100",
+    "description": "- - - - Faits à la main"
+  },
+  {
+    "code": "5705001900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5705009100",
+    "description": "- - - - Faits à la main"
+  },
+  {
+    "code": "5705009910",
+    "description": "- - - - - De coton"
+  },
+  {
+    "code": "5705009990",
+    "description": "- - - - - D'autres matières textiles"
+  },
+  {
+    "code": "5801101000",
+    "description": "- - - Velours et peluches"
+  },
+  {
+    "code": "5801102000",
+    "description": "- - - Tissus de chenille"
+  },
+  {
+    "code": "5801210000",
+    "description": "- - Velours et peluches par la trame, non coupés"
+  },
+  {
+    "code": "5801220000",
+    "description": "- - Velours et peluches par la trame, coupés, côtelés"
+  },
+  {
+    "code": "5801230000",
+    "description": "- - Autres velours et peluches par la trame"
+  },
+  {
+    "code": "5801260000",
+    "description": "- - Tissus de chenille"
+  },
+  {
+    "code": "5801270000",
+    "description": "- - Velours et peluches par la chaîne"
+  },
+  {
+    "code": "5801310000",
+    "description": "- - Velours et peluches par la trame, non coupés"
+  },
+  {
+    "code": "5801320000",
+    "description": "- - Velours et peluches par la trame, coupés, côtelés"
+  },
+  {
+    "code": "5801330000",
+    "description": "- - Autres velours et peluches par la trame"
+  },
+  {
+    "code": "5801360000",
+    "description": "- - Tissus de chenille"
+  },
+  {
+    "code": "5801370000",
+    "description": "- - Velours et peluches par la chaîne"
+  },
+  {
+    "code": "5801901000",
+    "description": "- - - Velours et peluches"
+  },
+  {
+    "code": "5801902000",
+    "description": "- - - Tissus de chenille"
+  },
+  {
+    "code": "5802100000",
+    "description": "- Tissus bouclés du genre éponge, en coton"
+  },
+  {
+    "code": "5802200000",
+    "description": "- Tissus bouclés du genre éponge, en autres matières textiles"
+  },
+  {
+    "code": "5802300000",
+    "description": "- Surfaces textiles touffetées"
+  },
+  {
+    "code": "5803001000",
+    "description": "- - - Destinés à l'industrie pharmaceutique"
+  },
+  {
+    "code": "5803009100",
+    "description": "- - - - De coton"
+  },
+  {
+    "code": "5803009200",
+    "description": "- - - - De soie ou de déchets de soie"
+  },
+  {
+    "code": "5803009900",
+    "description": "- - - - D'autres matières textiles"
+  },
+  {
+    "code": "5804101000",
+    "description": "- - - Unis"
+  },
+  {
+    "code": "5804109000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5804211000",
+    "description": "- - - En pièces ou en bandes"
+  },
+  {
+    "code": "5804212000",
+    "description": "- - - En motifs"
+  },
+  {
+    "code": "5804291000",
+    "description": "- - - En pièces ou en bandes"
+  },
+  {
+    "code": "5804292000",
+    "description": "- - - En motifs"
+  },
+  {
+    "code": "5804301000",
+    "description": "- - - En pièces ou en bandes"
+  },
+  {
+    "code": "5804302000",
+    "description": "- - - En motifs"
+  },
+  {
+    "code": "5805000000",
+    "description": "Tapisseries tissées à la main (genre Gobelins, Flandres, Aubusson, Beauvais et similaires) et tapisseries à l'aiguille (au petit point, au point de croix, par exemple), même confectionnées"
+  },
+  {
+    "code": "5806101000",
+    "description": "- - - Elastique, formée de matières textiles associées à des fils de caoutchouc"
+  },
+  {
+    "code": "5806109100",
+    "description": "- - - - En fibres textiles synthétiques ou en fibres textiles artificielles"
+  },
+  {
+    "code": "5806109200",
+    "description": "- - - - En coton"
+  },
+  {
+    "code": "5806109300",
+    "description": "- - - - En soie, en bourre de soie (schappe) ou en bourrette de soie"
+  },
+  {
+    "code": "5806109900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5806201000",
+    "description": "- - - Elastique"
+  },
+  {
+    "code": "5806209000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5806310000",
+    "description": "- - De coton"
+  },
+  {
+    "code": "5806321000",
+    "description": "- - - A lisières réelles"
+  },
+  {
+    "code": "5806329000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5806390000",
+    "description": "- - D'autres matières textiles"
+  },
+  {
+    "code": "5806401000",
+    "description": "- - - De soie ou de déchets de soie"
+  },
+  {
+    "code": "5806402000",
+    "description": "- - - De coton"
+  },
+  {
+    "code": "5806403000",
+    "description": "- - - De fibres textiles synthétiques"
+  },
+  {
+    "code": "5806404000",
+    "description": "- - - De fibres textiles artificielles"
+  },
+  {
+    "code": "5806409000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5807101100",
+    "description": "- - - - Etiquettes"
+  },
+  {
+    "code": "5807101900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5807109100",
+    "description": "- - - - Etiquettes"
+  },
+  {
+    "code": "5807109900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5807901100",
+    "description": "- - - - Etiquettes"
+  },
+  {
+    "code": "5807901900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5807909100",
+    "description": "- - - - Etiquettes"
+  },
+  {
+    "code": "5807909900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5808101000",
+    "description": "- - - Tresses élastiques"
+  },
+  {
+    "code": "5808109000",
+    "description": "- - - Autres tresses en pièces"
+  },
+  {
+    "code": "5808900000",
+    "description": "- Autres"
+  },
+  {
+    "code": "5809000000",
+    "description": "Tissus de fils de métal et tissus de filés métalliques ou de fils textiles métallisés du n° 56.05, des types utilisés pour l'habillement,"
+  },
+  {
+    "code": "5810101000",
+    "description": "- - - Faites à la main"
+  },
+  {
+    "code": "5810109000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5810911000",
+    "description": "- - - Faites à la main"
+  },
+  {
+    "code": "5810919000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5810921000",
+    "description": "- - - Faites à la main"
+  },
+  {
+    "code": "5810929000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5810991000",
+    "description": "- - - Faites à la main"
+  },
+  {
+    "code": "5810999000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5811001000",
+    "description": "- - - De soie ou de déchets de soie"
+  },
+  {
+    "code": "5811002000",
+    "description": "- - - De laine ou de poils fins"
+  },
+  {
+    "code": "5811003000",
+    "description": "- - - De fibres synthétiques ou artificielles"
+  },
+  {
+    "code": "5811009000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5901100000",
+    "description": "- Tissus enduits de colle ou de matières amylacées, des types utilisés pour la reliure, le cartonnage, la gainerie ou usages similaires"
+  },
+  {
+    "code": "5901901000",
+    "description": "- - - Toiles préparés pour la peinture"
+  },
+  {
+    "code": "5901902000",
+    "description": "- - - Toiles à calquer ou transparentes pour le dessin"
+  },
+  {
+    "code": "5901903000",
+    "description": "- - - Bougran et tissus similaires raidis des types utilisés pour la chapellerie"
+  },
+  {
+    "code": "5902101000",
+    "description": "- - - Imprégnées de caoutchouc"
+  },
+  {
+    "code": "5902109000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5902201000",
+    "description": "- - - Imprégnées de caoutchouc"
+  },
+  {
+    "code": "5902209000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5902901000",
+    "description": "- - - Imprégnées de caoutchouc"
+  },
+  {
+    "code": "5902909000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5903101000",
+    "description": "- - - Imprégnés"
+  },
+  {
+    "code": "5903102000",
+    "description": "- - - Enduits, recouverts ou stratifiés"
+  },
+  {
+    "code": "5903201000",
+    "description": "- - - Imprégnés"
+  },
+  {
+    "code": "5903202000",
+    "description": "- - - Enduits, recouverts ou stratifiés"
+  },
+  {
+    "code": "5903901000",
+    "description": "- - - Imprégnés"
+  },
+  {
+    "code": "5903902000",
+    "description": "- - - Enduits, recouverts ou stratifiés"
+  },
+  {
+    "code": "5904100000",
+    "description": "- Linoléums"
+  },
+  {
+    "code": "5904901000",
+    "description": "- - - Présentés en rouleaux"
+  },
+  {
+    "code": "5904902000",
+    "description": "- - - Découpés de toutes formes aux dimensions d'usage"
+  },
+  {
+    "code": "5905001100",
+    "description": "- - - - Fixée sur un support en toute matière"
+  },
+  {
+    "code": "5905001200",
+    "description": "- - - - Sans support"
+  },
+  {
+    "code": "5905009100",
+    "description": "- - - - Fixée sur un support en toute matière"
+  },
+  {
+    "code": "5905009200",
+    "description": "- - - - Sans support"
+  },
+  {
+    "code": "5906100000",
+    "description": "- Rubans adhésifs d'une largeur n'excédant pas 20 cm"
+  },
+  {
+    "code": "5906910000",
+    "description": "- - De bonneterie"
+  },
+  {
+    "code": "5906991000",
+    "description": "- - - Nappes visées à la note 4 point c) du présent chapitre"
+  },
+  {
+    "code": "5906999000",
+    "description": "- - - Autres"
+  },
+  {
+    "code": "5907001000",
+    "description": "- - - Toiles cirées et autres tissus huilés ou recouverts d'un enduit à base d'huile"
+  },
+  {
+    "code": "5907002000",
+    "description": "- - - Toiles peintes pour décors de théâtres, fonds d'atelier ou usages analogues"
+  },
+  {
+    "code": "5907009100",
+    "description": "- - - - Tissus imprégnés ou enduits de goudron, d'asphalte ou de matières similaires"
+  },
+  {
+    "code": "5907009900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5908001000",
+    "description": "- - - Mèches tissées, tressées ou tricotées, en matières textiles, pour lampes, réchauds, briquets, bougies ou similaires"
+  },
+  {
+    "code": "5908002000",
+    "description": "- - - Manchons à incandescence et étoffes tubulaires tricotées servant à leur fabrication, même imprégnés"
+  },
+  {
+    "code": "5909001100",
+    "description": "- - - - Avec accessoires"
+  },
+  {
+    "code": "5909001200",
+    "description": "- - - - Sans accessoires"
+  },
+  {
+    "code": "5909002100",
+    "description": "- - - - Avec accessoires"
+  },
+  {
+    "code": "5909002200",
+    "description": "- - - - Sans accessoires"
+  },
+  {
+    "code": "5910001000",
+    "description": "- - - Courroies transporteuses"
+  },
+  {
+    "code": "5910002000",
+    "description": "- - - Courroies de transmission"
+  },
+  {
+    "code": "5911100000",
+    "description": "- Tissus, feutres et tissus doublés de feutre, combinés avec une ou plusieurs couches de caoutchouc, de cuir ou d'autres matières, des types utilisés pour la fabrication de garnitures de cardes, et produits analogues pour d'autres usages techniques, y compris les rubans de velours, imprégnés de caoutchouc, pour le recouvrement des ensouples"
+  },
+  {
+    "code": "5911200000",
+    "description": "- Gazes et toiles à bluter, même confectionnées"
+  },
+  {
+    "code": "5911311100",
+    "description": "- - - - Des types utilisés sur les machines à papier"
+  },
+  {
+    "code": "5911311900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5911319100",
+    "description": "- - - - Des types utilisés sur les machines à papier"
+  },
+  {
+    "code": "5911319900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5911321100",
+    "description": "- - - - Des types utilisés sur les machines à papier"
+  },
+  {
+    "code": "5911321900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5911329100",
+    "description": "- - - - Des types utilisés sur les machines à papier"
+  },
+  {
+    "code": "5911329900",
+    "description": "- - - - Autres"
+  },
+  {
+    "code": "5911400000",
+    "description": "- Toiles filtrantes, tissus épais et étreindelles des types utilisés sur des presses d'huilerie ou pour des usages techniques analogues, y compris ceux en cheveux"
+  },
+  {
+    "code": "5911901000",
+    "description": "- - - Scourtins pour presses d'huilerie"
+  },
+  {
+    "code": "5911902000",
+    "description": "- - - Disques à polir, joints, rondelles, etc"
+  },
+  {
+    "code": "5911909100",
+    "description": "- - - - Sacs pour aspirateurs de poussières et sacs filtrants pour appareils industriels de dépoussiérage"
+  },
+  {
+    "code": "5911909900",
+    "description": "- - - - Autres"
+  }
+]
