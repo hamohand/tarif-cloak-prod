@@ -31,12 +31,4 @@ public class Position10DzService {
     public boolean existsByCode(String code) {
         return position10DzRepository.existsByCode(code);
     }
-
-    public long count() {
-        return position10DzRepository.count();
-    }
-
-    public void saveAll(List<Position10Dz> positions) {
-        position10DzRepository.saveAll(positions);
-    }
 }
