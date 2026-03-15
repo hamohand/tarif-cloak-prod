@@ -498,7 +498,9 @@ INSERT INTO position10_dz (code, description) VALUES
 ('', 'kg'),
 ('', 'kg'),
 ('', 'kg'),
-('', 'kg'),
+('', 'kg');
+
+INSERT INTO position10_dz (code, description) VALUES
 ('', 'kg'),
 ('', 'kg'),
 ('', 'kg'),
@@ -998,7 +1000,9 @@ INSERT INTO position10_dz (code, description) VALUES
 ('', '- - Produits de poissons ou de crustacés, mollusques ou autres invertébrés aquatiques ; animaux morts du Chapitre 3 :'),
 ('', '- - - Œufs de crustacés ou de mollusques :'),
 ('', '- - Autres :'),
-('', '- - - Autres :'),
+('', '- - - Autres :');
+
+INSERT INTO position10_dz (code, description) VALUES
 ('', '- Bulbes, oignons, tubercules, racines tubéreuses, griffes et rhizomes, en repos végétatif :'),
 ('', '- - - Griffes de légumes :'),
 ('', '- - - Autres :'),
@@ -1498,7 +1502,9 @@ INSERT INTO position10_dz (code, description) VALUES
 ('', '- Sucre et sirop d''érable :'),
 ('', '- - - A l’état solide :'),
 ('', '- Glucose et sirop de glucose, ne contenant pas de fructose ou contenant en poids à l''état sec moins de 20 % de fructose :'),
-('', '- - - Autres :'),
+('', '- - - Autres :');
+
+INSERT INTO position10_dz (code, description) VALUES
 ('', '- Glucose et sirop de glucose, contenant en poids à l''état sec de 20 % inclus à 50 % exclus de fructose, à l''exception du sucre inverti (ou interverti) :'),
 ('', '- - - A l’état solide :'),
 ('', '- Autre fructose et sirop de fructose, contenant en poids à l''état sec plus de 50 % de fructose, à l''exception du sucre inverti (ou interverti) :'),
@@ -1998,7 +2004,9 @@ INSERT INTO position10_dz (code, description) VALUES
 ('', '- - Autres :'),
 ('', '- Bore ; tellure :'),
 ('', '- Silicium :'),
-('', '- Métaux alcalins et alcalino-terreux :'),
+('', '- Métaux alcalins et alcalino-terreux :');
+
+INSERT INTO position10_dz (code, description) VALUES
 ('', '- - Autres :'),
 ('', '- Métaux de terres rares, scandium et yttrium, même mélangés ou alliés entre eux :'),
 ('', '- - - Mélangés ou alliés entre eux :'),
@@ -2498,7 +2506,9 @@ INSERT INTO position10_dz (code, description) VALUES
 ('', '- - - Salicylates d''amyle, de benzyle et de bornyle :'),
 ('', '- - - Salicylates de citronellyle, de géranyle, de menthyle et de rhodinyle :'),
 ('', '- - Autres :'),
-('', '- - - Acide gallique, ses sels et ses esters :'),
+('', '- - - Acide gallique, ses sels et ses esters :');
+
+INSERT INTO position10_dz (code, description) VALUES
 ('', 'Désignation des Produits'),
 ('', '- - - - Sels et ses esters de l’acide gallique :'),
 ('', '- - - Autres :'),
@@ -2998,7 +3008,9 @@ INSERT INTO position10_dz (code, description) VALUES
 ('', '- - - Matières minérales naturelles activées :'),
 ('', '- - - - Diatomite activée'),
 ('', '- - - - Argiles et les terres activées :'),
-('', '- - - - - Terres agricoles activées (**)'),
+('', '- - - - - Terres agricoles activées (**)');
+
+INSERT INTO position10_dz (code, description) VALUES
 ('', '- - - - - Autres argiles et terres activées'),
 ('', '- - - - Bauxite activée'),
 ('', '- - - Noirs d''origine animale, y compris le noir animal épuisé :'),
@@ -3498,7 +3510,9 @@ INSERT INTO position10_dz (code, description) VALUES
 ('', '- - En cellulose régénérée :'),
 ('', '- - En acétate de cellulose :'),
 ('', '- - En autres dérivés de la cellulose :'),
-('', '- - - En nitrates de cellulose :'),
+('', '- - - En nitrates de cellulose :');
+
+INSERT INTO position10_dz (code, description) VALUES
 ('', '- - - En autres esters de la cellulose :'),
 ('', '- - - En éthers de la cellulose et autres dérivés chimiques de la cellulose :'),
 ('', '- En autres matières plastiques :'),
@@ -3998,7 +4012,9 @@ INSERT INTO position10_dz (code, description) VALUES
 ('', '- - En rouleaux :'),
 ('', '- - En feuilles dont un des côtés n''excède pas 435 mm et dont l''autre côté n''excède pas 297 mm à l''état non plié :'),
 ('', '- - Autres :'),
-('', '- Papiers et cartons des types utilisés pour l''écriture, l''impression ou d''autres fins graphiques, dont plus de 10 % en poids de la composition fibreuse totale sont constitués par des fibres obtenues par un procédé mécanique ou chimico- mécanique :'),
+('', '- Papiers et cartons des types utilisés pour l''écriture, l''impression ou d''autres fins graphiques, dont plus de 10 % en poids de la composition fibreuse totale sont constitués par des fibres obtenues par un procédé mécanique ou chimico- mécanique :');
+
+INSERT INTO position10_dz (code, description) VALUES
 ('', '- - Papier couché léger, dit «L.W.C.» :'),
 ('', '- - Autres :'),
 ('', '- - - En feuilles de forme carrée ou rectangulaire, de tout format :'),
@@ -4498,7 +4514,9 @@ INSERT INTO position10_dz (code, description) VALUES
 ('', '- - Teints :'),
 ('', '- - En fils de diverses couleurs :'),
 ('', '- - Imprimés :'),
-('', '- Tissus obtenus à partir de fils à haute ténacité de rayonne viscose :'),
+('', '- Tissus obtenus à partir de fils à haute ténacité de rayonne viscose :');
+
+INSERT INTO position10_dz (code, description) VALUES
 ('', '- Autres tissus, contenant au moins 85% en poids de filaments ou de lames ou formes similaires, artificiels :'),
 ('', '- - Ecrus ou blanchis :'),
 ('', '- - Teints :'),
@@ -4998,7 +5016,9 @@ INSERT INTO position10_dz (code, description) VALUES
 ('', '- - - Salopettes à bretelles :'),
 ('', '- - D''autres matières textiles :'),
 ('', '- - - De fibres artificielles :'),
-('', '- - - De soie ou de déchets de soie :'),
+('', '- - - De soie ou de déchets de soie :');
+
+INSERT INTO position10_dz (code, description) VALUES
 ('', '- - - D''autres matières textiles :'),
 ('', '- De coton :'),
 ('', '- D''autres matières textiles :'),
@@ -5498,7 +5518,9 @@ INSERT INTO position10_dz (code, description) VALUES
 ('', '- Déchets et débris d''aciers alliés :'),
 ('', '- - D''aciers inoxydables :'),
 ('', '- - Autres :'),
-('', '- Déchets et débris de fer ou d''acier étamés :'),
+('', '- Déchets et débris de fer ou d''acier étamés :');
+
+INSERT INTO position10_dz (code, description) VALUES
 ('', '- Autres déchets et débris:'),
 ('', '- - Tournures, frisons, copeaux, meulures, sciures, limailles et chutes d''estampage ou de découpage, même en paquets :'),
 ('', '- - - Chutes d''estampage ou de découpage :'),
@@ -5998,7 +6020,9 @@ INSERT INTO position10_dz (code, description) VALUES
 ('', '- - Autres, y compris les parties :'),
 ('', '- - - Autres :'),
 ('', '- Filières pour l''étirage ou le filage (extrusion) des métaux :'),
-('', '- Outils à emboutir, à estamper ou à poinçonner :'),
+('', '- Outils à emboutir, à estamper ou à poinçonner :');
+
+INSERT INTO position10_dz (code, description) VALUES
 ('', '- Outils à tarauder ou à fileter :'),
 ('', '- Outils à percer :'),
 ('', '- - - En autres matières :'),
@@ -6498,7 +6522,9 @@ INSERT INTO position10_dz (code, description) VALUES
 ('', '- - Autres :'),
 ('', '- Parties et accessoires des métiers, machines ou appareils du n° 84.47 ou de leurs machines ou appareils auxiliaires :'),
 ('', '- - Platines, aiguilles et autres articles participant à la formation des mailles :'),
-('', '- - - Autres :'),
+('', '- - - Autres :');
+
+INSERT INTO position10_dz (code, description) VALUES
 ('', '- - Autres :'),
 ('', '- - - Parties :'),
 ('', '- Machines d''une capacité unitaire exprimée en poids de linge sec n''excédant pas 10 kg :'),
@@ -6998,7 +7024,9 @@ INSERT INTO position10_dz (code, description) VALUES
 ('', '- Autres :'),
 ('', '- - - Autres :'),
 ('', '- Supports magnétiques :'),
-('', '- - Cartes munies d''une piste magnétique :'),
+('', '- - Cartes munies d''une piste magnétique :');
+
+INSERT INTO position10_dz (code, description) VALUES
 ('', '- - Autres :'),
 ('', '- - - Supports magnétiques non enregistrés :'),
 ('', '- - - - Pour machines automatiques de traitement de l’information du n° 84.71 :'),
@@ -7498,7 +7526,9 @@ INSERT INTO position10_dz (code, description) VALUES
 ('', '- - - Autres :'),
 ('', '- - - - Pour autres véhicules du n° 87.04 :'),
 ('', '- Pare-chocs et leurs parties :'),
-('', '- Autres parties et accessoires de carrosseries (y compris les cabines) :'),
+('', '- Autres parties et accessoires de carrosseries (y compris les cabines) :');
+
+INSERT INTO position10_dz (code, description) VALUES
 ('', '- - Autres :'),
 ('', '- Freins et servo-freins; leurs parties :'),
 ('', '- - - Autres :'),
@@ -7998,6 +8028,8 @@ INSERT INTO position10_dz (code, description) VALUES
 ('', '- - - Oiseaux empaillés :'),
 ('', '- - - Têtes empaillées avec épaule d’un élan pour décoration :'),
 ('', '- - - Autres :'),
-('', '- Collections et pièces de collection présentant un intérêt numismatique :'),
+('', '- Collections et pièces de collection présentant un intérêt numismatique :');
+
+INSERT INTO position10_dz (code, description) VALUES
 ('', '- Ayant plus de 250 ans d’âge :'),
 ('', '- Autres :');
