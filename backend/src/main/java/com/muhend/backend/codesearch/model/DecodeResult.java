@@ -14,12 +14,13 @@ import java.util.List;
 public class DecodeResult {
 
     private String codeRecherche;
-    private String niveau; // "CHAPITRE" | "POSITION4" | "POSITION6"
+    private String niveau; // "CHAPITRE" | "POSITION4" | "POSITION6" | "POSITION10"
 
     private CodeItem section;
     private CodeItem chapitre;
-    private CodeItem position4;         // null si niveau == CHAPITRE
-    private List<CodeItem> positions6;  // vide si CHAPITRE, plusieurs si POSITION4, 1 si POSITION6
+    private CodeItem position4;          // null si niveau == CHAPITRE
+    private List<CodeItem> positions6;   // vide si CHAPITRE, plusieurs si POSITION4, 1 si POSITION6+
+    private List<CodeItem> positions10;  // null sauf si niveau == POSITION10
 
     @Data
     @AllArgsConstructor

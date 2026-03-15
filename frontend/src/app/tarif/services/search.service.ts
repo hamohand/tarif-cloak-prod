@@ -10,11 +10,12 @@ export interface DecodeCodeItem {
 
 export interface DecodeResult {
   codeRecherche: string;
-  niveau: 'CHAPITRE' | 'POSITION4' | 'POSITION6';
+  niveau: 'CHAPITRE' | 'POSITION4' | 'POSITION6' | 'POSITION10';
   section: DecodeCodeItem;
   chapitre: DecodeCodeItem;
   position4: DecodeCodeItem | null;
   positions6: DecodeCodeItem[];
+  positions10: DecodeCodeItem[] | null;
 }
 
 @Injectable({
@@ -24,11 +25,20 @@ export class SearchService {
   private apiUrl = '/api/recherche';
   private conversionApiUrl = '/api/conversion';
   private decodeApiUrl = '/api/decode';
+  private decodeP10ApiUrl = '/api/decode-p10';
 
   constructor(private http: HttpClient) { }
 
   decodeCode(code: string): Observable<DecodeResult> {
     return this.http.get<DecodeResult>(this.decodeApiUrl, {
+      params: { code }
+    }).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  decodeP10Code(code: string): Observable<DecodeResult> {
+    return this.http.get<DecodeResult>(this.decodeP10ApiUrl, {
       params: { code }
     }).pipe(
       catchError(this.handleError)

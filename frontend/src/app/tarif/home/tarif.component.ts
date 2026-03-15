@@ -19,6 +19,7 @@ import { DecodeComponent } from '../decode/decode.component';
       <a routerLink="searchListLots" routerLinkActive="active">Recherche par liste</a>
       <a routerLink="batch-search" routerLinkActive="active">Recherche par lots</a>
       <a routerLink="decode" routerLinkActive="active">Décoder un code HS</a>
+      <a routerLink="decode-p10" routerLinkActive="active">Décoder un code P10</a>
     </nav>
     <main>
       <router-outlet></router-outlet>
