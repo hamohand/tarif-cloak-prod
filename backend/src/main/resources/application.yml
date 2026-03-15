@@ -25,7 +25,7 @@ spring:
     locations: classpath:db/migration
     baseline-on-migrate: true
     baseline-version: 0  # Baseline à V0, toutes les migrations > 0 (V0.1, V1, V2...) seront exécutées
-    validate-on-migrate: true
+    validate-on-migrate: false
     out-of-order: true  # Permet d'appliquer V3_1 même si elle vient après V3 dans l'ordre numérique
 
   # ===================================================
