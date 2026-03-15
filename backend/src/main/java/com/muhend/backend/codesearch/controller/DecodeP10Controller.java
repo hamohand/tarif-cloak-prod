@@ -90,16 +90,19 @@ public class DecodeP10Controller {
                         "Code HS introuvable : " + pos6Code));
         DecodeResult.CodeItem position6Item = new DecodeResult.CodeItem(position6.getCode(), position6.getDescription());
 
-        // Niveau POSITION6 (6 chiffres)
+        // Niveau POSITION6 (6 chiffres) — liste des P10 avec leur titre
         if (len == 6) {
             List<DecodeResult.CodeItem> positions10 = position10DzRepository.findAllByPrefix(pos6Code + "%")
                     .stream().map(p -> new DecodeResult.CodeItem(p.getCode(), p.getDescription()))
                     .collect(Collectors.toList());
+            // Titre du premier code P10 trouvé (ils partagent généralement le même titre)
+            String titre = positions10.isEmpty() ? null :
+                    position10DzRepository.findTitleBeforeCode(positions10.get(0).getCode()).orElse(null);
             return ResponseEntity.ok(DecodeResult.builder()
                     .codeRecherche(code).niveau("POSITION6")
                     .section(sectionItem).chapitre(chapitreItem).position4(position4Item)
                     .positions6(Collections.singletonList(position6Item))
-                    .positions10(positions10).build());
+                    .positions10(positions10).titrePosition10(titre).build());
         }
 
         // Niveau POSITION10 (10 chiffres)
@@ -107,11 +110,12 @@ public class DecodeP10Controller {
         Position10Dz position10 = position10DzRepository.findByCode(pos10Code)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Code P10 introuvable : " + pos10Code));
+        String titre = position10DzRepository.findTitleBeforeCode(pos10Code).orElse(null);
         return ResponseEntity.ok(DecodeResult.builder()
                 .codeRecherche(code).niveau("POSITION10")
                 .section(sectionItem).chapitre(chapitreItem).position4(position4Item)
                 .positions6(Collections.singletonList(position6Item))
                 .positions10(Collections.singletonList(new DecodeResult.CodeItem(position10.getCode(), position10.getDescription())))
-                .build());
+                .titrePosition10(titre).build());
     }
 }

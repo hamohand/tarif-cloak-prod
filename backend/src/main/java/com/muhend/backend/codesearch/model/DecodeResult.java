@@ -21,6 +21,7 @@ public class DecodeResult {
     private CodeItem position4;          // null si niveau == CHAPITRE
     private List<CodeItem> positions6;   // vide si CHAPITRE, plusieurs si POSITION4, 1 si POSITION6+
     private List<CodeItem> positions10;  // null sauf si niveau == POSITION10
+    private String titrePosition10;      // titre catégorie précédant le code P10 (code='')
 
     @Data
     @AllArgsConstructor

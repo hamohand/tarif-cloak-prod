@@ -14,6 +14,9 @@ public interface Position10DzRepository extends JpaRepository<Position10Dz, Long
 
     Optional<Position10Dz> findByCode(String code);
 
-    @Query("SELECT a FROM Position10Dz a WHERE a.code LIKE :prefix")
+    @Query("SELECT a FROM Position10Dz a WHERE a.code LIKE :prefix AND a.code != ''")
     List<Position10Dz> findAllByPrefix(@Param("prefix") String prefix);
+
+    @Query(value = "SELECT description FROM position10_dz WHERE code = '' AND id < (SELECT id FROM position10_dz WHERE code = :code) ORDER BY id DESC LIMIT 1", nativeQuery = true)
+    Optional<String> findTitleBeforeCode(@Param("code") String code);
 }

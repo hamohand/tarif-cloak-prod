@@ -87,6 +87,9 @@ import { OAuthService } from 'angular-oauth2-oidc';
 
           @if (result.positions10 && result.positions10.length > 0) {
             <div class="subpositions">
+              @if (result.titrePosition10) {
+                <div class="titre-p10">{{ result.titrePosition10 }}</div>
+              }
               <h4>
                 @if (result.niveau === 'POSITION6') { Codes P10 sous ce code HS }
                 @if (result.niveau === 'POSITION10') { Code P10 complet }
@@ -317,6 +320,15 @@ import { OAuthService } from 'angular-oauth2-oidc';
     }
 
     .code-cell.p10 { color: #8e44ad; }
+
+    .titre-p10 {
+      font-style: italic;
+      color: #7f8c8d;
+      font-size: 0.9rem;
+      padding: 6px 0 4px 4px;
+      border-left: 3px solid #8e44ad;
+      margin-bottom: 8px;
+    }
   `]
 })
 export class DecodeP10Component {
