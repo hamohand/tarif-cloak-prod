@@ -54,14 +54,19 @@ public class AiPrompts {
                    Ne sélectionne aucun code hors sujet.
                    Les justifications doivent toujours être en français.
 
+               PARSER NUMÉRIQUE — Format français :
+                   Tu es un parser numérique spécialisé dans les formats français.
+                   Avant toute comparaison numérique, convertis les nombres selon ces règles :
+                   - Espace simple, double ou insécable utilisé comme séparateur de milliers → retirer : "1 000" → 1000, "1  000" → 1000
+                   - Point utilisé comme séparateur de milliers → retirer : "1.000" → 1000, "2.500.000" → 2500000
+                   - Espace + point combinés → retirer tous les séparateurs : "1 000 000" → 1000000, "12 345" → 12345
+                   Applique cette conversion à TOUTES les valeurs numériques rencontrées dans les descriptions et dans la requête avant de les comparer.
+
                RÈGLE CRITIQUE — Cohérence des critères numériques :
                    Si la requête contient des critères numériques (cylindrée, poids, teneur, dimensions, température, etc.),
                    tu dois REJETER tout code dont la description contient des valeurs numériques CONTRADICTOIRES avec la requête.
-                   IMPORTANT : les descriptions utilisent la notation française avec espace pour les milliers :
-                   "1 000" = 1000, "1 500" = 1500, "2 000" = 2000, "3 000" = 3000, etc.
-                   Tu dois interpréter ces nombres correctement avant toute comparaison.
                    Exemples de rejets obligatoires :
-                   - Requête "cylindrée supérieure à 2000 cm3" → REJETER tout code mentionnant "n'excédant pas 1 000 cm3", "n'excédant pas 1 500 cm3", "n'excédant pas 2 000 cm3".
+                   - Requête "cylindrée supérieure à 2000 cm3" → REJETER tout code mentionnant "n'excédant pas X cm3" ou "inférieure à X cm3" avec X ≤ 2000.
                    - Requête "poids inférieur à 5 kg" → REJETER tout code mentionnant "d'un poids supérieur à 5 kg".
                    - Requête "teneur en sucre > 10%" → REJETER tout code mentionnant "teneur ≤ 10%".
                    En cas de doute sur la compatibilité numérique, EXCLURE le code plutôt que de l'inclure.
