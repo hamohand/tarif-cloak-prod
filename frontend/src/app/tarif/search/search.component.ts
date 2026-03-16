@@ -48,8 +48,11 @@ import {ActivatedRoute} from '@angular/router';
             <table>
               <thead>
               <tr>
-                @if (searchResults[0].code != null) {
-                  <th>Code</th>
+                @if (endpoint === 'positions6') {
+                  <th>Position 4</th>
+                  <th>Position 6</th>
+                } @else {
+                  <th>Position 10</th>
                 }
                 @if (searchResults[0].description != null) {
                   <th>Description</th>
@@ -61,7 +64,10 @@ import {ActivatedRoute} from '@angular/router';
               </thead>
               <tbody>
               <tr *ngFor="let result of searchResults">
-                @if (result.code != null) {
+                @if (endpoint === 'positions6') {
+                  <td>{{ result.code?.substring(0, 4) }}</td>
+                  <td>{{ result.code }}</td>
+                } @else {
                   <td>{{ result.code }}</td>
                 }
                 @if (result.description != null) {
@@ -323,7 +329,7 @@ export class SearchComponent implements OnInit {
   searchResults: any[] | null | undefined;
   isLoading: boolean = false;
   error: string | null = null;
-  private endpoint: 'positions6' | 'positions10' = 'positions6';
+  endpoint: 'positions6' | 'positions10' = 'positions6';
 
   private searchService = inject(SearchService);
   private oauthService = inject(OAuthService);
