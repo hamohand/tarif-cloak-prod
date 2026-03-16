@@ -63,8 +63,10 @@ public class AiService {
                 termeRecherche + "\".\n\n" +
                 "IMPORTANT : Si le produit contient des critères numériques (cylindrée, poids, teneur, dimensions, etc.), " +
                 "vous devez EXCLURE tout code dont la description contient des valeurs numériques qui CONTREDISENT ces critères. " +
+                "Note : les descriptions utilisent la notation française avec espace pour les milliers (ex: \"1 000\" = 1000, \"2 000\" = 2000, \"1 500\" = 1500). " +
+                "Tenez compte de cette notation lors de la comparaison des valeurs numériques. " +
                 "Par exemple, si le produit précise \"cylindrée supérieure à 2000 cm3\", " +
-                "excluez tous les codes mentionnant \"n'excédant pas X cm3\" avec X ≤ 2000.\n\n" +
+                "excluez tous les codes mentionnant \"n'excédant pas 1 000 cm3\", \"n'excédant pas 1 500 cm3\", \"n'excédant pas 2 000 cm3\" etc.\n\n" +
                 "Répondez uniquement avec le tableau JSON, sans aucun texte avant ou après.";
     }
 

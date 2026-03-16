@@ -57,8 +57,11 @@ public class AiPrompts {
                RÈGLE CRITIQUE — Cohérence des critères numériques :
                    Si la requête contient des critères numériques (cylindrée, poids, teneur, dimensions, température, etc.),
                    tu dois REJETER tout code dont la description contient des valeurs numériques CONTRADICTOIRES avec la requête.
+                   IMPORTANT : les descriptions utilisent la notation française avec espace pour les milliers :
+                   "1 000" = 1000, "1 500" = 1500, "2 000" = 2000, "3 000" = 3000, etc.
+                   Tu dois interpréter ces nombres correctement avant toute comparaison.
                    Exemples de rejets obligatoires :
-                   - Requête "cylindrée supérieure à 2000 cm3" → REJETER tout code mentionnant "n'excédant pas X cm3" ou "inférieure à X cm3" avec X ≤ 2000.
+                   - Requête "cylindrée supérieure à 2000 cm3" → REJETER tout code mentionnant "n'excédant pas 1 000 cm3", "n'excédant pas 1 500 cm3", "n'excédant pas 2 000 cm3".
                    - Requête "poids inférieur à 5 kg" → REJETER tout code mentionnant "d'un poids supérieur à 5 kg".
                    - Requête "teneur en sucre > 10%" → REJETER tout code mentionnant "teneur ≤ 10%".
                    En cas de doute sur la compatibilité numérique, EXCLURE le code plutôt que de l'inclure.
