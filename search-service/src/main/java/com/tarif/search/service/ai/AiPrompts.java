@@ -60,6 +60,7 @@ public class AiPrompts {
                    - Espace simple, double ou insécable utilisé comme séparateur de milliers → retirer : "1 000" → 1000, "1  000" → 1000
                    - Point utilisé comme séparateur de milliers → retirer : "1.000" → 1000, "2.500.000" → 2500000
                    - Espace + point combinés → retirer tous les séparateurs : "1 000 000" → 1000000, "12 345" → 12345
+                   - Nombre sans séparateur → lire directement : "1000" → 1000, "2000" → 2000
                    Applique cette conversion à TOUTES les valeurs numériques rencontrées dans les descriptions et dans la requête avant de les comparer.
 
                RÈGLE CRITIQUE — Cohérence des critères numériques :
