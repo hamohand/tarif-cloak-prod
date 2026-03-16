@@ -1,7 +1,8 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SearchService, DecodeResult } from '../services/search.service';
+import { SearchStateService } from '../services/search-state.service';
 import { OAuthService } from 'angular-oauth2-oidc';
 
 @Component({
@@ -331,7 +332,7 @@ import { OAuthService } from 'angular-oauth2-oidc';
     }
   `]
 })
-export class DecodeP10Component {
+export class DecodeP10Component implements OnInit {
   codeInput: string = '';
   result: DecodeResult | null = null;
   isLoading: boolean = false;
@@ -339,6 +340,12 @@ export class DecodeP10Component {
 
   private searchService = inject(SearchService);
   private oauthService = inject(OAuthService);
+  private state = inject(SearchStateService);
+
+  ngOnInit(): void {
+    this.codeInput = this.state.decodeP10Input;
+    this.result = this.state.decodeP10Result;
+  }
 
   decode(): void {
     if (!this.oauthService.hasValidAccessToken()) {
@@ -362,7 +369,12 @@ export class DecodeP10Component {
     this.result = null;
 
     this.searchService.decodeP10Code(this.codeInput).subscribe({
-      next: (res) => { this.result = res; this.isLoading = false; },
+      next: (res) => {
+        this.result = res;
+        this.state.decodeP10Input = this.codeInput;
+        this.state.decodeP10Result = res;
+        this.isLoading = false;
+      },
       error: (err) => {
         this.error = err.message || 'Une erreur est survenue.';
         if (err.status === 401) this.oauthService.logOut();

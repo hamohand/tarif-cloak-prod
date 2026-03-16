@@ -2,6 +2,7 @@ import {Component, inject, OnInit} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SearchService } from '../services/search.service';
+import { SearchStateService } from '../services/search-state.service';
 import {OAuthService} from 'angular-oauth2-oidc';
 import {ActivatedRoute} from '@angular/router';
 
@@ -327,11 +328,17 @@ export class SearchComponent implements OnInit {
   private searchService = inject(SearchService);
   private oauthService = inject(OAuthService);
   private route = inject(ActivatedRoute);
+  private state = inject(SearchStateService);
 
   ngOnInit(): void {
     const mode = this.route.snapshot.data['mode'];
     if (mode === 'position10') {
       this.endpoint = 'positions10';
+      this.searchTerm = this.state.searchTerm_p10;
+      this.searchResults = this.state.searchResults_p10;
+    } else {
+      this.searchTerm = this.state.searchTerm_hs;
+      this.searchResults = this.state.searchResults_hs;
     }
   }
 
@@ -373,6 +380,13 @@ export class SearchComponent implements OnInit {
                   console.log('search resultats:', this.searchResults[0].code);
                   console.log('search resultats:', this.searchResults[0].description);
                   console.log('search resultats:', this.searchResults[0].justification);
+              }
+              if (this.endpoint === 'positions10') {
+                this.state.searchTerm_p10 = this.searchTerm;
+                this.state.searchResults_p10 = this.searchResults ?? null;
+              } else {
+                this.state.searchTerm_hs = this.searchTerm;
+                this.state.searchResults_hs = this.searchResults ?? null;
               }
               this.isLoading = false;
           },

@@ -1,7 +1,8 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SearchService, DecodeResult } from '../services/search.service';
+import { SearchStateService } from '../services/search-state.service';
 import { OAuthService } from 'angular-oauth2-oidc';
 
 @Component({
@@ -333,7 +334,7 @@ import { OAuthService } from 'angular-oauth2-oidc';
     }
   `]
 })
-export class DecodeComponent {
+export class DecodeComponent implements OnInit {
   codeInput: string = '';
   result: DecodeResult | null = null;
   isLoading: boolean = false;
@@ -341,6 +342,12 @@ export class DecodeComponent {
 
   private searchService = inject(SearchService);
   private oauthService = inject(OAuthService);
+  private state = inject(SearchStateService);
+
+  ngOnInit(): void {
+    this.codeInput = this.state.decodeInput;
+    this.result = this.state.decodeResult;
+  }
 
   decode(): void {
     if (!this.oauthService.hasValidAccessToken()) {
@@ -367,6 +374,8 @@ export class DecodeComponent {
     this.searchService.decodeCode(this.codeInput).subscribe({
       next: (res) => {
         this.result = res;
+        this.state.decodeInput = this.codeInput;
+        this.state.decodeResult = res;
         this.isLoading = false;
       },
       error: (err) => {
