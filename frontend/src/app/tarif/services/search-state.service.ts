@@ -4,6 +4,7 @@ import { DecodeResult } from './search.service';
 export interface SearchResultItem {
   decoded: DecodeResult;
   justification: string | null;
+  aiCode: string; // code original retourné par l'IA (avant décodage du parent)
 }
 
 @Injectable({ providedIn: 'root' })

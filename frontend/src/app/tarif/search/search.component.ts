@@ -1,4 +1,4 @@
-import {Component, inject, OnInit} from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SearchService } from '../services/search.service';
@@ -7,6 +7,26 @@ import { OAuthService } from 'angular-oauth2-oidc';
 import { ActivatedRoute } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
+
+interface GroupedP10 {
+  code: string;
+  description: string;
+  justification: string | null;
+}
+
+interface GroupedP6 {
+  code: string;
+  description: string;
+  justification: string | null; // pour mode positions6
+  titreP10: string | null;
+  codes10: GroupedP10[];
+}
+
+interface GroupedP4 {
+  code: string;
+  description: string;
+  codes6: GroupedP6[];
+}
 
 @Component({
   selector: 'app-search',
@@ -35,68 +55,75 @@ import { catchError, map } from 'rxjs/operators';
         <div class="loading">Recherche en cours...</div>
       }
 
-      @if (error != null) {
+      @if (error) {
         <div class="error">{{ error }}</div>
       }
 
-      @if (decodedResults && !isLoading) {
+      @if (groupedResults && !isLoading) {
         <div class="results">
           <h3>Résultat de la recherche</h3>
 
-          @if (decodedResults.length === 0) {
+          @if (groupedResults.length === 0) {
             <p class="no-results">Aucun résultat n'a été trouvé.</p>
           }
 
-          @for (item of decodedResults; track item.decoded.codeRecherche) {
+          @for (g4 of groupedResults; track g4.code) {
             <div class="result-card">
 
               <!-- Position 4 -->
-              @if (item.decoded.position4) {
-                <div class="level level-position4">
-                  <span class="level-label">Position</span>
-                  <span class="level-code">{{ item.decoded.position4.code }}</span>
-                  <span class="level-desc">{{ item.decoded.position4.description }}</span>
-                </div>
-              }
+              <div class="level level-position4">
+                <span class="level-label">Position</span>
+                <span class="level-code">{{ g4.code }}</span>
+                <span class="level-desc">{{ g4.description }}</span>
+              </div>
 
-              <!-- Code HS (positions6) -->
-              @if (item.decoded.positions6 && item.decoded.positions6.length > 0) {
+              <!-- Pour chaque code6 sous ce code4 -->
+              @for (p6 of g4.codes6; track p6.code) {
                 <h4>Code HS</h4>
                 <table>
-                  <thead><tr><th>Code</th><th>Description</th></tr></thead>
+                  <thead>
+                    <tr>
+                      <th>Code</th>
+                      <th>Description</th>
+                      @if (endpoint === 'positions6') { <th>Justification</th> }
+                    </tr>
+                  </thead>
                   <tbody>
-                    @for (p6 of item.decoded.positions6; track p6.code) {
-                      <tr>
-                        <td class="code-cell">{{ p6.code }}</td>
-                        <td>{{ p6.description }}</td>
-                      </tr>
-                    }
+                    <tr>
+                      <td class="code-cell">{{ p6.code }}</td>
+                      <td>{{ p6.description }}</td>
+                      @if (endpoint === 'positions6' && p6.justification) {
+                        <td class="justif">{{ p6.justification }}</td>
+                      }
+                    </tr>
                   </tbody>
                 </table>
-              }
 
-              <!-- Codes P10 (mode positions10) -->
-              @if (item.decoded.positions10 && item.decoded.positions10.length > 0) {
-                @if (item.decoded.titrePosition10) {
-                  <div class="titre-p10">{{ item.decoded.titrePosition10 }}</div>
+                <!-- Codes P10 sous ce code6 -->
+                @if (p6.codes10.length > 0) {
+                  @if (p6.titreP10) {
+                    <div class="titre-p10">{{ p6.titreP10 }}</div>
+                  }
+                  <h4>Codes P10 sous ce code HS</h4>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Code P10</th>
+                        <th>Description</th>
+                        <th>Justification</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (p10 of p6.codes10; track p10.code) {
+                        <tr [class.highlighted]="p10.justification">
+                          <td class="code-cell p10">{{ p10.code }}</td>
+                          <td>{{ p10.description }}</td>
+                          <td class="justif">{{ p10.justification }}</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
                 }
-                <h4>Codes P10 sous ce code HS</h4>
-                <table>
-                  <thead><tr><th>Code P10</th><th>Description</th></tr></thead>
-                  <tbody>
-                    @for (p10 of item.decoded.positions10; track p10.code) {
-                      <tr>
-                        <td class="code-cell p10">{{ p10.code }}</td>
-                        <td>{{ p10.description }}</td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              }
-
-              <!-- Justification IA -->
-              @if (item.justification) {
-                <div class="justification">{{ item.justification }}</div>
               }
 
             </div>
@@ -121,7 +148,7 @@ import { catchError, map } from 'rxjs/operators';
     .search-form {
       display: flex;
       margin-bottom: 30px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
       border-radius: 12px;
       overflow: hidden;
       background: white;
@@ -131,7 +158,7 @@ import { catchError, map } from 'rxjs/operators';
 
     .search-form:focus-within {
       border-color: #3498db;
-      box-shadow: 0 12px 32px rgba(52, 152, 219, 0.2);
+      box-shadow: 0 12px 32px rgba(52,152,219,0.2);
       transform: translateY(-2px);
     }
 
@@ -159,7 +186,7 @@ import { catchError, map } from 'rxjs/operators';
 
     .search-button:hover:not(:disabled) {
       background: linear-gradient(135deg, #2980b9 0%, #21618c 100%);
-      box-shadow: 0 4px 16px rgba(52, 152, 219, 0.4);
+      box-shadow: 0 4px 16px rgba(52,152,219,0.4);
     }
 
     .search-button:disabled {
@@ -221,9 +248,7 @@ import { catchError, map } from 'rxjs/operators';
       border-bottom: 2px solid #ecf0f1;
     }
 
-    .result-card:last-child {
-      border-bottom: none;
-    }
+    .result-card:last-child { border-bottom: none; }
 
     .level {
       display: flex;
@@ -232,7 +257,7 @@ import { catchError, map } from 'rxjs/operators';
       padding: 12px 16px;
       border-radius: 8px;
       border-left: 4px solid;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
 
     .level-position4 {
@@ -264,10 +289,10 @@ import { catchError, map } from 'rxjs/operators';
 
     h4 {
       color: #2c3e50;
-      font-size: 1rem;
+      font-size: 0.95rem;
       font-weight: 600;
-      margin: 16px 0 10px;
-      padding-bottom: 6px;
+      margin: 14px 0 8px;
+      padding-bottom: 5px;
       border-bottom: 2px solid #ecf0f1;
     }
 
@@ -275,25 +300,30 @@ import { catchError, map } from 'rxjs/operators';
       width: 100%;
       border-collapse: separate;
       border-spacing: 0;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
       border-radius: 10px;
       overflow: hidden;
       background: white;
-      margin-bottom: 16px;
+      margin-bottom: 4px;
     }
 
-    th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid #ecf0f1; }
+    th, td {
+      padding: 11px 16px;
+      text-align: left;
+      border-bottom: 1px solid #ecf0f1;
+    }
 
     th {
       background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%);
       font-weight: 600;
       color: white;
       text-transform: uppercase;
-      font-size: 0.82rem;
+      font-size: 0.8rem;
       letter-spacing: 0.5px;
     }
 
     tbody tr:hover { background: #fef9e7; }
+    tbody tr.highlighted { background: #eafaf1; }
     tbody tr:last-child td { border-bottom: none; }
 
     .code-cell {
@@ -301,34 +331,30 @@ import { catchError, map } from 'rxjs/operators';
       font-weight: 600;
       color: #27ae60;
       font-size: 0.95rem;
+      white-space: nowrap;
     }
 
     .code-cell.p10 { color: #8e44ad; }
 
+    .justif {
+      font-style: italic;
+      color: #95a5a6;
+      font-size: 0.85rem;
+    }
+
     .titre-p10 {
       font-style: italic;
       color: #7f8c8d;
-      font-size: 0.9rem;
-      padding: 6px 0 4px 8px;
-      border-left: 3px solid #f39c12;
-      margin: 12px 0 6px;
-    }
-
-    .justification {
-      margin-top: 10px;
       font-size: 0.88rem;
-      color: #7f8c8d;
-      font-style: italic;
-      padding: 8px 12px;
-      background: #f8f9fa;
-      border-radius: 6px;
-      border-left: 3px solid #bdc3c7;
+      padding: 5px 0 3px 8px;
+      border-left: 3px solid #f39c12;
+      margin: 10px 0 6px;
     }
   `]
 })
 export class SearchComponent implements OnInit {
   searchTerm: string = '';
-  decodedResults: SearchResultItem[] | null = null;
+  groupedResults: GroupedP4[] | null = null;
   isLoading: boolean = false;
   error: string | null = null;
   endpoint: 'positions6' | 'positions10' = 'positions6';
@@ -343,10 +369,12 @@ export class SearchComponent implements OnInit {
     if (mode === 'position10') {
       this.endpoint = 'positions10';
       this.searchTerm = this.state.searchTerm_p10;
-      this.decodedResults = this.state.searchDecoded_p10;
+      const decoded = this.state.searchDecoded_p10;
+      if (decoded) this.groupedResults = this.buildGrouped(decoded);
     } else {
       this.searchTerm = this.state.searchTerm_hs;
-      this.decodedResults = this.state.searchDecoded_hs;
+      const decoded = this.state.searchDecoded_hs;
+      if (decoded) this.groupedResults = this.buildGrouped(decoded);
     }
   }
 
@@ -362,69 +390,111 @@ export class SearchComponent implements OnInit {
 
     this.isLoading = true;
     this.error = null;
-    this.decodedResults = null;
+    this.groupedResults = null;
 
-    this.searchService.searchCodes(this.searchTerm, this.endpoint)
-      .subscribe({
-        next: (results: any[]) => {
-          if (!results || results.length === 0) {
-            this.decodedResults = [];
-            this.isLoading = false;
-            this.saveState([]);
-            return;
-          }
-
-          // Pour chaque résultat AI, appeler decode pour obtenir la hiérarchie
-          const decodeObservables = results.map((r: any) => {
-            const rawCode: string = (r.code || '').replace(/\s/g, '');
-            const justification: string | null = r.justification ?? null;
-
-            // Pour positions10, décoder le code6 parent pour avoir tous les P10 sous lui
-            const codeToDecode = this.endpoint === 'positions10' && rawCode.length >= 6
-              ? rawCode.substring(0, 6)
-              : rawCode;
-
-            const decode$ = this.endpoint === 'positions10'
-              ? this.searchService.decodeP10Code(codeToDecode)
-              : this.searchService.decodeCode(codeToDecode);
-
-            return decode$.pipe(
-              catchError(() => of(null)),
-              map(decoded => ({ decoded, justification }))
-            );
-          });
-
-          forkJoin(decodeObservables).subscribe({
-            next: (items: any[]) => {
-              this.decodedResults = items.filter(i => i.decoded != null) as SearchResultItem[];
-              this.saveState(results);
-              this.isLoading = false;
-            },
-            error: () => {
-              this.error = 'Erreur lors du décodage des résultats.';
-              this.isLoading = false;
-            }
-          });
-        },
-        error: (err: any) => {
-          if (err.status === 401 || err.status === 403) {
-            this.oauthService.logOut();
-          }
-          this.error = err.message || 'Une erreur est survenue lors de la recherche.';
+    this.searchService.searchCodes(this.searchTerm, this.endpoint).subscribe({
+      next: (results: any[]) => {
+        if (!results || results.length === 0) {
+          this.groupedResults = [];
           this.isLoading = false;
+          this.saveState([]);
+          return;
         }
-      });
+
+        const decodeObservables = results.map((r: any) => {
+          const aiCode = (r.code || '').replace(/\s/g, '');
+          const justification: string | null = r.justification ?? null;
+          // Pour positions10 : décoder le code6 parent pour avoir tous les P10 sous lui
+          const codeToDecode = this.endpoint === 'positions10' && aiCode.length >= 6
+            ? aiCode.substring(0, 6)
+            : aiCode;
+
+          const decode$ = this.endpoint === 'positions10'
+            ? this.searchService.decodeP10Code(codeToDecode)
+            : this.searchService.decodeCode(codeToDecode);
+
+          return decode$.pipe(
+            catchError(() => of(null)),
+            map(decoded => decoded ? { decoded, justification, aiCode } as SearchResultItem : null)
+          );
+        });
+
+        forkJoin(decodeObservables).subscribe({
+          next: (items: any[]) => {
+            const valid = items.filter(i => i != null) as SearchResultItem[];
+            this.groupedResults = this.buildGrouped(valid);
+            this.saveState(valid);
+            this.isLoading = false;
+          },
+          error: () => {
+            this.error = 'Erreur lors du décodage des résultats.';
+            this.isLoading = false;
+          }
+        });
+      },
+      error: (err: any) => {
+        if (err.status === 401 || err.status === 403) this.oauthService.logOut();
+        this.error = err.message || 'Une erreur est survenue lors de la recherche.';
+        this.isLoading = false;
+      }
+    });
   }
 
-  private saveState(raw: any[]): void {
+  /** Construit la structure groupée : P4 → P6 → P10, sans doublons. */
+  private buildGrouped(items: SearchResultItem[]): GroupedP4[] {
+    const mapP4 = new Map<string, GroupedP4>();
+
+    for (const item of items) {
+      const p4 = item.decoded.position4;
+      if (!p4) continue;
+
+      if (!mapP4.has(p4.code)) {
+        mapP4.set(p4.code, { code: p4.code, description: p4.description, codes6: [] });
+      }
+      const group4 = mapP4.get(p4.code)!;
+
+      for (const p6 of (item.decoded.positions6 || [])) {
+        let group6 = group4.codes6.find(g => g.code === p6.code);
+        if (!group6) {
+          group6 = {
+            code: p6.code,
+            description: p6.description,
+            justification: null,
+            titreP10: item.decoded.titrePosition10 ?? null,
+            codes10: []
+          };
+          group4.codes6.push(group6);
+        }
+
+        if (this.endpoint === 'positions6') {
+          // Justification au niveau code6
+          if (!group6.justification) group6.justification = item.justification;
+        } else {
+          // Ajouter les P10, justification uniquement sur le P10 sélectionné par l'IA
+          for (const p10 of (item.decoded.positions10 || [])) {
+            if (!group6.codes10.find(g => g.code === p10.code)) {
+              const isAiSelected = p10.code.replace(/\s/g, '') === item.aiCode;
+              group6.codes10.push({
+                code: p10.code,
+                description: p10.description,
+                justification: isAiSelected ? item.justification : null
+              });
+            }
+          }
+        }
+      }
+    }
+
+    return Array.from(mapP4.values());
+  }
+
+  private saveState(decoded: SearchResultItem[]): void {
     if (this.endpoint === 'positions10') {
       this.state.searchTerm_p10 = this.searchTerm;
-      this.state.searchResults_p10 = raw;
-      this.state.searchDecoded_p10 = this.decodedResults;
+      this.state.searchDecoded_p10 = decoded;
     } else {
       this.state.searchTerm_hs = this.searchTerm;
-      this.state.searchResults_hs = raw;
-      this.state.searchDecoded_hs = this.decodedResults;
+      this.state.searchDecoded_hs = decoded;
     }
   }
 }
