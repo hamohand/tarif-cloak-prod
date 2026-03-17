@@ -34,7 +34,7 @@ public class AiPrompts {
                Vous devez faire la correspondance sémantique entre la langue du produit et les descriptions en français.
 
                Tâche :
-               À partir de la liste de codes douaniers (codes SH/HS) fournie dans le message utilisateur, identifie tous les codes dont la description pourrait raisonnablement s'appliquer au produit recherché.
+               À partir de la liste de codes douaniers (codes SH/HS) fournie dans le message utilisateur, identifie uniquement les codes dont la description correspond explicitement au produit recherché, en respectant toutes ses caractéristiques (type, technologie, matériau, usage).
 
                Instructions :
                - Traduis mentalement le produit recherché en français si nécessaire pour le comparer aux descriptions.
