@@ -1,9 +1,8 @@
 package com.tarif.search.service.ai;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tarif.search.model.UsageInfo;
-import lombok.extern.slf4j.Slf4j;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -12,8 +11,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.HashMap;
-import java.util.Map;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tarif.search.model.UsageInfo;
+
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Slf4j
@@ -58,7 +60,8 @@ public class OpenAiService implements AiProvider {
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("model", model);
         requestBody.put("messages", new Object[]{
-                Map.of("role", "system", "content", AiPrompts.getSystemMessage(aiPrompts.getDefTheme().isWithJustification())),
+                //Map.of("role", "system", "content", AiPrompts.getSystemMessage(aiPrompts.getDefTheme().isWithJustification())),
+                Map.of("role", "system", "content", AiPrompts.getSystemMessage(true)),
                 Map.of("role", "user", "content", question)
         });
         requestBody.put("max_tokens", maxTokens);
