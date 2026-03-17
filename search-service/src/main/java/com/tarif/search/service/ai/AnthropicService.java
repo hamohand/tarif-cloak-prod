@@ -1,9 +1,8 @@
 package com.tarif.search.service.ai;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tarif.search.model.UsageInfo;
-import lombok.extern.slf4j.Slf4j;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -12,8 +11,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.HashMap;
-import java.util.Map;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tarif.search.model.UsageInfo;
+
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Slf4j
@@ -29,7 +31,7 @@ public class AnthropicService implements AiProvider {
 
     public AnthropicService(
             @Value("${ai.anthropic.api-key:}") String apiKey,
-            @Value("${ai.anthropic.model:claude-sonnet-4-5-20250929}") String model,
+            @Value("${ai.anthropic.model:claude-haiku-4-5-20251001}") String model, // au lieu de claude-sonnet-4-5-20250929 trop cher
             @Value("${ai.anthropic.base-url:https://api.anthropic.com/v1}") String baseUrl) {
         this.apiKey = apiKey;
         this.model = model;
