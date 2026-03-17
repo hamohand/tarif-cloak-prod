@@ -40,9 +40,7 @@ public class AiPrompts {
                - Traduis mentalement le produit recherché en français si nécessaire pour le comparer aux descriptions.
                - Analyse sémantiquement la description du produit.
                - Scanne la liste des codes douaniers fournie.
-               - Sélectionne tous les codes dont les descriptions sont susceptibles de s'appliquer au produit, que ce soit de manière :
-                    * directe (correspondance explicite),\s
-                    * ou indirecte (correspondance potentielle selon l'usage ou le matériau).
+               - Sélectionne uniquement les codes dont la description correspond directement et explicitement au produit recherché.
                - Pour chaque code sélectionné, fournis :{instruction_details}
 
                Format de sortie : un tableau JSON uniquement, sans aucun texte avant ou après.
