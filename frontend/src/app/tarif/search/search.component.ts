@@ -456,25 +456,26 @@ export class SearchComponent implements OnInit {
       for (const p6 of (item.decoded.positions6 || [])) {
         let group6 = group4.codes6.find(g => g.code === p6.code);
         if (!group6) {
-          group6 = {
+          const newGroup6: GroupedP6 = {
             code: p6.code,
             description: p6.description,
             justification: null,
-            titreP10: item.decoded.titresPosition10 ?? null,
+            titreP10: item.decoded.titresPosition10?.join(' > ') ?? null,
             codes10: []
           };
-          group4.codes6.push(group6);
+          group4.codes6.push(newGroup6);
+          group6 = newGroup6;
         }
 
         if (this.endpoint === 'positions6') {
           // Justification au niveau code6
-          if (!group6.justification) group6.justification = item.justification;
+          if (!group6!.justification) group6!.justification = item.justification;
         } else {
           // Ajouter les P10, justification uniquement sur le P10 sélectionné par l'IA
           for (const p10 of (item.decoded.positions10 || [])) {
-            if (!group6.codes10.find(g => g.code === p10.code)) {
+            if (!group6!.codes10.find(g => g.code === p10.code)) {
               const isAiSelected = p10.code.replace(/\s/g, '') === item.aiCode;
-              group6.codes10.push({
+              group6!.codes10.push({
                 code: p10.code,
                 description: p10.description,
                 justification: isAiSelected ? item.justification : null
