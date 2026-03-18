@@ -70,6 +70,17 @@ import { of } from 'rxjs';
                   <span class="amount">Gratuit</span>
                 }
               </div>
+              @if (plan.pricePerYear !== null && plan.pricePerYear !== undefined) {
+                <div class="price-year">
+                  @if (currencySymbol$ | async; as symbol) {
+                    <span>{{ symbol }}</span>
+                  } @else {
+                    <span>{{ getCurrencySymbol(plan.currency) }}</span>
+                  }
+                  <span>{{ plan.pricePerYear }}</span>
+                  <span>/an</span>
+                </div>
+              }
               @if (plan.description) {
                 <p class="description">{{ plan.description }}</p>
               }
@@ -246,6 +257,14 @@ import { of } from 'rxjs';
       font-size: 1rem;
       color: #bdc3c7;
       margin-left: 0.25rem;
+    }
+
+    .price-year {
+      text-align: center;
+      color: #bdc3c7;
+      font-size: 0.9rem;
+      margin-top: -0.5rem;
+      margin-bottom: 0.5rem;
     }
 
     .description {
