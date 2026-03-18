@@ -9,13 +9,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
 /**
  * Recherche inverse P10 : à partir d'un code (2, 4, 6 ou 10 chiffres),
- * retourne la hiérarchie complète jusqu'à Position10.
+ * retourne la hiérarchie complète jusqu'à Position10 avec titres hiérarchiques.
  * Pure requête SQL, sans IA, sans décompte de quota.
  *
  * Route Traefik : /api/decode-p10 → backend:/decode-p10
@@ -44,16 +45,14 @@ public class DecodeP10Controller {
         }
 
         String chapCode = normalized.substring(0, 2);
-
         Chapitre chapitre = chapitreRepository.findByCode(chapCode)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Chapitre introuvable pour le code : " + chapCode));
-
         Section section = sectionRepository.findByCode(chapitre.getSection())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Section introuvable pour : " + chapitre.getSection()));
 
-        DecodeResult.CodeItem sectionItem = new DecodeResult.CodeItem(section.getCode(), section.getDescription());
+        DecodeResult.CodeItem sectionItem  = new DecodeResult.CodeItem(section.getCode(), section.getDescription());
         DecodeResult.CodeItem chapitreItem = new DecodeResult.CodeItem(chapitre.getCode(), chapitre.getDescription());
 
         // Niveau CHAPITRE (2 chiffres)
@@ -90,19 +89,19 @@ public class DecodeP10Controller {
                         "Code HS introuvable : " + pos6Code));
         DecodeResult.CodeItem position6Item = new DecodeResult.CodeItem(position6.getCode(), position6.getDescription());
 
-        // Niveau POSITION6 (6 chiffres) — liste des P10 avec leur titre
+        // Niveau POSITION6 (6 chiffres) — liste des P10 avec titres hiérarchiques
         if (len == 6) {
-            List<DecodeResult.CodeItem> positions10 = position10DzRepository.findAllByPrefix(pos6Code + "%")
-                    .stream().map(p -> new DecodeResult.CodeItem(p.getCode(), p.getDescription()))
+            List<Position10Dz> p10List = position10DzRepository.findAllByPrefixWithId(pos6Code + "%");
+            List<DecodeResult.CodeItem> positions10 = p10List.stream()
+                    .map(p -> new DecodeResult.CodeItem(p.getCode(), p.getDescription()))
                     .collect(Collectors.toList());
-            // Titre du premier code P10 trouvé (ils partagent généralement le même titre)
-            String titre = positions10.isEmpty() ? null :
-                    position10DzRepository.findTitleBeforeCode(positions10.get(0).getCode()).orElse(null);
+            List<String> titres = p10List.isEmpty() ? Collections.emptyList()
+                    : findTitres(p10List.get(0).getId(), countDashes(p10List.get(0).getDescription()));
             return ResponseEntity.ok(DecodeResult.builder()
                     .codeRecherche(code).niveau("POSITION6")
                     .section(sectionItem).chapitre(chapitreItem).position4(position4Item)
                     .positions6(Collections.singletonList(position6Item))
-                    .positions10(positions10).titrePosition10(titre).build());
+                    .positions10(positions10).titresPosition10(titres).build());
         }
 
         // Niveau POSITION10 (10 chiffres)
@@ -110,12 +109,56 @@ public class DecodeP10Controller {
         Position10Dz position10 = position10DzRepository.findByCode(pos10Code)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Code P10 introuvable : " + pos10Code));
-        String titre = position10DzRepository.findTitleBeforeCode(pos10Code).orElse(null);
+        List<String> titres = findTitres(position10.getId(), countDashes(position10.getDescription()));
         return ResponseEntity.ok(DecodeResult.builder()
                 .codeRecherche(code).niveau("POSITION10")
                 .section(sectionItem).chapitre(chapitreItem).position4(position4Item)
                 .positions6(Collections.singletonList(position6Item))
-                .positions10(Collections.singletonList(new DecodeResult.CodeItem(position10.getCode(), position10.getDescription())))
-                .titrePosition10(titre).build());
+                .positions10(Collections.singletonList(
+                        new DecodeResult.CodeItem(position10.getCode(), position10.getDescription())))
+                .titresPosition10(titres).build());
+    }
+
+    /**
+     * Remonte la hiérarchie des titres (code='') précédant une entrée.
+     * Algorithme : à partir de l'id et du nombre de tirets de l'entrée,
+     * cherche récursivement les titres avec de moins en moins de tirets
+     * jusqu'à n_tirets = 1.
+     *
+     * @return liste de titres du plus général (1 tiret) au plus spécifique
+     */
+    private List<String> findTitres(long startId, int nTirets) {
+        List<String> titres = new ArrayList<>();
+        long currentId = startId;
+
+        while (nTirets > 1) {
+            Object[] row = position10DzRepository
+                    .findFirstTitleBeforeWithFewerDashes(currentId, nTirets)
+                    .orElse(null);
+            if (row != null) {
+                long foundId = ((Number) row[0]).longValue();
+                String desc  = (String) row[1];
+                titres.add(0, desc); // prepend : du plus général au plus spécifique
+                currentId = foundId;
+            }
+            nTirets--;
+        }
+
+        return titres;
+    }
+
+    /**
+     * Compte le nombre de "- " en préfixe d'une description.
+     * "- texte" → 1, "- - texte" → 2, etc.
+     */
+    private int countDashes(String description) {
+        if (description == null) return 0;
+        int count = 0;
+        String s = description;
+        while (s.startsWith("- ")) {
+            count++;
+            s = s.substring(2);
+        }
+        return count == 0 && description.startsWith("-") ? 1 : count;
     }
 }

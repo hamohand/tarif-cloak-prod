@@ -17,6 +17,22 @@ public interface Position10DzRepository extends JpaRepository<Position10Dz, Long
     @Query("SELECT a FROM Position10Dz a WHERE a.code LIKE :prefix AND a.code != ''")
     List<Position10Dz> findAllByPrefix(@Param("prefix") String prefix);
 
-    @Query(value = "SELECT description FROM position10_dz WHERE code = '' AND id < (SELECT id FROM position10_dz WHERE code = :code) ORDER BY id DESC LIMIT 1", nativeQuery = true)
-    Optional<String> findTitleBeforeCode(@Param("code") String code);
+    @Query("SELECT a FROM Position10Dz a WHERE a.code LIKE :prefix AND a.code != '' ORDER BY a.id ASC")
+    List<Position10Dz> findAllByPrefixWithId(@Param("prefix") String prefix);
+
+    /**
+     * Trouve le premier titre (code='') avant une position donnée
+     * dont le nombre de tirets est strictement inférieur à nTirets.
+     * Formule PostgreSQL : (char_length - char_length(ltrim)) / 2 = nb de "- " en préfixe.
+     */
+    @Query(value = """
+        SELECT id, description FROM position10_dz
+        WHERE code = ''
+          AND id < :beforeId
+          AND (char_length(description) - char_length(ltrim(description, '- '))) / 2 < :nTirets
+        ORDER BY id DESC LIMIT 1
+        """, nativeQuery = true)
+    Optional<Object[]> findFirstTitleBeforeWithFewerDashes(
+            @Param("beforeId") long beforeId,
+            @Param("nTirets") int nTirets);
 }

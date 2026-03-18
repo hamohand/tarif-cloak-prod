@@ -88,8 +88,12 @@ import { OAuthService } from 'angular-oauth2-oidc';
 
           @if (result.positions10 && result.positions10.length > 0) {
             <div class="subpositions">
-              @if (result.titrePosition10) {
-                <div class="titre-p10">{{ result.titrePosition10 }}</div>
+              @if (result.titresPosition10 && result.titresPosition10.length > 0) {
+                <div class="titres-p10">
+                  @for (titre of result.titresPosition10; track titre; let i = $index) {
+                    <div class="titre-p10" [style.padding-left]="(i * 12) + 'px'">{{ titre }}</div>
+                  }
+                </div>
               }
               <h4>
                 @if (result.niveau === 'POSITION6') { Codes P10 sous ce code HS }
@@ -322,13 +326,17 @@ import { OAuthService } from 'angular-oauth2-oidc';
 
     .code-cell.p10 { color: #8e44ad; }
 
+    .titres-p10 {
+      margin-bottom: 10px;
+      border-left: 3px solid #8e44ad;
+      padding-left: 8px;
+    }
+
     .titre-p10 {
       font-style: italic;
       color: #7f8c8d;
-      font-size: 0.9rem;
-      padding: 6px 0 4px 4px;
-      border-left: 3px solid #8e44ad;
-      margin-bottom: 8px;
+      font-size: 0.88rem;
+      padding: 2px 0;
     }
   `]
 })

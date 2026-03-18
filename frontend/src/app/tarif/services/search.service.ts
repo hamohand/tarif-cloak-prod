@@ -16,7 +16,7 @@ export interface DecodeResult {
   position4: DecodeCodeItem | null;
   positions6: DecodeCodeItem[];
   positions10: DecodeCodeItem[] | null;
-  titrePosition10: string | null;
+  titresPosition10: string[] | null;
 }
 
 @Injectable({
