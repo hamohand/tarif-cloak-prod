@@ -35,8 +35,19 @@ public class DecodeP10Controller {
 
     @GetMapping(produces = "application/json")
     public ResponseEntity<DecodeResult> decodeCode(@RequestParam String code) {
+        try {
+        return decodeCodeInternal(code);
+        } catch (ResponseStatusException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Erreur inattendue decode-p10 pour code='{}': {}", code, e.getMessage(), e);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getClass().getSimpleName() + ": " + e.getMessage());
+        }
+    }
+
+    private ResponseEntity<DecodeResult> decodeCodeInternal(String code) {
         String normalized = code.replaceAll("[^0-9]", "");
-        log.debug("Décodage P10: '{}' → normalisé: '{}'", code, normalized);
+        log.info("Décodage P10: '{}' → normalisé: '{}'", code, normalized);
 
         int len = normalized.length();
         if (len != 2 && len != 4 && len != 6 && len != 10) {
@@ -132,10 +143,10 @@ public class DecodeP10Controller {
         long currentId = startId;
 
         while (nTirets > 1) {
-            Object[] row = position10DzRepository
-                    .findFirstTitleBeforeWithFewerDashes(currentId, nTirets)
-                    .orElse(null);
-            if (row != null) {
+            List<Object[]> rows = position10DzRepository
+                    .findFirstTitleBeforeWithFewerDashes(currentId, nTirets);
+            if (!rows.isEmpty()) {
+                Object[] row = rows.get(0);
                 long foundId = ((Number) row[0]).longValue();
                 String desc  = (String) row[1];
                 titres.add(0, desc); // prepend : du plus général au plus spécifique

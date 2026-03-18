@@ -32,7 +32,7 @@ public interface Position10DzRepository extends JpaRepository<Position10Dz, Long
           AND (char_length(description) - char_length(ltrim(description, '- '))) / 2 < :nTirets
         ORDER BY id DESC LIMIT 1
         """, nativeQuery = true)
-    Optional<Object[]> findFirstTitleBeforeWithFewerDashes(
+    List<Object[]> findFirstTitleBeforeWithFewerDashes(
             @Param("beforeId") long beforeId,
             @Param("nTirets") int nTirets);
 }
