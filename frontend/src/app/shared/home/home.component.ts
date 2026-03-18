@@ -77,31 +77,41 @@ import { map, switchMap, catchError, distinctUntilChanged } from 'rxjs/operators
               <div class="endpoint-item">
                 <code class="endpoint-method">Produit recherché</code>
                 <code class="endpoint-path">سيارة كهربائية</code>
-                <code class="response-method">Réponse HS-Code :</code>
+                <code class="response-method">HScode :</code>
                 <span class="endpoint-desc">
-                <b>code</b>: "8703 80" <br>
+                code: <b>870380</b> <br>
                 <b>description</b>: "Véhicules, équipés uniquement d'un moteur électrique pour la propulsion"
                 </span>
+                <code class="response-method">Position_10 :</code>
+                <span class="endpoint-desc">
+                code: <b>8703801000</b><br>
+                <b>description</b>: "Véhicules blindés"
+                </span>
+                <span class="endpoint-desc">
+                code: <b>8703809000</b><br>
+                <b>description</b>: "Autres véhicules"
+                </span>
               </div>
+
               <div class="endpoint-item">
                 <code class="endpoint-method">Produit recherché</code>
                 <code class="endpoint-path">dattes</code>
-                <code class="response-method">Réponse HS-Code :</code>
-                <span class="endpoint-desc"><b>code</b>: "0804 10" <br>
+                <code class="response-method">Réponse HScode :</code>
+                <span class="endpoint-desc">code: <b></b> "080410" <br>
                 <b>description</b>: "Dattes"</span>
               </div>
               <div class="endpoint-item">
                 <code class="endpoint-method">Produit recherché</code>
                 <code class="endpoint-path">Smart phone</code>
-                <code class="response-method">Réponse HS-Code :</code>
-                <span class="endpoint-desc"><b>code</b>: "8517 13" <br>
+                <code class="response-method">Réponse HScode :</code>
+                <span class="endpoint-desc">code: <b></b> "851713" <br>
                   <b>description</b>: "Postes téléphoniques d'usagers, y compris les téléphones intelligents et autres téléphones pour réseaux cellulaires et pour autres réseaux sans fil: - Téléphones intelligents"</span>
               </div>
               <div class="endpoint-item">
                 <code class="endpoint-method">Produit recherché</code>
                 <code class="endpoint-path">笔记本电脑</code>
-                <code class="response-method">Réponse HS-Code :</code>
-                <span class="endpoint-desc"><b>code</b>: "8471.30" <br>
+                <code class="response-method">Réponse HScode :</code>
+                <span class="endpoint-desc">code: <b></b> "847130" <br>
                 <b>description</b>: "Ordinateurs portables ..."</span>
               </div>
             </div>
