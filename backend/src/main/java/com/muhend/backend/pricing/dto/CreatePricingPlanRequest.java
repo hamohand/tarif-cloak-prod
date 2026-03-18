@@ -32,6 +32,9 @@ public class CreatePricingPlanRequest {
     @DecimalMin(value = "0.0", inclusive = true, message = "Le prix par requête doit être positif ou nul")
     private BigDecimal pricePerRequest;
 
+    @DecimalMin(value = "0.0", inclusive = true, message = "Le prix annuel doit être positif ou nul")
+    private BigDecimal pricePerYear;
+
     @Min(value = 0, message = "Le quota mensuel doit être positif ou nul")
     private Integer monthlyQuota;
 

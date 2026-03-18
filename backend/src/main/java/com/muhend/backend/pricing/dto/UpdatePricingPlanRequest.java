@@ -29,7 +29,10 @@ public class UpdatePricingPlanRequest {
     
     @DecimalMin(value = "0.0", inclusive = true, message = "Le prix par requête doit être positif ou nul")
     private BigDecimal pricePerRequest; // null pour les plans mensuels ou pour ne pas modifier
-    
+
+    @DecimalMin(value = "0.0", inclusive = true, message = "Le prix annuel doit être positif ou nul")
+    private BigDecimal pricePerYear; // null si pas de tarif annuel ou pour ne pas modifier
+
     @Min(value = 0, message = "Le quota mensuel doit être positif ou nul")
     private Integer monthlyQuota; // null = quota illimité ou plan facturé à la requête ou pour ne pas modifier
     

@@ -37,6 +37,9 @@ public class PricingPlan {
     
     @Column(name = "price_per_request", columnDefinition = "NUMERIC(10,2)")
     private BigDecimal pricePerRequest; // Prix par requête en EUR (null pour les plans mensuels)
+
+    @Column(name = "price_per_year", columnDefinition = "NUMERIC(10,2)")
+    private BigDecimal pricePerYear; // Prix annuel (null si pas de tarif annuel)
     
     @Column(name = "monthly_quota", nullable = true)
     private Integer monthlyQuota; // null = quota illimité ou plan facturé à la requête

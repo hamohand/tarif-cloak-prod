@@ -9,6 +9,7 @@ export interface PricingPlan {
   description?: string;
   pricePerMonth?: number | null; // null pour les plans facturés à la requête
   pricePerRequest?: number | null; // null pour les plans mensuels
+  pricePerYear?: number | null; // null si pas de tarif annuel
   monthlyQuota?: number | null; // null = quota illimité ou plan facturé à la requête
   trialPeriodDays?: number | null; // null si pas un plan d'essai
   features?: string;

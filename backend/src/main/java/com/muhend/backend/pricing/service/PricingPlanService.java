@@ -219,6 +219,7 @@ public class PricingPlanService {
         plan.setDescription(request.getDescription());
         plan.setPricePerMonth(request.getPricePerMonth());
         plan.setPricePerRequest(request.getPricePerRequest());
+        plan.setPricePerYear(request.getPricePerYear());
         plan.setMonthlyQuota(request.getMonthlyQuota());
         plan.setTrialPeriodDays(request.getTrialPeriodDays());
         plan.setFeatures(request.getFeatures());
@@ -277,6 +278,9 @@ public class PricingPlanService {
         if (request.getPricePerRequest() != null) {
             plan.setPricePerRequest(request.getPricePerRequest());
         }
+        if (request.getPricePerYear() != null) {
+            plan.setPricePerYear(request.getPricePerYear());
+        }
         if (request.getMonthlyQuota() != null) {
             plan.setMonthlyQuota(request.getMonthlyQuota());
         }
@@ -322,6 +326,7 @@ public class PricingPlanService {
         dto.setDescription(plan.getDescription());
         dto.setPricePerMonth(plan.getPricePerMonth());
         dto.setPricePerRequest(plan.getPricePerRequest());
+        dto.setPricePerYear(plan.getPricePerYear());
         dto.setMonthlyQuota(plan.getMonthlyQuota());
         dto.setTrialPeriodDays(plan.getTrialPeriodDays());
         dto.setFeatures(plan.getFeatures());
