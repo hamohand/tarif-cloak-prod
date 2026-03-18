@@ -77,12 +77,12 @@ import { map, switchMap, catchError, distinctUntilChanged } from 'rxjs/operators
               <div class="endpoint-item">
                 <code class="endpoint-method">Produit recherché</code>
                 <code class="endpoint-path">سيارة كهربائية</code>
-                <code class="response-method">Réponse HScode :</code>
+                <code class="response-method">HScode :</code>
                 <span class="endpoint-desc">
                 code: <b>870380</b> <br>
                 <b>description</b>: "Véhicules, équipés uniquement d'un moteur électrique pour la propulsion"
                 </span>
-                <code class="response-method">Réponse Position_10 :</code>
+                <code class="response-method">Position_10 :</code>
                 <span class="endpoint-desc">
                 code: <b>8703801000</b><br>
                 <b>description</b>: "Véhicules blindés"
