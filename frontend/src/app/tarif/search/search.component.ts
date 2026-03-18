@@ -460,7 +460,7 @@ export class SearchComponent implements OnInit {
             code: p6.code,
             description: p6.description,
             justification: null,
-            titreP10: item.decoded.titrePosition10 ?? null,
+            titreP10: item.decoded.titresPosition10 ?? null,
             codes10: []
           };
           group4.codes6.push(group6);
