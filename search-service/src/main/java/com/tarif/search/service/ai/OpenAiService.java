@@ -35,7 +35,8 @@ public class OpenAiService implements AiProvider {
             AiPrompts aiPrompts,
             @Value("${ai.openai.api-key:}") String apiKey,
             @Value("${ai.openai.base-url:https://api.openai.com/v1}") String baseUrl,
-            @Value("${ai.openai.model:gpt-4o-mini}") String model,
+            //@Value("${ai.openai.model:gpt-4o-mini}") String model,
+            @Value("${ai.openai.model:gpt-4.1-nano}") String model,
             @Value("${ai.base-request-price:0.01}") double baseRequestPrice) {
         this.aiPrompts = aiPrompts;
         this.apiKey = apiKey;
