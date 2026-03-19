@@ -30,7 +30,6 @@ public interface Position10DzRepository extends JpaRepository<Position10Dz, Long
         WHERE code = ''
           AND id < :beforeId
           AND (char_length(description) - char_length(ltrim(description, '- '))) / 2 < :nTirets
-          AND (char_length(description) - char_length(ltrim(description, '- '))) / 2 > 1
         ORDER BY id DESC LIMIT 1
         """, nativeQuery = true)
     List<Object[]> findFirstTitleBeforeWithFewerDashes(

@@ -148,7 +148,10 @@ public class DecodeP10Controller {
             if (row.getCode() == null || row.getCode().isEmpty()) {
                 if (!pastFirst) continue; // titres avant le 1er code déjà gérés
                 int level = countDashes(row.getDescription());
-                if (level <= 1) continue; // titres à 1 tiret exclus
+                if (level <= 1) {
+                    titleStack.clear(); // STOP : frontière de section, réinitialiser la pile
+                    continue;
+                }
                 while (titleStack.size() >= level) {
                     titleStack.remove(titleStack.size() - 1);
                 }
@@ -179,13 +182,13 @@ public class DecodeP10Controller {
         while (nTirets > 1) {
             List<Object[]> rows = position10DzRepository
                     .findFirstTitleBeforeWithFewerDashes(currentId, nTirets);
-            if (!rows.isEmpty()) {
-                Object[] row = rows.get(0);
-                long foundId = ((Number) row[0]).longValue();
-                String desc  = (String) row[1];
-                titres.add(0, desc); // prepend : du plus général au plus spécifique
-                currentId = foundId;
-            }
+            if (rows.isEmpty()) break;
+            Object[] row = rows.get(0);
+            long foundId = ((Number) row[0]).longValue();
+            String desc  = (String) row[1];
+            if (countDashes(desc) <= 1) break; // STOP : titre à 1 tiret = frontière de section
+            titres.add(0, desc);
+            currentId = foundId;
             nTirets--;
         }
 
