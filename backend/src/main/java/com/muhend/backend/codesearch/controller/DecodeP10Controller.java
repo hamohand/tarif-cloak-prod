@@ -127,19 +127,36 @@ public class DecodeP10Controller {
      * chaque nouveau titre remplace les titres de niveau égal ou supérieur.
      */
     private Map<String, List<String>> buildTitresParCode(String prefix) {
-        List<Position10Dz> allRows = position10DzRepository.findAllWithContextByPrefix(prefix);
+        // Les codes triés par id (ordre naturel du tarif)
+        List<Position10Dz> codes = position10DzRepository.findAllByPrefixWithId(prefix);
+        if (codes.isEmpty()) return Collections.emptyMap();
+
         Map<String, List<String>> result = new LinkedHashMap<>();
-        List<String> titleStack = new ArrayList<>(); // index 0 = niveau 1 tiret
+
+        // Étape 1 : titres du premier code via findTitres (les titres précédant le 1er code
+        // ont des ids inférieurs à MIN(id codes) et sont absents de findAllWithContextByPrefix)
+        Position10Dz first = codes.get(0);
+        List<String> titleStack = new ArrayList<>(
+                findTitres(first.getId(), countDashes(first.getDescription())));
+        result.put(first.getCode(), new ArrayList<>(titleStack));
+
+        // Étape 2 : titres intercalés entre les codes suivants (ids compris dans la plage)
+        List<Position10Dz> allRows = position10DzRepository.findAllWithContextByPrefix(prefix);
+        boolean pastFirst = false;
 
         for (Position10Dz row : allRows) {
             if (row.getCode() == null || row.getCode().isEmpty()) {
-                int level = countDashes(row.getDescription()); // 1-based
-                // Tronquer la pile au niveau courant et empiler le nouveau titre
+                if (!pastFirst) continue; // titres avant le 1er code déjà gérés
+                int level = countDashes(row.getDescription());
                 while (titleStack.size() >= level) {
                     titleStack.remove(titleStack.size() - 1);
                 }
                 titleStack.add(row.getDescription());
             } else {
+                if (!pastFirst) {
+                    pastFirst = true; // 1er code déjà traité en étape 1
+                    continue;
+                }
                 result.put(row.getCode(), new ArrayList<>(titleStack));
             }
         }
