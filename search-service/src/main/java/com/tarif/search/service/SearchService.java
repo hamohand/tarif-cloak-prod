@@ -233,7 +233,7 @@ public class SearchService {
         return positions6Selectionnees.stream()
                 .flatMap(p -> {
                     String prefix = p.getCode() + "%";
-                    return position10DzService.getPosition10DzsByPrefix(prefix).stream();
+                    return position10DzService.getPosition10DzsWithContextByPrefix(prefix).stream();
                 })
                 .map(pos -> new Position(pos.getCode(), pos.getDescription()))
                 .collect(Collectors.toList());

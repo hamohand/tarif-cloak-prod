@@ -97,7 +97,13 @@ public class AiService {
     private StringBuilder creerContexteRAG(String titre, List<Position> positions) {
         StringBuilder stringRAG = new StringBuilder("RAG pour la recherche des : " + titre + "\n\n");
         for (Position position : positions) {
-            stringRAG.append(formatterPosition(position.getCode(), position.getDescription(), null));
+            String code = position.getCode();
+            if (code == null || code.isEmpty()) {
+                // Titre de catégorie — affiché comme contexte hiérarchique, non sélectionnable
+                stringRAG.append(position.getDescription()).append("\n");
+            } else {
+                stringRAG.append(formatterPosition(code, position.getDescription(), null));
+            }
         }
         return stringRAG;
     }

@@ -28,6 +28,10 @@ public class Position10DzService {
         return position10DzRepository.findAllByPrefix(prefix);
     }
 
+    public List<Position10Dz> getPosition10DzsWithContextByPrefix(String prefix) {
+        return position10DzRepository.findAllWithContextByPrefix(prefix);
+    }
+
     public boolean existsByCode(String code) {
         return position10DzRepository.existsByCode(code);
     }
