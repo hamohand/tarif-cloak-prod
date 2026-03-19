@@ -39,12 +39,12 @@ public class OllamaService implements AiProvider {
     }
 
     @Override
-    public String demanderAiAide(String titre, String question) {
+    public String demanderAiAide(String titre, String question, boolean withJustification) {
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.add("Content-Type", "application/json");
 
-        String systemMessage = AiPrompts.getSystemMessage(aiPrompts.getDefTheme().isWithJustification());
+        String systemMessage = AiPrompts.getSystemMessage(withJustification);
         String fullPrompt = systemMessage + "\n\nUser: " + question;
 
         Map<String, Object> requestBody = new HashMap<>();

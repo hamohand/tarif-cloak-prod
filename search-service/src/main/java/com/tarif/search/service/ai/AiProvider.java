@@ -14,7 +14,7 @@ public interface AiProvider {
      * @param question Le prompt complet avec le RAG
      * @return La réponse JSON de l'IA
      */
-    String demanderAiAide(String titre, String question);
+    String demanderAiAide(String titre, String question, boolean withJustification);
 
     /**
      * Récupère les informations d'utilisation de la dernière requête.

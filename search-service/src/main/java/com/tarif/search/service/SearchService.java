@@ -43,7 +43,7 @@ public class SearchService {
         ragNiveau = ragSections();
         log.debug("Level 0 (Sections) - RAG size: {}", ragNiveau.size());
 
-        positions = executeWithRetry(SearchLevel.SECTIONS.toString(), termeRecherche, ragNiveau, tentativesMax);
+        positions = executeWithRetry(SearchLevel.SECTIONS.toString(), termeRecherche, ragNiveau, tentativesMax, maxLevel == SearchLevel.SECTIONS);
 
         if (positions == null || positions.isEmpty()) {
             log.info("Level 0 - Aucun résultat, arrêt cascade");
@@ -66,7 +66,7 @@ public class SearchService {
         ragNiveau = ragChapitres(positions);
         log.debug("Level 1 (Chapitres) - RAG size: {}", ragNiveau.size());
 
-        positions = executeWithRetry(SearchLevel.CHAPITRES.toString(), termeRecherche, ragNiveau, tentativesMax);
+        positions = executeWithRetry(SearchLevel.CHAPITRES.toString(), termeRecherche, ragNiveau, tentativesMax, maxLevel == SearchLevel.CHAPITRES);
 
         if (positions == null || positions.isEmpty()) {
             log.info("Level 1 - Aucun résultat, arrêt cascade");
@@ -89,7 +89,7 @@ public class SearchService {
         ragNiveau = ragPositions4(positions);
         log.debug("Level 2 (Positions4) - RAG size: {}", ragNiveau.size());
 
-        positions = executeWithRetry(SearchLevel.POSITIONS4.toString(), termeRecherche, ragNiveau, tentativesMax);
+        positions = executeWithRetry(SearchLevel.POSITIONS4.toString(), termeRecherche, ragNiveau, tentativesMax, maxLevel == SearchLevel.POSITIONS4);
         List<Position> positionsLevel2 = positions;
 
         if (positions == null || positions.isEmpty()) {
@@ -113,7 +113,7 @@ public class SearchService {
         ragNiveau = ragPositions6(positions);
         log.debug("Level 3 (Positions6) - RAG size: {}", ragNiveau.size());
 
-        positions = executeWithRetry(SearchLevel.POSITIONS6.toString(), termeRecherche, ragNiveau, tentativesMax);
+        positions = executeWithRetry(SearchLevel.POSITIONS6.toString(), termeRecherche, ragNiveau, tentativesMax, maxLevel == SearchLevel.POSITIONS6);
 
         if (positions == null || positions.isEmpty()) {
             log.info("Level 3 - Aucun résultat, utilisation Level 2");
@@ -138,7 +138,7 @@ public class SearchService {
         log.debug("Level 4 (Positions10) - RAG size: {}", ragNiveau.size());
 
         if (!ragNiveau.isEmpty()) {
-            positions = executeWithRetry(SearchLevel.POSITIONS10.toString(), termeRecherche, ragNiveau, tentativesMax);
+            positions = executeWithRetry(SearchLevel.POSITIONS10.toString(), termeRecherche, ragNiveau, tentativesMax, true);
 
             if (positions != null && !positions.isEmpty()) {
                 enrichWithDescriptions(positions, SearchLevel.POSITIONS10);
@@ -158,14 +158,14 @@ public class SearchService {
         return aiPrompts.getDefTheme().isWithCascade() ? reponseList : reponseListLevel;
     }
 
-    private List<Position> executeWithRetry(String niveau, String terme, List<Position> rag, int maxTentatives) {
+    private List<Position> executeWithRetry(String niveau, String terme, List<Position> rag, int maxTentatives, boolean withJustification) {
         List<Position> result = new ArrayList<>();
         int tentatives = 0;
 
         do {
             tentatives++;
             log.debug("{} - Tentative {}/{}", niveau, tentatives, maxTentatives);
-            result = aiService.promptEtReponse(niveau, terme, rag);
+            result = aiService.promptEtReponse(niveau, terme, rag, withJustification);
         } while (tentatives < maxTentatives && result.isEmpty());
 
         return result;

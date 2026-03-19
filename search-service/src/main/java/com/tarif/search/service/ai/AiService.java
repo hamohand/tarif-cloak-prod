@@ -36,10 +36,10 @@ public class AiService {
     /**
      * Recherche les positions pertinentes en utilisant l'IA.
      */
-    public List<Position> promptEtReponse(String titre, String termeRecherche, List<Position> listePositions) {
+    public List<Position> promptEtReponse(String titre, String termeRecherche, List<Position> listePositions, boolean withJustification) {
         try {
             StringBuilder leRAG = creerContexteRAG(titre, listePositions);
-            String reponseIaJson = obtenirReponseJsonDeIA(titre, leRAG, termeRecherche);
+            String reponseIaJson = obtenirReponseJsonDeIA(titre, leRAG, termeRecherche, withJustification);
             String jsonNettoye = JsonUtils.cleanJsonString(reponseIaJson);
 
             if (!JsonUtils.isValidJson(jsonNettoye)) {
@@ -64,10 +64,10 @@ public class AiService {
                 "Répondez uniquement avec le tableau JSON, sans aucun texte avant ou après.";
     }
 
-    private String obtenirReponseJsonDeIA(String titre, StringBuilder ragString, String termeRecherche) {
+    private String obtenirReponseJsonDeIA(String titre, StringBuilder ragString, String termeRecherche, boolean withJustification) {
         String prompt = construirePrompt(ragString, termeRecherche);
         try {
-            return getActiveProvider().demanderAiAide(titre, prompt);
+            return getActiveProvider().demanderAiAide(titre, prompt, withJustification);
         } catch (Exception e) {
             log.error("Erreur lors de l'appel IA: {}", e.getMessage());
             return "";

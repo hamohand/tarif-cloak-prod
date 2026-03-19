@@ -47,7 +47,7 @@ public class OpenAiService implements AiProvider {
     }
 
     @Override
-    public String demanderAiAide(String titre, String question) {
+    public String demanderAiAide(String titre, String question, boolean withJustification) {
         if (apiKey == null || apiKey.isBlank()) {
             log.error("Clé API OpenAI non configurée");
             return "";
@@ -61,8 +61,7 @@ public class OpenAiService implements AiProvider {
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("model", model);
         requestBody.put("messages", new Object[]{
-                //Map.of("role", "system", "content", AiPrompts.getSystemMessage(aiPrompts.getDefTheme().isWithJustification())),
-                Map.of("role", "system", "content", AiPrompts.getSystemMessage(true)),
+                Map.of("role", "system", "content", AiPrompts.getSystemMessage(withJustification)),
                 Map.of("role", "user", "content", question)
         });
         requestBody.put("max_tokens", maxTokens);

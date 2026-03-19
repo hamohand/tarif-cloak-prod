@@ -40,7 +40,7 @@ public class AnthropicService implements AiProvider {
     }
 
     @Override
-    public String demanderAiAide(String titre, String question) {
+    public String demanderAiAide(String titre, String question, boolean withJustification) {
         if (apiKey == null || apiKey.isBlank()) {
             log.error("Clé API Anthropic non configurée");
             return "";
@@ -54,7 +54,7 @@ public class AnthropicService implements AiProvider {
 
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("model", model);
-        requestBody.put("system", AiPrompts.getSystemMessage(true));
+        requestBody.put("system", AiPrompts.getSystemMessage(withJustification));
         requestBody.put("messages", new Object[]{
                 Map.of("role", "user", "content", question)
         });
