@@ -88,7 +88,7 @@ import { OAuthService } from 'angular-oauth2-oidc';
 
           @if (result.positions10 && result.positions10.length > 0) {
             <div class="subpositions">
-              @if (result.titresPosition10 && result.titresPosition10.length > 0) {
+              @if (result.niveau === 'POSITION10' && result.titresPosition10 && result.titresPosition10.length > 0) {
                 <div class="titres-p10">
                   @for (titre of result.titresPosition10; track titre; let i = $index) {
                     <div class="titre-p10" [style.padding-left]="(i * 12) + 'px'">{{ titre }}</div>
@@ -102,7 +102,19 @@ import { OAuthService } from 'angular-oauth2-oidc';
               <table>
                 <thead><tr><th>Code P10</th><th>Description</th></tr></thead>
                 <tbody>
-                  @for (item of result.positions10; track item.code) {
+                  @for (item of result.positions10; track item.code; let i = $index) {
+                    @if (result.niveau === 'POSITION6') {
+                      @let delta = getTitreDelta(i);
+                      @if (delta.length > 0) {
+                        <tr class="titre-row">
+                          <td colspan="2" class="titres-cell">
+                            @for (titre of delta; track titre) {
+                              <div class="titre-p10">{{ titre }}</div>
+                            }
+                          </td>
+                        </tr>
+                      }
+                    }
                     <tr>
                       <td class="code-cell p10">{{ item.code }}</td>
                       <td>{{ item.description }}</td>
@@ -332,11 +344,16 @@ import { OAuthService } from 'angular-oauth2-oidc';
       padding-left: 8px;
     }
 
+    .titre-row td { background: #faf5ff; padding: 4px 16px 2px; border-bottom: none; }
+    .titre-row:hover td { background: #faf5ff; }
+    .titres-cell { padding: 6px 16px 2px !important; }
+
     .titre-p10 {
       font-style: italic;
       color: #7f8c8d;
       font-size: 0.88rem;
-      padding: 2px 0;
+      padding: 2px 0 1px 8px;
+      border-left: 3px solid #8e44ad;
     }
   `]
 })
@@ -353,6 +370,19 @@ export class DecodeP10Component implements OnInit {
   ngOnInit(): void {
     this.codeInput = this.state.decodeP10Input;
     this.result = this.state.decodeP10Result;
+  }
+
+  /** Retourne les titres ayant changé par rapport au code P10 précédent (pour POSITION6). */
+  getTitreDelta(index: number): string[] {
+    if (!this.result?.titresParPosition10 || !this.result.positions10) return [];
+    const code = this.result.positions10[index].code;
+    const current = this.result.titresParPosition10[code] ?? [];
+    if (index === 0) return current;
+    const prevCode = this.result.positions10[index - 1].code;
+    const prev = this.result.titresParPosition10[prevCode] ?? [];
+    let i = 0;
+    while (i < Math.min(current.length, prev.length) && current[i] === prev[i]) i++;
+    return current.slice(i);
   }
 
   decode(): void {

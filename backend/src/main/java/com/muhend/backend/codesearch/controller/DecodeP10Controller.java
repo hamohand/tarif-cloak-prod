@@ -11,7 +11,9 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -89,19 +91,18 @@ public class DecodeP10Controller {
                         "Code HS introuvable : " + pos6Code));
         DecodeResult.CodeItem position6Item = new DecodeResult.CodeItem(position6.getCode(), position6.getDescription());
 
-        // Niveau POSITION6 (6 chiffres) — liste des P10 avec titres hiérarchiques
+        // Niveau POSITION6 (6 chiffres) — liste des P10 avec titres par code
         if (len == 6) {
             List<Position10Dz> p10List = position10DzRepository.findAllByPrefixWithId(pos6Code + "%");
             List<DecodeResult.CodeItem> positions10 = p10List.stream()
                     .map(p -> new DecodeResult.CodeItem(p.getCode(), p.getDescription()))
                     .collect(Collectors.toList());
-            List<String> titres = p10List.isEmpty() ? Collections.emptyList()
-                    : findTitres(p10List.get(0).getId(), countDashes(p10List.get(0).getDescription()));
+            Map<String, List<String>> titresParCode = buildTitresParCode(pos6Code + "%");
             return ResponseEntity.ok(DecodeResult.builder()
                     .codeRecherche(code).niveau("POSITION6")
                     .section(sectionItem).chapitre(chapitreItem).position4(position4Item)
                     .positions6(Collections.singletonList(position6Item))
-                    .positions10(positions10).titresPosition10(titres).build());
+                    .positions10(positions10).titresParPosition10(titresParCode).build());
         }
 
         // Niveau POSITION10 (10 chiffres)
@@ -117,6 +118,32 @@ public class DecodeP10Controller {
                 .positions10(Collections.singletonList(
                         new DecodeResult.CodeItem(position10.getCode(), position10.getDescription())))
                 .titresPosition10(titres).build());
+    }
+
+    /**
+     * Parcourt tous les codes ET titres du préfixe (dans l'ordre id) et retourne,
+     * pour chaque code P10, la liste de titres hiérarchiques qui le précèdent.
+     * Algorithme : pile de titres indexée par niveau (nb de tirets) ;
+     * chaque nouveau titre remplace les titres de niveau égal ou supérieur.
+     */
+    private Map<String, List<String>> buildTitresParCode(String prefix) {
+        List<Position10Dz> allRows = position10DzRepository.findAllWithContextByPrefix(prefix);
+        Map<String, List<String>> result = new LinkedHashMap<>();
+        List<String> titleStack = new ArrayList<>(); // index 0 = niveau 1 tiret
+
+        for (Position10Dz row : allRows) {
+            if (row.getCode() == null || row.getCode().isEmpty()) {
+                int level = countDashes(row.getDescription()); // 1-based
+                // Tronquer la pile au niveau courant et empiler le nouveau titre
+                while (titleStack.size() >= level) {
+                    titleStack.remove(titleStack.size() - 1);
+                }
+                titleStack.add(row.getDescription());
+            } else {
+                result.put(row.getCode(), new ArrayList<>(titleStack));
+            }
+        }
+        return result;
     }
 
     /**

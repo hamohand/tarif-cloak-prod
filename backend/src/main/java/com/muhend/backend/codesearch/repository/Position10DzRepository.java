@@ -35,4 +35,16 @@ public interface Position10DzRepository extends JpaRepository<Position10Dz, Long
     List<Object[]> findFirstTitleBeforeWithFewerDashes(
             @Param("beforeId") long beforeId,
             @Param("nTirets") int nTirets);
+
+    /**
+     * Retourne tous les codes ET les titres (code='') dans l'ordre id,
+     * pour la plage couvrant le préfixe donné.
+     */
+    @Query(value = """
+        SELECT * FROM position10_dz
+        WHERE id >= (SELECT MIN(id) FROM position10_dz WHERE code LIKE :prefix AND code != '')
+          AND id <= (SELECT MAX(id) FROM position10_dz WHERE code LIKE :prefix AND code != '')
+        ORDER BY id ASC
+        """, nativeQuery = true)
+    List<Position10Dz> findAllWithContextByPrefix(@Param("prefix") String prefix);
 }

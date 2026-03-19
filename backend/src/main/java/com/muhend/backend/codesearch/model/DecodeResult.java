@@ -20,8 +20,9 @@ public class DecodeResult {
     private CodeItem chapitre;
     private CodeItem position4;          // null si niveau == CHAPITRE
     private List<CodeItem> positions6;   // vide si CHAPITRE, plusieurs si POSITION4, 1 si POSITION6+
-    private List<CodeItem> positions10;       // null sauf si niveau == POSITION6 ou POSITION10
-    private List<String> titresPosition10;   // titres hiérarchiques précédant le code P10 (du plus général au plus spécifique)
+    private List<CodeItem> positions10;           // null sauf si niveau == POSITION6 ou POSITION10
+    private List<String> titresPosition10;        // titres pour un code P10 unique (niveau POSITION10)
+    private java.util.Map<String, List<String>> titresParPosition10; // titres par code P10 (niveau POSITION6)
 
     @Data
     @AllArgsConstructor

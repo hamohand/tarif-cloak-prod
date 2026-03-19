@@ -12,13 +12,13 @@ interface GroupedP10 {
   code: string;
   description: string;
   justification: string | null;
+  titres: string[] | null; // titres ayant changé par rapport au code P10 précédent
 }
 
 interface GroupedP6 {
   code: string;
   description: string;
   justification: string | null; // pour mode positions6
-  titreP10: string | null;
   codes10: GroupedP10[];
 }
 
@@ -101,9 +101,6 @@ interface GroupedP4 {
 
                 <!-- Codes P10 sous ce code6 -->
                 @if (p6.codes10.length > 0) {
-                  @if (p6.titreP10) {
-                    <div class="titre-p10">{{ p6.titreP10 }}</div>
-                  }
                   <h4>Codes P10 sous ce code HS</h4>
                   <table>
                     <thead>
@@ -115,6 +112,15 @@ interface GroupedP4 {
                     </thead>
                     <tbody>
                       @for (p10 of p6.codes10; track p10.code) {
+                        @if (p10.titres && p10.titres.length > 0) {
+                          <tr class="titre-row">
+                            <td colspan="3" class="titres-cell">
+                              @for (titre of p10.titres; track titre) {
+                                <div class="titre-p10">{{ titre }}</div>
+                              }
+                            </td>
+                          </tr>
+                        }
                         <tr [class.highlighted]="p10.justification">
                           <td class="code-cell p10">{{ p10.code }}</td>
                           <td>{{ p10.description }}</td>
@@ -342,13 +348,17 @@ interface GroupedP4 {
       font-size: 0.85rem;
     }
 
+    .titre-row td { background: #fefaf0; padding: 4px 16px 2px; border-bottom: none; }
+    .titre-row:hover td { background: #fefaf0; }
+
+    .titres-cell { padding: 6px 16px 2px !important; }
+
     .titre-p10 {
       font-style: italic;
       color: #7f8c8d;
       font-size: 0.88rem;
-      padding: 5px 0 3px 8px;
+      padding: 2px 0 1px 8px;
       border-left: 3px solid #f39c12;
-      margin: 10px 0 6px;
     }
   `]
 })
@@ -443,6 +453,8 @@ export class SearchComponent implements OnInit {
   /** Construit la structure groupée : P4 → P6 → P10, sans doublons. */
   private buildGrouped(items: SearchResultItem[]): GroupedP4[] {
     const mapP4 = new Map<string, GroupedP4>();
+    // Pour le calcul du delta de titres : dernier titre connu par groupe P6
+    const prevTitlesMap = new Map<string, string[]>();
 
     for (const item of items) {
       const p4 = item.decoded.position4;
@@ -460,7 +472,6 @@ export class SearchComponent implements OnInit {
             code: p6.code,
             description: p6.description,
             justification: null,
-            titreP10: item.decoded.titresPosition10?.join(' > ') ?? null,
             codes10: []
           };
           group4.codes6.push(newGroup6);
@@ -468,17 +479,20 @@ export class SearchComponent implements OnInit {
         }
 
         if (this.endpoint === 'positions6') {
-          // Justification au niveau code6
           if (!group6!.justification) group6!.justification = item.justification;
         } else {
-          // Ajouter les P10, justification uniquement sur le P10 sélectionné par l'IA
           for (const p10 of (item.decoded.positions10 || [])) {
             if (!group6!.codes10.find(g => g.code === p10.code)) {
               const isAiSelected = p10.code.replace(/\s/g, '') === item.aiCode;
+              const allTitres = item.decoded.titresParPosition10?.[p10.code] ?? [];
+              const prevTitres = prevTitlesMap.get(group6!.code) ?? [];
+              const delta = this.titreDelta(allTitres, prevTitres);
+              prevTitlesMap.set(group6!.code, allTitres);
               group6!.codes10.push({
                 code: p10.code,
                 description: p10.description,
-                justification: isAiSelected ? item.justification : null
+                justification: isAiSelected ? item.justification : null,
+                titres: delta.length > 0 ? delta : null
               });
             }
           }
@@ -487,6 +501,13 @@ export class SearchComponent implements OnInit {
     }
 
     return Array.from(mapP4.values());
+  }
+
+  /** Retourne les titres qui ont changé par rapport aux titres précédents. */
+  private titreDelta(current: string[], prev: string[]): string[] {
+    let i = 0;
+    while (i < Math.min(current.length, prev.length) && current[i] === prev[i]) i++;
+    return current.slice(i);
   }
 
   private saveState(decoded: SearchResultItem[]): void {
