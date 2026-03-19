@@ -482,8 +482,9 @@ export class SearchComponent implements OnInit {
           if (!group6!.justification) group6!.justification = item.justification;
         } else {
           for (const p10 of (item.decoded.positions10 || [])) {
-            if (!group6!.codes10.find(g => g.code === p10.code)) {
-              const isAiSelected = p10.code.replace(/\s/g, '') === item.aiCode;
+            const p10Code = p10.code.replace(/\s/g, '');
+            const existing = group6!.codes10.find(g => g.code === p10.code);
+            if (!existing) {
               const allTitres = item.decoded.titresParPosition10?.[p10.code] ?? [];
               const prevTitres = prevTitlesMap.get(group6!.code) ?? [];
               const delta = this.titreDelta(allTitres, prevTitres);
@@ -491,9 +492,11 @@ export class SearchComponent implements OnInit {
               group6!.codes10.push({
                 code: p10.code,
                 description: p10.description,
-                justification: isAiSelected ? item.justification : null,
+                justification: p10Code === item.aiCode ? item.justification : null,
                 titres: delta.length > 0 ? delta : null
               });
+            } else if (p10Code === item.aiCode && item.justification) {
+              existing.justification = item.justification;
             }
           }
         }
