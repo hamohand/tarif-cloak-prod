@@ -148,6 +148,7 @@ public class DecodeP10Controller {
             if (row.getCode() == null || row.getCode().isEmpty()) {
                 if (!pastFirst) continue; // titres avant le 1er code déjà gérés
                 int level = countDashes(row.getDescription());
+                if (level <= 1) continue; // titres à 1 tiret exclus
                 while (titleStack.size() >= level) {
                     titleStack.remove(titleStack.size() - 1);
                 }
