@@ -50,6 +50,14 @@ docker compose -f docker-compose-prod.yml logs -f search-service
 ### Providers standard (requêtes unitaires)
 - `AiService` → route vers `OpenAiProvider`, `AnthropicProvider`, ou `OllamaProvider`
 - Sélection via variable `AI_PROVIDER` (openai | anthropic | ollama)
+- `AiProvider.demanderAiAide(titre, question, withJustification)` — le paramètre `withJustification` contrôle le system message
+
+### Justification — stratégie d'optimisation des coûts
+- La justification est activée **uniquement au dernier niveau** de la cascade IA
+- Niveaux intermédiaires (L0-L3) : `withJustification = false` → system message plus court, output minimal
+- Dernier niveau (ex: L4 pour Position10, L3 pour HScode) : `withJustification = true` → justification en français
+- Économie estimée : ~40% sur les tokens output des niveaux intermédiaires
+- Si le dernier niveau échoue et qu'un niveau précédent est utilisé en fallback, les résultats n'ont pas de justification
 
 ### Providers batch (requêtes en lot)
 - `BatchService` → route vers `AnthropicBatchProvider` ou `OpenAiBatchProvider`
@@ -110,6 +118,31 @@ WWW_FRONTEND_DOMAIN=...
 ```
 
 Le fichier `.env.dev` sert de template — copier vers `.env` sur le VPS et adapter.
+
+## Décodage P10 — `DecodeP10Controller`
+
+Route : `GET /api/decode-p10?code=XXXX` — recherche inverse pure SQL (sans IA, sans quota).
+
+Accepte 2, 4, 6 ou 10 chiffres et retourne la hiérarchie complète (section → chapitre → position4 → position6 → position10).
+
+### Titres hiérarchiques (codes `code=''`)
+
+Dans la table `position10_dz`, les lignes avec `code=''` sont des **titres de catégorie** préfixés par `"- "` (1 tiret = niveau 1, `"- - "` = niveau 2, etc.).
+
+**Algorithme `findTitres`** (pour un code unique, niveau POSITION10) :
+- Remonte les ids décroissants depuis le code P10
+- Cherche le premier titre avec `nb_tirets < n_tirets` courant
+- Si ce titre a **≤ 1 tiret → STOP total** (frontière de section, aucun titre affiché)
+- Sinon : ajoute le titre, décrémente `n_tirets`, recommence
+- Arrêt quand `n_tirets = 1`
+
+**Algorithme `buildTitresParCode`** (pour une liste de codes, niveau POSITION6) :
+- Étape 1 : `findTitres` pour le premier code (les titres précédant le 1er code ont des ids < MIN des codes, exclus de la requête de plage)
+- Étape 2 : parcourt `findAllWithContextByPrefix` (plage MIN..MAX ids), maintient une pile de titres
+- Titre à **1 tiret → vide la pile** (frontière de section), ne l'ajoute pas
+- Titre à **≥ 2 tirets → met à jour la pile** (remplace les niveaux ≥ niveau courant)
+
+**Affichage frontend (delta)** : pour chaque code P10, seuls les titres qui **changent** par rapport au code précédent sont affichés (`titreDelta(current, prev)`).
 
 ## Navigation Frontend (tarif module)
 
