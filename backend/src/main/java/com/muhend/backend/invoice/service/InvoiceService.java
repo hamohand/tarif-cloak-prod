@@ -18,6 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -1056,8 +1057,8 @@ public class InvoiceService {
      * @param endDate Date de fin du cycle (inclus)
      * @return La facture générée
      */
-    @Transactional
-    public InvoiceDto generateMonthlyPlanCycleClosureInvoice(Long organizationId, PricingPlanDto plan, 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public InvoiceDto generateMonthlyPlanCycleClosureInvoice(Long organizationId, PricingPlanDto plan,
                                                              LocalDate startDate, LocalDate endDate) {
         OrganizationDto organization = organizationService.getOrganizationById(organizationId);
         if (organization == null) {
