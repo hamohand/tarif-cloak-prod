@@ -27,17 +27,6 @@ import { NotificationService } from '../../../core/services/notification.service
                    class="search-input" />
           </div>
           <div class="filter-group">
-            <label for="statusFilter">Statut :</label>
-            <select id="statusFilter" [(ngModel)]="statusFilter" (change)="applyFilters()" class="filter-select">
-              <option [ngValue]="null">Tous</option>
-              <option value="DRAFT">Brouillon</option>
-              <option value="PENDING">En attente</option>
-              <option value="PAID">Payée</option>
-              <option value="OVERDUE">En retard</option>
-              <option value="CANCELLED">Annulée</option>
-            </select>
-          </div>
-          <div class="filter-group">
             <label for="dateFrom">Du :</label>
             <input type="date" id="dateFrom" [(ngModel)]="dateFrom" (change)="applyFilters()" class="filter-input" />
           </div>
@@ -77,7 +66,6 @@ import { NotificationService } from '../../../core/services/notification.service
                 <th>Numéro</th>
                 <th>Période</th>
                 <th>Montant</th>
-                <th>Statut</th>
                 <th>Date d'échéance</th>
                 <th>Actions</th>
               </tr>
@@ -96,11 +84,6 @@ import { NotificationService } from '../../../core/services/notification.service
                   </td>
                   <td>
                     <strong>{{ formatCurrency(invoice.totalAmount) }}</strong>
-                  </td>
-                  <td>
-                    <span class="status-badge" [class]="invoiceService.getStatusClass(invoice.status)">
-                      {{ invoiceService.getStatusText(invoice.status) }}
-                    </span>
                   </td>
                   <td>
                     {{ formatDate(invoice.dueDate) }}

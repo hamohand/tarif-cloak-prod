@@ -374,20 +374,12 @@ Chart.register(...registerables);
               <h4>📈 Total Requêtes</h4>
               <p class="stat-value">{{ stats.totalRequests }}</p>
             </div>
-            <div class="stat-item">
-              <h4>💰 Prix Total Requêtes</h4>
-              <p class="stat-value">{{ formatCurrency(stats.totalCostUsd) }}</p>
-            </div>
             @if (isAdmin()) {
               <div class="stat-item">
                 <h4>🔢 Tokens Total</h4>
                 <p class="stat-value">{{ formatNumber(stats.totalTokens) }}</p>
               </div>
             }
-            <div class="stat-item">
-              <h4>📅 Requêtes ce mois</h4>
-              <p class="stat-value">{{ stats.monthlyRequests }}</p>
-            </div>
             @if (organization?.monthlyPlanEndDate) {
               <div class="stat-item">
                 <h4>🔄 Prochaine reconduction</h4>
