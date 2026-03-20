@@ -514,7 +514,7 @@ export class InvoicesComponent implements OnInit {
   }
 
   viewInvoice(id: number) {
-    this.router.navigate(['/invoices', id]);
+    this.router.navigate(['/organization/invoices', id]);
   }
 
   downloadPdf(invoice: Invoice) {

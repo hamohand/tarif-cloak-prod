@@ -99,31 +99,6 @@ import { take } from 'rxjs/operators';
               <h4>📈 Total Requêtes</h4>
               <p class="stat-value">{{ stats.totalRequests }}</p>
             </div>
-            <div class="stat-item">
-              <h4>💰 Coût Total</h4>
-              <p class="stat-value">{{ formatCurrency(stats.totalCostUsd) }}</p>
-            </div>
-            <div class="stat-item">
-              <h4>🔢 Tokens Total</h4>
-              <p class="stat-value">{{ formatNumber(stats.totalTokens) }}</p>
-            </div>
-            <div class="stat-item">
-              <h4>📅 Requêtes ce mois</h4>
-              <p class="stat-value">{{ stats.monthlyRequests }}</p>
-            </div>
-          </div>
-
-          <!-- Filtres -->
-          <div class="filters">
-            <div class="filter-group">
-              <label for="startDate">Date de début:</label>
-              <input type="date" id="startDate" [(ngModel)]="startDate" (change)="loadStats()" />
-            </div>
-            <div class="filter-group">
-              <label for="endDate">Date de fin:</label>
-              <input type="date" id="endDate" [(ngModel)]="endDate" (change)="loadStats()" />
-            </div>
-            <button class="btn btn-secondary" (click)="resetFilters()">Réinitialiser</button>
           </div>
 
           <!-- Utilisations récentes -->
@@ -602,9 +577,6 @@ export class UserDashboardComponent implements OnInit {
   loadingStats = false;
   errorMessage = '';
 
-  startDate = '';
-  endDate = '';
-
   ngOnInit() {
     // Charger la devise du marché
     this.currencyService.getCurrencyCode().pipe(take(1)).subscribe({
@@ -655,9 +627,7 @@ export class UserDashboardComponent implements OnInit {
   loadStats() {
     this.loadingStats = true;
     this.errorMessage = '';
-    const startDate = this.startDate || undefined;
-    const endDate = this.endDate || undefined;
-    this.userService.getMyUsageStats(startDate, endDate).subscribe({
+    this.userService.getMyUsageStats().subscribe({
       next: (stats) => {
         this.stats = stats;
         this.loadingStats = false;
@@ -667,12 +637,6 @@ export class UserDashboardComponent implements OnInit {
         this.loadingStats = false;
       }
     });
-  }
-
-  resetFilters() {
-    this.startDate = '';
-    this.endDate = '';
-    this.loadStats();
   }
 
   formatDate(dateString: string): string {

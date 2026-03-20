@@ -1440,6 +1440,10 @@ public class OrganizationService {
         int deleted = usageLogRepository.deleteByOrganizationId(organizationId);
         log.info("Plan {} activé pour l'organisation {} — {} logs supprimés pour le nouveau cycle",
                 planId, organizationId, deleted);
+
+        // 4. Supprimer les alertes de quota (WARNING/CRITICAL/EXCEEDED) devenues obsolètes
+        quotaAlertRepository.deleteByOrganizationId(organizationId);
+        log.info("Alertes quota supprimées pour l'organisation {} après renouvellement du plan", organizationId);
     }
 
     /**
