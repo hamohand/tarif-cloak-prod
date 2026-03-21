@@ -33,7 +33,7 @@ import { of } from 'rxjs';
         @if (isAuthenticated$ | async) {
           @if (isOrganizationAccount$ | async) {
             @if (canMakeRequests$ | async) {
-              <a routerLink="/" class="nav-link hscode-link">HS-code</a>
+              <a routerLink="/" class="nav-link hscode-link">Positions tarifaires</a>
             } @else {
               <button class="nav-link hscode-link-blocked" (click)="openRenewalModal()">HS-code ⚠️</button>
             }

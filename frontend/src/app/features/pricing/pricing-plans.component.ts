@@ -40,10 +40,7 @@ import { of } from 'rxjs';
         </div>
         <div class="pricing-plans-grid">
           @for (plan of plans; track plan.id) {
-            <div class="pricing-plan-card" [class.featured]="plan.displayOrder === 2">
-              @if (plan.displayOrder === 2) {
-                <div class="popular-badge">Populaire</div>
-              }
+            <div class="pricing-plan-card">
               <h3>{{ plan.name }}</h3>
               <div class="price">
                 @if (plan.pricePerMonth !== null && plan.pricePerMonth !== undefined) {
@@ -204,25 +201,6 @@ import { of } from 'rxjs';
     .pricing-plan-card:hover {
       transform: translateY(-5px);
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-    }
-
-    .pricing-plan-card.featured {
-      border: 3px solid #facc15;
-      transform: scale(1.05);
-      background: #34495e;
-    }
-
-    .popular-badge {
-      position: absolute;
-      top: -15px;
-      right: 20px;
-      background: #facc15;
-      color: #1f2937;
-      padding: 0.5rem 1rem;
-      border-radius: 20px;
-      font-size: 0.9rem;
-      font-weight: 700;
-      box-shadow: 0 2px 8px rgba(250, 204, 21, 0.4);
     }
 
     .pricing-plan-card h3 {
@@ -393,9 +371,6 @@ import { of } from 'rxjs';
         grid-template-columns: 1fr;
       }
 
-      .pricing-plan-card.featured {
-        transform: scale(1);
-      }
     }
   `]
 })

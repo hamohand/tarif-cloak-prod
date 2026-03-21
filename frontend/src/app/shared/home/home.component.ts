@@ -28,7 +28,7 @@ import { map, switchMap, catchError, distinctUntilChanged } from 'rxjs/operators
       <!-- Présentation de l'API Recherche HS-code - Affichée uniquement pour les utilisateurs non connectés -->
       <section class="api-presentation" *ngIf="!(isAuthenticated$ | async)">
         <div class="api-header">
-          <h2>Recherche de HS-Code</h2>
+          <h2>Recherche de HS-code et positions tarifaires</h2>
           <p class="api-subtitle">Recherche intelligente et multilingue dans le système harmonisé douanier</p>
         </div>
 
@@ -37,7 +37,7 @@ import { map, switchMap, catchError, distinctUntilChanged } from 'rxjs/operators
             <div class="api-feature">
               <div class="api-icon">🌍</div>
               <h3>Recherche Multilingue</h3>
-              <p>Recherchez des codes HS dans toutes les langues.</p>
+              <p>Recherchez des Positions dans toutes les langues.</p>
             </div>
 
             <div class="api-feature">
@@ -85,11 +85,11 @@ import { map, switchMap, catchError, distinctUntilChanged } from 'rxjs/operators
                 <code class="response-method">Position_10 :</code>
                 <span class="endpoint-desc">
                 code: <b>8703801000</b><br>
-                <b>description</b>: "Véhicules blindés"
+                description>: <b>"Véhicules blindés"</b>
                 </span>
                 <span class="endpoint-desc">
                 code: <b>8703809000</b><br>
-                <b>description</b>: "Autres véhicules"
+                description: <b>"Autres véhicules"</b>
                 </span>
               </div>
 
@@ -97,9 +97,23 @@ import { map, switchMap, catchError, distinctUntilChanged } from 'rxjs/operators
                 <code class="endpoint-method">Produit recherché</code>
                 <code class="endpoint-path">dattes</code>
                 <code class="response-method">Réponse HScode :</code>
-                <span class="endpoint-desc">code: <b></b> "080410" <br>
-                <b>description</b>: "Dattes"</span>
+                <span class="endpoint-desc">code: <b>080410</b><br>
+                description: <b>Dattes</b></span>
+                <code class="response-method">Position_10 :</code>
+                <span class="endpoint-desc">
+                description: <b>Dattes 'deglet nour'</b>
+                </span>
+                <span class="endpoint-desc">
+                code: <b>0804101111</b><br>
+                description>: <b>poids inférieur ou égal à 1 kg</b>
+                </span>
+                <span class="endpoint-desc">
+                code: <b>0804101112</b><br>
+                description>: <b>poids supérieur ou égal à 1 kg</b>
+                </span>
+                <span> ... </span>
               </div>
+
               <div class="endpoint-item">
                 <code class="endpoint-method">Produit recherché</code>
                 <code class="endpoint-path">Smart phone</code>
