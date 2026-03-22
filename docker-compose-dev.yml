@@ -1,0 +1,259 @@
+# ===============================================================
+# DOCKER COMPOSE - DÉVELOPPEMENT LOCAL
+# Pas de Traefik — ports exposés directement sur localhost
+# Utilise le même .env que la prod (les vars locales sont surchargées ici)
+# ===============================================================
+
+# Variables communes base de données application
+x-common-app-bd-vars: &common-app-bd-vars
+  POSTGRES_DB: "${POSTGRES_DB}"
+  POSTGRES_USER: "${POSTGRES_USER}"
+  POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+
+x-common-bd-keycloak-vars: &common-bd-keycloak-vars
+  POSTGRES_DB: "${KEYCLOAK_DB:-keycloak}"
+  POSTGRES_USER: "${KEYCLOAK_DB_USER:-keycloak}"
+  POSTGRES_PASSWORD: "${KEYCLOAK_DB_PASSWORD}"
+
+x-common-rabbitmq-vars: &common-rabbitmq-vars
+  RABBITMQ_HOST: "rabbitmq"
+  RABBITMQ_PORT: "5672"
+  RABBITMQ_USERNAME: "${RABBITMQ_USER:-admin}"
+  RABBITMQ_PASSWORD: "${RABBITMQ_PASSWORD:-admin}"
+
+services:
+
+  # ===============================================================
+  # BASE DE DONNÉES POSTGRESQL POUR L'APPLICATION
+  # ===============================================================
+  app-db:
+    image: "postgres:${POSTGRES_IMAGE_TAG:-16}"
+    container_name: "${PROJECT_NAME:-app}-app-db-dev"
+    environment:
+      <<: *common-app-bd-vars
+    ports:
+      - "${DB_HOST_PORT:-5432}:5432"
+    volumes:
+      - app-database-data-dev:/var/lib/postgresql/data
+      - ./sql/sql:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "pg_isready", "-h", "localhost", "-U", "${POSTGRES_USER}", "-d", "${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+    restart: unless-stopped
+
+  # ===============================================================
+  # BASE DE DONNÉES POSTGRESQL POUR KEYCLOAK
+  # ===============================================================
+  keycloak-db:
+    image: "postgres:${POSTGRES_IMAGE_TAG:-16}"
+    container_name: "${PROJECT_NAME:-app}-keycloak-db-dev"
+    environment:
+      <<: *common-bd-keycloak-vars
+    volumes:
+      - keycloak-database-data-dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-h", "localhost", "-U", "${KEYCLOAK_DB_USER}", "-d", "${KEYCLOAK_DB}"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+    restart: unless-stopped
+
+  # ===============================================================
+  # KEYCLOAK - MODE DÉVELOPPEMENT
+  # ===============================================================
+  keycloak:
+    image: "quay.io/keycloak/keycloak:${KEYCLOAK_IMAGE_TAG:-22.0.1}"
+    container_name: "${PROJECT_NAME:-app}-keycloak-dev"
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: "jdbc:postgresql://keycloak-db:5432/${KEYCLOAK_DB}"
+      KC_DB_USERNAME: "${KEYCLOAK_DB_USER:-keycloak}"
+      KC_DB_PASSWORD: "${KEYCLOAK_DB_PASSWORD}"
+      KEYCLOAK_ADMIN: "${KEYCLOAK_ADMIN_USER:-admin}"
+      KEYCLOAK_ADMIN_PASSWORD: "${KEYCLOAK_ADMIN_PASSWORD:-admin}"
+      KC_HOSTNAME: "localhost"
+      KC_HTTP_ENABLED: "true"
+      KC_HEALTH_ENABLED: "true"
+      KC_THEME_STATIC_MAX_AGE: "1"
+      KC_THEME_CACHE_THEMES: "false"
+      KC_THEME_CACHE_TEMPLATES: "false"
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
+      - ./keycloak/themes:/opt/keycloak/themes
+    command:
+      - start-dev
+      - --import-realm
+    depends_on:
+      keycloak-db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ===============================================================
+  # BACKEND - API SPRING BOOT
+  # ===============================================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: "${PROJECT_NAME:-app}-backend-dev"
+    depends_on:
+      app-db:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+    ports:
+      - "${BACKEND_INTERNAL_PORT:-8081}:8081"
+    environment:
+      BACKEND_INTERNAL_PORT: "${BACKEND_INTERNAL_PORT:-8081}"
+      SPRING_PROFILES_ACTIVE: "dev"
+      DB_SERVICE_NAME: "app-db"
+      POSTGRES_PORT: "${POSTGRES_PORT}"
+      <<: *common-app-bd-vars
+      KEYCLOAK_REALM: "${KEYCLOAK_REALM}"
+      KEYCLOAK_BACKEND_CLIENT: "${KEYCLOAK_BACKEND_CLIENT}"
+      KEYCLOAK_BACKEND_CLIENT_SECRET: "${KEYCLOAK_BACKEND_CLIENT_SECRET}"
+      KEYCLOAK_INTERNAL_URL: "http://keycloak:8080"
+      KEYCLOAK_EXTERNAL_URL: "http://localhost:8080"
+      FRONTEND_URL: "http://localhost:4200"
+      FRONTEND_DOMAIN: "localhost"
+      WWW_FRONTEND_DOMAIN: "localhost"
+      PROJECT_NAME: "${PROJECT_NAME}"
+      FRONTEND_SERVICE_NAME: "${FRONTEND_SERVICE_NAME}"
+      CORS_ALLOWED_ORIGINS: "http://localhost:4200,http://localhost:8081,http://localhost:8082"
+      OLLAMA_BASE_URL: "${OLLAMA_BASE_URL:-http://host.docker.internal:11434}"
+      OPENAI_API_KEY: "${OPENAI_API_KEY}"
+      ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY}"
+      OLLAMA_API_KEY: "${OLLAMA_API_KEY}"
+      SMTP_HOST: "${SMTP_HOST:-smtp.gmail.com}"
+      SMTP_PORT: "${SMTP_PORT:-587}"
+      SMTP_USERNAME: "${SMTP_USERNAME:-}"
+      SMTP_PASSWORD: "${SMTP_PASSWORD:-}"
+      SMTP_AUTH: "${SMTP_AUTH:-true}"
+      SMTP_STARTTLS: "${SMTP_STARTTLS:-true}"
+      SMTP_STARTTLS_REQUIRED: "${SMTP_STARTTLS_REQUIRED:-true}"
+      SMTP_FROM: "${SMTP_FROM}"
+      SMTP_FROM_NAME: "${SMTP_FROM_NAME}"
+      EMAIL_ADMIN_HSCODE: "${EMAIL_ADMIN_HSCODE:-}"
+      BASE_REQUEST_PRICE: "${BASE_REQUEST_PRICE:-0.01}"
+      MARKET_VERSION: "${MARKET_VERSION:-DZ}"
+      RABBITMQ_HOST: "rabbitmq"
+      RABBITMQ_PORT: "5672"
+      RABBITMQ_USERNAME: "${RABBITMQ_USER:-admin}"
+      RABBITMQ_PASSWORD: "${RABBITMQ_PASSWORD:-admin}"
+      PAYMENT_PROVIDER: "${PAYMENT_PROVIDER:-chargily}"
+      CHARGILY_SECRET_KEY: "${CHARGILY_SECRET_KEY:-}"
+      CHARGILY_WEBHOOK_SECRET: "${CHARGILY_WEBHOOK_SECRET:-}"
+      CHARGILY_API_URL: "${CHARGILY_API_URL:-https://pay.chargily.net/test/api/v2}"
+    restart: unless-stopped
+
+  # ===============================================================
+  # FRONTEND - APPLICATION ANGULAR
+  # ===============================================================
+  frontend:
+    container_name: "${PROJECT_NAME:-app}-frontend-dev"
+    build:
+      context: ./frontend
+      args:
+        KEYCLOAK_EXTERNAL_URL: "http://localhost:8080"
+        KEYCLOAK_REALM: "${KEYCLOAK_REALM}"
+        KEYCLOAK_FRONTEND_CLIENT: "${KEYCLOAK_FRONTEND_CLIENT}"
+        API_URL: "/api"
+        MARKET_VERSION: "${MARKET_VERSION:-DZ}"
+        NGINX_CONF: nginx-dev.conf
+    ports:
+      - "4200:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  # ===============================================================
+  # RABBITMQ
+  # ===============================================================
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: "${PROJECT_NAME:-app}-rabbitmq-dev"
+    environment:
+      RABBITMQ_DEFAULT_USER: "${RABBITMQ_USER:-admin}"
+      RABBITMQ_DEFAULT_PASS: "${RABBITMQ_PASSWORD:-admin}"
+    ports:
+      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
+    volumes:
+      - rabbitmq-data-dev:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  # ===============================================================
+  # REDIS
+  # ===============================================================
+  redis:
+    image: redis:7-alpine
+    container_name: "${PROJECT_NAME:-app}-redis-dev"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data-dev:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ===============================================================
+  # SEARCH SERVICE
+  # ===============================================================
+  search-service:
+    build:
+      context: ./search-service
+      dockerfile: Dockerfile
+    container_name: "${PROJECT_NAME:-app}-search-service-dev"
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_PROFILES_ACTIVE: "dev"
+      DATABASE_URL: "jdbc:postgresql://app-db:${POSTGRES_PORT:-5432}/${POSTGRES_DB}"
+      DATABASE_USERNAME: "${POSTGRES_USER}"
+      DATABASE_PASSWORD: "${POSTGRES_PASSWORD}"
+      <<: *common-rabbitmq-vars
+      REDIS_HOST: "redis"
+      REDIS_PORT: "6379"
+      BACKEND_URL: "http://backend:${BACKEND_INTERNAL_PORT:-8081}"
+      KEYCLOAK_ISSUER_URI: "http://localhost:8080/realms/${KEYCLOAK_REALM}"
+      KEYCLOAK_JWK_SET_URI: "http://keycloak:8080/realms/${KEYCLOAK_REALM}/protocol/openid-connect/certs"
+      OPENAI_API_KEY: "${OPENAI_API_KEY}"
+      ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY}"
+      AI_PROVIDER: "${AI_PROVIDER:-openai}"
+      OLLAMA_BASE_URL: "${OLLAMA_BASE_URL:-http://host.docker.internal:11434}"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      app-db:
+        condition: service_healthy
+      backend:
+        condition: service_started
+    restart: unless-stopped
+
+# ===============================================================
+# VOLUMES — séparés de la prod pour ne pas mélanger les données
+# ===============================================================
+volumes:
+  app-database-data-dev:
+    name: "${PROJECT_NAME:-app}-app-data-dev"
+  keycloak-database-data-dev:
+    name: "${PROJECT_NAME:-app}-keycloak-data-dev"
+  rabbitmq-data-dev:
+    name: "${PROJECT_NAME:-app}-rabbitmq-data-dev"
+  redis-data-dev:
+    name: "${PROJECT_NAME:-app}-redis-data-dev"
