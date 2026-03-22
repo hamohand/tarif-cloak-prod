@@ -24,21 +24,25 @@ public class OpenApiConfig {
 
     @Bean
     public OpenAPI customOpenAPI() {
-        // Construire l'URL de base pour l'API (ajouter /api si nécessaire)
-        String apiBaseUrl = frontendUrl;
-        if (!apiBaseUrl.endsWith("/api")) {
-            // Si FRONTEND_URL ne contient pas /api, l'ajouter
-            apiBaseUrl = apiBaseUrl + "/api";
+        String apiBaseUrl;
+        String serverDescription;
+
+        if (frontendUrl.contains("localhost")) {
+            // Dev : Swagger accède directement au backend (pas de /api, pas de HTTPS)
+            apiBaseUrl = "http://localhost:8081";
+            serverDescription = "Development server (localhost)";
+        } else {
+            // Prod : URL publique via Traefik avec préfixe /api et HTTPS
+            apiBaseUrl = frontendUrl.endsWith("/api") ? frontendUrl : frontendUrl + "/api";
+            if (apiBaseUrl.startsWith("http://")) {
+                apiBaseUrl = apiBaseUrl.replace("http://", "https://");
+            }
+            serverDescription = "Production server (HTTPS)";
         }
-        
-        // S'assurer que l'URL utilise HTTPS
-        if (apiBaseUrl.startsWith("http://")) {
-            apiBaseUrl = apiBaseUrl.replace("http://", "https://");
-        }
-        
+
         Server server = new Server();
         server.setUrl(apiBaseUrl);
-        server.setDescription("Production server (HTTPS)");
+        server.setDescription(serverDescription);
 
         // Configuration du schéma de sécurité Bearer JWT
         SecurityScheme bearerAuth = new SecurityScheme()
