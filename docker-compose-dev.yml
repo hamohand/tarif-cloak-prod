@@ -121,6 +121,7 @@ services:
       KEYCLOAK_INTERNAL_URL: "http://keycloak:8080"
       KEYCLOAK_EXTERNAL_URL: "http://localhost:8080"
       FRONTEND_URL: "http://localhost:4200"
+      SPRINGDOC_SWAGGER_UI_URL: "http://localhost:8081/v3/api-docs"
       FRONTEND_DOMAIN: "localhost"
       WWW_FRONTEND_DOMAIN: "localhost"
       PROJECT_NAME: "${PROJECT_NAME}"
