@@ -9,6 +9,7 @@ import com.muhend.backend.pricing.model.PricingPlan;
 import com.muhend.backend.pricing.repository.PricingPlanRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -186,7 +187,7 @@ public class PricingPlanService {
     /**
      * Récupère un plan tarifaire par son ID (seulement si actif).
      */
-    @Transactional(readOnly = true)
+    @Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW)
     public PricingPlanDto getPricingPlanById(Long id) {
         return pricingPlanRepository.findByIdAndIsActiveTrue(id)
                 .map(this::toDto)
