@@ -66,8 +66,8 @@ public class PendingRegistrationService {
             throw new IllegalArgumentException("Une organisation avec cet email existe déjà. Veuillez vous connecter ou contacter l'administrateur.");
         }
         
-        // Vérifier si un utilisateur avec cet email est déjà en cours d'inscription (non confirmé)
-        if (pendingRegistrationRepository.existsByEmailAndNotConfirmed(request.getEmail())) {
+        // Vérifier si un utilisateur avec cet email est déjà en cours d'inscription (non confirmé et non expiré)
+        if (pendingRegistrationRepository.existsByEmailAndNotConfirmed(request.getEmail(), LocalDateTime.now())) {
             throw new IllegalArgumentException("Un utilisateur avec cet email est déjà en cours d'inscription.");
         }
         
@@ -132,11 +132,12 @@ public class PendingRegistrationService {
         Organization organization = organizationRepository.findByKeycloakUserId(organizationKeycloakUserId)
                 .orElseThrow(() -> new IllegalArgumentException("Aucune organisation associée à ce compte."));
         
-        if (pendingRegistrationRepository.existsByUsername(request.getUsername())) {
-            throw new IllegalArgumentException("Un utilisateur avec ce nom d'utilisateur est déjà en cours d'inscription.");
+        LocalDateTime now = LocalDateTime.now();
+        if (pendingRegistrationRepository.existsByUsernameAndActiveNotConfirmed(request.getUsername(), now)) {
+            throw new IllegalArgumentException("Une invitation en cours existe déjà pour ce nom d'utilisateur.");
         }
-        if (pendingRegistrationRepository.existsByEmailAndNotConfirmed(request.getEmail())) {
-            throw new IllegalArgumentException("Un utilisateur avec cet email est déjà en cours d'inscription.");
+        if (pendingRegistrationRepository.existsByEmailAndNotConfirmed(request.getEmail(), now)) {
+            throw new IllegalArgumentException("Une invitation en cours existe déjà pour cet email.");
         }
         String organizationEmail = organization.getEmail();
         if (organizationEmail != null && organizationEmail.equalsIgnoreCase(request.getEmail())) {

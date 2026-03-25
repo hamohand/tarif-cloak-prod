@@ -26,9 +26,12 @@ public interface PendingRegistrationRepository extends JpaRepository<PendingRegi
     void deleteExpiredUnconfirmed(@Param("now") LocalDateTime now);
     
     boolean existsByUsername(String username);
-    
-    @Query("SELECT COUNT(pr) > 0 FROM PendingRegistration pr WHERE pr.email = :email AND (pr.confirmed IS NULL OR pr.confirmed = false)")
-    boolean existsByEmailAndNotConfirmed(@Param("email") String email);
+
+    @Query("SELECT COUNT(pr) > 0 FROM PendingRegistration pr WHERE pr.username = :username AND (pr.confirmed IS NULL OR pr.confirmed = false) AND pr.expiresAt > :now")
+    boolean existsByUsernameAndActiveNotConfirmed(@Param("username") String username, @Param("now") LocalDateTime now);
+
+    @Query("SELECT COUNT(pr) > 0 FROM PendingRegistration pr WHERE pr.email = :email AND (pr.confirmed IS NULL OR pr.confirmed = false) AND pr.expiresAt > :now")
+    boolean existsByEmailAndNotConfirmed(@Param("email") String email, @Param("now") LocalDateTime now);
     
     @Query("SELECT COUNT(pr) > 0 FROM PendingRegistration pr WHERE pr.organizationEmail = :organizationEmail AND (pr.confirmed IS NULL OR pr.confirmed = false)")
     boolean existsByOrganizationEmailAndNotConfirmed(@Param("organizationEmail") String organizationEmail);
