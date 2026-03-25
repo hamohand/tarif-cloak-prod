@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -45,10 +46,13 @@ public class PricingPlanService {
             if (marketVersion != null && !marketVersion.isEmpty() && !marketVersion.trim().isEmpty()) {
                 String trimmedVersion = marketVersion.trim();
                 log.info("🔍 Utilisation de marketVersion trim: '{}'", trimmedVersion);
-                
-                // Filtrer par version de marché (plans standards uniquement, pas les plans personnalisés)
-                plans = pricingPlanRepository.findByMarketVersionAndIsActiveTrueAndIsCustomFalseOrderByDisplayOrderAsc(trimmedVersion);
-                log.info("✅ {} plan(s) trouvé(s) pour marketVersion='{}'", plans.size(), trimmedVersion);
+
+                // Inclure les plans du marché demandé ET les plans DEFAULT
+                List<String> versions = trimmedVersion.equals("DEFAULT")
+                        ? List.of("DEFAULT")
+                        : Arrays.asList(trimmedVersion, "DEFAULT");
+                plans = pricingPlanRepository.findByMarketVersionInAndIsActiveTrueAndIsCustomFalseOrderByDisplayOrderAsc(versions);
+                log.info("✅ {} plan(s) trouvé(s) pour marketVersions='{}'", plans.size(), versions);
                 
                 if (plans.isEmpty()) {
                     log.warn("⚠️ Aucun plan trouvé pour marketVersion='{}'. Vérifiez que les plans ont bien market_version='{}' en base de données.", trimmedVersion, trimmedVersion);
@@ -102,11 +106,14 @@ public class PricingPlanService {
     public List<PricingPlanDto> getAvailablePricingPlansForOrganization(String marketVersion, Long organizationId) {
         List<PricingPlan> plans;
         
-        // Récupérer les plans selon la version de marché
+        // Récupérer les plans selon la version de marché (inclut DEFAULT en fallback)
         if (marketVersion != null && !marketVersion.trim().isEmpty()) {
             String trimmedVersion = marketVersion.trim();
-            plans = pricingPlanRepository.findByMarketVersionAndIsActiveTrueAndIsCustomFalseOrderByDisplayOrderAsc(trimmedVersion);
-            log.info("🔍 Récupération des plans pour marketVersion='{}': {} plan(s) trouvé(s)", trimmedVersion, plans.size());
+            List<String> versions = trimmedVersion.equals("DEFAULT")
+                    ? List.of("DEFAULT")
+                    : Arrays.asList(trimmedVersion, "DEFAULT");
+            plans = pricingPlanRepository.findByMarketVersionInAndIsActiveTrueAndIsCustomFalseOrderByDisplayOrderAsc(versions);
+            log.info("🔍 Récupération des plans pour marketVersions='{}': {} plan(s) trouvé(s)", versions, plans.size());
         } else {
             plans = pricingPlanRepository.findByIsActiveTrueOrderByDisplayOrderAsc();
             log.info("🔍 Récupération de tous les plans actifs: {} plan(s) trouvé(s)", plans.size());

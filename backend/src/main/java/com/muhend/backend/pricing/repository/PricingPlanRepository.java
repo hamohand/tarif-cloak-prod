@@ -21,6 +21,7 @@ public interface PricingPlanRepository extends JpaRepository<PricingPlan, Long> 
     // Méthodes pour filtrer par version de marché
     List<PricingPlan> findByMarketVersionAndIsActiveTrueOrderByDisplayOrderAsc(String marketVersion);
     List<PricingPlan> findByMarketVersionAndIsActiveTrueAndIsCustomFalseOrderByDisplayOrderAsc(String marketVersion);
+    List<PricingPlan> findByMarketVersionInAndIsActiveTrueAndIsCustomFalseOrderByDisplayOrderAsc(List<String> marketVersions);
     List<PricingPlan> findByOrganizationIdAndIsActiveTrueOrderByDisplayOrderAsc(Long organizationId);
 
     @Modifying

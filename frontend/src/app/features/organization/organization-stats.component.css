@@ -52,7 +52,8 @@ h2,h3{color:#e2e8f0;margin:0 0 1rem}
 .change-plan-section.required-change{background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);padding:1rem;border-radius:8px}
 .required-plan-title{color:#f87171!important}
 .required-plan-message{color:#f87171;border-left:3px solid #ef4444;padding:.5rem}
-.plan-select{width:100%;padding:.5rem;border:1px solid rgba(255,255,255,0.15);border-radius:6px;margin-bottom:.5rem;background:rgba(255,255,255,0.06);color:#f8fafc}
+.plan-select{width:100%;padding:.5rem;border:1px solid rgba(255,255,255,0.15);border-radius:6px;margin-bottom:.5rem;background:#1e293b;color:#f8fafc}
+.plan-select option{background:#1e293b;color:#f8fafc}
 .plan-select.required-select{border:2px solid #ef4444}
 .view-all-plans-link{display:block;text-align:center;color:#f59e0b;text-decoration:none}
 .modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);display:flex;justify-content:center;align-items:center;z-index:10000;padding:1rem}

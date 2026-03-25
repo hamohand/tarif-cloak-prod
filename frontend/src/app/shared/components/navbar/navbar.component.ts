@@ -35,11 +35,11 @@ import { of } from 'rxjs';
             @if (canMakeRequests$ | async) {
               <a routerLink="/" class="nav-link hscode-link">Positions tarifaires</a>
             } @else {
-              <button class="nav-link hscode-link-blocked" (click)="openRenewalModal()">HS-code ⚠️</button>
+              <button class="nav-link hscode-link-blocked" (click)="openRenewalModal()">Positions tarifaires ⚠️</button>
             }
           } @else if (isCollaboratorAccount$ | async) {
             @if (canMakeRequests$ | async) {
-              <a routerLink="/" class="nav-link hscode-link">HS-code</a>
+              <a routerLink="/" class="nav-link hscode-link">Positions tarifaires</a>
             }
           } @else {
             <a routerLink="/" class="nav-link">Accueil</a>
@@ -54,7 +54,6 @@ import { of } from 'rxjs';
         }
         @if (isAuthenticated$ | async) {
           @if (isOrganizationAccount$ | async) {
-            <a routerLink="/organization/account" class="nav-link">Mon organisation</a>
             @if (!isAdmin()) {
               <a routerLink="/dashboard" class="nav-link">Tableau de bord</a>
             }
@@ -96,7 +95,7 @@ import { of } from 'rxjs';
       <div class="renewal-modal-overlay" (click)="closeRenewalModal()">
         <div class="renewal-modal" (click)="$event.stopPropagation()">
           <button class="modal-close-btn" (click)="closeRenewalModal()">✕</button>
-          <h3>Accès HS-code suspendu</h3>
+          <h3>Accès Positions tarifaires suspendu</h3>
           <p>Votre plan est expiré ou votre quota de requêtes est épuisé.</p>
           <div class="renewal-modal-actions">
             <button class="btn-modal btn-modal-primary" (click)="renewCurrentPlan()" [disabled]="isRenewing">
@@ -113,7 +112,7 @@ import { of } from 'rxjs';
     @if ((isAuthenticated$ | async) && (isOrganizationAccount$ | async)) {
       @if (!(canMakeRequests$ | async)) {
         <div class="trial-expired-banner">
-          <p>⚠️ L'accès HS-code est suspendu (plan expiré ou quota épuisé).</p>
+          <p>⚠️ L'accès Positions tarifaires est suspendu (plan expiré ou quota épuisé).</p>
           <div class="banner-actions">
             <button class="btn-banner btn-banner-primary" (click)="openRenewalModal()" [disabled]="isRenewing">
               Renouveler le plan actuel
@@ -124,9 +123,8 @@ import { of } from 'rxjs';
       }
       <nav class="organization-navbar">
         <div class="org-nav-links">
-          <a routerLink="/organization/account" routerLinkActive="router-link-active" class="org-nav-link">👥 Collaborateurs</a>
+          <a routerLink="/organization/account" routerLinkActive="router-link-active" class="org-nav-link">👥 Mon organisation</a>
           <a routerLink="/organization/stats" routerLinkActive="router-link-active" class="org-nav-link">💳 Plan tarifaire</a>
-          <a routerLink="/organization/stats" routerLinkActive="router-link-active" class="org-nav-link">📊 Statistiques globales</a>
           <a routerLink="/organization/invoices" routerLinkActive="router-link-active" class="org-nav-link invoices-link">
             📄 Factures
             @if (newInvoicesCount > 0 || overdueInvoicesCount > 0) {

@@ -388,20 +388,8 @@ Chart.register(...registerables);
             }
           </div>
 
-          <!-- Filtres -->
-          <div class="filters">
-            <div class="filter-group">
-              <label for="startDate">Date de début:</label>
-              <input type="date" id="startDate" [(ngModel)]="startDate" (change)="onFilterChange()" />
-            </div>
-            <div class="filter-group">
-              <label for="endDate">Date de fin:</label>
-              <input type="date" id="endDate" [(ngModel)]="endDate" (change)="onFilterChange()" />
-            </div>
-            <button class="btn btn-secondary" (click)="resetFilters()">Réinitialiser</button>
-          </div>
 
-        }
+}
       </div>
 
       <!-- Liste de toutes les requêtes de l'organisation -->
@@ -493,9 +481,6 @@ export class OrganizationStatsComponent implements OnInit {
   loadingStats = false;
   loadingUsageLogs = false;
   errorMessage = '';
-
-  startDate = '';
-  endDate = '';
 
   // Plans tarifaires
   pricingPlans: PricingPlan[] = [];
@@ -1052,10 +1037,7 @@ export class OrganizationStatsComponent implements OnInit {
 
   loadOrganizationUsageLogs() {
     this.loadingUsageLogs = true;
-    const startDate = this.startDate || undefined;
-    const endDate = this.endDate || undefined;
-
-    this.organizationAccountService.getOrganizationUsageLogs(startDate, endDate).subscribe({
+    this.organizationAccountService.getOrganizationUsageLogs().subscribe({
       next: (logs) => {
         this.organizationUsageLogs = logs;
         this.loadingUsageLogs = false;
@@ -1129,18 +1111,6 @@ export class OrganizationStatsComponent implements OnInit {
 
     // Note: quotaChartRef would need to be added with @ViewChild
     // For now, we'll skip the chart rendering
-  }
-
-  onFilterChange() {
-    // Recharger les logs d'utilisation qui recalculeront automatiquement les stats
-    this.loadOrganizationUsageLogs();
-  }
-
-  resetFilters() {
-    this.startDate = '';
-    this.endDate = '';
-    // Recharger les logs d'utilisation qui recalculeront automatiquement les stats
-    this.loadOrganizationUsageLogs();
   }
 
   formatDate(dateString: string): string {
