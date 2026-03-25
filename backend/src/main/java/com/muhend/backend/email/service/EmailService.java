@@ -342,6 +342,43 @@ public class EmailService {
     }
 
     /**
+     * Envoie un email contenant le code OTP de vérification au collaborateur.
+     * Cet email est envoyé au moment où le collaborateur clique sur son lien de confirmation.
+     */
+    public void sendOtpEmail(String toEmail, String firstName, String otpCode) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            String from = fromEmail != null ? fromEmail : "noreply@enclume-numerique.com";
+            String fromNameValue = fromName != null ? fromName : "Enclume Numérique";
+
+            helper.setFrom(from, fromNameValue);
+            helper.setTo(toEmail);
+            helper.setSubject("Votre code de vérification – Enclume Numérique");
+
+            String name = (firstName != null && !firstName.isBlank()) ? firstName : "Collaborateur";
+            String html = "<div style='font-family:sans-serif;max-width:480px;margin:auto;padding:2rem;'>"
+                + "<h2 style='color:#0f172a;'>Code de vérification</h2>"
+                + "<p>Bonjour <strong>" + name + "</strong>,</p>"
+                + "<p>Voici votre code de vérification pour confirmer votre compte :</p>"
+                + "<div style='font-size:2.5rem;font-weight:bold;letter-spacing:.5rem;color:#f59e0b;"
+                + "background:#1e293b;padding:1rem 2rem;border-radius:8px;text-align:center;margin:1.5rem 0;'>"
+                + otpCode + "</div>"
+                + "<p style='color:#64748b;font-size:.9rem;'>Ce code est valable <strong>10 minutes</strong>.</p>"
+                + "<p style='color:#64748b;font-size:.9rem;'>Si vous n'avez pas demandé ce code, ignorez cet email.</p>"
+                + "</div>";
+
+            helper.setText(html, true);
+            mailSender.send(message);
+            log.info("OTP envoyé à {}", toEmail);
+        } catch (Exception e) {
+            log.error("Erreur lors de l'envoi de l'OTP à {}: {}", toEmail, e.getMessage(), e);
+            throw new RuntimeException("Erreur lors de l'envoi du code de vérification", e);
+        }
+    }
+
+    /**
      * Envoie un email de notification de changement de plan tarifaire.
      *
      * @param toEmail Email du destinataire

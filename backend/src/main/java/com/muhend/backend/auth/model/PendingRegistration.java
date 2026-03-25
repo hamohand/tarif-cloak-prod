@@ -76,7 +76,13 @@ public class PendingRegistration {
     
     @Column(name = "confirmed", nullable = false)
     private Boolean confirmed = false;
-    
+
+    @Column(name = "otp_code", length = 6)
+    private String otpCode;
+
+    @Column(name = "otp_expires_at")
+    private LocalDateTime otpExpiresAt;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
     

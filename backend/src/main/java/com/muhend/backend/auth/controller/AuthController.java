@@ -61,35 +61,46 @@ public class AuthController {
         }
     }
     
-    @GetMapping("/confirm-registration")
-    public ResponseEntity<?> confirmRegistration(@RequestParam String token, @RequestParam String email) {
-        logger.info("=== Registration confirmation request received ===");
-        logger.info("Token: {}", token);
-
+    @PostMapping("/send-confirmation-otp")
+    public ResponseEntity<?> sendConfirmationOtp(@RequestParam String token) {
+        logger.info("=== OTP confirmation request received ===");
         try {
-            pendingRegistrationService.confirmRegistration(token, email);
-            
+            String maskedEmail = pendingRegistrationService.sendConfirmationOtp(token);
+            return ResponseEntity.ok(Map.of(
+                "message", "Un code de vérification a été envoyé à votre adresse email.",
+                "maskedEmail", maskedEmail
+            ));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            logger.error("✗ Error sending OTP: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Erreur lors de l'envoi du code de vérification"));
+        }
+    }
+
+    @GetMapping("/confirm-registration")
+    public ResponseEntity<?> confirmRegistration(@RequestParam String token, @RequestParam String otp) {
+        logger.info("=== Registration confirmation request received ===");
+        try {
+            pendingRegistrationService.confirmRegistration(token, otp);
             logger.info("✓ Registration confirmed successfully: token={}", token);
-            
             return ResponseEntity.ok(Map.of(
                 "message", "Inscription confirmée avec succès ! Vous pouvez maintenant vous connecter.",
                 "success", true
             ));
         } catch (IllegalArgumentException e) {
-            logger.error("✗ Invalid confirmation token: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(Map.of("error", e.getMessage()));
+            logger.error("✗ Invalid confirmation: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
         } catch (IllegalStateException e) {
             logger.error("✗ Registration state error: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(Map.of("error", e.getMessage()));
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
             logger.error("✗ Error confirming registration: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of(
-                    "error", "Erreur lors de la confirmation de l'inscription",
-                    "details", e.getMessage()
-                ));
+                .body(Map.of("error", "Erreur lors de la confirmation de l'inscription", "details", e.getMessage()));
         }
     }
 }

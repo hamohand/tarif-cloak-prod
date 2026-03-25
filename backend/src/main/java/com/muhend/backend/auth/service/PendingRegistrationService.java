@@ -185,10 +185,39 @@ public class PendingRegistrationService {
     }
     
     /**
+     * Envoie un OTP au collaborateur lorsqu'il clique sur le lien de confirmation.
+     * L'OTP est généré à ce moment précis et envoyé à l'email du collaborateur.
+     */
+    @Transactional
+    public String sendConfirmationOtp(String token) {
+        PendingRegistration pending = pendingRegistrationRepository
+                .findByConfirmationToken(token)
+                .orElseThrow(() -> new IllegalArgumentException("Token de confirmation invalide"));
+
+        if (pending.getConfirmed()) {
+            throw new IllegalStateException("Cette invitation a déjà été utilisée");
+        }
+        if (pending.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new IllegalStateException("Le lien d'invitation a expiré");
+        }
+
+        String otp = generateOtp();
+        pending.setOtpCode(otp);
+        pending.setOtpExpiresAt(LocalDateTime.now().plusMinutes(10));
+        pendingRegistrationRepository.save(pending);
+
+        emailService.sendOtpEmail(pending.getEmail(), pending.getFirstName(), otp);
+        log.info("OTP envoyé à {} pour la confirmation du token {}", pending.getEmail(), token);
+
+        // Retourner l'email masqué pour l'affichage frontend
+        return maskEmail(pending.getEmail());
+    }
+
+    /**
      * Confirme une inscription en attente et crée l'utilisateur et l'organisation.
      */
     @Transactional
-    public void confirmRegistration(String token, String email) {
+    public void confirmRegistration(String token, String otp) {
         Optional<PendingRegistration> pendingOpt = pendingRegistrationRepository
             .findByConfirmationToken(token);
 
@@ -208,9 +237,15 @@ public class PendingRegistrationService {
             throw new IllegalStateException("Le token de confirmation a expiré");
         }
 
-        // Vérifier que l'email correspond au destinataire de l'invitation
-        if (!pending.getEmail().equalsIgnoreCase(email.trim())) {
-            throw new IllegalArgumentException("L'adresse email ne correspond pas à l'invitation");
+        // Vérifier l'OTP
+        if (pending.getOtpCode() == null) {
+            throw new IllegalArgumentException("Veuillez d'abord demander un code de vérification");
+        }
+        if (pending.getOtpExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new IllegalStateException("Le code de vérification a expiré. Veuillez en demander un nouveau.");
+        }
+        if (!pending.getOtpCode().equals(otp.trim())) {
+            throw new IllegalArgumentException("Code de vérification incorrect");
         }
         
         // Vérifier si l'organisation existe déjà
@@ -535,6 +570,20 @@ public class PendingRegistrationService {
         }
         pendingRegistrationRepository.deleteById(id);
         log.info("Inscription en attente supprimée: id={}", id);
+    }
+
+    private String generateOtp() {
+        int code = 100000 + new SecureRandom().nextInt(900000);
+        return String.valueOf(code);
+    }
+
+    private String maskEmail(String email) {
+        int at = email.indexOf('@');
+        if (at <= 1) return email;
+        String local = email.substring(0, at);
+        String domain = email.substring(at);
+        String masked = local.charAt(0) + "*".repeat(Math.min(local.length() - 1, 4)) + domain;
+        return masked;
     }
 }
 
