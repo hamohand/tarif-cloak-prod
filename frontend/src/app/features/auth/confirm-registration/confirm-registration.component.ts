@@ -2,12 +2,13 @@ import { Component, inject, OnInit } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-confirm-registration',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, FormsModule],
   template: `
     <div class="confirm-container">
       <div class="confirm-card">
@@ -18,30 +19,54 @@ import { environment } from '../../../../environments/environment';
             <div class="spinner"></div>
           </div>
         }
-        
-        @if (!isLoading && !errorMessage && !successMessage) {
-          <div class="initial-state">
-            <h2>Confirmation d'inscription</h2>
-            <p>Veuillez patienter...</p>
+
+        @if (!isLoading && !errorMessage && !successMessage && token) {
+          <div class="email-form-state">
+            <h2>Confirmer votre invitation</h2>
+            <p class="form-intro">Pour confirmer votre inscription, veuillez saisir l'adresse email à laquelle cette invitation a été envoyée.</p>
+            <div class="form-group">
+              <label for="emailInput">Votre adresse email</label>
+              <input
+                id="emailInput"
+                type="email"
+                [(ngModel)]="emailInput"
+                placeholder="votre@email.com"
+                class="email-input"
+                (keydown.enter)="confirmRegistration()"
+              />
+            </div>
+            <button class="btn btn-primary" (click)="confirmRegistration()" [disabled]="!emailInput.trim()">
+              Confirmer mon inscription
+            </button>
           </div>
         }
-        
+
+        @if (!isLoading && !errorMessage && !successMessage && !token) {
+          <div class="error-state">
+            <h2>Lien invalide</h2>
+            <div class="error-icon">⚠️</div>
+            <p class="error-message">Token de confirmation manquant. Veuillez utiliser le lien fourni dans l'email de confirmation.</p>
+          </div>
+        }
+
         @if (errorMessage) {
           <div class="error-state">
             <h2>Erreur de confirmation</h2>
             <div class="error-icon">⚠️</div>
             <p class="error-message">{{ errorMessage }}</p>
             <div class="actions">
-              <button class="btn btn-secondary" routerLink="/auth/register">
-                Réessayer l'inscription
-              </button>
+              @if (isEmailMismatch) {
+                <button class="btn btn-secondary" (click)="resetForm()">
+                  Réessayer
+                </button>
+              }
               <button class="btn btn-primary" routerLink="/auth/login">
                 Se connecter
               </button>
             </div>
           </div>
         }
-        
+
         @if (successMessage) {
           <div class="success-state">
             <h2>Inscription confirmée !</h2>
@@ -180,35 +205,83 @@ import { environment } from '../../../../environments/environment';
     .btn-secondary:hover {
       background-color: #7f8c8d;
     }
+
+    .email-form-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.25rem;
+      width: 100%;
+    }
+
+    .form-intro {
+      color: #7f8c8d;
+      line-height: 1.6;
+      margin: 0;
+    }
+
+    .form-group {
+      width: 100%;
+      text-align: left;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .form-group label {
+      font-weight: 600;
+      color: #2c3e50;
+      font-size: 0.95rem;
+    }
+
+    .email-input {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 1px solid #bdc3c7;
+      border-radius: 6px;
+      font-size: 1rem;
+      box-sizing: border-box;
+      transition: border-color 0.2s;
+      outline: none;
+    }
+
+    .email-input:focus {
+      border-color: #3498db;
+      box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.15);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
   `]
 })
 export class ConfirmRegistrationComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private http = inject(HttpClient);
-  
+
+  token = '';
+  emailInput = '';
   isLoading = false;
   errorMessage = '';
   successMessage = '';
+  isEmailMismatch = false;
 
   ngOnInit() {
-    const token = this.route.snapshot.queryParams['token'];
-    
-    if (!token) {
-      this.errorMessage = 'Token de confirmation manquant. Veuillez utiliser le lien fourni dans l\'email de confirmation.';
-      return;
-    }
-    
-    this.confirmRegistration(token);
+    this.token = this.route.snapshot.queryParams['token'] || '';
   }
 
-  confirmRegistration(token: string) {
+  confirmRegistration() {
+    if (!this.emailInput.trim()) return;
+
     this.isLoading = true;
     this.errorMessage = '';
     this.successMessage = '';
-    
-    const apiUrl = `${environment.apiUrl}/auth/confirm-registration?token=${encodeURIComponent(token)}`;
-    
+    this.isEmailMismatch = false;
+
+    const apiUrl = `${environment.apiUrl}/auth/confirm-registration?token=${encodeURIComponent(this.token)}&email=${encodeURIComponent(this.emailInput.trim())}`;
+
     this.http.get(apiUrl).subscribe({
       next: (response: any) => {
         this.isLoading = false;
@@ -216,10 +289,12 @@ export class ConfirmRegistrationComponent implements OnInit {
       },
       error: (error) => {
         this.isLoading = false;
-        if (error.error && error.error.error) {
-          this.errorMessage = error.error.error;
+        const msg = error.error?.error || '';
+        if (msg.includes('email')) {
+          this.isEmailMismatch = true;
+          this.errorMessage = 'L\'adresse email saisie ne correspond pas à l\'invitation. Vérifiez et réessayez.';
         } else if (error.status === 400) {
-          this.errorMessage = 'Token de confirmation invalide ou expiré. Veuillez réessayer l\'inscription.';
+          this.errorMessage = msg || 'Token de confirmation invalide ou expiré.';
         } else if (error.status === 0) {
           this.errorMessage = 'Impossible de joindre le serveur. Vérifiez votre connexion.';
         } else {
@@ -227,6 +302,12 @@ export class ConfirmRegistrationComponent implements OnInit {
         }
       }
     });
+  }
+
+  resetForm() {
+    this.errorMessage = '';
+    this.isEmailMismatch = false;
+    this.emailInput = '';
   }
 }
 

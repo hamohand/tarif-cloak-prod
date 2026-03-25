@@ -62,12 +62,12 @@ public class AuthController {
     }
     
     @GetMapping("/confirm-registration")
-    public ResponseEntity<?> confirmRegistration(@RequestParam String token) {
+    public ResponseEntity<?> confirmRegistration(@RequestParam String token, @RequestParam String email) {
         logger.info("=== Registration confirmation request received ===");
         logger.info("Token: {}", token);
-        
+
         try {
-            pendingRegistrationService.confirmRegistration(token);
+            pendingRegistrationService.confirmRegistration(token, email);
             
             logger.info("✓ Registration confirmed successfully: token={}", token);
             

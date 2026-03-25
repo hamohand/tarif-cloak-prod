@@ -187,24 +187,29 @@ public class PendingRegistrationService {
      * Confirme une inscription en attente et crée l'utilisateur et l'organisation.
      */
     @Transactional
-    public void confirmRegistration(String token) {
+    public void confirmRegistration(String token, String email) {
         Optional<PendingRegistration> pendingOpt = pendingRegistrationRepository
             .findByConfirmationToken(token);
-        
+
         if (pendingOpt.isEmpty()) {
             throw new IllegalArgumentException("Token de confirmation invalide");
         }
-        
+
         PendingRegistration pending = pendingOpt.get();
-        
+
         // Vérifier si déjà confirmé
         if (pending.getConfirmed()) {
             throw new IllegalStateException("Cette inscription a déjà été confirmée");
         }
-        
+
         // Vérifier si le token a expiré
         if (pending.getExpiresAt().isBefore(LocalDateTime.now())) {
             throw new IllegalStateException("Le token de confirmation a expiré");
+        }
+
+        // Vérifier que l'email correspond au destinataire de l'invitation
+        if (!pending.getEmail().equalsIgnoreCase(email.trim())) {
+            throw new IllegalArgumentException("L'adresse email ne correspond pas à l'invitation");
         }
         
         // Vérifier si l'organisation existe déjà
