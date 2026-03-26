@@ -68,8 +68,10 @@ backend:
 ai:
   openai:
     api-key: ${OPENAI_API_KEY:}
-    model: ${OPENAI_MODEL:gpt-4.1}
+    model: ${OPENAI_MODEL:gpt-4.1-mini}
     base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
+    price-input-per-million: ${OPENAI_PRICE_INPUT:0.40}    # GPT-4.1-mini: 0.40 | GPT-4.1-nano: 0.10 | GPT-5-nano: à vérifier
+    price-output-per-million: ${OPENAI_PRICE_OUTPUT:1.60}  # GPT-4.1-mini: 1.60 | GPT-4.1-nano: 0.40 | GPT-5-nano: à vérifier
   anthropic:
     api-key: ${ANTHROPIC_API_KEY:}
     model: ${ANTHROPIC_MODEL:claude-sonnet-4-5-20250929}

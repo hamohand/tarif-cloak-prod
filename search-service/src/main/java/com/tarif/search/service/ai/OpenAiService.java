@@ -26,6 +26,8 @@ public class OpenAiService implements AiProvider {
     private final String apiUrl;
     private final String model;
     private final double baseRequestPrice;
+    private final double priceInputPerMillion;
+    private final double priceOutputPerMillion;
     private final int maxTokens = 500;
     private final float temperature = 0.0F;
 
@@ -35,16 +37,19 @@ public class OpenAiService implements AiProvider {
             AiPrompts aiPrompts,
             @Value("${ai.openai.api-key:}") String apiKey,
             @Value("${ai.openai.base-url:https://api.openai.com/v1}") String baseUrl,
-            //@Value("${ai.openai.model:gpt-4o-mini}") String model,
-            //@Value("${ai.openai.model:gpt-4.1-nano}") String model,
-            @Value("${ai.openai.model:gpt-5-nano}") String model,
-            @Value("${ai.base-request-price:0.01}") double baseRequestPrice) {
+            @Value("${ai.openai.model:gpt-4.1-mini}") String model,
+            @Value("${ai.base-request-price:0.01}") double baseRequestPrice,
+            @Value("${ai.openai.price-input-per-million:0.40}") double priceInputPerMillion,
+            @Value("${ai.openai.price-output-per-million:1.60}") double priceOutputPerMillion) {
         this.aiPrompts = aiPrompts;
         this.apiKey = apiKey;
         this.apiUrl = baseUrl + "/chat/completions";
         this.model = model;
         this.baseRequestPrice = baseRequestPrice;
-        log.info("OpenAiService initialisé avec le modèle: {}", model);
+        this.priceInputPerMillion = priceInputPerMillion;
+        this.priceOutputPerMillion = priceOutputPerMillion;
+        log.info("OpenAiService initialisé avec le modèle: {} (tarifs: input=${}/M, output=${}/M)",
+                model, priceInputPerMillion, priceOutputPerMillion);
     }
 
     @Override
@@ -108,11 +113,7 @@ public class OpenAiService implements AiProvider {
             int completionTokens = rootNode.path("usage").path("completion_tokens").asInt();
             int totalTokens = rootNode.path("usage").path("total_tokens").asInt();
 
-            // Tarifs GPT-4o mini (USD)
-            final double PRICE_INPUT_USD = 0.15 / 1_000_000;
-            final double PRICE_OUTPUT_USD = 0.60 / 1_000_000;
-
-            double tokenCostUsd = (promptTokens * PRICE_INPUT_USD) + (completionTokens * PRICE_OUTPUT_USD);
+            double tokenCostUsd = (promptTokens * priceInputPerMillion + completionTokens * priceOutputPerMillion) / 1_000_000;
 
             UsageInfo usageInfo = new UsageInfo(
                     totalTokens,
