@@ -192,7 +192,7 @@ export class SearchListLotsComponent {
                 console.log("Traitement de tous les paquets terminé.", this.lesarticles);
             },
             error: (err: any) => {
-                this.error = 'Une erreur majeure est survenue pendant le traitement des paquets.';
+                this.error = err?.message || 'Une erreur majeure est survenue pendant le traitement des paquets.';
                 console.error(err);
             }
         });

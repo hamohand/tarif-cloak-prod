@@ -32,7 +32,7 @@ import { Observable } from 'rxjs';
               </div>
               <div>
                 <span class="stat-value">{{ organization.currentMonthUsage ?? 0 }}</span>
-                <span class="stat-label">Requêtes ce mois</span>
+                <span class="stat-label">Crédits ce mois</span>
               </div>
             </div>
           </div>

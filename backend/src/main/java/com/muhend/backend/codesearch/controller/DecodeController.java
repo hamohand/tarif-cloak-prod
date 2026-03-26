@@ -2,9 +2,15 @@ package com.muhend.backend.codesearch.controller;
 
 import com.muhend.backend.codesearch.model.*;
 import com.muhend.backend.codesearch.repository.*;
+import com.muhend.backend.organization.exception.QuotaExceededException;
+import com.muhend.backend.organization.service.OrganizationService;
+import com.muhend.backend.usage.service.UsageLogService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
@@ -16,7 +22,7 @@ import java.util.stream.Collectors;
 /**
  * Recherche inverse : à partir d'un code HS (2, 4 ou 6 chiffres),
  * retourne la hiérarchie complète (Section → Chapitre → Position4 → Position6).
- * Pure requête SQL, sans IA, sans décompte de quota.
+ * Pure requête SQL, sans IA. Consomme 2 crédits.
  *
  * Route Traefik : /api/decode → backend:/decode
  */
@@ -30,6 +36,8 @@ public class DecodeController {
     private final SectionRepository sectionRepository;
     private final Position4Repository position4Repository;
     private final Position6DzRepository position6DzRepository;
+    private final OrganizationService organizationService;
+    private final UsageLogService usageLogService;
 
     /**
      * Décode un code HS et retourne la hiérarchie complète.
@@ -39,6 +47,7 @@ public class DecodeController {
      */
     @GetMapping(produces = "application/json")
     public ResponseEntity<DecodeResult> decodeCode(@RequestParam String code) {
+        checkQuotaAndLog("/decode", code);
         // Normalisation : supprime tout ce qui n'est pas un chiffre
         String normalized = code.replaceAll("[^0-9]", "");
         log.debug("Décodage du code HS: '{}' → normalisé: '{}'", code, normalized);
@@ -122,5 +131,22 @@ public class DecodeController {
                 .position4(position4Item)
                 .positions6(Collections.singletonList(new DecodeResult.CodeItem(position6.getCode(), position6.getDescription())))
                 .build());
+    }
+
+    private void checkQuotaAndLog(String endpoint, String searchTerm) {
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (!(auth != null && auth.getPrincipal() instanceof Jwt jwt)) return;
+            String userId = jwt.getClaimAsString("sub");
+            Long organizationId = organizationService.getOrganizationIdByUserId(userId);
+            if (!organizationService.canOrganizationMakeRequests(organizationId)) {
+                throw new QuotaExceededException("Quota de crédits épuisé. Veuillez renouveler votre plan ou choisir un autre plan.");
+            }
+            usageLogService.logUsage(userId, organizationId, endpoint, searchTerm, null, null);
+        } catch (QuotaExceededException e) {
+            throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, e.getMessage());
+        } catch (Exception e) {
+            log.warn("Erreur quota/log decode (non bloquant): {}", e.getMessage());
+        }
     }
 }

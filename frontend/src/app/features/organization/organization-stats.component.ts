@@ -48,7 +48,7 @@ Chart.register(...registerables);
               <p>Votre plan a expiré le <strong>{{ formatDate(organization.monthlyPlanEndDate!) }}</strong>. Aucune requête HS-code n'est autorisée jusqu'au renouvellement.</p>
             } @else {
               <h3>Quota épuisé — accès bloqué</h3>
-              <p>Le quota de requêtes de votre plan est atteint. Aucune requête supplémentaire n'est autorisée jusqu'au renouvellement.</p>
+              <p>Le quota de crédits de votre plan est atteint. Aucun crédit supplémentaire n'est autorisé jusqu'au renouvellement.</p>
             }
             @if (currentPlan) {
               <p class="alert-action">Plan actuel : <strong>{{ currentPlan.name }}</strong>
@@ -130,7 +130,7 @@ Chart.register(...registerables);
                   } @else if (currentPlan.pricePerMonth !== null && currentPlan.pricePerMonth !== undefined && currentPlan.pricePerMonth > 0) {
                     <!-- Plan mensuel -->
                     @if (currentPlan.monthlyQuota) {
-                      <p><strong>Quota:</strong> {{ currentPlan.monthlyQuota | number }} requêtes/mois</p>
+                      <p><strong>Quota:</strong> {{ currentPlan.monthlyQuota | number }} crédits/mois</p>
                     } @else {
                       <p><strong>Quota:</strong> Illimité</p>
                     }
@@ -194,7 +194,7 @@ Chart.register(...registerables);
                     @if (plan.trialPeriodDays) {
                       ({{ plan.trialPeriodDays }} jours)
                     } @else if (plan.monthlyQuota) {
-                      ({{ plan.monthlyQuota | number }} requêtes/mois)
+                      ({{ plan.monthlyQuota | number }} crédits/mois)
                     } @else if (plan.pricePerRequest !== null && plan.pricePerRequest !== undefined) {
                       (Facturation à la requête)
                     } @else {
@@ -278,7 +278,7 @@ Chart.register(...registerables);
                   </p>
                 }
                 @if (selectedPlanForConfirmation.monthlyQuota) {
-                  <p class="plan-quota">Quota: {{ selectedPlanForConfirmation.monthlyQuota | number }} requêtes/mois</p>
+                  <p class="plan-quota">Quota: {{ selectedPlanForConfirmation.monthlyQuota | number }} crédits/mois</p>
                 } @else if (selectedPlanForConfirmation.pricePerRequest !== null && selectedPlanForConfirmation.pricePerRequest !== undefined) {
                   <p class="plan-quota">Facturation à la requête</p>
                 } @else {

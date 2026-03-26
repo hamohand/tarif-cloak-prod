@@ -42,7 +42,7 @@ import { interval, Subscription } from 'rxjs';
                 <div class="alert-details">
                   <div class="detail-item">
                     <span class="label">Consommation de l'organisation:</span>
-                    <span class="value">{{ alert.currentUsage }} / {{ alert.monthlyQuota || '∞' }} requêtes</span>
+                    <span class="value">{{ alert.currentUsage }} / {{ alert.monthlyQuota || '∞' }} crédits</span>
                   </div>
                   <div class="detail-item">
                     <span class="label">Pourcentage utilisé:</span>
@@ -51,7 +51,7 @@ import { interval, Subscription } from 'rxjs';
                     </span>
                   </div>
                 </div>
-                <p class="alert-note">💡 Note: Cette alerte concerne la consommation totale de votre organisation (somme de toutes les requêtes de tous les collaborateurs) par rapport au quota défini par votre plan tarifaire.</p>
+                <p class="alert-note">💡 Note: Cette alerte concerne la consommation totale de votre organisation (somme de tous les crédits consommés par tous les collaborateurs) par rapport au quota défini par votre plan tarifaire.</p>
               </div>
             </div>
           }

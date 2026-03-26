@@ -209,12 +209,12 @@ import { take } from 'rxjs/operators';
                           {{ symbol }}
                         } @else {
                           €
-                        }/requête
+                        }/crédit
                       </ng-container>
                       <ng-template #unlimited>Quota illimité</ng-template>
                     </ng-template>
                     <ng-container *ngIf="plan.monthlyQuota">
-                      ({{ plan.monthlyQuota | number }} requêtes/mois)
+                      ({{ plan.monthlyQuota | number }} crédits/mois)
                     </ng-container>
                     <ng-container *ngIf="!plan.monthlyQuota && plan.trialPeriodDays">
                       ({{ plan.trialPeriodDays }} jours d'essai)

@@ -62,7 +62,7 @@ import { of } from 'rxjs';
                     <span class="currency">{{ getCurrencySymbol(plan.currency) }}</span>
                   }
                   <span class="amount">{{ plan.pricePerRequest }}</span>
-                  <span class="period">/requête</span>
+                  <span class="period">/crédit</span>
                 } @else if (plan.pricePerYear !== null && plan.pricePerYear !== undefined) {
                   @if (currencySymbol$ | async; as symbol) {
                     <span class="currency">{{ symbol }}</span>
@@ -82,9 +82,9 @@ import { of } from 'rxjs';
                 @if (plan.trialPeriodDays) {
                   <strong>Valable {{ plan.trialPeriodDays }} jours</strong>
                 } @else if (plan.monthlyQuota) {
-                  <strong>{{ plan.monthlyQuota | number }} requêtes/mois</strong>
+                  <strong>{{ plan.monthlyQuota | number }} crédits/mois</strong>
                 } @else if (plan.pricePerRequest !== null && plan.pricePerRequest !== undefined) {
-                  <strong>Facturation à la requête</strong>
+                  <strong>Facturation au crédit</strong>
                 } @else {
                   <strong>Quota illimité</strong>
                 }

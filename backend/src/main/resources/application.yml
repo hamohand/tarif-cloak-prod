@@ -143,6 +143,16 @@ ollama:
   base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
 
 # ===================================================
+# CONFIGURATION CRÉDITS PAR PRESTATION
+# ===================================================
+credits:
+  positions10: ${CREDITS_POSITIONS10:15}   # Recherche Position10 (avec IA)
+  positions6:  ${CREDITS_POSITIONS6:10}    # Recherche HS-code Position6 (avec IA)
+  decode-p10:  ${CREDITS_DECODE_P10:5}     # Décodage inverse P10 (sans IA)
+  decode:      ${CREDITS_DECODE:2}         # Décodage inverse HS (sans IA)
+  default:     ${CREDITS_DEFAULT:1}        # Autres endpoints
+
+# ===================================================
 # CONFIGURATION TARIFICATION
 # ===================================================
 pricing:

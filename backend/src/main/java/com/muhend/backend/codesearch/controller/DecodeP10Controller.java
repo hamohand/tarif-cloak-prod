@@ -2,10 +2,16 @@ package com.muhend.backend.codesearch.controller;
 
 import com.muhend.backend.codesearch.model.*;
 import com.muhend.backend.codesearch.repository.*;
+import com.muhend.backend.organization.exception.QuotaExceededException;
+import com.muhend.backend.organization.service.OrganizationService;
+import com.muhend.backend.usage.service.UsageLogService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -19,7 +25,7 @@ import java.util.stream.Collectors;
 /**
  * Recherche inverse P10 : à partir d'un code (2, 4, 6 ou 10 chiffres),
  * retourne la hiérarchie complète jusqu'à Position10 avec titres hiérarchiques.
- * Pure requête SQL, sans IA, sans décompte de quota.
+ * Pure requête SQL, sans IA. Consomme 5 crédits.
  *
  * Route Traefik : /api/decode-p10 → backend:/decode-p10
  */
@@ -34,9 +40,12 @@ public class DecodeP10Controller {
     private final Position4Repository position4Repository;
     private final Position6DzRepository position6DzRepository;
     private final Position10DzRepository position10DzRepository;
+    private final OrganizationService organizationService;
+    private final UsageLogService usageLogService;
 
     @GetMapping(produces = "application/json")
     public ResponseEntity<DecodeResult> decodeCode(@RequestParam String code) {
+        checkQuotaAndLog("/decode-p10", code);
         String normalized = code.replaceAll("[^0-9]", "");
         log.debug("Décodage P10: '{}' → normalisé: '{}'", code, normalized);
 
@@ -208,5 +217,22 @@ public class DecodeP10Controller {
             s = s.substring(2);
         }
         return count == 0 && description.startsWith("-") ? 1 : count;
+    }
+
+    private void checkQuotaAndLog(String endpoint, String searchTerm) {
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (!(auth != null && auth.getPrincipal() instanceof Jwt jwt)) return;
+            String userId = jwt.getClaimAsString("sub");
+            Long organizationId = organizationService.getOrganizationIdByUserId(userId);
+            if (!organizationService.canOrganizationMakeRequests(organizationId)) {
+                throw new QuotaExceededException("Quota de crédits épuisé. Veuillez renouveler votre plan ou choisir un autre plan.");
+            }
+            usageLogService.logUsage(userId, organizationId, endpoint, searchTerm, null, null);
+        } catch (QuotaExceededException e) {
+            throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, e.getMessage());
+        } catch (Exception e) {
+            log.warn("Erreur quota/log decode-p10 (non bloquant): {}", e.getMessage());
+        }
     }
 }

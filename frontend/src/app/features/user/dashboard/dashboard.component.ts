@@ -52,7 +52,7 @@ import { take } from 'rxjs/operators';
             <div class="org-usage-details">
               <div class="org-usage-stats">
                 <div class="org-usage-item">
-                  <span class="org-usage-label">Requêtes ce mois :</span>
+                  <span class="org-usage-label">Crédits ce mois :</span>
                   <span class="org-usage-value">{{ quota.currentUsage || 0 }}</span>
                 </div>
                 <div class="org-usage-item">
@@ -67,7 +67,7 @@ import { take } from 'rxjs/operators';
                 </div>
                 @if (!quota.isUnlimited && quota.monthlyQuota) {
                   <div class="org-usage-item">
-                    <span class="org-usage-label">Requêtes restantes :</span>
+                    <span class="org-usage-label">Crédits restants :</span>
                     <span class="org-usage-value" [class.quota-warning]="getOrgPercentage() >= 80" [class.quota-danger]="getOrgPercentage() >= 100">
                       {{ Math.max(0, quota.monthlyQuota - (quota.currentUsage || 0)) }}
                     </span>
@@ -96,7 +96,7 @@ import { take } from 'rxjs/operators';
         } @else if (stats) {
           <div class="stats-grid">
             <div class="stat-item">
-              <h4>📈 Total Requêtes</h4>
+              <h4>📈 Total Crédits</h4>
               <p class="stat-value">{{ stats.totalRequests }}</p>
             </div>
           </div>

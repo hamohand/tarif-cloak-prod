@@ -25,10 +25,12 @@ import com.muhend.backend.pricing.repository.PricingPlanRepository;
 import com.muhend.backend.pricing.repository.QuoteRequestRepository;
 import com.muhend.backend.usage.repository.UsageLogRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.muhend.backend.usage.model.UsageLog;
 import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.math.BigDecimal;
@@ -84,6 +86,29 @@ public class OrganizationService {
     private final QuoteRequestRepository quoteRequestRepository;
     private final QuotaAlertRepository quotaAlertRepository;
     private final PricingPlanRepository pricingPlanRepository;
+
+    // ===== Coûts en crédits par prestation (configurables via .env) =====
+    @Value("${credits.positions10:15}") private int creditsPositions10;
+    @Value("${credits.positions6:10}")  private int creditsPositions6;
+    @Value("${credits.decode-p10:5}")   private int creditsDecodep10;
+    @Value("${credits.decode:2}")       private int creditsDecode;
+    @Value("${credits.default:1}")      private int creditsDefault;
+
+    /**
+     * Calcule la somme de crédits consommés à partir d'une liste de logs d'utilisation.
+     * Le coût dépend de l'endpoint appelé.
+     */
+    private long computeCredits(List<UsageLog> logs) {
+        return logs.stream().mapToLong(log -> {
+            String ep = log.getEndpoint();
+            if (ep == null)                          return creditsDefault;
+            if (ep.contains("positions10"))          return creditsPositions10;
+            if (ep.contains("positions6"))           return creditsPositions6;
+            if (ep.contains("decode-p10"))           return creditsDecodep10;
+            if (ep.contains("decode"))               return creditsDecode;
+            return creditsDefault;
+        }).sum();
+    }
 
     public OrganizationService(OrganizationRepository organizationRepository,
                               OrganizationUserRepository organizationUserRepository,
@@ -593,12 +618,11 @@ public class OrganizationService {
         LocalDateTime endOfMonth = now.withDayOfMonth(now.toLocalDate().lengthOfMonth())
                 .withHour(23).withMinute(59).withSecond(59).withNano(999999999);
         
-        // Compter les requêtes du mois en cours pour TOUTE l'organisation
-        // (somme de toutes les requêtes de tous les collaborateurs)
-        long currentUsage = usageLogRepository.countByOrganizationIdAndTimestampBetween(
-                organizationId, startOfMonth, endOfMonth);
-        
-        log.info("🔍 Vérification du quota pour l'organisation {} (ID: {}): utilisation actuelle={}, quota={}, planId={}, période: {} à {}", 
+        // Sommer les crédits consommés ce mois pour TOUTE l'organisation
+        long currentUsage = computeCredits(usageLogRepository.findByOrganizationIdAndTimestampBetween(
+                organizationId, startOfMonth, endOfMonth));
+
+        log.info("🔍 Vérification du quota pour l'organisation {} (ID: {}): crédits utilisés={}, quota={}, planId={}, période: {} à {}",
             organization.getName(), organizationId, currentUsage, monthlyQuota, pricingPlanId, startOfMonth, endOfMonth);
         
         // Vérifier si le quota est dépassé
@@ -719,11 +743,11 @@ public class OrganizationService {
             log.debug("Utilisation du mois calendaire pour l'organisation {}", organizationId);
         }
         
-        // Compter les requêtes dans la période
-        long currentUsage = usageLogRepository.countByOrganizationIdAndTimestampBetween(
-                organizationId, startDateTime, endDateTime);
-        
-        log.info("🔍 Vérification du quota pour l'organisation {} (ID: {}): utilisation actuelle={}, quota={}, planId={}", 
+        // Sommer les crédits consommés dans la période
+        long currentUsage = computeCredits(usageLogRepository.findByOrganizationIdAndTimestampBetween(
+                organizationId, startDateTime, endDateTime));
+
+        log.info("🔍 Vérification du quota pour l'organisation {} (ID: {}): crédits utilisés={}, quota={}, planId={}",
             organization.getName(), organizationId, currentUsage, monthlyQuota, pricingPlanId);
         
         // Vérifier si le quota est dépassé
@@ -1082,12 +1106,12 @@ public class OrganizationService {
         long userCount = organizationUserRepository.findByOrganizationId(organization.getId()).size();
         dto.setUserCount(userCount);
         
-        // Calculer l'utilisation du mois en cours
+        // Calculer les crédits consommés ce mois
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime startOfMonth = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
         LocalDateTime endOfMonth = now.withDayOfMonth(now.toLocalDate().lengthOfMonth())
                 .withHour(23).withMinute(59).withSecond(59).withNano(999999999);
-        long currentMonthUsage = usageLogRepository.countByOrganizationIdAndTimestampBetween(organization.getId(), startOfMonth, endOfMonth);
+        long currentMonthUsage = computeCredits(usageLogRepository.findByOrganizationIdAndTimestampBetween(organization.getId(), startOfMonth, endOfMonth));
         dto.setCurrentMonthUsage(currentMonthUsage);
         
         return dto;
@@ -1295,10 +1319,10 @@ public class OrganizationService {
                 start = today.withDayOfMonth(1).atStartOfDay();
                 end = today.withDayOfMonth(today.lengthOfMonth()).atTime(23, 59, 59);
             }
-            long currentUsage = usageLogRepository.countByOrganizationIdAndTimestampBetween(
-                    organization.getId(), start, end);
+            long currentUsage = computeCredits(usageLogRepository.findByOrganizationIdAndTimestampBetween(
+                    organization.getId(), start, end));
             if (currentUsage >= monthlyQuota) {
-                log.debug("Organisation {} bloquée : quota mensuel épuisé ({}/{})",
+                log.debug("Organisation {} bloquée : quota de crédits épuisé ({}/{})",
                         organization.getId(), currentUsage, monthlyQuota);
                 return false;
             }

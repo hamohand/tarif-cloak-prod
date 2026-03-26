@@ -96,7 +96,7 @@ import { of } from 'rxjs';
         <div class="renewal-modal" (click)="$event.stopPropagation()">
           <button class="modal-close-btn" (click)="closeRenewalModal()">✕</button>
           <h3>Accès Positions tarifaires suspendu</h3>
-          <p>Votre plan est expiré ou votre quota de requêtes est épuisé.</p>
+          <p>Votre plan est expiré ou votre quota de crédits est épuisé.</p>
           <div class="renewal-modal-actions">
             <button class="btn-modal btn-modal-primary" (click)="renewCurrentPlan()" [disabled]="isRenewing">
               @if (isRenewing) { Redirection... } @else { Renouveler le plan actuel }

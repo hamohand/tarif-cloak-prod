@@ -44,7 +44,7 @@ Chart.register(...registerables);
       <!-- Statistiques globales -->
       <div class="stats-grid">
         <div class="stat-card">
-          <h4>📈 Requêtes Total</h4>
+          <h4>📈 Crédits Total</h4>
           <p class="stat-value">{{ stats?.totalRequests || 0 }}</p>
         </div>
         <div class="stat-card">
@@ -64,7 +64,7 @@ Chart.register(...registerables);
           <!-- Graphiques -->
           <div class="charts-container">
             <div class="chart-wrapper">
-              <h4>Requêtes par Organisation</h4>
+              <h4>Crédits par Organisation</h4>
               <canvas #requestsChart></canvas>
             </div>
             <div class="chart-wrapper">
@@ -77,7 +77,7 @@ Chart.register(...registerables);
             <thead>
               <tr>
                 <th>Entreprise</th>
-                <th>Requêtes</th>
+                <th>Crédits</th>
                 <th>Coût (€)</th>
                 <th>Tokens</th>
               </tr>
@@ -112,7 +112,7 @@ Chart.register(...registerables);
               <tr>
                 <th>Utilisateur ID</th>
                 <th>Nom d'utilisateur</th>
-                <th>Requêtes</th>
+                <th>Crédits</th>
                 <th>Coût (€)</th>
                 <th>Tokens</th>
               </tr>

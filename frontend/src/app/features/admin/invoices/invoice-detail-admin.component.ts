@@ -111,7 +111,7 @@ import { NotificationService } from '../../../core/services/notification.service
               <div class="stats-grid">
                 @if (invoice.totalRequests !== undefined) {
                   <div class="stat-item">
-                    <label>Nombre de requêtes :</label>
+                    <label>Nombre de crédits :</label>
                     <span>{{ formatNumber(invoice.totalRequests) }}</span>
                   </div>
                 }

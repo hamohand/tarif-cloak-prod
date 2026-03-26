@@ -83,6 +83,8 @@ export class SearchService {
       errorMessage = 'Session expirée. Veuillez vous reconnecter.';
     } else if (error.status === 403) {
       errorMessage = 'Accès refusé. Vous n\'avez pas les permissions nécessaires.';
+    } else if (error.status === 429) {
+      errorMessage = 'Quota de crédits épuisé. Veuillez renouveler votre plan ou choisir un autre plan.';
     } else if (error.status === 404) {
       errorMessage = 'Code HS introuvable dans la base de données.';
     } else if (error.status === 400) {

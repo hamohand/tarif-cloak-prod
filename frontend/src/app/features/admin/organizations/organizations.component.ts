@@ -178,7 +178,7 @@ import { NotificationService } from '../../../core/services/notification.service
                           ({{ org.currentMonthUsage || 0 }}/{{ org.monthlyQuota }} - {{ getQuotaPercentage(org).toFixed(1) }}%)
                         </span>
                       } @else {
-                        <span class="quota-usage">({{ org.currentMonthUsage || 0 }} requêtes ce mois)</span>
+                        <span class="quota-usage">({{ org.currentMonthUsage || 0 }} crédits ce mois)</span>
                       }
                     </div>
                     <button class="btn btn-sm btn-secondary" (click)="startQuotaEdit(org)">✏️</button>
