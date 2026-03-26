@@ -28,6 +28,7 @@ import { NotificationService } from '../../../core/services/notification.service
                 <th>Pays</th>
                 <th>Expire le</th>
                 <th>Statut</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -51,6 +52,11 @@ import { NotificationService } from '../../../core/services/notification.service
                     } @else {
                       <span class="badge badge-warning">En attente</span>
                     }
+                  </td>
+                  <td>
+                    <button class="btn-delete" (click)="deleteRegistration(registration.id)" title="Supprimer">
+                      🗑️
+                    </button>
                   </td>
                 </tr>
               }
@@ -167,6 +173,20 @@ import { NotificationService } from '../../../core/services/notification.service
       color: #6c757d;
       font-size: 0.85rem;
     }
+
+    .btn-delete {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1.1rem;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      transition: background 0.2s;
+    }
+
+    .btn-delete:hover {
+      background-color: #fde8e8;
+    }
   `]
 })
 export class PendingRegistrationsComponent implements OnInit {
@@ -202,6 +222,20 @@ export class PendingRegistrationsComponent implements OnInit {
   isExpired(registration: PendingRegistration): boolean {
     const expiresAt = new Date(registration.expiresAt);
     return expiresAt < new Date();
+  }
+
+  deleteRegistration(id: number) {
+    if (!confirm('Supprimer cette inscription en attente ?')) return;
+    this.adminService.deletePendingRegistration(id).subscribe({
+      next: () => {
+        this.pendingRegistrations = this.pendingRegistrations.filter(r => r.id !== id);
+        this.notificationService.success('Inscription supprimée');
+      },
+      error: (err) => {
+        console.error('Erreur suppression:', err);
+        this.notificationService.error('Erreur lors de la suppression');
+      }
+    });
   }
 }
 

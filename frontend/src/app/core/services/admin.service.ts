@@ -227,6 +227,10 @@ export class AdminService {
     return this.http.get<PendingRegistration[]>(`${this.apiUrl}/pending-registrations`);
   }
 
+  deletePendingRegistration(id: number): Observable<{ success: boolean; message: string }> {
+    return this.http.delete<{ success: boolean; message: string }>(`${this.apiUrl}/pending-registrations/${id}`);
+  }
+
   /**
    * Désactive une organisation.
    * Les collaborateurs ne pourront plus utiliser l'application.
