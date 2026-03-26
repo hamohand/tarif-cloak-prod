@@ -148,8 +148,9 @@ import { Observable } from 'rxjs';
                       [disabled]="toggling === collaborator.keycloakUserId || deleting === collaborator.keycloakUserId">
                     <span class="toggle-slider"></span>
                   </label>
-                  <button 
-                    class="btn btn-danger" 
+                  <button
+                    *ngIf="!collaborator.isOwner && collaborators.length > 1"
+                    class="btn btn-danger"
                     (click)="deleteCollaborator(collaborator.keycloakUserId)"
                     [disabled]="toggling === collaborator.keycloakUserId || deleting === collaborator.keycloakUserId">
                     Supprimer

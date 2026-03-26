@@ -24,5 +24,6 @@ public class OrganizationUserDto {
     private String lastName;
     private LocalDateTime joinedAt;
     private Boolean enabled; // Statut d'activation du compte Keycloak
+    private Boolean isOwner; // Vrai si c'est le compte ORGANIZATION (propriétaire de l'organisation)
 }
 

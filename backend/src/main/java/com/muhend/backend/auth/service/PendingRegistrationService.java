@@ -419,13 +419,9 @@ public class PendingRegistrationService {
     }
     
     private String generateTemporaryPassword() {
-        final String characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_=+";
-        StringBuilder password = new StringBuilder(16);
-        for (int i = 0; i < 16; i++) {
-            int index = secureRandom.nextInt(characters.length());
-            password.append(characters.charAt(index));
-        }
-        return password.toString();
+        // 8 chiffres aléatoires, ex: 47291836
+        int code = 10_000_000 + secureRandom.nextInt(90_000_000);
+        return String.valueOf(code);
     }
     
     /**

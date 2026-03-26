@@ -275,8 +275,13 @@ public class OrganizationService {
     public List<OrganizationUserDto> getOrganizationUsersByKeycloakUserId(String keycloakUserId) {
         Organization organization = organizationRepository.findByKeycloakUserId(keycloakUserId)
                 .orElseThrow(() -> new IllegalArgumentException("Organisation non trouvée pour cet identifiant utilisateur."));
+        String ownerKeycloakUserId = organization.getKeycloakUserId();
         return organizationUserRepository.findByOrganizationId(organization.getId()).stream()
-                .map(this::toOrganizationUserDto)
+                .map(ou -> {
+                    OrganizationUserDto dto = toOrganizationUserDto(ou);
+                    dto.setIsOwner(ownerKeycloakUserId != null && ownerKeycloakUserId.equals(ou.getKeycloakUserId()));
+                    return dto;
+                })
                 .collect(Collectors.toList());
     }
     

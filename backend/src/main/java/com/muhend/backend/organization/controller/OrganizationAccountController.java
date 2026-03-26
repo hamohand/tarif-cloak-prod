@@ -280,6 +280,9 @@ public class OrganizationAccountController {
                     .body(Map.of("error", "AUTH_REQUIRED", "message", "Authentification requise"));
         }
         try {
+            if (keycloakUserId.equals(organizationUserId)) {
+                return ResponseEntity.badRequest().body(Map.of("error", "DELETE_OWNER", "message", "Le propriétaire de l'organisation ne peut pas être supprimé."));
+            }
             OrganizationDto organization = organizationService.getOrganizationByKeycloakUserId(organizationUserId);
             organizationService.deleteCollaborator(organization.getId(), keycloakUserId);
             return ResponseEntity.ok(Map.of("message", "Collaborateur supprimé avec succès"));

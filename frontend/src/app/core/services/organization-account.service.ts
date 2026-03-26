@@ -32,6 +32,7 @@ export interface OrganizationCollaborator {
   lastName?: string | null;
   joinedAt?: string | null;
   enabled?: boolean | null;
+  isOwner?: boolean | null;
 }
 
 export interface CollaboratorsResponse {
