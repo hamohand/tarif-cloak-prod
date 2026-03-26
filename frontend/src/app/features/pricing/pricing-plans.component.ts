@@ -38,6 +38,29 @@ import { of } from 'rxjs';
         <div class="pricing-info-bar">
           Possibilité de changer de plan tarifaire et demande de devis personnalisé à tout moment.
         </div>
+
+        <div class="credits-note">
+          <h4>Coût en crédits par prestation</h4>
+          <div class="credits-table">
+            <div class="credit-row">
+              <span class="credit-label">Recherche HS-code (avec IA)</span>
+              <span class="credit-value">10 crédits</span>
+            </div>
+            <div class="credit-row">
+              <span class="credit-label">Recherche Position10 (avec IA)</span>
+              <span class="credit-value">15 crédits</span>
+            </div>
+            <div class="credit-row">
+              <span class="credit-label">Décodage inverse HS (sans IA)</span>
+              <span class="credit-value">2 crédits</span>
+            </div>
+            <div class="credit-row">
+              <span class="credit-label">Décodage inverse P10 (sans IA)</span>
+              <span class="credit-value">5 crédits</span>
+            </div>
+          </div>
+        </div>
+
         <div class="pricing-plans-grid">
           @for (plan of plans; track plan.id) {
             <div class="pricing-plan-card">
@@ -163,6 +186,52 @@ import { of } from 'rxjs';
     .quote-notice strong {
       color: #facc15;
       font-weight: 700;
+    }
+
+    .credits-note {
+      max-width: 600px;
+      margin: 0 auto 2.5rem;
+      padding: 1.25rem 1.5rem;
+      background: #1a2634;
+      border: 1px solid #3d566e;
+      border-radius: 10px;
+    }
+
+    .credits-note h4 {
+      color: #bdc3c7;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin: 0 0 0.9rem;
+      text-align: center;
+    }
+
+    .credits-table {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .credit-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.45rem 0.75rem;
+      border-radius: 6px;
+      background: #243447;
+    }
+
+    .credit-label {
+      color: #bdc3c7;
+      font-size: 0.9rem;
+    }
+
+    .credit-value {
+      font-weight: 700;
+      color: #3498db;
+      font-size: 0.9rem;
+      white-space: nowrap;
+      margin-left: 1rem;
     }
 
     .pricing-plans-grid {
