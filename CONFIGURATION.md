@@ -1,8 +1,6 @@
-# Configuration de l'Application
+# Configuration — Intradia
 
-## 📋 Vue d'Ensemble
-
-Ce document décrit toutes les configurations nécessaires pour déployer et faire fonctionner l'application.
+Ce document décrit toutes les variables d'environnement pour déployer et configurer l'application.
 
 ## 🔧 Variables d'Environnement
 
@@ -161,18 +159,58 @@ SPRING_PROFILES_ACTIVE=prod
 ### Services IA
 
 ```env
+# Provider actif : OpenAi | Anthropic | Ollama
+AI_PROVIDER=OpenAi
+
 # OpenAI
 OPENAI_API_KEY=CHANGEZ_MOI
-OPENAI_MODEL=gpt-4
+OPENAI_MODEL=gpt-4.1-mini           # gpt-4.1-mini | gpt-4.1-nano | gpt-4o-mini
+OPENAI_PRICE_INPUT=0.40             # $ par million de tokens en entrée
+OPENAI_PRICE_OUTPUT=1.60            # $ par million de tokens en sortie
 
 # Anthropic (Claude)
 ANTHROPIC_API_KEY=CHANGEZ_MOI
 ANTHROPIC_MODEL=claude-3-sonnet-20240229
 
-# Ollama
+# Ollama (optionnel, modèles locaux)
 OLLAMA_API_KEY=CHANGEZ_MOI
 OLLAMA_BASE_URL=http://host.docker.internal:11434
 ```
+
+Coûts indicatifs pour référence :
+
+| Modèle | Input ($/M tokens) | Output ($/M tokens) |
+| --- | --- | --- |
+| gpt-4.1-mini | 0.40 | 1.60 |
+| gpt-4.1-nano | 0.10 | 0.40 |
+| gpt-4o-mini | 0.15 | 0.60 |
+
+### Crédits par prestation
+
+Chaque prestation consomme un nombre de crédits déductible du quota mensuel de l'organisation.
+
+```env
+CREDITS_POSITIONS10=15    # Recherche Position10 avec IA
+CREDITS_POSITIONS6=10     # Recherche HS-code avec IA
+CREDITS_DECODE_P10=5      # Décodage inverse P10 (sans IA)
+CREDITS_DECODE=2          # Décodage inverse HS (sans IA)
+CREDITS_DEFAULT=1         # Autres endpoints
+```
+
+### Paiement Chargily Pay
+
+```env
+# Provider actif : chargily | stripe
+PAYMENT_PROVIDER=chargily
+
+CHARGILY_API_URL=https://pay.chargily.net/api/v2   # production
+# CHARGILY_API_URL=https://pay.chargily.net/test/api/v2  # test
+CHARGILY_SECRET_KEY=CHANGEZ_MOI
+CHARGILY_WEBHOOK_SECRET=CHANGEZ_MOI
+```
+
+Le webhook doit être configuré dans le dashboard Chargily vers :
+`https://votre-domaine.com/api/webhooks/chargily`
 
 ### Tarification
 
@@ -203,7 +241,7 @@ REGISTRATION_TOKEN_EXPIRATION_HOURS=24
 
 Les thèmes personnalisés sont situés dans `keycloak/themes/` :
 
-```
+```plaintext
 keycloak/themes/
 ├── README.md
 └── custom-theme/
@@ -222,6 +260,7 @@ keycloak/themes/
 ### Activation du Thème
 
 1. **Redémarrer Keycloak** pour charger le nouveau thème :
+
    ```bash
    docker compose restart keycloak
    ```
@@ -417,5 +456,4 @@ REGISTRATION_TOKEN_EXPIRATION_HOURS=24
 
 ---
 
-*Dernière mise à jour : Configuration complète*
-
+Dernière mise à jour : 2026-03-27

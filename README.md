@@ -1,397 +1,241 @@
-# SaaS Qwen - Application Full-Stack avec Authentification Keycloak
+# Intradia — Classification pour le commerce international
 
-Une application SaaS moderne construite avec Angular, Spring Boot, Keycloak et PostgreSQL, entièrement conteneurisée avec Docker.
+Application SaaS de recherche et de décodage de codes de nomenclature douanière (système harmonisé HS), alimentée par l'intelligence artificielle.
 
-## 📋 Table des Matières
+## Table des matières
 
-- [Fonctionnalités](#-fonctionnalités)
-- [Architecture](#-architecture)
-- [Technologies](#-technologies)
-- [Prérequis](#-prérequis)
-- [Installation](#-installation)
-- [Configuration](#-configuration)
-- [Utilisation](#-utilisation)
-- [Développement](#-développement)
-- [Déploiement](#-déploiement)
-- [Documentation](#-documentation)
-- [Troubleshooting](#-troubleshooting)
+- [Fonctionnalités](#fonctionnalités)
+- [Architecture](#architecture)
+- [Technologies](#technologies)
+- [Prérequis](#prérequis)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Commandes utiles](#commandes-utiles)
+- [Documentation](#documentation)
+- [Troubleshooting](#troubleshooting)
 
-## 🚀 Fonctionnalités
+---
 
-- ✅ **Authentification complète** avec Keycloak (OAuth 2.0 / OpenID Connect)
-- ✅ **Gestion des utilisateurs** : Inscription, connexion, profils
-- ✅ **Gestion multi-organisations** : Création et gestion d'organisations avec utilisateurs
-- ✅ **Plans tarifaires** : Système de facturation complet avec quotas et essai gratuit
-  - Plans mensuels avec cycles personnalisés et reconduction tacite automatique
-  - Plans Pay-per-Request avec facturation à la requête
-  - Affichage de la date de renouvellement automatique pour les plans mensuels
-  - Gestion des changements de plan en attente
-  - Factures de clôture lors des changements de plan
-- ✅ **Recherche de codes HS-code** : Recherche intelligente avec IA (OpenAI, Anthropic, Ollama)
-- ✅ **Tracking d'utilisation** : Enregistrement automatique des requêtes et coûts
-- ✅ **API REST sécurisée** avec Spring Boot et JWT
-- ✅ **Interface moderne** avec Angular 20
-- ✅ **Base de données PostgreSQL** persistante
-- ✅ **Architecture microservices** entièrement conteneurisée
-- ✅ **Configuration centralisée** via variables d'environnement
+## Fonctionnalités
 
-## 🏗️ Architecture
+- **Recherche HS-code** : saisie libre en toute langue, l'IA retourne la position tarifaire la plus pertinente avec justification (10 crédits)
+- **Recherche Position10** : descente jusqu'au niveau sous-position avec titres hiérarchiques (15 crédits)
+- **Décodage inverse HS** : à partir d'un code 2, 4 ou 6 chiffres, retourne la hiérarchie section → chapitre → position6 (2 crédits)
+- **Décodage inverse P10** : à partir d'un code 2, 4, 6 ou 10 chiffres, retourne la hiérarchie complète avec titres (5 crédits)
+- **Recherche par liste** : traitement simultané de plusieurs produits
+- **Recherche par lots** : jusqu'à 1 000 articles en traitement asynchrone (API batch OpenAI / Anthropic)
+- **Gestion multi-organisations** : invitation de collaborateurs, suivi de l'utilisation par organisation
+- **Plans tarifaires** : essai gratuit, plans mensuels avec quotas en crédits, paiement Chargily Pay (DZD)
+- **Facturation** : factures, historique, alertes de quota
+- **Authentification** OAuth2 / OpenID Connect via Keycloak
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                      CLIENT (Browser)                        │
-└────────────────────────────┬────────────────────────────────┘
-                             │
-                             ▼
-┌─────────────────────────────────────────────────────────────┐
-│                    Traefik (Reverse Proxy)                    │
-└────────────┬───────────────────────┬────────────────────────┘
-             │                       │
-             ▼                       ▼
-┌─────────────────────┐   ┌─────────────────────┐
-│   Frontend          │   │   Backend           │
-│   Angular + Nginx   │   │   Spring Boot       │
-│   :4200             │   │   :8081             │
-└─────────────────────┘   └───────┬─────────────┘
-                                   │
-                    ┌─────────────┼─────────────┐
-                    ▼             ▼             ▼
-        ┌──────────────┐  ┌──────────────┐  ┌──────────────┐
-        │  Keycloak    │  │  PostgreSQL  │  │  PostgreSQL  │
-        │  (Auth)      │  │  (App DB)    │  │ (Keycloak DB)│
-        │  :8080       │  │  :5432       │  │  :5432       │
-        └──────────────┘  └──────────────┘  └──────────────┘
+---
+
+## Architecture
+
+```plaintext
+┌──────────────────────────────────────────────────────────────────┐
+│                         CLIENT (Browser)                          │
+└──────────────────────────────┬───────────────────────────────────┘
+                               │
+                               ▼
+┌──────────────────────────────────────────────────────────────────┐
+│                    Traefik (Reverse Proxy / TLS)                   │
+└──────┬──────────────────┬──────────────────┬─────────────────────┘
+       │                  │                  │
+       ▼                  ▼                  ▼
+┌─────────────┐  ┌──────────────────┐  ┌───────────────────┐
+│  Frontend   │  │  Backend         │  │  Search-service   │
+│  Angular    │  │  Spring Boot     │  │  Spring Boot + IA │
+│  :80        │  │  :8081           │  │  :8082            │
+└─────────────┘  └────────┬─────────┘  └────────┬──────────┘
+                           │                     │
+              ┌────────────┼─────────────────────┤
+              ▼            ▼                     ▼
+       ┌──────────┐  ┌──────────┐         ┌──────────┐
+       │ Keycloak │  │PostgreSQL│         │ RabbitMQ │
+       │  :8080   │  │  :5432   │         │  :5672   │
+       └──────────┘  └──────────┘         └──────────┘
 ```
 
-Pour plus de détails sur l'architecture, consultez [ARCHITECTURE.md](ARCHITECTURE.md).
+### Routage Traefik (production)
 
-## 💻 Technologies
+| Chemin                                   | Service        | Priorité |
+| ---------------------------------------- | -------------- | -------- |
+| `/`                                      | Frontend       | 1        |
+| `/api`                                   | Backend        | 10       |
+| `/api/recherche`, `/api/batch-search`    | Search-service | 20       |
+| `/api/webhooks`                          | Backend        | 15       |
+
+---
+
+## Technologies
 
 ### Frontend
-- **Angular** 20.3.0
-- **TypeScript** 5.9.2
-- **angular-oauth2-oidc** 17.0.0
-- **RxJS** 7.8.0
-- **Karma/Jasmine** pour les tests
+
+- Angular 20 — composants standalone
+- TypeScript 5
+- angular-oauth2-oidc (authentification Keycloak)
 
 ### Backend
-- **Spring Boot** 3.5.6
-- **Java** 21
-- **Spring Security OAuth2** Resource Server
-- **Spring Data JPA** avec Hibernate
-- **Keycloak Admin Client** 26.0.7
-- **PostgreSQL** Driver
-- **Lombok** pour réduire le boilerplate
-- **SpringDoc OpenAPI** 2.8.13 pour la documentation API
+
+- Spring Boot 3.5 / Java 21
+- Spring Security OAuth2 Resource Server (JWT)
+- Spring Data JPA / Hibernate + Flyway (migrations)
+- RabbitMQ (communication avec search-service)
+- SpringDoc OpenAPI (Swagger)
+
+### Search-service
+
+- Spring Boot / Java 21
+- OpenAI API (gpt-4.1-mini par défaut), Anthropic, Ollama
+- Architecture RAG en cascade : Sections → Chapitres → Positions4 → Positions6 → Positions10
+- Batch API (traitement asynchrone jusqu'à 1 000 articles)
 
 ### Infrastructure
-- **Docker** & Docker Compose
-- **Keycloak** 22.0.1
-- **PostgreSQL** 16
-- **Nginx** (pour servir le frontend)
-- **Traefik** (reverse proxy en production)
 
-## 📦 Prérequis
+- Docker & Docker Compose
+- Keycloak 22 (authentification)
+- PostgreSQL 16
+- RabbitMQ
+- Traefik (reverse proxy, TLS Let's Encrypt)
 
-- **Docker** version 20.10 ou supérieure
-- **Docker Compose** version 2.0 ou supérieure
-- **Git**
-- (Optionnel) **Node.js** 18+ et **npm** pour le développement local du frontend
-- (Optionnel) **JDK** 21+ et **Maven** pour le développement local du backend
+---
 
-## 🛠️ Installation
+## Prérequis
 
-### 1. Cloner le Projet
+- Docker ≥ 20.10
+- Docker Compose ≥ 2.0
+- Git
+- (Optionnel) Node.js 18+ pour le développement frontend
+- (Optionnel) JDK 21+ et Maven pour le développement backend
 
-```bash
-git clone https://github.com/votre-username/saas-qwen.git
-cd saas-qwen
-```
+---
 
-### 2. Configuration Initiale
+## Installation
 
-Créez le fichier `.env` à partir de l'exemple :
+### 1. Cloner le projet
 
 ```bash
-cp .env.example .env
+git clone <url-du-repo>
+cd tarif-cloak-prod
 ```
 
-Éditez `.env` et configurez au minimum :
+### 2. Créer le fichier `.env`
+
+Éditer `.env` avec vos valeurs. Variables minimales à renseigner :
 
 ```env
-PROJECT_NAME=mon-projet
-POSTGRES_PASSWORD=votre-mot-de-passe-securise
-KEYCLOAK_ADMIN_PASSWORD=votre-admin-password
-KEYCLOAK_BACKEND_CLIENT_SECRET=votre-client-secret
+POSTGRES_PASSWORD=...
+KEYCLOAK_BACKEND_CLIENT_SECRET=...
+OPENAI_API_KEY=...
+SMTP_USERNAME=...
+SMTP_PASSWORD=...
+FRONTEND_DOMAIN=...
+WWW_FRONTEND_DOMAIN=...
 ```
 
-Pour la liste complète des variables d'environnement, consultez [CONFIGURATION.md](CONFIGURATION.md).
+Consultez [CONFIGURATION.md](CONFIGURATION.md) pour la liste complète.
 
-### 3. Démarrage des Services
+### 3. Démarrer les services
 
 ```bash
-# Première installation (avec construction des images)
-docker compose up -d --build
+# Développement local
+docker compose -f docker-compose-dev.yml up -d --build
 
-# Vérifier que tous les services sont démarrés
-docker compose ps
-
-# Suivre les logs
-docker compose logs -f
+# Production
+docker compose -f docker-compose-prod.yml up -d --build
 ```
 
-### 4. Accéder à l'Application
+### 4. Accéder à l'application
 
-- **Frontend** : http://localhost:4200
-- **Backend API** : http://localhost:8081
-- **Keycloak Admin** : http://localhost:8080 (admin / admin par défaut)
-- **API Documentation** : http://localhost:8081/swagger-ui.html
+- Frontend : `https://votre-domaine.com`
+- Swagger backend : `https://votre-domaine.com/api/swagger-ui/index.html`
+- Keycloak admin : `https://auth.votre-domaine.com`
 
-## ⚙️ Configuration
+---
 
-Toutes les variables de configuration sont centralisées dans le fichier `.env`. 
+## Configuration
 
-Consultez [CONFIGURATION.md](CONFIGURATION.md) pour :
-- La liste complète des variables d'environnement
-- La configuration du thème Keycloak
-- Les paramètres de sécurité
-- Les exemples de configuration
+Toutes les variables sont centralisées dans `.env`. Voir [CONFIGURATION.md](CONFIGURATION.md) pour le détail complet.
 
-## 🎯 Utilisation
-
-### Inscription d'un Utilisateur
-
-1. Accédez à http://localhost:4200
-2. Cliquez sur "S'inscrire"
-3. Remplissez le formulaire
-4. L'utilisateur est créé dans Keycloak
-
-### Connexion
-
-1. Cliquez sur "Se connecter"
-2. Vous serez redirigé vers Keycloak
-3. Entrez vos identifiants
-4. Vous serez redirigé vers l'application
-
-### API Backend
-
-L'API backend est documentée avec OpenAPI :
-
-```bash
-# Accéder à la documentation interactive
-open http://localhost:8081/swagger-ui.html
-```
-
-Exemple d'appel API :
-
-```bash
-# S'inscrire (endpoint public)
-curl -X POST http://localhost:8081/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "username": "john",
-    "email": "john@example.com",
-    "firstName": "John",
-    "lastName": "Doe",
-    "password": "password123"
-  }'
-```
-
-## 👨‍💻 Développement
-
-### Structure du Projet
-
-```
-saas-qwen/
-├── backend/               # API Spring Boot
-│   ├── src/
-│   │   ├── main/
-│   │   │   ├── java/
-│   │   │   │   └── com/muhend/backend/
-│   │   │   │       ├── config/      # Configuration Spring & Keycloak
-│   │   │   │       ├── controller/  # Contrôleurs REST
-│   │   │   │       ├── dto/         # Data Transfer Objects
-│   │   │   │       ├── models/      # Entités JPA
-│   │   │   │       └── service/     # Services métier
-│   │   │   └── resources/
-│   │   │       └── application.yml
-│   │   └── test/
-│   ├── Dockerfile
-│   └── pom.xml
-├── frontend/              # Application Angular
-│   ├── src/
-│   │   ├── app/
-│   │   │   ├── core/      # Services, guards, interceptors
-│   │   │   ├── features/  # Modules fonctionnels
-│   │   │   └── shared/    # Composants partagés
-│   │   └── environments/
-│   ├── Dockerfile
-│   ├── angular.json
-│   └── package.json
-├── keycloak/              # Configuration Keycloak
-│   └── realm-export.json
-├── docker-compose.yml     # Orchestration des services
-├── .env                   # Variables d'environnement (ne pas commiter)
-├── README.md
-├── ARCHITECTURE.md        # Documentation de l'architecture
-└── CONFIGURATION.md       # Documentation de la configuration
-```
-
-### Développement Local du Frontend
-
-```bash
-cd frontend
-npm install
-npm start
-
-# L'application sera disponible sur http://localhost:4200
-# Le hot-reload est activé
-```
-
-### Développement Local du Backend
-
-```bash
-cd backend
-./mvnw spring-boot:run
-
-# L'API sera disponible sur http://localhost:8081
-# Assurez-vous que PostgreSQL et Keycloak sont démarrés
-```
-
-### Tests
-
-```bash
-# Tests backend
-cd backend
-./mvnw test
-
-# Tests frontend
-cd frontend
-npm test
-
-# Tests e2e frontend
-npm run e2e
-```
-
-## 🚢 Déploiement
-
-### Production avec Docker Compose
-
-1. Modifiez `.env` pour la production :
+Variables sensibles à changer impérativement en production :
 
 ```env
-SPRING_PROFILES_ACTIVE=prod
-KEYCLOAK_HOSTNAME=votre-domaine.com
-# Changez tous les mots de passe
+POSTGRES_PASSWORD
+KEYCLOAK_BACKEND_CLIENT_SECRET
+OPENAI_API_KEY          # ou ANTHROPIC_API_KEY
+CHARGILY_SECRET_KEY
+CHARGILY_WEBHOOK_SECRET
+SMTP_PASSWORD
 ```
 
-2. Utilisez HTTPS (configurez un reverse proxy comme Traefik ou Nginx)
+---
 
-3. Démarrez les services :
-
-```bash
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
-```
-
-### Variables de Production à Changer
-
-⚠️ **Important** : En production, changez obligatoirement :
-
-- `POSTGRES_PASSWORD`
-- `KEYCLOAK_ADMIN_PASSWORD`
-- `KEYCLOAK_BACKEND_CLIENT_SECRET`
-
-Générez un nouveau secret pour `backend-client` dans Keycloak.
-
-### Backup de la Base de Données
+## Commandes utiles
 
 ```bash
-# Backup
-docker exec saasessai2-db pg_dump -U muhend saasessai2-db > backup.sql
+# Rebuild d'un seul service
+docker compose -f docker-compose-prod.yml up -d --build backend
+docker compose -f docker-compose-prod.yml up -d --build search-service
+docker compose -f docker-compose-prod.yml up -d --build frontend
+
+# Logs en temps réel
+docker compose -f docker-compose-prod.yml logs -f backend
+docker compose -f docker-compose-prod.yml logs -f search-service
+
+# Backup de la base de données
+docker exec app-db pg_dump -U muhend hscode-app-db > backup_$(date +%Y%m%d).sql
 
 # Restauration
-docker exec -i saasessai2-db psql -U muhend saasessai2-db < backup.sql
+docker exec -i app-db psql -U muhend hscode-app-db < backup.sql
+
+# Réinitialisation complète
+docker compose -f docker-compose-prod.yml down --volumes --remove-orphans
 ```
 
-## 📚 Documentation
+---
 
-- **[ARCHITECTURE.md](ARCHITECTURE.md)** : Architecture complète de l'application, modèle de données, flux principaux
-- **[CONFIGURATION.md](CONFIGURATION.md)** : Configuration complète, variables d'environnement, thème Keycloak
-- **[docs/PLAN_FACTURATION.md](docs/PLAN_FACTURATION.md)** : Système de facturation complet, types de plans tarifaires, règles de changement de plan, cycles mensuels
-- **[docs/MARKET_PROFILE.md](docs/MARKET_PROFILE.md)** : Gestion des profils de marché (devises, langues, fuseaux horaires)
+## Documentation
 
-## 🔧 Troubleshooting
+| Fichier | Contenu |
+| --- | --- |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Architecture détaillée, modèle de données, flux |
+| [CONFIGURATION.md](CONFIGURATION.md) | Toutes les variables d'environnement |
+| [search-service/BATCH_API_GUIDE.md](search-service/BATCH_API_GUIDE.md) | Guide de l'API batch |
+| [docs/PLAN_FACTURATION.md](docs/PLAN_FACTURATION.md) | Système de facturation, plans, crédits |
+| [docs/MARKET_PROFILE.md](docs/MARKET_PROFILE.md) | Profils de marché (devises, langues) |
+| [CLAUDE.md](CLAUDE.md) | Contexte technique pour Claude Code |
+
+---
+
+## Troubleshooting
 
 ### Le backend ne démarre pas
 
 ```bash
-# Vérifier les logs
-docker compose logs backend
-
-# Vérifier que Keycloak est démarré
-docker compose ps keycloak
-
-# Redémarrer le backend
-docker compose restart backend
+docker compose -f docker-compose-prod.yml logs backend
+docker compose -f docker-compose-prod.yml ps keycloak
 ```
 
-### Erreur 403 lors de l'inscription
+### Erreur 403 à l'inscription
 
-Le service account `backend-client` n'a pas les bons rôles :
+Le service account `backend-client` manque de rôles Keycloak :
 
-1. Connectez-vous à Keycloak Admin Console
-2. Sélectionnez le realm `hscode-realm`
-3. **Clients** → `backend-client` → **Service Account Roles**
-4. Ajoutez les rôles : `manage-users`, `view-users`, `query-users`
+1. Keycloak Admin → realm `hscode-realm` → **Clients** → `backend-client` → **Service Account Roles**
+2. Ajouter : `manage-users`, `view-users`, `query-users`
 
-### Réinitialisation Complète
+### Webhook Chargily non reçu
 
-```bash
-# Arrêter et supprimer tous les conteneurs et volumes
-docker compose down --volumes --remove-orphans
+- Vérifier que l'URL `https://votre-domaine.com/api/webhooks/chargily` est configurée dans le dashboard Chargily
+- Vérifier `CHARGILY_WEBHOOK_SECRET` dans `.env`
+- Consulter les logs : `docker compose logs -f backend | grep webhook`
 
-# Redémarrer
-docker compose up -d --build
-```
+### Quota non décompté correctement
 
-### Voir les Logs en Temps Réel
+Le calcul des crédits se fait dans `OrganizationService.computeCredits()` selon l'endpoint appelé.
+Valeurs configurables dans `.env` : `CREDITS_POSITIONS10`, `CREDITS_POSITIONS6`, `CREDITS_DECODE_P10`, `CREDITS_DECODE`.
 
-```bash
-# Tous les services
-docker compose logs -f
+---
 
-# Un service spécifique
-docker compose logs -f backend
-docker compose logs -f keycloak
-```
-
-## 🤝 Contribution
-
-Les contributions sont les bienvenues ! Veuillez suivre ces étapes :
-
-1. Forkez le projet
-2. Créez une branche pour votre fonctionnalité (`git checkout -b feature/AmazingFeature`)
-3. Committez vos changements (`git commit -m 'Add some AmazingFeature'`)
-4. Poussez vers la branche (`git push origin feature/AmazingFeature`)
-5. Ouvrez une Pull Request
-
-### Standards de Code
-
-- **Backend** : Suivez les conventions Java et Spring Boot
-- **Frontend** : Suivez le style guide Angular officiel
-- **Git** : Utilisez des messages de commit conventionnels
-
-## 📄 Licence
-
-Ce projet est sous licence MIT. Voir le fichier LICENSE pour plus de détails.
-
-## 👥 Auteurs
-
-Muhend - Développeur principal
-
-## 🙏 Remerciements
-
-- Spring Boot
-- Angular
-- Keycloak
-- PostgreSQL
+Intradia — Enclume Numérique
