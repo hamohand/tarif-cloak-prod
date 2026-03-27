@@ -43,19 +43,19 @@ import { of } from 'rxjs';
           <h4>Coût en crédits par prestation</h4>
           <div class="credits-table">
             <div class="credit-row">
-              <span class="credit-label">Recherche HS-code (avec IA)</span>
+              <span class="credit-label">Recherche HS-code</span>
               <span class="credit-value">10 crédits</span>
             </div>
             <div class="credit-row">
-              <span class="credit-label">Recherche Position10 (avec IA)</span>
+              <span class="credit-label">Recherche Position10</span>
               <span class="credit-value">15 crédits</span>
             </div>
             <div class="credit-row">
-              <span class="credit-label">Décodage inverse HS (sans IA)</span>
+              <span class="credit-label">Décodage inverse HS</span>
               <span class="credit-value">2 crédits</span>
             </div>
             <div class="credit-row">
-              <span class="credit-label">Décodage inverse P10 (sans IA)</span>
+              <span class="credit-label">Décodage inverse P10</span>
               <span class="credit-value">5 crédits</span>
             </div>
           </div>

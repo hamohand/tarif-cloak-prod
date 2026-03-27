@@ -347,11 +347,11 @@ Chart.register(...registerables);
                     </p>
                   </div>
                   <p class="quota-usage-info">
-                    <span class="quota-usage-text">Utilisation de l'organisation: {{ quota.currentUsage || 0 }} requêtes</span>
+                    <span class="quota-usage-text">Utilisation de l'organisation: {{ quota.currentUsage || 0 }} crédits</span>
                   </p>
                   <p class="quota-remaining">
                     @if ((quota.remaining || 0) >= 0) {
-                      <span class="quota-remaining-text">⚠️ {{ quota.remaining }} requêtes restantes dans le plan de l'organisation</span>
+                      <span class="quota-remaining-text">⚠️ {{ quota.remaining }} crédits restants dans le plan de l'organisation</span>
                     } @else {
                       <span class="quota-exceeded">❌ Quota dépassé!</span>
                     }
@@ -371,7 +371,7 @@ Chart.register(...registerables);
         } @else if (stats) {
           <div class="stats-grid">
             <div class="stat-item">
-              <h4>📈 Total Requêtes</h4>
+              <h4>📈 Total crédits</h4>
               <p class="stat-value">{{ stats.totalRequests }}</p>
             </div>
             @if (isAdmin()) {
