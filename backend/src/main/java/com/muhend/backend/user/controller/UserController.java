@@ -173,24 +173,20 @@ public class UserController {
             LocalDateTime endOfMonth = LocalDateTime.now().withDayOfMonth(LocalDateTime.now().toLocalDate().lengthOfMonth())
                     .withHour(23).withMinute(59).withSecond(59).withNano(999999999);
             
-            List<UsageLog> monthlyLogs = usageLogRepository.findByOrganizationIdAndTimestampBetween(organizationId, startOfMonth, endOfMonth)
-                    .stream()
-                    .filter(log -> userId.equals(log.getKeycloakUserId()))
-                    .toList();
-            long monthlyRequests = monthlyLogs.size();
+            long monthlyCredits = organizationService.computeUserCredits(userId, startOfMonth, endOfMonth);
 
             Map<String, Object> stats = new LinkedHashMap<>();
             stats.put("totalRequests", totalRequests);
             stats.put("totalCostUsd", totalCost.doubleValue());
             stats.put("totalTokens", totalTokens);
-            stats.put("monthlyRequests", monthlyRequests);
+            stats.put("monthlyRequests", monthlyCredits);
             stats.put("recentUsage", recentUsage);
             
             // Ajouter les informations de quota (l'utilisateur a toujours une organisation)
             OrganizationDto organization = organizationService.getOrganizationById(organizationId);
             if (organization != null) {
-                // Calculer l'utilisation totale de l'organisation ce mois
-                long organizationMonthlyUsage = usageLogRepository.countByOrganizationIdAndTimestampBetween(organizationId, startOfMonth, endOfMonth);
+                // Calculer les crédits consommés par l'organisation ce mois
+                long organizationMonthlyUsage = organizationService.computeOrganizationCredits(organizationId, startOfMonth, endOfMonth);
                 
                 // Récupérer la valeur actuelle du quota depuis le plan tarifaire (pas celle stockée dans l'organisation)
                 Integer currentMonthlyQuota = organization.getMonthlyQuota(); // Valeur par défaut (pour compatibilité)
@@ -271,11 +267,11 @@ public class UserController {
                 periodEnd = today.withDayOfMonth(today.lengthOfMonth()).atTime(23, 59, 59);
             }
 
-            // Le quota est partagé entre tous les utilisateurs de l'organisation
-            long currentUsage = usageLogRepository.countByOrganizationIdAndTimestampBetween(organizationId, periodStart, periodEnd);
+            // Crédits consommés par l'organisation sur la période (quota partagé)
+            long currentUsage = organizationService.computeOrganizationCredits(organizationId, periodStart, periodEnd);
 
-            // Calculer aussi l'utilisation personnelle de l'utilisateur
-            long personalUsage = usageLogRepository.countByKeycloakUserIdAndTimestampBetween(userId, periodStart, periodEnd);
+            // Crédits consommés personnellement par l'utilisateur sur la période
+            long personalUsage = organizationService.computeUserCredits(userId, periodStart, periodEnd);
 
             // Récupérer la valeur actuelle du quota depuis le plan tarifaire (pas celle stockée dans l'organisation)
             Integer currentMonthlyQuota = organization.getMonthlyQuota(); // Valeur par défaut (pour compatibilité)

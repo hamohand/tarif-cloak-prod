@@ -110,6 +110,16 @@ public class OrganizationService {
         }).sum();
     }
 
+    /** Somme des crédits consommés par une organisation sur une période. */
+    public long computeOrganizationCredits(Long organizationId, LocalDateTime start, LocalDateTime end) {
+        return computeCredits(usageLogRepository.findByOrganizationIdAndTimestampBetween(organizationId, start, end));
+    }
+
+    /** Somme des crédits consommés par un utilisateur sur une période. */
+    public long computeUserCredits(String keycloakUserId, LocalDateTime start, LocalDateTime end) {
+        return computeCredits(usageLogRepository.findByKeycloakUserIdAndTimestampBetween(keycloakUserId, start, end));
+    }
+
     public OrganizationService(OrganizationRepository organizationRepository,
                               OrganizationUserRepository organizationUserRepository,
                               UsageLogRepository usageLogRepository,
@@ -1212,8 +1222,8 @@ public class OrganizationService {
             LocalDateTime endOfMonth = now.withDayOfMonth(now.toLocalDate().lengthOfMonth())
                     .withHour(23).withMinute(59).withSecond(59).withNano(999999999);
             
-            long currentUsage = usageLogRepository.countByOrganizationIdAndTimestampBetween(
-                    organization.getId(), startOfMonth, endOfMonth);
+            long currentUsage = computeCredits(usageLogRepository.findByOrganizationIdAndTimestampBetween(
+                    organization.getId(), startOfMonth, endOfMonth));
             
             // Si le quota n'est pas atteint, l'essai n'est pas expiré (même si la date est passée)
             // #region agent log

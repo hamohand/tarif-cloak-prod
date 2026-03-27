@@ -144,7 +144,7 @@ public class QuotaAlertService {
         LocalDateTime endOfMonth = now.withDayOfMonth(now.toLocalDate().lengthOfMonth())
                 .withHour(23).withMinute(59).withSecond(59).withNano(999999999);
         
-        long currentUsage = usageLogRepository.countByOrganizationIdAndTimestampBetween(
+        long currentUsage = organizationService.computeOrganizationCredits(
                 organizationId, startOfMonth, endOfMonth);
         
         // Calculer le pourcentage : consommation-organisation / quota-organisation (utiliser la valeur actuelle du plan)
@@ -165,20 +165,20 @@ public class QuotaAlertService {
             if (currentUsage > currentMonthlyQuota) {
                 alertType = QuotaAlert.AlertType.EXCEEDED;
                 message = String.format(
-                    "⚠️ Le quota mensuel de votre organisation '%s' a été DÉPASSÉ ! Consommation de l'organisation: %d/%d requêtes (%.1f%%)",
+                    "⚠️ Le quota mensuel de votre organisation '%s' a été DÉPASSÉ ! Consommation : %d/%d crédits (%.1f%%)",
                     organization.getName(), currentUsage, currentMonthlyQuota, percentageUsed
                 );
             } else {
                 alertType = QuotaAlert.AlertType.CRITICAL;
                 message = String.format(
-                    "🔴 Le quota mensuel de votre organisation '%s' a été ATTEINT ! Consommation de l'organisation: %d/%d requêtes (100%%)",
+                    "🔴 Le quota mensuel de votre organisation '%s' a été ATTEINT ! Consommation : %d/%d crédits (100%%)",
                     organization.getName(), currentUsage, currentMonthlyQuota
                 );
             }
         } else if (percentageUsed >= WARNING_THRESHOLD) {
             alertType = QuotaAlert.AlertType.WARNING;
             message = String.format(
-                "🟡 Le quota mensuel de votre organisation '%s' approche de la limite ! Consommation de l'organisation: %d/%d requêtes (%.1f%%)",
+                "🟡 Le quota mensuel de votre organisation '%s' approche de la limite ! Consommation : %d/%d crédits (%.1f%%)",
                 organization.getName(), currentUsage, currentMonthlyQuota, percentageUsed
             );
         } else {
