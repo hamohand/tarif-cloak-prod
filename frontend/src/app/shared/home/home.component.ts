@@ -15,10 +15,10 @@ import { map, switchMap, catchError, distinctUntilChanged } from 'rxjs/operators
       <!-- Hero Section -->
       <section class="hero">
         <div class="hero-glow"></div>
-        <h1>Enclume-Numérique</h1>
-        <p class="hero-subtitle">Votre solution complète pour la recherche de position tarifaire (HS code)
- </p>
-        <p class="hero-desc">Identifiez les codes HS de vos produits en quelques secondes grâce à notre moteur de recherche intelligent et multilingue.</p>
+        <h1>Intradia</h1>
+        <p class="hero-subtitle">Classification pour le commerce international</p>
+        <p class="hero-desc">Intradia analyse vos produits et retourne la position tarifaire la plus pertinente — avec explication détaillée.</p>
+        <p class="hero-desc">Un code de nomenclature inconnu devient lisible en un instant : section, chapitre, position, sous-position.</p>
         <div class="hero-cta" *ngIf="!(isAuthenticated$ | async)">
           <a routerLink="/auth/register" class="cta-button primary">Commencer gratuitement</a>
           <a routerLink="/pricing" class="cta-button ghost">Voir les tarifs</a>
@@ -35,99 +35,156 @@ import { map, switchMap, catchError, distinctUntilChanged } from 'rxjs/operators
         <div class="api-content">
           <div class="api-features-grid">
             <div class="api-feature">
-              <div class="api-icon">🌍</div>
-              <h3>Recherche Multilingue</h3>
-              <p>Recherchez des Positions dans toutes les langues.</p>
+              <div class="api-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <circle cx="12" cy="12" r="9"/>
+                  <path d="M12 3a14.5 14.5 0 0 1 0 18M12 3a14.5 14.5 0 0 0 0 18M3 12h18"/>
+                </svg>
+              </div>
+              <h3>Multilingue</h3>
+              <p>Saisissez votre produit dans n'importe quelle langue — français, anglais, arabe, chinois…</p>
             </div>
 
             <div class="api-feature">
-              <div class="api-icon">🤖</div>
+              <div class="api-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M12 3l1.5 4.5h4.5l-3.5 2.5 1.5 4.5L12 12l-4 2.5 1.5-4.5L6 7.5h4.5z"/>
+                  <path d="M5 19l2-2M19 19l-2-2M12 21v-3"/>
+                </svg>
+              </div>
               <h3>Intelligence Artificielle</h3>
-              <p>Moteur de recherche alimenté par l'IA pour des résultats précis et pertinents basés sur vos descriptions de produits.</p>
+              <p>L'IA analyse la description du produit et retourne la position tarifaire la plus pertinente avec justification.</p>
             </div>
 
             <div class="api-feature">
-              <div class="api-icon">📊</div>
+              <div class="api-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <rect x="9" y="2" width="6" height="4" rx="1"/>
+                  <rect x="2" y="10" width="6" height="4" rx="1"/>
+                  <rect x="16" y="10" width="6" height="4" rx="1"/>
+                  <rect x="9" y="18" width="6" height="4" rx="1"/>
+                  <path d="M12 6v4M5 14v4h4M19 14v4h-4"/>
+                </svg>
+              </div>
               <h3>Hiérarchie Complète</h3>
-              <p>Accédez à tous les niveaux : Section, Chapitre, Position et Sous-Position.</p>
+              <p>Section → Chapitre → Position → Sous-position : chaque niveau est retourné et expliqué.</p>
             </div>
 
             <div class="api-feature">
-              <div class="api-icon">📋</div>
+              <div class="api-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <rect x="3" y="4" width="18" height="3" rx="1"/>
+                  <rect x="3" y="10" width="18" height="3" rx="1"/>
+                  <rect x="3" y="16" width="12" height="3" rx="1"/>
+                </svg>
+              </div>
               <h3>Recherche par Listes</h3>
-              <p>Traitez plusieurs produits simultanément avec l'outil de recherche par listes pour optimiser votre flux de travail.</p>
+              <p>Traitez plusieurs produits simultanément — jusqu'à 1 000 articles en traitement asynchrone.</p>
             </div>
 
             <div class="api-feature">
-              <div class="api-icon">📱</div>
-              <h3>Responsive</h3>
-              <p>Une interface adaptée à tous les usages : Ordinateurs, tablettes et smartphones.</p>
+              <div class="api-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3"/>
+                  <path d="M16 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3"/>
+                  <path d="M12 8v8M9 11l3-3 3 3"/>
+                </svg>
+              </div>
+              <h3>Décodage Inverse</h3>
+              <p>Partez d'un code existant et obtenez instantanément sa désignation complète et sa position dans la nomenclature.</p>
             </div>
 
             <div class="api-feature">
-              <div class="api-icon">🔒</div>
+              <div class="api-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z"/>
+                </svg>
+              </div>
               <h3>Sécurisé et Fiable</h3>
-              <p>API sécurisée avec authentification OAuth2 et suivi détaillé de l'utilisation pour une conformité totale.</p>
+              <p>Authentification OAuth2, suivi détaillé de l'utilisation et gestion des quotas par organisation.</p>
             </div>
           </div>
 
           <div class="api-endpoints">
-            <h3>Exemples d'utilisation</h3>
-            <div class="endpoint-list">
-              <div class="endpoint-item">
-                <code class="endpoint-method">Produit recherché</code>
-                <code class="endpoint-path">سيارة كهربائية</code>
-                <code class="response-method">HScode :</code>
-                <span class="endpoint-desc">
-                code: <b>870380</b> <br>
-                <b>description</b>: "Véhicules, équipés uniquement d'un moteur électrique pour la propulsion"
-                </span>
-                <code class="response-method">Position_10 :</code>
-                <span class="endpoint-desc">
-                code: <b>8703801000</b><br>
-                description>: <b>"Véhicules blindés"</b>
-                </span>
-                <span class="endpoint-desc">
-                code: <b>8703809000</b><br>
-                description: <b>"Autres véhicules"</b>
-                </span>
+            <h3>Exemples de résultats</h3>
+            <div class="examples-grid">
+
+              <div class="example-card">
+                <div class="example-query">
+                  <span class="query-label">Recherche</span>
+                  <span class="query-term" dir="rtl">سيارة كهربائية</span>
+                </div>
+                <div class="example-result">
+                  <div class="result-row">
+                    <span class="result-badge hscode">HS-code</span>
+                    <span class="result-code">870380</span>
+                    <span class="result-desc">Véhicules à moteur électrique pour la propulsion</span>
+                  </div>
+                  <div class="result-row sub">
+                    <span class="result-badge p10">P10</span>
+                    <span class="result-code">8703801000</span>
+                    <span class="result-desc">Véhicules blindés</span>
+                  </div>
+                  <div class="result-row sub">
+                    <span class="result-badge p10">P10</span>
+                    <span class="result-code">8703809000</span>
+                    <span class="result-desc">Autres véhicules</span>
+                  </div>
+                </div>
               </div>
 
-              <div class="endpoint-item">
-                <code class="endpoint-method">Produit recherché</code>
-                <code class="endpoint-path">dattes</code>
-                <code class="response-method">Réponse HScode :</code>
-                <span class="endpoint-desc">code: <b>080410</b><br>
-                description: <b>Dattes</b></span>
-                <code class="response-method">Position_10 :</code>
-                <span class="endpoint-desc">
-                description: <b>Dattes 'deglet nour'</b>
-                </span>
-                <span class="endpoint-desc">
-                code: <b>0804101111</b><br>
-                description>: <b>poids inférieur ou égal à 1 kg</b>
-                </span>
-                <span class="endpoint-desc">
-                code: <b>0804101112</b><br>
-                description>: <b>poids supérieur ou égal à 1 kg</b>
-                </span>
-                <span> ... </span>
+              <div class="example-card">
+                <div class="example-query">
+                  <span class="query-label">Recherche</span>
+                  <span class="query-term">dattes</span>
+                </div>
+                <div class="example-result">
+                  <div class="result-row">
+                    <span class="result-badge hscode">HS-code</span>
+                    <span class="result-code">080410</span>
+                    <span class="result-desc">Dattes</span>
+                  </div>
+                  <div class="result-row sub">
+                    <span class="result-badge p10">P10</span>
+                    <span class="result-code">0804101111</span>
+                    <span class="result-desc">Deglet nour — ≤ 1 kg</span>
+                  </div>
+                  <div class="result-row sub">
+                    <span class="result-badge p10">P10</span>
+                    <span class="result-code">0804101112</span>
+                    <span class="result-desc">Deglet nour — > 1 kg</span>
+                  </div>
+                </div>
               </div>
 
-              <div class="endpoint-item">
-                <code class="endpoint-method">Produit recherché</code>
-                <code class="endpoint-path">Smart phone</code>
-                <code class="response-method">Réponse HScode :</code>
-                <span class="endpoint-desc">code: <b></b> "851713" <br>
-                  <b>description</b>: "Postes téléphoniques d'usagers, y compris les téléphones intelligents et autres téléphones pour réseaux cellulaires et pour autres réseaux sans fil: - Téléphones intelligents"</span>
+              <div class="example-card">
+                <div class="example-query">
+                  <span class="query-label">Recherche</span>
+                  <span class="query-term">Smart phone</span>
+                </div>
+                <div class="example-result">
+                  <div class="result-row">
+                    <span class="result-badge hscode">HS-code</span>
+                    <span class="result-code">851713</span>
+                    <span class="result-desc">Téléphones intelligents pour réseaux cellulaires</span>
+                  </div>
+                </div>
               </div>
-              <div class="endpoint-item">
-                <code class="endpoint-method">Produit recherché</code>
-                <code class="endpoint-path">笔记本电脑</code>
-                <code class="response-method">Réponse HScode :</code>
-                <span class="endpoint-desc">code: <b></b> "847130" <br>
-                <b>description</b>: "Ordinateurs portables ..."</span>
+
+              <div class="example-card">
+                <div class="example-query">
+                  <span class="query-label">Recherche</span>
+                  <span class="query-term" lang="zh">笔记本电脑</span>
+                </div>
+                <div class="example-result">
+                  <div class="result-row">
+                    <span class="result-badge hscode">HS-code</span>
+                    <span class="result-code">847130</span>
+                    <span class="result-desc">Ordinateurs portables</span>
+                  </div>
+                </div>
               </div>
+
             </div>
           </div>
         </div>
@@ -202,8 +259,8 @@ import { map, switchMap, catchError, distinctUntilChanged } from 'rxjs/operators
       <footer class="home-footer">
         <p>Développement d'applications pour les entreprises</p>
         <p>Micro-entreprise <a href="https://www.forge-numerique.com">Enclume-Numérique</a><br>
-        Contact : med&#64;forge-numerique.com <br>
-        WathsApp : +33 6 22 56 38 41 </p>
+        Contact : mohhamroun&#64;gmail.com <br>
+        WathsApp : +213 5 60 96 80 66</p>
         
       </footer>
     </div>
@@ -526,8 +583,15 @@ import { map, switchMap, catchError, distinctUntilChanged } from 'rxjs/operators
     }
 
     .api-icon {
-      font-size: 2.8rem;
-      margin-bottom: 1rem;
+      width: 48px;
+      height: 48px;
+      margin: 0 auto 1rem;
+      color: #f59e0b;
+    }
+
+    .api-icon svg {
+      width: 100%;
+      height: 100%;
     }
 
     .api-feature h3 {
@@ -557,65 +621,104 @@ import { map, switchMap, catchError, distinctUntilChanged } from 'rxjs/operators
       font-size: 1.4rem;
       margin-bottom: 1.5rem;
       font-weight: 600;
+      text-align: center;
     }
 
-    .endpoint-list {
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-    }
-
-    .endpoint-item {
-      display: flex;
-      align-items: center;
+    .examples-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       gap: 1rem;
-      padding: 1rem 1.25rem;
-      background: rgba(255, 255, 255, 0.03);
-      border-radius: 8px;
-      border-left: 3px solid #f59e0b;
+    }
+
+    .example-card {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      overflow: hidden;
       transition: all 0.2s ease;
     }
 
-    .endpoint-item:hover {
-      background: rgba(245, 158, 11, 0.06);
+    .example-card:hover {
+      border-color: rgba(245, 158, 11, 0.3);
+      background: rgba(255, 255, 255, 0.06);
     }
 
-    .endpoint-method {
-      background: rgba(245, 158, 11, 0.15);
+    .example-query {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      background: rgba(245, 158, 11, 0.08);
+      border-bottom: 1px solid rgba(245, 158, 11, 0.15);
+    }
+
+    .query-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
       color: #f59e0b;
-      padding: 0.35rem 0.75rem;
-      border-radius: 4px;
-      font-weight: 600;
-      font-size: 0.8rem;
-      min-width: 60px;
-      text-align: center;
+      font-weight: 700;
       white-space: nowrap;
     }
 
-    .response-method {
-      color: #fffff0;
-      padding: 0.35rem 0.75rem;
-      border-radius: 4px;
-      font-weight: 600;
-      font-size: 0.8rem;
-      min-width: 60px;
-      text-align: center;
-      white-space: nowrap;
-    }
-
-    .endpoint-path {
+    .query-term {
       color: #fbbf24;
       font-weight: 600;
       font-family: 'Courier New', monospace;
       font-size: 0.95rem;
-      flex: 0 0 auto;
     }
 
-    .endpoint-desc {
+    .example-result {
+      padding: 0.75rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .result-row {
+      display: flex;
+      align-items: baseline;
+      gap: 0.6rem;
       text-align: left;
+    }
+
+    .result-row.sub {
+      padding-left: 0.75rem;
+      border-left: 2px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .result-badge {
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 0.2rem 0.45rem;
+      border-radius: 4px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .result-badge.hscode {
+      background: rgba(245, 158, 11, 0.15);
+      color: #f59e0b;
+    }
+
+    .result-badge.p10 {
+      background: rgba(99, 179, 237, 0.12);
+      color: #63b3ed;
+    }
+
+    .result-code {
+      font-family: 'Courier New', monospace;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #e2e8f0;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .result-desc {
+      font-size: 0.82rem;
       color: #94a3b8;
-      font-size: 0.88rem;
-      flex: 1;
+      line-height: 1.4;
     }
 
     /* ─── Footer ─── */
@@ -680,15 +783,8 @@ import { map, switchMap, catchError, distinctUntilChanged } from 'rxjs/operators
         grid-template-columns: 1fr;
       }
 
-      .endpoint-item {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.5rem;
-      }
-
-      .endpoint-path {
-        width: 100%;
-        word-break: break-all;
+      .examples-grid {
+        grid-template-columns: 1fr;
       }
 
       .home-footer {
