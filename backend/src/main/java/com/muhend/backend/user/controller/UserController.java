@@ -212,7 +212,7 @@ public class UserController {
                 // #endregion
                 quotaInfo.put("monthlyQuota", currentMonthlyQuota); // Utiliser la valeur actuelle du plan
                 quotaInfo.put("currentUsage", organizationMonthlyUsage); // Usage total de l'organisation
-                quotaInfo.put("personalUsage", monthlyRequests); // Usage personnel
+                quotaInfo.put("personalUsage", monthlyCredits); // Crédits personnels
                 quotaInfo.put("remaining", currentMonthlyQuota != null 
                         ? Math.max(0, currentMonthlyQuota - organizationMonthlyUsage)
                         : -1); // -1 = illimité
