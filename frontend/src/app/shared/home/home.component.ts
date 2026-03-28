@@ -213,7 +213,7 @@ import { map, switchMap, catchError, distinctUntilChanged } from 'rxjs/operators
             </div>
           </div>
         } @else {
-          <h4 class="section-title">Outils de recherche HS-Code</h4>
+          <h4 class="section-title">Outils de recherche Code tarifaires</h4>
           <div class="features primary">
             <div class="feature-card request-card">
               <div class="request-icon">🔍</div>

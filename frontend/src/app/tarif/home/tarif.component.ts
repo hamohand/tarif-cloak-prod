@@ -1,7 +1,6 @@
-import { Component, OnInit } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet, Router, NavigationEnd } from '@angular/router';
+import { Component } from '@angular/core';
+import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { filter } from 'rxjs/operators';
 
 @Component({
   selector: 'app-root',
@@ -15,29 +14,12 @@ import { filter } from 'rxjs/operators';
         <h3>Recherche multilingue - Multilingual search - 多语言搜索 - بحث متعدد اللغات</h3>
       </header>
 
-      <!-- Barre principale -->
+      <!-- Navigation : 4 onglets fixes -->
       <nav class="main-nav">
-        <a routerLink="search"          (click)="section='hs'"     [class.active]="section === 'hs'">HS-code</a>
-        <a routerLink="search-position10" (click)="section='p10'"  [class.active]="section === 'p10'">Position-10</a>
-        <a routerLink="searchListLots"  (click)="section='listes'" [class.active]="section === 'listes'">Listes</a>
-      </nav>
-
-      <!-- Sous-navigation selon la section active -->
-      <nav class="sub-nav">
-        @if (section === 'hs') {
-          <a routerLink="search"  routerLinkActive="active">HS-code</a>
-          <a routerLink="decode"  routerLinkActive="active">Décoder un code HS</a>
-        }
-        @if (section === 'p10') {
-          <a routerLink="search"          routerLinkActive="active">HS-code</a>
-          <a routerLink="decode"          routerLinkActive="active">Décoder un code HS</a>
-          <a routerLink="search-position10" routerLinkActive="active">Position10</a>
-          <a routerLink="decode-p10"      routerLinkActive="active">Décoder un code P10</a>
-        }
-        @if (section === 'listes') {
-          <a routerLink="searchListLots"  routerLinkActive="active">Recherche par liste</a>
-          <a routerLink="batch-search"    routerLinkActive="active">Recherche par lots</a>
-        }
+        <a routerLink="search"            routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}">HS-code</a>
+        <a routerLink="decode"            routerLinkActive="active">Décoder un code HS</a>
+        <a routerLink="search-position10" routerLinkActive="active">Position-10</a>
+        <a routerLink="decode-p10"        routerLinkActive="active">Décoder un code P10</a>
       </nav>
 
       <main>
@@ -142,65 +124,6 @@ import { filter } from 'rxjs/operators';
       z-index: 1;
     }
 
-    /* Sous-navigation */
-    .sub-nav {
-      display: flex;
-      gap: 4px;
-      padding: 6px 8px 0 8px;
-      border: 2px solid hsl(210, 15%, 75%);
-      border-radius: 0 8px 0 0;
-      background: hsl(210, 15%, 93%);
-      margin-bottom: 2px;
-      border-bottom: 2px solid hsl(210, 15%, 80%);
-      min-height: 42px;
-    }
-
-    .sub-nav a {
-      padding: 8px 18px;
-      text-decoration: none;
-      color: hsl(210, 10%, 45%);
-      border-radius: 6px 6px 0 0;
-      border: 1px solid transparent;
-      border-bottom: none;
-      font-size: 0.88rem;
-      font-weight: 500;
-      transition: background 0.15s, color 0.15s;
-      position: relative;
-      bottom: -2px;
-    }
-
-    .sub-nav a:hover {
-      background: hsl(210, 20%, 88%);
-      color: hsl(210, 100%, 35%);
-    }
-
-    .sub-nav a.active {
-      background: #e8e8e8;
-      color: hsl(210, 100%, 35%);
-      border-color: hsl(210, 15%, 80%);
-      font-weight: 600;
-    }
   `]
 })
-export class TarifComponent implements OnInit {
-  section: 'hs' | 'p10' | 'listes' = 'hs';
-
-  constructor(private _router: Router) {}
-
-  ngOnInit(): void {
-    this.detectSection(this._router.url);
-    this._router.events.pipe(
-      filter(e => e instanceof NavigationEnd)
-    ).subscribe((e: any) => this.detectSection(e.urlAfterRedirects));
-  }
-
-  private detectSection(url: string): void {
-    if (url.includes('search-position10') || url.includes('decode-p10')) {
-      this.section = 'p10';
-    } else if (url.includes('searchListLots') || url.includes('batch-search')) {
-      this.section = 'listes';
-    } else if (url.includes('search') || url.includes('decode')) {
-      if (this.section === 'listes') this.section = 'hs';
-    }
-  }
-}
+export class TarifComponent {}

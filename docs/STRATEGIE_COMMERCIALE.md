@@ -9,10 +9,25 @@
 **Intradia** est un SaaS de recherche de codes HS (Système Harmonisé) par IA multilingue.
 Il permet à tout professionnel du commerce international de trouver la position tarifaire d'un produit en décrivant l'article en langage naturel, dans n'importe quelle langue.
 
-**Fonctionnalités clés :**
-- Recherche HS-code par description libre (multilingue)
-- Hiérarchie complète : section → chapitre → position → sous-position
-- Décodage inverse d'un code existant
+### Précision importante : HS-code vs Position tarifaire nationale
+
+Le **Système Harmonisé (SH)** est une nomenclature internationale gérée par l'Organisation Mondiale des Douanes (OMD). Il est commun à plus de 200 pays et **s'arrête à 6 chiffres** (ex : `8703.80`).
+
+Au-delà de ces 6 chiffres, chaque pays ajoute ses propres subdivisions nationales :
+- **8 chiffres** pour l'Union Européenne (TARIC)
+- **10 chiffres** pour l'Algérie (Position tarifaire nationale, dite **P10**)
+
+**Intradia va jusqu'au niveau P10 (10 chiffres)**, ce qui est indispensable pour toute opération douanière en Algérie. C'est à ce niveau que sont déterminés les droits de douane, les taxes et les régimes d'importation applicables.
+
+> Aucun outil générique de recherche HS-code ne descend au niveau P10 algérien.
+> C'est l'un des différenciateurs majeurs d'Intradia.
+
+### Fonctionnalités clés
+
+- **Recherche HS-code (6 chiffres)** par description libre multilingue
+- **Recherche Position10 (10 chiffres)** — niveau opérationnel pour les douanes algériennes
+- Hiérarchie complète restituée : section → chapitre → position (4) → sous-position (6) → position nationale (10)
+- Décodage inverse : retrouver la désignation complète à partir d'un code existant (2, 4, 6 ou 10 chiffres)
 - Traitement de listes (batch jusqu'à 1 000 articles)
 - Gestion multi-utilisateurs par organisation
 - Tarification en crédits (transparente et prévisible)
@@ -47,16 +62,19 @@ Il permet à tout professionnel du commerce international de trouver la position
 
 | Outil | Points forts | Faiblesses vs Intradia |
 |---|---|---|
-| Customs Info / Schedule B | Données officielles US | Anglais uniquement, pas d'IA |
-| HS Code Finder (outils génériques) | Gratuits | Pas multilingue, pas de batch, pas de justification |
-| ChatGPT (usage direct) | Accessible | Pas structuré, pas intégré au workflow, pas de batch |
-| Douanes.gouv.fr / TARIC | Officiel | Interface complexe, pas d'IA, pas multilingue |
+| Customs Info / Schedule B | Données officielles US | S'arrête à 6 chiffres, anglais uniquement, pas d'IA |
+| HS Code Finder (outils génériques) | Gratuits | S'arrête à 6 chiffres, pas multilingue, pas de batch |
+| ChatGPT (usage direct) | Accessible | S'arrête à 6 chiffres, pas structuré, pas de batch |
+| Douanes.gouv.fr / TARIC | Officiel EU (8 chiffres) | Pas d'IA, pas multilingue, ne couvre pas la nomenclature DZ |
+| Portail des douanes algériennes | Officiel DZ (10 chiffres) | Pas d'IA, recherche manuelle uniquement, pas de batch |
 
-**Avantage différenciateur d'Intradia :**
-- Multilingue (arabe, chinois, français, anglais...)
-- Résultat structuré avec justification
-- Batch API pour traitement en volume
-- Nomenclature algérienne (DZ) native
+**Avantages différenciateurs d'Intradia :**
+
+- **Seul outil IA qui descend jusqu'au niveau P10 (10 chiffres) de la nomenclature algérienne**
+- Multilingue : arabe, chinois, français, anglais...
+- Résultat structuré avec justification à chaque niveau
+- Batch API pour traitement en volume (jusqu'à 1 000 articles)
+- Nomenclature DZ intégrée et maintenue nativement
 - SaaS intégrable dans un workflow métier
 
 ---
