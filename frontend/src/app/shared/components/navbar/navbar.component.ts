@@ -845,63 +845,14 @@ import { of } from 'rxjs';
       color: white;
     }
 
-    .contact-btn {
-      background: transparent;
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      cursor: pointer;
-      font-size: 0.9rem;
-    }
-
-    .contact-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.5);
-      z-index: 2000;
-      display: flex;
-      align-items: flex-start;
-      justify-content: center;
-      padding-top: 80px;
-    }
-
-    .contact-popup {
-      background: linear-gradient(135deg, #1e293b, #0f172a);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 12px;
-      padding: 2rem 2.5rem;
-      min-width: 320px;
-      position: relative;
-      color: white;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-    }
-
-    .contact-popup h3 {
-      color: #f59e0b;
-      font-size: 1.3rem;
-      margin: 0 0 0.5rem;
-    }
-
-    .contact-tagline {
-      color: #94a3b8;
-      font-size: 0.9rem;
-      margin: 0 0 1.5rem;
-      font-style: italic;
-    }
-
-    .contact-info p {
-      margin: 0.6rem 0;
-      font-size: 1rem;
-      color: #e2e8f0;
-    }
-
-    .contact-info a {
-      color: #f59e0b;
-      text-decoration: none;
-      font-weight: 600;
-    }
-
-    .contact-info a:hover {
-      text-decoration: underline;
-    }
+    .contact-btn { background: transparent; border: 1px solid rgba(255,255,255,0.3); cursor: pointer; font-size: 0.9rem; }
+    .contact-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 2000; display: flex; align-items: flex-start; justify-content: center; padding-top: 80px; }
+    .contact-popup { background: linear-gradient(135deg,#1e293b,#0f172a); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 2rem 2.5rem; min-width: 320px; position: relative; color: white; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+    .contact-popup h3 { color: #f59e0b; font-size: 1.3rem; margin: 0 0 0.5rem; }
+    .contact-tagline { color: #94a3b8; font-size: 0.9rem; margin: 0 0 1.5rem; font-style: italic; }
+    .contact-info p { margin: 0.6rem 0; font-size: 1rem; color: #e2e8f0; }
+    .contact-info a { color: #f59e0b; text-decoration: none; font-weight: 600; }
+    .contact-info a:hover { text-decoration: underline; }
   `]
 })
 export class NavbarComponent implements OnInit, OnDestroy {
