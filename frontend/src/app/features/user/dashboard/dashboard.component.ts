@@ -61,7 +61,7 @@ import { take } from 'rxjs/operators';
                     @if (quota.isUnlimited) {
                       Illimité
                     } @else {
-                      {{ quota.monthlyQuota || 'Non défini' }}
+                      {{ quota.monthlyQuota || 'Non défini' }} crédits
                     }
                   </span>
                 </div>

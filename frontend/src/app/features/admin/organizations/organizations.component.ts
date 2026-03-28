@@ -64,8 +64,8 @@ import { NotificationService } from '../../../core/services/notification.service
                 <th>Statut</th>
                 <th>Email</th>
                 <th>Utilisateurs</th>
-                <th>Quota mensuel</th>
-                <th>Utilisation ce mois</th>
+                <th>Quota mensuel (crédits)</th>
+                <th>Utilisation ce mois (crédits)</th>
                 <th>% Utilisé</th>
                 <th>Date de création</th>
                 <th>Actions</th>
@@ -175,7 +175,7 @@ import { NotificationService } from '../../../core/services/notification.service
                         <span class="quota-usage" 
                               [class.quota-warning]="getQuotaPercentage(org) >= 80"
                               [class.quota-danger]="getQuotaPercentage(org) >= 100">
-                          ({{ org.currentMonthUsage || 0 }}/{{ org.monthlyQuota }} - {{ getQuotaPercentage(org).toFixed(1) }}%)
+                          ({{ org.currentMonthUsage || 0 }}/{{ org.monthlyQuota }} crédits - {{ getQuotaPercentage(org).toFixed(1) }}%)
                         </span>
                       } @else {
                         <span class="quota-usage">({{ org.currentMonthUsage || 0 }} crédits ce mois)</span>

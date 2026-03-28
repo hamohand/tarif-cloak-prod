@@ -39,6 +39,10 @@ export class AccountContextService {
     return this.accountType$.pipe(map(type => type === 'COLLABORATOR' || type === 'ORGANIZATION'));
   }
 
+  get currentAccountType(): AccountType {
+    return this.contextSubject.getValue().accountType;
+  }
+
   setContext(context: AccountContext): void {
     this.contextSubject.next(context);
     this.saveToStorage(context);

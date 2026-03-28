@@ -326,7 +326,7 @@ Chart.register(...registerables);
               @if (quota.isUnlimited) {
                 <div class="quota-unlimited">
                   <p class="quota-status">✅ Quota illimité</p>
-                  <p class="quota-usage">Utilisation organisation ce mois: {{ quota.currentUsage || 0 }} requêtes</p>
+                  <p class="quota-usage">Utilisation organisation ce mois: {{ quota.currentUsage || 0 }} crédits</p>
                 </div>
               } @else {
                 <!-- Graphique circulaire du quota -->
@@ -342,7 +342,7 @@ Chart.register(...registerables);
                       </div>
                     </div>
                     <p class="quota-text">
-                      {{ quota.currentUsage || 0 }} / {{ quota.monthlyQuota }} requêtes
+                      {{ quota.currentUsage || 0 }} / {{ quota.monthlyQuota }} crédits
                       ({{ (quota.percentageUsed || 0).toFixed(1) }}%)
                     </p>
                   </div>
@@ -1101,7 +1101,7 @@ export class OrganizationStatsComponent implements OnInit {
                 const value = context.parsed || 0;
                 const total = used + remaining;
                 const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0';
-                return `${label}: ${value} requêtes (${percentage}%)`;
+                return `${label}: ${value} crédits (${percentage}%)`;
               }
             }
           }

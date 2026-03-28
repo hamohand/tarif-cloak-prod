@@ -258,9 +258,9 @@ import { map, switchMap, catchError, distinctUntilChanged } from 'rxjs/operators
 
       <footer class="home-footer">
         <p>Développement d'applications pour les entreprises</p>
-        <p>Micro-entreprise <a href="https://www.forge-numerique.com">Enclume-Numérique</a><br>
+        <p>Auto-entreprise Hamroun<br>
         Contact : mohhamroun&#64;gmail.com <br>
-        WathsApp : +213 5 60 96 80 66</p>
+        WathsApp : +33 6 22 56 38 41</p>
         
       </footer>
     </div>
