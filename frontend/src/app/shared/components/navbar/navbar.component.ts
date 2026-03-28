@@ -252,21 +252,6 @@ import { of } from 'rxjs';
       overflow: hidden;
     }
 
-    .nav-link::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: -100%;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-      transition: left 0.5s ease;
-    }
-
-    .nav-link:hover::before {
-      left: 100%;
-    }
-
     .nav-link:hover {
       background-color: rgba(255, 255, 255, 0.15);
       transform: translateY(-2px);
@@ -348,24 +333,6 @@ import { of } from 'rxjs';
       letter-spacing: 0.3px;
       position: relative;
       overflow: hidden;
-    }
-
-    .btn::before {
-      content: '';
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 0;
-      height: 0;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.3);
-      transform: translate(-50%, -50%);
-      transition: width 0.6s, height 0.6s;
-    }
-
-    .btn:hover::before {
-      width: 300px;
-      height: 300px;
     }
 
     .btn-primary {
@@ -591,21 +558,6 @@ import { of } from 'rxjs';
       gap: 0.75rem;
       width: 100%;
       box-sizing: border-box;
-    }
-
-    .org-nav-link::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: -100%;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-      transition: left 0.5s ease;
-    }
-
-    .org-nav-link:hover::before {
-      left: 100%;
     }
 
     .org-nav-link:hover {
