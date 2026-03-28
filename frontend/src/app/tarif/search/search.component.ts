@@ -6,7 +6,7 @@ import { SearchStateService, SearchResultItem } from '../services/search-state.s
 import { OAuthService } from 'angular-oauth2-oidc';
 import { ActivatedRoute } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
+import { catchError, map, retry } from 'rxjs/operators';
 
 interface GroupedP10 {
   code: string;
@@ -424,6 +424,7 @@ export class SearchComponent implements OnInit {
             : this.searchService.decodeCode(codeToDecode);
 
           return decode$.pipe(
+            retry(1),
             catchError(() => of(null)),
             map(decoded => decoded ? { decoded, justification, aiCode } as SearchResultItem : null)
           );
@@ -432,12 +433,17 @@ export class SearchComponent implements OnInit {
         forkJoin(decodeObservables).subscribe({
           next: (items: any[]) => {
             const valid = items.filter(i => i != null) as SearchResultItem[];
+            if (valid.length === 0) {
+              this.error = 'Le décodage des codes retournés a échoué. Veuillez réessayer.';
+              this.isLoading = false;
+              return;
+            }
             this.groupedResults = this.buildGrouped(valid);
             this.saveState(valid);
             this.isLoading = false;
           },
           error: () => {
-            this.error = 'Erreur lors du décodage des résultats.';
+            this.error = 'Erreur lors du décodage des résultats. Veuillez réessayer.';
             this.isLoading = false;
           }
         });
