@@ -1,0 +1,254 @@
+# ===============================================================
+# DOCKER COMPOSE - STAGING (tarif.enclume-numerique.com)
+# Partage le Keycloak de production
+# BDD isolée — données de test séparées de la prod
+# ===============================================================
+# Usage :
+#   docker compose -f docker-compose-staging.yml up -d --build
+#   docker compose -f docker-compose-staging.yml up -d --build frontend-staging
+# ===============================================================
+
+services:
+
+  # ===============================================================
+  # BASE DE DONNÉES STAGING (isolée de la prod)
+  # ===============================================================
+  app-db-staging:
+    image: "postgres:${POSTGRES_IMAGE_TAG:-16}"
+    container_name: "staging-app-db"
+    environment:
+      POSTGRES_DB: "${POSTGRES_DB}_staging"
+      POSTGRES_USER: "${POSTGRES_USER}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+    volumes:
+      - staging-app-data:/var/lib/postgresql/data
+      - ./sql/sql:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "pg_isready", "-h", "localhost", "-U", "${POSTGRES_USER}", "-d", "${POSTGRES_DB}_staging"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+    restart: unless-stopped
+    networks:
+      - staging-internal
+
+  # ===============================================================
+  # RABBITMQ STAGING
+  # ===============================================================
+  rabbitmq-staging:
+    image: rabbitmq:3.12-management-alpine
+    container_name: "staging-rabbitmq"
+    environment:
+      RABBITMQ_DEFAULT_USER: "${RABBITMQ_USER:-admin}"
+      RABBITMQ_DEFAULT_PASS: "${RABBITMQ_PASSWORD:-admin}"
+    volumes:
+      - staging-rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - staging-internal
+
+  # ===============================================================
+  # REDIS STAGING
+  # ===============================================================
+  redis-staging:
+    image: redis:7-alpine
+    container_name: "staging-redis"
+    command: redis-server --appendonly yes
+    volumes:
+      - staging-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - staging-internal
+
+  # ===============================================================
+  # BACKEND STAGING
+  # ===============================================================
+  backend-staging:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: "staging-backend"
+    depends_on:
+      app-db-staging:
+        condition: service_healthy
+      rabbitmq-staging:
+        condition: service_healthy
+    environment:
+      BACKEND_INTERNAL_PORT: "8081"
+      SPRING_PROFILES_ACTIVE: "${SPRING_PROFILES_ACTIVE:-prod}"
+      DB_SERVICE_NAME: "app-db-staging"
+      POSTGRES_PORT: "${POSTGRES_PORT:-5432}"
+      POSTGRES_DB: "${POSTGRES_DB}_staging"
+      POSTGRES_USER: "${POSTGRES_USER}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+      # Keycloak prod partagé (appels via URL externe)
+      KEYCLOAK_REALM: "${KEYCLOAK_REALM}"
+      KEYCLOAK_BACKEND_CLIENT: "${KEYCLOAK_BACKEND_CLIENT}"
+      KEYCLOAK_BACKEND_CLIENT_SECRET: "${KEYCLOAK_BACKEND_CLIENT_SECRET}"
+      KEYCLOAK_INTERNAL_URL: "${KEYCLOAK_EXTERNAL_URL}"
+      KEYCLOAK_EXTERNAL_URL: "${KEYCLOAK_EXTERNAL_URL}"
+      # IA
+      OPENAI_API_KEY: "${OPENAI_API_KEY}"
+      ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY}"
+      OLLAMA_API_KEY: "${OLLAMA_API_KEY:-}"
+      OLLAMA_BASE_URL: "${OLLAMA_BASE_URL:-http://host.docker.internal:11434}"
+      # Domaine staging
+      FRONTEND_DOMAIN: "${STAGING_DOMAIN}"
+      WWW_FRONTEND_DOMAIN: "${STAGING_DOMAIN}"
+      FRONTEND_URL: "https://${STAGING_DOMAIN}"
+      PROJECT_NAME: "staging"
+      FRONTEND_SERVICE_NAME: "staging-frontend"
+      # RabbitMQ
+      RABBITMQ_HOST: "rabbitmq-staging"
+      RABBITMQ_PORT: "5672"
+      RABBITMQ_USERNAME: "${RABBITMQ_USER:-admin}"
+      RABBITMQ_PASSWORD: "${RABBITMQ_PASSWORD:-admin}"
+      # SMTP
+      SMTP_HOST: "${SMTP_HOST:-smtp.gmail.com}"
+      SMTP_PORT: "${SMTP_PORT:-587}"
+      SMTP_USERNAME: "${SMTP_USERNAME:-}"
+      SMTP_PASSWORD: "${SMTP_PASSWORD:-}"
+      SMTP_AUTH: "${SMTP_AUTH:-true}"
+      SMTP_STARTTLS: "${SMTP_STARTTLS:-true}"
+      SMTP_FROM: "${SMTP_FROM:-noreply@enclume-numerique.com}"
+      SMTP_FROM_NAME: "${SMTP_FROM_NAME:-Enclume Numérique [Staging]}"
+      EMAIL_ADMIN_HSCODE: "${EMAIL_ADMIN_HSCODE:-}"
+      # Paiement
+      CHARGILY_SECRET_KEY: "${CHARGILY_SECRET_KEY:-}"
+      CHARGILY_WEBHOOK_SECRET: "${CHARGILY_WEBHOOK_SECRET:-}"
+      CHARGILY_API_URL: "${CHARGILY_API_URL:-https://pay.chargily.net/test/api/v2}"
+      BASE_REQUEST_PRICE: "${BASE_REQUEST_PRICE:-0.01}"
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: "webproxy"
+      "traefik.http.routers.staging-backend.rule": "Host(`${STAGING_DOMAIN}`) && PathPrefix(`/api`)"
+      "traefik.http.routers.staging-backend.entrypoints": "websecure"
+      "traefik.http.routers.staging-backend.tls.certresolver": "${TRAEFIK_CERT_RESOLVER:-myresolver}"
+      "traefik.http.routers.staging-backend.middlewares": "staging-api-stripprefix"
+      "traefik.http.routers.staging-backend.service": "staging-backend-svc"
+      "traefik.http.routers.staging-backend.priority": "10"
+      "traefik.http.middlewares.staging-api-stripprefix.stripprefix.prefixes": "/api"
+      "traefik.http.services.staging-backend-svc.loadbalancer.server.port": "8081"
+    restart: unless-stopped
+    networks:
+      - staging-internal
+      - webproxy
+
+  # ===============================================================
+  # SEARCH-SERVICE STAGING
+  # ===============================================================
+  search-service-staging:
+    build:
+      context: ./search-service
+      dockerfile: Dockerfile
+    container_name: "staging-search-service"
+    environment:
+      SPRING_PROFILES_ACTIVE: "${SPRING_PROFILES_ACTIVE:-prod}"
+      DATABASE_URL: "jdbc:postgresql://app-db-staging:${POSTGRES_PORT:-5432}/${POSTGRES_DB}_staging"
+      DATABASE_USERNAME: "${POSTGRES_USER}"
+      DATABASE_PASSWORD: "${POSTGRES_PASSWORD}"
+      RABBITMQ_HOST: "rabbitmq-staging"
+      RABBITMQ_PORT: "5672"
+      RABBITMQ_USERNAME: "${RABBITMQ_USER:-admin}"
+      RABBITMQ_PASSWORD: "${RABBITMQ_PASSWORD:-admin}"
+      REDIS_HOST: "redis-staging"
+      REDIS_PORT: "6379"
+      BACKEND_URL: "http://backend-staging:8081"
+      # Keycloak prod partagé
+      KEYCLOAK_ISSUER_URI: "${KEYCLOAK_EXTERNAL_URL}/realms/${KEYCLOAK_REALM}"
+      KEYCLOAK_JWK_SET_URI: "${KEYCLOAK_EXTERNAL_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/certs"
+      # IA
+      OPENAI_API_KEY: "${OPENAI_API_KEY}"
+      ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY}"
+      AI_PROVIDER: "${AI_PROVIDER:-openai}"
+      OLLAMA_BASE_URL: "${OLLAMA_BASE_URL:-http://host.docker.internal:11434}"
+    depends_on:
+      rabbitmq-staging:
+        condition: service_healthy
+      redis-staging:
+        condition: service_healthy
+      app-db-staging:
+        condition: service_healthy
+      backend-staging:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8082/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: "webproxy"
+      "traefik.http.routers.staging-search.rule": "Host(`${STAGING_DOMAIN}`) && (PathPrefix(`/api/recherche`) || PathPrefix(`/api/batch-search`))"
+      "traefik.http.routers.staging-search.entrypoints": "websecure"
+      "traefik.http.routers.staging-search.tls.certresolver": "${TRAEFIK_CERT_RESOLVER:-myresolver}"
+      "traefik.http.routers.staging-search.middlewares": "staging-search-stripprefix"
+      "traefik.http.routers.staging-search.service": "staging-search-svc"
+      "traefik.http.routers.staging-search.priority": "20"
+      "traefik.http.middlewares.staging-search-stripprefix.stripprefix.prefixes": "/api"
+      "traefik.http.services.staging-search-svc.loadbalancer.server.port": "8082"
+    restart: unless-stopped
+    networks:
+      - staging-internal
+      - webproxy
+
+  # ===============================================================
+  # FRONTEND STAGING
+  # ===============================================================
+  frontend-staging:
+    container_name: "staging-frontend"
+    build:
+      context: ./frontend
+      args:
+        KEYCLOAK_EXTERNAL_URL: "${KEYCLOAK_EXTERNAL_URL}"
+        KEYCLOAK_REALM: "${KEYCLOAK_REALM}"
+        KEYCLOAK_FRONTEND_CLIENT: "${KEYCLOAK_FRONTEND_CLIENT}"
+        API_URL: "/api"
+        MARKET_VERSION: "${MARKET_VERSION:-DZ}"
+        NGINX_CONF: nginx-prod.conf
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: "webproxy"
+      "traefik.http.routers.staging-frontend.rule": "Host(`${STAGING_DOMAIN}`)"
+      "traefik.http.routers.staging-frontend.entrypoints": "websecure"
+      "traefik.http.routers.staging-frontend.tls.certresolver": "${TRAEFIK_CERT_RESOLVER:-myresolver}"
+      "traefik.http.routers.staging-frontend.service": "staging-frontend-svc"
+      "traefik.http.routers.staging-frontend.priority": "1"
+      "traefik.http.services.staging-frontend-svc.loadbalancer.server.port": "80"
+    depends_on:
+      - backend-staging
+    restart: unless-stopped
+    networks:
+      - staging-internal
+      - webproxy
+
+# ===============================================================
+# VOLUMES STAGING
+# ===============================================================
+volumes:
+  staging-app-data:
+    name: "staging-app-data"
+  staging-rabbitmq-data:
+    name: "staging-rabbitmq-data"
+  staging-redis-data:
+    name: "staging-redis-data"
+
+# ===============================================================
+# RÉSEAUX
+# ===============================================================
+networks:
+  webproxy:
+    external: true
+  staging-internal:

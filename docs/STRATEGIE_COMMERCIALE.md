@@ -126,7 +126,7 @@ Au-delà de ces 6 chiffres, chaque pays ajoute ses propres subdivisions national
 6. Approcher 2–3 freight forwarders pour une intégration ou un accord de revente
 
 **Indicateurs de succès Phase 2 :**
-- 10 clients payants actifs
+- 10 clients payants actifs 
 - MRR (revenu mensuel récurrent) > 500 €
 - NPS (satisfaction) ≥ 7/10
 
