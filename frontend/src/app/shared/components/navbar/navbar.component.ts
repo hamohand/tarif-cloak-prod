@@ -52,6 +52,7 @@ import { of } from 'rxjs';
             💳 Tarifs
           </a>
         }
+        <button class="nav-link contact-btn" (click)="toggleContactPopup()">📬 Contact</button>
         @if (isAuthenticated$ | async) {
           @if (isOrganizationAccount$ | async) {
             @if (!isAdmin()) {
@@ -104,6 +105,21 @@ import { of } from 'rxjs';
             <a routerLink="/organization/stats" class="btn-modal btn-modal-secondary" (click)="closeRenewalModal()">
               Changer de plan
             </a>
+          </div>
+        </div>
+      </div>
+    }
+
+    @if (showContactPopup) {
+      <div class="contact-overlay" (click)="toggleContactPopup()">
+        <div class="contact-popup" (click)="$event.stopPropagation()">
+          <button class="modal-close-btn" (click)="toggleContactPopup()">✕</button>
+          <h3>Nous contacter</h3>
+          <p class="contact-tagline">Développement d'applications pour les entreprises</p>
+          <div class="contact-info">
+            <p>🏢 <strong>Auto-entreprise Hamroun</strong></p>
+            <p>✉️ <a href="mailto:mohhamroun@gmail.com">mohhamroun&#64;gmail.com</a></p>
+            <p>📱 <a href="https://wa.me/33622563841" target="_blank">WhatsApp : +33 6 22 56 38 41</a></p>
           </div>
         </div>
       </div>
@@ -828,6 +844,64 @@ import { of } from 'rxjs';
     .modal-close-btn:hover {
       color: white;
     }
+
+    .contact-btn {
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+
+    .contact-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 2000;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding-top: 80px;
+    }
+
+    .contact-popup {
+      background: linear-gradient(135deg, #1e293b, #0f172a);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 2rem 2.5rem;
+      min-width: 320px;
+      position: relative;
+      color: white;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+
+    .contact-popup h3 {
+      color: #f59e0b;
+      font-size: 1.3rem;
+      margin: 0 0 0.5rem;
+    }
+
+    .contact-tagline {
+      color: #94a3b8;
+      font-size: 0.9rem;
+      margin: 0 0 1.5rem;
+      font-style: italic;
+    }
+
+    .contact-info p {
+      margin: 0.6rem 0;
+      font-size: 1rem;
+      color: #e2e8f0;
+    }
+
+    .contact-info a {
+      color: #f59e0b;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .contact-info a:hover {
+      text-decoration: underline;
+    }
   `]
 })
 export class NavbarComponent implements OnInit, OnDestroy {
@@ -843,6 +917,11 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   showRenewalModal = false;
   isRenewing = false;
+  showContactPopup = false;
+
+  toggleContactPopup(): void {
+    this.showContactPopup = !this.showContactPopup;
+  }
   orgPricingPlanId: number | null = null;
 
   isAuthenticated$!: Observable<boolean>;
