@@ -217,7 +217,7 @@ import { map, switchMap, catchError, distinctUntilChanged } from 'rxjs/operators
           <div class="features primary">
             <div class="feature-card request-card">
               <div class="request-icon">🔍</div>
-              <h3>Recherche d'article unique</h3>
+              <h3>Recherche d'un article</h3>
               <p>Recherchez le code HS d'un produit spécifique en quelques secondes.</p>
               <a [routerLink]="['/recherche/search']" class="cta-button secondary">
                 Rechercher un article
@@ -227,12 +227,17 @@ import { map, switchMap, catchError, distinctUntilChanged } from 'rxjs/operators
             <div class="feature-card request-card">
               <div class="request-icon">📋</div>
               <h3>Recherche par liste</h3>
-              <p>Traitez une liste de produits simultanément.</p>
+              <p>Traitez une liste de produits en une seule fois.</p>
+              <a class="cta-button secondary">
+               Bientôt disponible
+              </a>
+              <!--
               <a [routerLink]="['/recherche/searchListLots']" class="cta-button secondary">
                 Rechercher par liste
-              </a>
+              </a> -- IGNORE ->
             </div>
 
+            <!--
             <div class="feature-card request-card">
               <div class="request-icon">⚡</div>
               <h3>Recherche par lots</h3>
@@ -240,7 +245,7 @@ import { map, switchMap, catchError, distinctUntilChanged } from 'rxjs/operators
               <a [routerLink]="['/recherche/batch-search']" class="cta-button secondary">
                 Rechercher par lots
               </a>
-            </div>
+            </div> -- IGNORE ->
 
           </div>
         }
