@@ -234,7 +234,8 @@ import { map, switchMap, catchError, distinctUntilChanged } from 'rxjs/operators
               <!--
               <a [routerLink]="['/recherche/searchListLots']" class="cta-button secondary">
                 Rechercher par liste
-              </a> -- IGNORE ->
+              </a>
+              -->
             </div>
 
             <!--
@@ -245,7 +246,8 @@ import { map, switchMap, catchError, distinctUntilChanged } from 'rxjs/operators
               <a [routerLink]="['/recherche/batch-search']" class="cta-button secondary">
                 Rechercher par lots
               </a>
-            </div> -- IGNORE ->
+            </div>
+            -->
 
           </div>
         }
