@@ -39,14 +39,14 @@ public class SearchService {
         List<Position> ragNiveau;
         int tentativesMax = 2;
 
-        // Level 0 : Sections
+        // Level 0 : Sections — 3 tentatives car c'est le point d'entrée critique
         ragNiveau = ragSections();
         log.debug("Level 0 (Sections) - RAG size: {}", ragNiveau.size());
 
-        positions = executeWithRetry(SearchLevel.SECTIONS.toString(), termeRecherche, ragNiveau, tentativesMax, maxLevel == SearchLevel.SECTIONS);
+        positions = executeWithRetry(SearchLevel.SECTIONS.toString(), termeRecherche, ragNiveau, 3, maxLevel == SearchLevel.SECTIONS);
 
         if (positions == null || positions.isEmpty()) {
-            log.info("Level 0 - Aucun résultat, arrêt cascade");
+            log.info("Level 0 - Aucun résultat après 3 tentatives, arrêt cascade");
             return new ArrayList<>();
         }
 
@@ -159,16 +159,28 @@ public class SearchService {
     }
 
     private List<Position> executeWithRetry(String niveau, String terme, List<Position> rag, int maxTentatives, boolean withJustification) {
-        List<Position> result = new ArrayList<>();
         int tentatives = 0;
+        Exception lastException = null;
 
-        do {
+        while (tentatives < maxTentatives) {
             tentatives++;
             log.debug("{} - Tentative {}/{}", niveau, tentatives, maxTentatives);
-            result = aiService.promptEtReponse(niveau, terme, rag, withJustification);
-        } while (tentatives < maxTentatives && result.isEmpty());
+            try {
+                List<Position> result = aiService.promptEtReponse(niveau, terme, rag, withJustification);
+                if (!result.isEmpty()) {
+                    return result;
+                }
+                log.debug("{} - Réponse vide (tentative {})", niveau, tentatives);
+            } catch (Exception e) {
+                lastException = e;
+                log.warn("{} - Erreur technique tentative {}/{}: {}", niveau, tentatives, maxTentatives, e.getMessage());
+            }
+        }
 
-        return result;
+        if (lastException != null) {
+            log.error("{} - Toutes les tentatives ont échoué (erreur technique)", niveau);
+        }
+        return new ArrayList<>();
     }
 
     private void enrichWithDescriptions(List<Position> positions, SearchLevel level) {

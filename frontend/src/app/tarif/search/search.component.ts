@@ -426,7 +426,12 @@ export class SearchComponent implements OnInit {
           return decode$.pipe(
             retry(1),
             catchError(() => of(null)),
-            map(decoded => decoded ? { decoded, justification, aiCode } as SearchResultItem : null)
+            map(decoded => {
+              if (!decoded || (!decoded.position4 && (!decoded.positions6 || decoded.positions6.length === 0))) {
+                return null;
+              }
+              return { decoded, justification, aiCode } as SearchResultItem;
+            })
           );
         });
 

@@ -66,12 +66,7 @@ public class AiService {
 
     private String obtenirReponseJsonDeIA(String titre, StringBuilder ragString, String termeRecherche, boolean withJustification) {
         String prompt = construirePrompt(ragString, termeRecherche);
-        try {
-            return getActiveProvider().demanderAiAide(titre, prompt, withJustification);
-        } catch (Exception e) {
-            log.error("Erreur lors de l'appel IA: {}", e.getMessage());
-            return "";
-        }
+        return getActiveProvider().demanderAiAide(titre, prompt, withJustification);
     }
 
     private AiProvider getActiveProvider() {

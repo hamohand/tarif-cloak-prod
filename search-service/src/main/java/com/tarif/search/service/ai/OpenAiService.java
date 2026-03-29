@@ -131,7 +131,7 @@ public class OpenAiService implements AiProvider {
         } catch (Exception e) {
             log.error("Erreur lors de la requête à l'API OpenAI: {}", e.getMessage());
             currentUsage.remove();
-            return "";
+            throw new AiProviderException("Erreur OpenAI: " + e.getMessage(), e);
         }
     }
 

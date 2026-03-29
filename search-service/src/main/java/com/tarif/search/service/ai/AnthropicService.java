@@ -122,11 +122,11 @@ public class AnthropicService implements AiProvider {
         } catch (org.springframework.web.client.HttpClientErrorException e) {
             log.error("Erreur HTTP API Anthropic - Status: {}, Body: {}", e.getStatusCode(), e.getResponseBodyAsString());
             currentUsage.remove();
-            return "";
+            throw new AiProviderException("Erreur HTTP Anthropic: " + e.getStatusCode(), e);
         } catch (Exception e) {
             log.error("Erreur lors de la requête à l'API Anthropic: {}", e.getMessage(), e);
             currentUsage.remove();
-            return "";
+            throw new AiProviderException("Erreur Anthropic: " + e.getMessage(), e);
         }
     }
 

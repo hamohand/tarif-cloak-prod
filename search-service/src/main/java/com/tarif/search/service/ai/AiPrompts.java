@@ -61,14 +61,14 @@ public class AiPrompts {
                    - Nombre sans séparateur → lire directement : "1000" → 1000, "2000" → 2000
                    Applique cette conversion à TOUTES les valeurs numériques rencontrées dans les descriptions et dans la requête avant de les comparer.
 
-               RÈGLE CRITIQUE — Cohérence des critères numériques :
+               RÈGLE CRITIQUE — Cohérence des critères numériques (applicable uniquement aux positions à 4 ou 6 chiffres) :
                    Si la requête contient des critères numériques (cylindrée, poids, teneur, dimensions, température, etc.),
                    tu dois REJETER tout code dont la description contient des valeurs numériques CONTRADICTOIRES avec la requête.
                    Exemples de rejets obligatoires :
                    - Requête "cylindrée supérieure à 2000 cm3" → REJETER tout code mentionnant "n'excédant pas X cm3" ou "inférieure à X cm3" avec X ≤ 2000.
                    - Requête "poids inférieur à 5 kg" → REJETER tout code mentionnant "d'un poids supérieur à 5 kg".
                    - Requête "teneur en sucre > 10%" → REJETER tout code mentionnant "teneur ≤ 10%".
-                   En cas de doute sur la compatibilité numérique, EXCLURE le code plutôt que de l'inclure.
+                   Pour les sections (2 chiffres) et chapitres (2 chiffres), NE PAS appliquer cette règle : sélectionner tout code dont la thématique générale correspond.
 
                IMPORTANT : Réponds UNIQUEMENT avec le tableau JSON (clés {json_keys}), sans aucun texte explicatif.
                Toujours retourner un tableau JSON, même s'il ne contient qu'un seul élément ou est vide [].
