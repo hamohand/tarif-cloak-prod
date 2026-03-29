@@ -17,14 +17,14 @@ services:
     image: "postgres:${POSTGRES_IMAGE_TAG:-16}"
     container_name: "staging-app-db"
     environment:
-      POSTGRES_DB: "${POSTGRES_DB}_staging"
+      POSTGRES_DB: "${POSTGRES_DB}"
       POSTGRES_USER: "${POSTGRES_USER}"
       POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
     volumes:
       - staging-app-data:/var/lib/postgresql/data
       - ./sql/sql:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD", "pg_isready", "-h", "localhost", "-U", "${POSTGRES_USER}", "-d", "${POSTGRES_DB}_staging"]
+      test: ["CMD", "pg_isready", "-h", "localhost", "-U", "${POSTGRES_USER}", "-d", "${POSTGRES_DB}"]
       interval: 10s
       timeout: 10s
       retries: 10
@@ -89,7 +89,7 @@ services:
       SPRING_PROFILES_ACTIVE: "${SPRING_PROFILES_ACTIVE:-prod}"
       DB_SERVICE_NAME: "app-db-staging"
       POSTGRES_PORT: "${POSTGRES_PORT:-5432}"
-      POSTGRES_DB: "${POSTGRES_DB}_staging"
+      POSTGRES_DB: "${POSTGRES_DB}"
       POSTGRES_USER: "${POSTGRES_USER}"
       POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
       # Keycloak prod partagé (appels via URL externe)
@@ -155,7 +155,7 @@ services:
     container_name: "staging-search-service"
     environment:
       SPRING_PROFILES_ACTIVE: "${SPRING_PROFILES_ACTIVE:-prod}"
-      DATABASE_URL: "jdbc:postgresql://app-db-staging:${POSTGRES_PORT:-5432}/${POSTGRES_DB}_staging"
+      DATABASE_URL: "jdbc:postgresql://app-db-staging:${POSTGRES_PORT:-5432}/${POSTGRES_DB}"
       DATABASE_USERNAME: "${POSTGRES_USER}"
       DATABASE_PASSWORD: "${POSTGRES_PASSWORD}"
       RABBITMQ_HOST: "rabbitmq-staging"
