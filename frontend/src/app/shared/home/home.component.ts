@@ -757,12 +757,22 @@ import { map, switchMap, catchError, distinctUntilChanged } from 'rxjs/operators
 
     /* ─── Responsive ─── */
     @media (max-width: 768px) {
+      .home-container {
+        padding: 1rem;
+        overflow-x: hidden;
+      }
+
       .hero {
         padding: 3rem 1rem 2.5rem;
       }
 
+      .hero-glow {
+        width: 280px;
+        height: 280px;
+      }
+
       .hero h1 {
-        font-size: 2.2rem;
+        font-size: 2rem;
       }
 
       .hero-subtitle {
@@ -775,6 +785,18 @@ import { map, switchMap, catchError, distinctUntilChanged } from 'rxjs/operators
 
       .feature-card {
         width: 100%;
+        min-width: unset;
+      }
+
+      .request-card {
+        min-width: unset;
+        max-width: 100%;
+        width: 100%;
+      }
+
+      .features {
+        flex-direction: column;
+        align-items: stretch;
       }
 
       .api-presentation {
@@ -792,6 +814,15 @@ import { map, switchMap, catchError, distinctUntilChanged } from 'rxjs/operators
 
       .examples-grid {
         grid-template-columns: 1fr;
+      }
+
+      .result-code {
+        white-space: normal;
+        word-break: break-all;
+      }
+
+      .result-row {
+        flex-wrap: wrap;
       }
 
       .home-footer {
