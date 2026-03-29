@@ -9,8 +9,8 @@ import { CommonModule } from '@angular/common';
   template: `
     <div class="container">
       <header>
-        <h1>Universal Customs Tariff for International Trade</h1>
-        <h2>Harmonised System : HS Code</h2>
+        <h1>Universal Tariff for International Trade</h1>
+        <h2>Harmonised System - Nomenclature</h2>
         <h3>Recherche multilingue - Multilingual search - 多语言搜索 - بحث متعدد اللغات</h3>
       </header>
 

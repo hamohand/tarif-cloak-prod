@@ -119,7 +119,7 @@ import { of } from 'rxjs';
           <div class="contact-info">
             <p>🏢 <strong>Auto-entreprise Hamroun</strong></p>
             <p>✉️ <a href="mailto:mohhamroun@gmail.com">mohhamroun&#64;gmail.com</a></p>
-            <p>📱 <a href="https://wa.me/33622563841" target="_blank">WhatsApp : +33 6 22 56 38 41</a></p>
+            <p>📱 <a href="https://wa.me/33622563841" target="_blank">WhatsApp : +213 5 60 96 80 66</a></p>
           </div>
         </div>
       </div>
