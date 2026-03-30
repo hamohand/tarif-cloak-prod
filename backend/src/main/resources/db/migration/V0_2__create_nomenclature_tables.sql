@@ -2680,7 +2680,5 @@ EXECUTE FUNCTION clean_code_function();
 ALTER TABLE position10_dz ADD CONSTRAINT chk_code_no_spaces CHECK (code = REPLACE(TRIM(code), ' ', ''));
 
 -- Création d'un index sur la colonne 'code' pour accélérer les recherches par cette colonne
-CREATE INDEX idx_code_position6dz ON position10_dz (code);
+CREATE INDEX idx_code_position10_dz ON position10_dz (code);
 
-
-INSERT INTO position10_dz (code, description) VALUES
