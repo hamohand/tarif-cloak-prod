@@ -2656,8 +2656,7 @@ CREATE TABLE position10_dz (
                            id BIGSERIAL PRIMARY KEY,
                            description VARCHAR(1024) NOT NULL,
                            code VARCHAR(255) NOT NULL,
-                           section VARCHAR(255),
-                           CONSTRAINT uk_position10_dz_code UNIQUE (code)
+                           section VARCHAR(255)
 );
 
 -- Création de la fonction pour nettoyer les champs avant insertion ou mise à jour (trigger)
