@@ -47,7 +47,12 @@ public class AiService {
             return Collections.emptyList();
         }
 
-        return JsonUtils.conversionReponseIaToList(jsonNettoye);
+        try {
+            return JsonUtils.conversionReponseIaToList(jsonNettoye);
+        } catch (Exception ex) {
+            log.warn("{} - Échec parsing JSON : {}", titre, ex.getMessage());
+            return Collections.emptyList();
+        }
     }
 
     private String construirePrompt(StringBuilder ragString, String termeRecherche) {
