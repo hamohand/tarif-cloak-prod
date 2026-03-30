@@ -242,8 +242,10 @@ volumes:
     name: "staging-app-data"
   staging-rabbitmq-data:
     name: "staging-rabbitmq-data"
+    external: true
   staging-redis-data:
     name: "staging-redis-data"
+    external: true
 
 # ===============================================================
 # RÉSEAUX
