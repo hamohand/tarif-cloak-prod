@@ -34,13 +34,13 @@ public class AiPrompts {
                Vous devez faire la correspondance sémantique entre la langue du produit et les descriptions en français.
 
                Tâche :
-               À partir de la liste de codes douaniers (codes SH/HS) fournie dans le message utilisateur, identifie uniquement les codes dont la description correspond explicitement au produit recherché, en respectant toutes ses caractéristiques (type, technologie, matériau, usage).
+               À partir de la liste de codes douaniers (codes SH/HS) fournie dans le message utilisateur, identifie les codes dont la description correspond au produit recherché, en tenant compte de son type, matériau, usage et technologie.
 
                Instructions :
                - Traduis mentalement le produit recherché en français si nécessaire pour le comparer aux descriptions.
                - Analyse sémantiquement la description du produit.
                - Scanne la liste des codes douaniers fournie.
-               - Sélectionne uniquement les codes dont la description correspond directement et explicitement au produit recherché.
+               - Sélectionne les codes dont la description correspond au produit recherché. En cas de doute, préfère inclure plutôt qu'exclure : il vaut mieux retourner un code approximatif qu'un tableau vide.
                - Pour chaque code sélectionné, fournis :{instruction_details}
 
                Format de sortie : un tableau JSON uniquement, sans aucun texte avant ou après.
@@ -49,7 +49,7 @@ public class AiPrompts {
 
                Remarques :
                    Si plusieurs codes sont pertinents, indique-les tous.
-                   Ne sélectionne aucun code hors sujet.
+                   Évite les codes clairement hors sujet, mais garde les codes dont le domaine thématique est proche.
                    Les justifications doivent toujours être en français.
 
                PARSER NUMÉRIQUE — Format français :
@@ -61,17 +61,16 @@ public class AiPrompts {
                    - Nombre sans séparateur → lire directement : "1000" → 1000, "2000" → 2000
                    Applique cette conversion à TOUTES les valeurs numériques rencontrées dans les descriptions et dans la requête avant de les comparer.
 
-               RÈGLE CRITIQUE — Cohérence des critères numériques (applicable uniquement aux positions à 4 ou 6 chiffres) :
-                   Si la requête contient des critères numériques (cylindrée, poids, teneur, dimensions, température, etc.),
-                   tu dois REJETER tout code dont la description contient des valeurs numériques CONTRADICTOIRES avec la requête.
-                   Exemples de rejets obligatoires :
-                   - Requête "cylindrée supérieure à 2000 cm3" → REJETER tout code mentionnant "n'excédant pas X cm3" ou "inférieure à X cm3" avec X ≤ 2000.
-                   - Requête "poids inférieur à 5 kg" → REJETER tout code mentionnant "d'un poids supérieur à 5 kg".
-                   - Requête "teneur en sucre > 10%" → REJETER tout code mentionnant "teneur ≤ 10%".
-                   Pour les sections (2 chiffres) et chapitres (2 chiffres), NE PAS appliquer cette règle : sélectionner tout code dont la thématique générale correspond.
+               RÈGLE — Cohérence des critères numériques (positions 4 à 10 chiffres uniquement) :
+                   Si la requête contient des critères numériques précis (cylindrée, poids, teneur, dimensions, température, etc.),
+                   rejette les codes dont la description contient des valeurs numériques CLAIREMENT CONTRADICTOIRES avec la requête.
+                   Exemples :
+                   - Requête "cylindrée supérieure à 2000 cm3" → rejeter les codes mentionnant "n'excédant pas X cm3" avec X ≤ 2000.
+                   - Requête "poids inférieur à 5 kg" → rejeter les codes mentionnant "d'un poids supérieur à 5 kg".
+                   Cette règle ne s'applique PAS aux sections et chapitres (codes à 2 chiffres) : toujours y sélectionner les codes thématiquement proches.
 
                IMPORTANT : Réponds UNIQUEMENT avec le tableau JSON (clés {json_keys}), sans aucun texte explicatif.
-               Toujours retourner un tableau JSON, même s'il ne contient qu'un seul élément ou est vide [].
+               Le tableau JSON doit contenir au moins un élément. Ne retourne un tableau vide [] qu'en dernier recours absolu si le produit est totalement hors nomenclature douanière.
 
                Voir exemples ci-dessous :
            {examples}
