@@ -25,7 +25,7 @@ spring:
     locations: classpath:db/migration
     baseline-on-migrate: true
     baseline-version: 0  # Baseline à V0, toutes les migrations > 0 (V0.1, V1, V2...) seront exécutées
-    validate-on-migrate: false
+    validate-on-migrate: true
     out-of-order: true  # Permet d'appliquer V3_1 même si elle vient après V3 dans l'ordre numérique
 
   # ===================================================
@@ -121,10 +121,12 @@ admin:
 # ===================================================
 logging:
   level:
-    root: INFO
-    com.muhend.backend: DEBUG
-    org.springframework.security: DEBUG
-    org.hibernate.SQL: DEBUG
+    root: WARN
+    com.muhend.backend: INFO
+    org.springframework.security: WARN
+    org.hibernate.SQL: WARN
+    org.hibernate.orm.jdbc.bind: WARN
+    org.flywaydb: WARN
 
 
 # ===================================================
@@ -253,8 +255,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update  # Temporairement activé pour créer la table usage_log. Revenir à 'validate' après la création.
-#      ddl-auto: validate  # Ne pas modifier le schéma automatiquement
+      ddl-auto: validate
     show-sql: false
 
 logging:
