@@ -107,6 +107,8 @@ services:
       FRONTEND_DOMAIN: "${STAGING_DOMAIN}"
       WWW_FRONTEND_DOMAIN: "${STAGING_DOMAIN}"
       FRONTEND_URL: "https://${STAGING_DOMAIN}"
+      CORS_ALLOWED_ORIGINS: "https://${STAGING_DOMAIN}"
+      SPRINGDOC_SWAGGER_UI_URL: "https://${STAGING_DOMAIN}/api/v3/api-docs"
       PROJECT_NAME: "staging"
       FRONTEND_SERVICE_NAME: "staging-frontend"
       # RabbitMQ
