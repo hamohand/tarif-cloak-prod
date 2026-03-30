@@ -1,3 +1,4 @@
+DROP TABLE IF EXISTS position6dz CASCADE;
 DROP TABLE IF EXISTS section;
 
 CREATE TABLE section (
@@ -2656,7 +2657,7 @@ CREATE TABLE position10_dz (
                            description VARCHAR(1024) NOT NULL,
                            code VARCHAR(255) NOT NULL,
                            section VARCHAR(255),
-                           CONSTRAINT uk_position6dz_code UNIQUE (code)
+                           CONSTRAINT uk_position10_dz_code UNIQUE (code)
 );
 
 -- Création de la fonction pour nettoyer les champs avant insertion ou mise à jour (trigger)
