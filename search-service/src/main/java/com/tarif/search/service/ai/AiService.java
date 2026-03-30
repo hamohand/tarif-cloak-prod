@@ -37,20 +37,17 @@ public class AiService {
      * Recherche les positions pertinentes en utilisant l'IA.
      */
     public List<Position> promptEtReponse(String titre, String termeRecherche, List<Position> listePositions, boolean withJustification) {
-        try {
-            StringBuilder leRAG = creerContexteRAG(titre, listePositions);
-            String reponseIaJson = obtenirReponseJsonDeIA(titre, leRAG, termeRecherche, withJustification);
-            String jsonNettoye = JsonUtils.cleanJsonString(reponseIaJson);
+        StringBuilder leRAG = creerContexteRAG(titre, listePositions);
+        // AiProviderException remonte librement pour permettre le retry dans executeWithRetry
+        String reponseIaJson = obtenirReponseJsonDeIA(titre, leRAG, termeRecherche, withJustification);
+        String jsonNettoye = JsonUtils.cleanJsonString(reponseIaJson);
 
-            if (!JsonUtils.isValidJson(jsonNettoye)) {
-                return Collections.emptyList();
-            }
-
-            return JsonUtils.conversionReponseIaToList(jsonNettoye);
-        } catch (Exception ex) {
-            log.error("Erreur lors du traitement IA: {}", ex.getMessage());
+        if (!JsonUtils.isValidJson(jsonNettoye)) {
+            log.warn("{} - Réponse IA non JSON : {}", titre, reponseIaJson);
             return Collections.emptyList();
         }
+
+        return JsonUtils.conversionReponseIaToList(jsonNettoye);
     }
 
     private String construirePrompt(StringBuilder ragString, String termeRecherche) {
