@@ -43,6 +43,18 @@ docker compose -f docker-compose-staging.yml up -d --build search-service
 # Logs (exemple Staging)
 docker compose -f docker-compose-staging.yml logs -f backend
 docker compose -f docker-compose-staging.yml logs -f search-service
+
+# --- DEVOPS & INFRASTRUCTURE ---
+
+# Sauvegarde Automatique Manuelle (App DB & Keycloak DB)
+# Un cronjob doit exécuter ce script tous les jours à 3h du matin
+./scripts/backup-prod-dbs.sh
+
+# Cloner la Production vers le Staging (Sync Parfait)
+# Le Keycloak de prod étant déjà partagé avec le staging, il suffit de restaurer l'App DB
+cd /root/backups-hscode
+ls -t app-db*.sql.gz | head -1 | xargs zcat | docker exec -i staging-app-db sh -c 'psql -U $POSTGRES_USER -d $POSTGRES_DB'
+cd /root/tarif-cloak-prod && docker compose -f docker-compose-staging.yml restart
 ```
 
 ## Architecture IA (search-service)
@@ -79,8 +91,10 @@ docker compose -f docker-compose-staging.yml logs -f search-service
 | backend | Host + PathPrefix(`/api`) | 10 |
 | search-service | Host + PathPrefix(`/api/recherche`, `/api/batch-search`) | 20 |
 
-**Important :** search-service a priorité 20, donc ses routes doivent être précises.
-Ne pas ajouter `/api/swagger-ui` à search-service (intercepterait le swagger du backend).
+**Important :**
+- `search-service` a priorité 20, donc ses routes doivent être précises.
+- Ne pas ajouter `/api/swagger-ui` à search-service (intercepterait le swagger du backend).
+- **Protection DDoS / Quotas API** : `search-service` utilise le middleware `search-ratelimit` (5 req/sec en moyenne) défini dans Traefik pour bloquer les requêtes abusives qui feraient exploser la facture OpenAI.
 
 ## Swagger / OpenAPI
 
