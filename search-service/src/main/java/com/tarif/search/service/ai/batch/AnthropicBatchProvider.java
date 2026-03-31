@@ -106,7 +106,7 @@ public class AnthropicBatchProvider implements BatchProvider {
             String body = objectMapper.writeValueAsString(batchRequest);
             HttpEntity<String> entity = new HttpEntity<>(body, headers);
 
-            RestTemplate restTemplate = new RestTemplate();
+            RestTemplate restTemplate = com.tarif.search.config.RestTemplateFactory.get();
             ResponseEntity<String> response = restTemplate.exchange(
                 batchApiUrl,
                 HttpMethod.POST,
@@ -149,7 +149,7 @@ public class AnthropicBatchProvider implements BatchProvider {
             headers.add("anthropic-version", "2023-06-01");
 
             HttpEntity<String> entity = new HttpEntity<>(headers);
-            RestTemplate restTemplate = new RestTemplate();
+            RestTemplate restTemplate = com.tarif.search.config.RestTemplateFactory.get();
 
             ResponseEntity<String> response = restTemplate.exchange(
                 batchApiUrl + "/" + batchId,
@@ -234,7 +234,7 @@ public class AnthropicBatchProvider implements BatchProvider {
             headers.add("anthropic-version", "2023-06-01");
 
             HttpEntity<String> entity = new HttpEntity<>(headers);
-            RestTemplate restTemplate = new RestTemplate();
+            RestTemplate restTemplate = com.tarif.search.config.RestTemplateFactory.get();
 
             ResponseEntity<String> response = restTemplate.exchange(
                 resultsUrl,
@@ -330,7 +330,7 @@ public class AnthropicBatchProvider implements BatchProvider {
             headers.add("anthropic-version", "2023-06-01");
 
             HttpEntity<String> entity = new HttpEntity<>(headers);
-            RestTemplate restTemplate = new RestTemplate();
+            RestTemplate restTemplate = com.tarif.search.config.RestTemplateFactory.get();
 
             ResponseEntity<String> response = restTemplate.exchange(
                 batchApiUrl + "/" + batchId + "/cancel",

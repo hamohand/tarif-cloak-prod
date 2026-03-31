@@ -59,7 +59,7 @@ public class OpenAiService implements AiProvider {
             return "";
         }
 
-        RestTemplate restTemplate = new RestTemplate();
+        RestTemplate restTemplate = com.tarif.search.config.RestTemplateFactory.get();
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.add("Authorization", "Bearer " + apiKey);
         httpHeaders.add("Content-Type", "application/json");

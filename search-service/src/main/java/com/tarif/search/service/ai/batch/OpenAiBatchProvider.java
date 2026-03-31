@@ -117,7 +117,7 @@ public class OpenAiBatchProvider implements BatchProvider {
             headers.setBearerAuth(apiKey);
 
             HttpEntity<Void> entity = new HttpEntity<>(headers);
-            RestTemplate restTemplate = new RestTemplate();
+            RestTemplate restTemplate = com.tarif.search.config.RestTemplateFactory.get();
 
             ResponseEntity<String> response = restTemplate.exchange(
                 url, HttpMethod.GET, entity, String.class);
@@ -232,7 +232,7 @@ public class OpenAiBatchProvider implements BatchProvider {
             headers.setBearerAuth(apiKey);
 
             HttpEntity<Void> entity = new HttpEntity<>(headers);
-            RestTemplate restTemplate = new RestTemplate();
+            RestTemplate restTemplate = com.tarif.search.config.RestTemplateFactory.get();
 
             ResponseEntity<String> response = restTemplate.exchange(
                 url, HttpMethod.POST, entity, String.class);
@@ -332,7 +332,7 @@ public class OpenAiBatchProvider implements BatchProvider {
             HttpEntity<MultiValueMap<String, Object>> requestEntity =
                 new HttpEntity<>(body, headers);
 
-            RestTemplate restTemplate = new RestTemplate();
+            RestTemplate restTemplate = com.tarif.search.config.RestTemplateFactory.get();
             ResponseEntity<String> response = restTemplate.postForEntity(
                 url, requestEntity, String.class);
 
@@ -372,7 +372,7 @@ public class OpenAiBatchProvider implements BatchProvider {
             String body = objectMapper.writeValueAsString(requestBody);
             HttpEntity<String> entity = new HttpEntity<>(body, headers);
 
-            RestTemplate restTemplate = new RestTemplate();
+            RestTemplate restTemplate = com.tarif.search.config.RestTemplateFactory.get();
             ResponseEntity<String> response = restTemplate.postForEntity(
                 url, entity, String.class);
 
@@ -409,7 +409,7 @@ public class OpenAiBatchProvider implements BatchProvider {
             headers.setBearerAuth(apiKey);
 
             HttpEntity<Void> entity = new HttpEntity<>(headers);
-            RestTemplate restTemplate = new RestTemplate();
+            RestTemplate restTemplate = com.tarif.search.config.RestTemplateFactory.get();
 
             ResponseEntity<String> response = restTemplate.exchange(
                 url, HttpMethod.GET, entity, String.class);

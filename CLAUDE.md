@@ -21,28 +21,28 @@ tarif-cloak-prod/
 ├── frontend/          # Application Angular
 ├── search-service/    # Microservice IA (recherche HS-codes, batch API)
 ├── keycloak/          # Configuration realm Keycloak
-├── docker-compose-dev.yml
-├── docker-compose-prod.yml
-├── .env.dev           # Variables dev (template pour .env sur VPS)
+├── docker-compose-staging.yml # Environnement de développement principal (Staging)
+├── docker-compose-prod.yml    # Environnement de production
 └── .env               # NE PAS COMMITER — uniquement sur le VPS
 ```
 
 ## Commandes clés
 
 ```bash
-# Développement local
-docker compose -f docker-compose-dev.yml up -d --build
+# Développement (Staging) — Le développement en local (localhost) est ABANDONNÉ.
+# Le staging sur le VPS sert d'environnement de dev et de test principal.
+docker compose -f docker-compose-staging.yml up -d --build
 
-# Production (sur VPS, nécessite .env)
+# Production (sur VPS)
 docker compose -f docker-compose-prod.yml up -d --build
 
-# Rebuild d'un seul service
-docker compose -f docker-compose-prod.yml up -d --build backend
-docker compose -f docker-compose-prod.yml up -d --build search-service
+# Rebuild d'un seul service (exemple Staging)
+docker compose -f docker-compose-staging.yml up -d --build backend
+docker compose -f docker-compose-staging.yml up -d --build search-service
 
-# Logs
-docker compose -f docker-compose-prod.yml logs -f backend
-docker compose -f docker-compose-prod.yml logs -f search-service
+# Logs (exemple Staging)
+docker compose -f docker-compose-staging.yml logs -f backend
+docker compose -f docker-compose-staging.yml logs -f search-service
 ```
 
 ## Architecture IA (search-service)

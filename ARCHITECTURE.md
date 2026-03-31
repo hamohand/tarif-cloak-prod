@@ -222,16 +222,21 @@ backend/src/main/java/com/muhend/backend/
     └── repository/       # UsageLogRepository
 ```
 
-## 🚀 Déploiement
+## 🚀 Environnements et Déploiement
+
+Le développement en local (localhost) est **officiellement abandonné** afin de garantir une iso-parité parfaite avec l'infrastructure de production (gestion HTTPS, Traefik, Keycloak). 
+L'environnement de **Staging** (déployé sur le VPS) fait désormais office d'environnement de développement et de test principal.
 
 ### Docker Compose
 
-Services principaux :
+Services principaux déployés :
 - `frontend` : Application Angular servie par Nginx
-- `backend` : Application Spring Boot
+- `backend` : Application Spring Boot principale
+- `search-service` : Microservice IA
 - `keycloak` : Serveur d'authentification
 - `postgres` : Base de données principale
-- `keycloak-db` : Base de données Keycloak
+- `keycloak-db` : Base de données isolée pour Keycloak
+- `rabbitmq` : Broker de messages pour les batchs IA
 
 ### Variables d'Environnement
 
