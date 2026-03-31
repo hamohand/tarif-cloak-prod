@@ -104,11 +104,14 @@ x-traefik-search-labels: &traefik-search-labels
   "traefik.http.routers.search-service-secure.rule": "(Host(`${FRONTEND_DOMAIN}`) || Host(`${WWW_FRONTEND_DOMAIN}`)) && (PathPrefix(`/api/recherche`) || PathPrefix(`/api/batch-search`))"
   "traefik.http.routers.search-service-secure.entrypoints": "websecure"
   "traefik.http.routers.search-service-secure.tls.certresolver": "${TRAEFIK_CERT_RESOLVER:-myresolver}"
-  "traefik.http.routers.search-service-secure.middlewares": "search-api-stripprefix"
+  "traefik.http.routers.search-service-secure.middlewares": "search-api-stripprefix,search-ratelimit"
   "traefik.http.routers.search-service-secure.service": "search-service"
   "traefik.http.routers.search-service-secure.priority": "20"
   # Middleware pour strip /api
   "traefik.http.middlewares.search-api-stripprefix.stripprefix.prefixes": "/api"
+  # Middleware Rate Limit : Bloque si + de 5 requêtes par seconde en moyenne (Burst de 15)
+  "traefik.http.middlewares.search-ratelimit.ratelimit.average": 5
+  "traefik.http.middlewares.search-ratelimit.ratelimit.burst": 15
   # Service
   "traefik.http.services.search-service.loadbalancer.server.port": "8082"
 
