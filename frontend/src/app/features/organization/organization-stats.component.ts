@@ -11,7 +11,7 @@ import { CurrencyService } from '../../core/services/currency.service';
 import { PaymentService } from '../../core/services/payment.service';
 import { Chart, ChartConfiguration, registerables } from 'chart.js';
 import { take } from 'rxjs/operators';
-import { environment } from '../../../../environments/environment';
+import { environment } from '../../../environments/environment';
 
 Chart.register(...registerables);
 

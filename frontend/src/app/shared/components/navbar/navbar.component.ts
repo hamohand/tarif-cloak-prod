@@ -13,7 +13,6 @@ import { environment } from '../../../../environments/environment';
 import { AsyncPipe, CommonModule } from '@angular/common';
 import { take, map, catchError, switchMap } from 'rxjs/operators';
 import { of } from 'rxjs';
-import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-navbar',
