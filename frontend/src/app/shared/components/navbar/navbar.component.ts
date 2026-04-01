@@ -98,15 +98,12 @@ import { of } from 'rxjs';
           <button class="modal-close-btn" (click)="closeRenewalModal()">✕</button>
           
           @if (isBetaMode) {
-            <h3>Quota Épuisé (Phase Bêta)</h3>
-            <p>Vous avez utilisé tous vos crédits de recherche gratuits ou terminés votre essai. Pour continuer à utiliser l'outil, n'hésitez pas à nous contacter !</p>
+            <h3>Quota Épuisé</h3>
+            <p>Merci pour votre participation. Veuillez contacter l'administrateur si vous souhaitez continuer à tester.</p>
             <div class="renewal-modal-actions">
               <button class="btn-modal btn-modal-primary" (click)="toggleContactPopup(); closeRenewalModal()">
-                💬 Demander plus de crédits
+                💬 Contacter l'administrateur
               </button>
-              <a routerLink="/organization/stats" class="btn-modal btn-modal-secondary" (click)="closeRenewalModal()">
-                Voir notre page tarifs
-              </a>
             </div>
           } @else {
             <h3>Accès Positions tarifaires suspendu</h3>
@@ -144,12 +141,11 @@ import { of } from 'rxjs';
       @if (!(canMakeRequests$ | async)) {
         <div class="trial-expired-banner">
           @if (isBetaMode) {
-            <p>⚠️ Votre quota de crédits est épuisé. L'accès aux recherches est suspendu (Phase Bêta).</p>
+            <p>⚠️ Merci pour votre participation. Veuillez contacter l'administrateur si vous souhaitez continuer à tester.</p>
             <div class="banner-actions">
               <button class="btn-banner btn-banner-primary" (click)="toggleContactPopup()">
-                💬 Demander plus de crédits
+                💬 Contacter l'administrateur
               </button>
-              <a routerLink="/organization/stats" class="btn-banner btn-banner-secondary">Voir les tarifs</a>
             </div>
           } @else {
             <p>⚠️ L'accès Positions tarifaires est suspendu (plan expiré ou quota épuisé).</p>

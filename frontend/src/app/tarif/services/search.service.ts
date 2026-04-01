@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
+import { environment } from '../../../environments/environment';
 
 export interface DecodeCodeItem {
   code: string;
@@ -84,7 +85,11 @@ export class SearchService {
     } else if (error.status === 403) {
       errorMessage = 'Accès refusé. Vous n\'avez pas les permissions nécessaires.';
     } else if (error.status === 429) {
-      errorMessage = 'Quota de crédits épuisé. Veuillez renouveler votre plan ou choisir un autre plan.';
+      if (environment.production) {
+        errorMessage = 'Merci pour votre participation. Veuillez contacter l\'administrateur si vous souhaitez continuer à tester.';
+      } else {
+        errorMessage = 'Quota de crédits épuisé. Veuillez renouveler votre plan ou choisir un autre plan.';
+      }
     } else if (error.status === 404) {
       errorMessage = 'Code HS introuvable dans la base de données.';
     } else if (error.status === 400) {

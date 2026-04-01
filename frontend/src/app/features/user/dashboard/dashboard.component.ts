@@ -81,7 +81,7 @@ import { take } from 'rxjs/operators';
                 }
               </div>
               @if (!quota.isUnlimited && quota.monthlyQuota && getOrgPercentage() >= 100) {
-                <p class="quota-exceeded-message">❌ Le quota mensuel de l'organisation a été dépassé.</p>
+                <p class="quota-exceeded-message">❌ Merci pour votre participation. Veuillez contacter l'administrateur si vous souhaitez continuer à tester.</p>
               }
             </div>
           }
