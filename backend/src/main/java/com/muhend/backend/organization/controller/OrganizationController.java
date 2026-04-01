@@ -165,6 +165,19 @@ public class OrganizationController {
         return ResponseEntity.ok(organization);
     }
 
+    @PutMapping("/{id}/reset-plan")
+    @Operation(
+        summary = "Réinitialiser le plan actuel",
+        description = "Réinitialise la date d'expiration (+30j) et le cycle de facturation pour remettre le quota à zéro. " +
+                     "Principalement utilisé pour prolonger les comptes Invités/Essai. " +
+                     "Nécessite le rôle ADMIN.",
+        security = @SecurityRequirement(name = "bearerAuth")
+    )
+    public ResponseEntity<OrganizationDto> resetPlan(@PathVariable Long id) {
+        OrganizationDto organization = organizationService.resetPlan(id);
+        return ResponseEntity.ok(organization);
+    }
+
     @PutMapping("/{id}/disable")
     @Operation(
         summary = "Désactiver une organisation",

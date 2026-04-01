@@ -232,6 +232,14 @@ export class AdminService {
   }
 
   /**
+   * Réinitialise le plan actuel d'une organisation (date d'expiration + quota à zéro).
+   * Utilisé principalement pour redonner de l'accès à un testeur/invité.
+   */
+  resetOrganizationPlan(organizationId: number): Observable<Organization> {
+    return this.http.put<Organization>(`${this.apiUrl}/organizations/${organizationId}/reset-plan`, {});
+  }
+
+  /**
    * Désactive une organisation.
    * Les collaborateurs ne pourront plus utiliser l'application.
    */

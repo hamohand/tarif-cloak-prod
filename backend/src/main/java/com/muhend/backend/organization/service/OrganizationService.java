@@ -822,6 +822,42 @@ public class OrganizationService {
     }
     
     /**
+     * Réinitialise le plan actuel (principalement pour les comptes Invités/Essai).
+     * Prolonge la date d'expiration de 30 jours et réinitialise le cycle de quota.
+     * 
+     * @param organizationId ID de l'organisation
+     * @return L'organisation mise à jour
+     */
+    @Transactional
+    public OrganizationDto resetPlan(Long organizationId) {
+        Organization organization = organizationRepository.findById(organizationId)
+                .orElseThrow(() -> new IllegalArgumentException("Organisation non trouvée avec l'ID: " + organizationId));
+        
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+        java.time.LocalDate today = java.time.LocalDate.now();
+        
+        // 1. Prolonger l'accès de 30 jours
+        organization.setTrialExpiresAt(now.plusDays(30));
+        organization.setTrialPermanentlyExpired(false);
+        
+        // 2. Réinitialiser le cycle pour ramener la consommation de la période en cours à 0
+        organization.setMonthlyPlanStartDate(today);
+        organization.setMonthlyPlanEndDate(today.plusDays(30));
+        
+        organization = organizationRepository.save(organization);
+        
+        // Réactiver les collaborateurs s'ils étaient suspendus à cause d'un quota épuisé
+        reactivateAllCollaborators(organization);
+        
+        log.info("Plan réinitialisé pour l'organisation {} (ID: {}). Nouveau cycle: {} -> {}, Expire le: {}", 
+                organization.getName(), organizationId, 
+                organization.getMonthlyPlanStartDate(), organization.getMonthlyPlanEndDate(),
+                organization.getTrialExpiresAt());
+                
+        return toDto(organization);
+    }
+    
+    /**
      * Change le plan tarifaire d'une organisation selon la nouvelle politique de facturation.
      * 
      * Règles :

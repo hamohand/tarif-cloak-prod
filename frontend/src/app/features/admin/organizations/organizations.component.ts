@@ -113,6 +113,7 @@ import { NotificationService } from '../../../core/services/notification.service
                   <td>
                     <button class="btn btn-sm btn-secondary" (click)="toggleEdit(org)">✏️</button>
                     <button class="btn btn-sm btn-info" (click)="toggleUsers(org.id)">👥</button>
+                    <button class="btn btn-sm btn-primary" (click)="resetOrganizationPlan(org)" title="Réinitialiser le plan">🔄</button>
                     @if (org.enabled === false) {
                       <button class="btn btn-sm btn-success" (click)="enableOrganization(org)" title="Réactiver">✅</button>
                     } @else {
@@ -148,6 +149,7 @@ import { NotificationService } from '../../../core/services/notification.service
                 <div class="org-actions">
                   <button class="btn btn-sm btn-secondary" (click)="toggleEdit(org)">✏️ Modifier</button>
                   <button class="btn btn-sm btn-info" (click)="toggleUsers(org.id)">👥 Utilisateurs</button>
+                  <button class="btn btn-sm btn-primary" (click)="resetOrganizationPlan(org)">🔄 Réinitialiser</button>
                   @if (org.enabled === false) {
                     <button class="btn btn-sm btn-success" (click)="enableOrganization(org)">✅ Réactiver</button>
                   } @else {
@@ -1014,6 +1016,24 @@ export class OrganizationsComponent implements OnInit {
       },
       error: (err) => {
         const message = err.error?.message || err.message || "Erreur lors de la réactivation";
+        this.errorMessage = message;
+        this.notificationService.error(message);
+      }
+    });
+  }
+
+  resetOrganizationPlan(org: Organization) {
+    if (!confirm(`Êtes-vous sûr de vouloir réinitialiser le plan de l'organisation "${org.name}" ?\n\nCela va :\n- Prolonger l'accès de 30 jours\n- Remettre son quota de crédits consommés à zéro\n- Réactiver l'organisation si elle était bloquée par manque de quota.`)) {
+      return;
+    }
+
+    this.adminService.resetOrganizationPlan(org.id).subscribe({
+      next: () => {
+        this.notificationService.success(`Le plan de "${org.name}" a été réinitialisé avec succès`);
+        this.loadOrganizations();
+      },
+      error: (err) => {
+        const message = err.error?.message || err.message || "Erreur lors de la réinitialisation du plan";
         this.errorMessage = message;
         this.notificationService.error(message);
       }
