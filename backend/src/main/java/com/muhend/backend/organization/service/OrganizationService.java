@@ -866,10 +866,9 @@ public class OrganizationService {
                 // CAS 1 : Plan Essai gratuit → Autre plan OU Autre plan → Plan Essai gratuit
                 if (isOldPlanTrial || isNewPlanTrial) {
                     // Vérifier que l'essai n'a pas déjà été utilisé
-                    if (isNewPlanTrial && (organization.getTrialPermanentlyExpired() || organization.getTrialExpiresAt() != null)) {
+                    if (isNewPlanTrial && (Boolean.TRUE.equals(organization.getTrialPermanentlyExpired()) || organization.getTrialExpiresAt() != null)) {
                         throw new IllegalArgumentException(
-                            "Le plan d'essai gratuit ne peut être utilisé qu'une seule fois. " +
-                            "Votre organisation a déjà utilisé l'essai gratuit."
+                            "Contacter l'administrateur par mail ou Whatsapp pour demander une prolongation."
                         );
                     }
                     // Effet immédiat

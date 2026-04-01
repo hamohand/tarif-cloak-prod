@@ -556,13 +556,19 @@ export class RegisterComponent implements OnInit {
             }
           }
           
-          // Si aucun plan n'est sélectionné, sélectionner le plan gratuit par défaut
+          // Si aucun plan n'est sélectionné, sélectionner le plan 'Bêta Testeur' (ou gratuit en fallback)
           const currentPlanId = this.registerForm.get('pricingPlanId')?.value;
           if (!currentPlanId) {
-            // Trouver le plan gratuit (pricePerMonth === 0)
-            const freePlan = plans.find(plan => plan.pricePerMonth === 0);
-            if (freePlan) {
-              this.registerForm.patchValue({ pricingPlanId: freePlan.id });
+            // Priorité absolue au plan Bêta Testeur
+            const betaPlan = plans.find(plan => plan.name === 'Bêta Testeur');
+            if (betaPlan) {
+              this.registerForm.patchValue({ pricingPlanId: betaPlan.id });
+            } else {
+              // Trouver le plan gratuit (pricePerMonth === 0) si Bêta Testeur n'est pas présent
+              const freePlan = plans.find(plan => plan.pricePerMonth === 0);
+              if (freePlan) {
+                this.registerForm.patchValue({ pricingPlanId: freePlan.id });
+              }
             }
           }
         });
