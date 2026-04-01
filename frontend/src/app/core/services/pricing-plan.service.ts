@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 
 export interface PricingPlan {
@@ -56,7 +57,22 @@ export class PricingPlanService {
       console.log('📤 Envoi de la requête sans marketVersion (récupération de tous les plans)');
       console.log('🌐 URL complète:', this.apiUrl);
     }
-    return this.http.get<PricingPlan[]>(this.apiUrl, { params });
+    return this.http.get<PricingPlan[]>(this.apiUrl, { params }).pipe(
+      map((plans: PricingPlan[]) => this.filterPlansForProduction(plans))
+    );
+  }
+
+  /**
+   * Filtre les plans en production pour ne garder que le plan 'Invité' / 'Bêta Testeur'
+   */
+  private filterPlansForProduction(plans: PricingPlan[]): PricingPlan[] {
+    if (environment.production) {
+      const invitePlan = plans.find(p => p.name === 'Invité' || p.name === 'Bêta Testeur');
+      if (invitePlan) {
+        return [invitePlan];
+      }
+    }
+    return plans;
   }
 
   /**
@@ -100,7 +116,9 @@ export class PricingPlanService {
       params = params.set('organizationId', organizationId.toString());
     }
     
-    return this.http.get<PricingPlan[]>(`${this.apiUrl}/available`, { params });
+    return this.http.get<PricingPlan[]>(`${this.apiUrl}/available`, { params }).pipe(
+      map((plans: PricingPlan[]) => this.filterPlansForProduction(plans))
+    );
   }
 
   /**
