@@ -11,6 +11,7 @@ import { CurrencyService } from '../../core/services/currency.service';
 import { PaymentService } from '../../core/services/payment.service';
 import { Chart, ChartConfiguration, registerables } from 'chart.js';
 import { take } from 'rxjs/operators';
+import { environment } from '../../../../environments/environment';
 
 Chart.register(...registerables);
 
@@ -58,12 +59,21 @@ Chart.register(...registerables);
               </p>
             }
             <div class="renewal-actions">
-              <button class="btn btn-renew" (click)="renewCurrentPlan()" [disabled]="isRenewing">
-                @if (isRenewing) { Redirection en cours... } @else { Renouveler le plan actuel }
-              </button>
-              <button class="btn btn-change-plan" (click)="scrollToChangePlan()">
-                Changer de plan
-              </button>
+              @if (isBetaMode) {
+                <a href="https://wa.me/33622563841" target="_blank" class="btn btn-renew">
+                  💬 Nous Contacter (Plus de crédits)
+                </a>
+                <button class="btn btn-change-plan" (click)="scrollToChangePlan()">
+                  Voir nos autres offres
+                </button>
+              } @else {
+                <button class="btn btn-renew" (click)="renewCurrentPlan()" [disabled]="isRenewing">
+                  @if (isRenewing) { Redirection en cours... } @else { Renouveler le plan actuel }
+                </button>
+                <button class="btn btn-change-plan" (click)="scrollToChangePlan()">
+                  Changer de plan
+                </button>
+              }
             </div>
           </div>
         </div>
@@ -482,6 +492,8 @@ export class OrganizationStatsComponent implements OnInit {
   loadingUsageLogs = false;
   errorMessage = '';
 
+  isBetaMode = environment.betaMode === true; // Pour le basculement Bêta / Normal
+
   // Plans tarifaires
   pricingPlans: PricingPlan[] = [];
   currentPlan: PricingPlan | null = null;
@@ -849,7 +861,7 @@ export class OrganizationStatsComponent implements OnInit {
 
     const isPaidPlan = this.selectedPlanForConfirmation &&
       ((this.selectedPlanForConfirmation.pricePerMonth != null && this.selectedPlanForConfirmation.pricePerMonth > 0) ||
-       (this.selectedPlanForConfirmation.pricePerRequest != null && this.selectedPlanForConfirmation.pricePerRequest > 0));
+        (this.selectedPlanForConfirmation.pricePerRequest != null && this.selectedPlanForConfirmation.pricePerRequest > 0));
 
     if (isPaidPlan) {
       // Plan payant → paiement via Chargily

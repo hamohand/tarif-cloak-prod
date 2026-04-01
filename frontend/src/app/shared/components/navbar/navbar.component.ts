@@ -13,6 +13,7 @@ import { environment } from '../../../../environments/environment';
 import { AsyncPipe, CommonModule } from '@angular/common';
 import { take, map, catchError, switchMap } from 'rxjs/operators';
 import { of } from 'rxjs';
+import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-navbar',
@@ -96,16 +97,31 @@ import { of } from 'rxjs';
       <div class="renewal-modal-overlay" (click)="closeRenewalModal()">
         <div class="renewal-modal" (click)="$event.stopPropagation()">
           <button class="modal-close-btn" (click)="closeRenewalModal()">✕</button>
-          <h3>Accès Positions tarifaires suspendu</h3>
-          <p>Votre plan est expiré ou votre quota de crédits est épuisé.</p>
-          <div class="renewal-modal-actions">
-            <button class="btn-modal btn-modal-primary" (click)="renewCurrentPlan()" [disabled]="isRenewing">
-              @if (isRenewing) { Redirection... } @else { Renouveler le plan actuel }
-            </button>
-            <a routerLink="/organization/stats" class="btn-modal btn-modal-secondary" (click)="closeRenewalModal()">
-              Changer de plan
-            </a>
-          </div>
+          
+          @if (isBetaMode) {
+            <h3>Quota Épuisé (Phase Bêta)</h3>
+            <p>Vous avez utilisé tous vos crédits de recherche gratuits ou terminés votre essai. Pour continuer à utiliser l'outil, n'hésitez pas à nous contacter !</p>
+            <div class="renewal-modal-actions">
+              <button class="btn-modal btn-modal-primary" (click)="toggleContactPopup(); closeRenewalModal()">
+                💬 Demander plus de crédits
+              </button>
+              <a routerLink="/organization/stats" class="btn-modal btn-modal-secondary" (click)="closeRenewalModal()">
+                Voir notre page tarifs
+              </a>
+            </div>
+          } @else {
+            <h3>Accès Positions tarifaires suspendu</h3>
+            <p>Votre plan est expiré ou votre quota de crédits est épuisé.</p>
+            <div class="renewal-modal-actions">
+              <button class="btn-modal btn-modal-primary" (click)="renewCurrentPlan()" [disabled]="isRenewing">
+                @if (isRenewing) { Redirection... } @else { Renouveler le plan actuel }
+              </button>
+              <a routerLink="/organization/stats" class="btn-modal btn-modal-secondary" (click)="closeRenewalModal()">
+                Changer de plan
+              </a>
+            </div>
+          }
+          
         </div>
       </div>
     }
@@ -128,13 +144,23 @@ import { of } from 'rxjs';
     @if ((isAuthenticated$ | async) && (isOrganizationAccount$ | async)) {
       @if (!(canMakeRequests$ | async)) {
         <div class="trial-expired-banner">
-          <p>⚠️ L'accès Positions tarifaires est suspendu (plan expiré ou quota épuisé).</p>
-          <div class="banner-actions">
-            <button class="btn-banner btn-banner-primary" (click)="openRenewalModal()" [disabled]="isRenewing">
-              Renouveler le plan actuel
-            </button>
-            <a routerLink="/organization/stats" class="btn-banner btn-banner-secondary">Changer de plan</a>
-          </div>
+          @if (isBetaMode) {
+            <p>⚠️ Votre quota de crédits est épuisé. L'accès aux recherches est suspendu (Phase Bêta).</p>
+            <div class="banner-actions">
+              <button class="btn-banner btn-banner-primary" (click)="toggleContactPopup()">
+                💬 Demander plus de crédits
+              </button>
+              <a routerLink="/organization/stats" class="btn-banner btn-banner-secondary">Voir les tarifs</a>
+            </div>
+          } @else {
+            <p>⚠️ L'accès Positions tarifaires est suspendu (plan expiré ou quota épuisé).</p>
+            <div class="banner-actions">
+              <button class="btn-banner btn-banner-primary" (click)="openRenewalModal()" [disabled]="isRenewing">
+                Renouveler le plan actuel
+              </button>
+              <a routerLink="/organization/stats" class="btn-banner btn-banner-secondary">Changer de plan</a>
+            </div>
+          }
         </div>
       }
       <nav class="organization-navbar">
@@ -825,6 +851,9 @@ export class NavbarComponent implements OnInit, OnDestroy {
   toggleContactPopup(): void {
     this.showContactPopup = !this.showContactPopup;
   }
+  
+  isBetaMode = environment.betaMode === true; // Pour basculer facilement plus tard
+  
   orgPricingPlanId: number | null = null;
 
   isAuthenticated$!: Observable<boolean>;

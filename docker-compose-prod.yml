@@ -306,6 +306,7 @@ services:
         KEYCLOAK_FRONTEND_CLIENT: "${KEYCLOAK_FRONTEND_CLIENT}"
         API_URL: "${API_URL:-/api}"
         MARKET_VERSION: "${MARKET_VERSION:-DZ}"
+        BETA_MODE: "${BETA_MODE:-false}"
         NGINX_CONF: nginx-prod.conf
     environment:
       FRONTEND_DOMAIN: "${FRONTEND_DOMAIN}"
