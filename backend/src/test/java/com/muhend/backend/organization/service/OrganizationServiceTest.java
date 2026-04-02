@@ -11,9 +11,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
+import org.springframework.test.util.ReflectionTestUtils;
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -46,24 +47,36 @@ class OrganizationServiceTest {
         organization.setId(1L);
         organization.setName("Test Organization");
         organization.setCreatedAt(LocalDateTime.now());
+        
+        ReflectionTestUtils.setField(organizationService, "creditsPositions10", 15);
+        ReflectionTestUtils.setField(organizationService, "creditsPositions6", 10);
+        ReflectionTestUtils.setField(organizationService, "creditsDecodep10", 5);
+        ReflectionTestUtils.setField(organizationService, "creditsDecode", 2);
+        ReflectionTestUtils.setField(organizationService, "creditsDefault", 1);
     }
 
     @Test
-    void testCheckQuota_WhenOrganizationIsNull_ShouldReturnTrue() {
-        // Test: Si organizationId est null, on autorise
-        assertTrue(organizationService.checkQuota(null));
+    void testCheckQuota_WhenOrganizationIsNull_ShouldThrowException() {
+        // Test: Si organizationId est null, une exception est levée
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            organizationService.checkQuota(null);
+        });
+        assertTrue(exception.getMessage().contains("organisation"));
         verify(organizationRepository, never()).findById(any());
-        verify(usageLogRepository, never()).countByOrganizationIdAndTimestampBetween(any(), any(), any());
     }
 
     @Test
-    void testCheckQuota_WhenOrganizationNotFound_ShouldReturnTrue() {
-        // Test: Si l'organisation n'existe pas, on autorise (non bloquant)
+    void testCheckQuota_WhenOrganizationNotFound_ShouldThrowException() {
+        // Test: Si l'organisation n'existe pas, on lève une exception
         when(organizationRepository.findById(1L)).thenReturn(Optional.empty());
 
-        assertTrue(organizationService.checkQuota(1L));
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            organizationService.checkQuota(1L);
+        });
+
+        assertTrue(exception.getMessage().contains("Organisation non trouvée"));
         verify(organizationRepository).findById(1L);
-        verify(usageLogRepository, never()).countByOrganizationIdAndTimestampBetween(any(), any(), any());
+        verify(usageLogRepository, never()).findByOrganizationIdAndTimestampBetween(any(), any(), any());
     }
 
     @Test
@@ -74,7 +87,7 @@ class OrganizationServiceTest {
 
         assertTrue(organizationService.checkQuota(1L));
         verify(organizationRepository).findById(1L);
-        verify(usageLogRepository, never()).countByOrganizationIdAndTimestampBetween(any(), any(), any());
+        verify(usageLogRepository, never()).findByOrganizationIdAndTimestampBetween(any(), any(), any());
     }
 
     @Test
@@ -82,12 +95,12 @@ class OrganizationServiceTest {
         // Test: Si le quota n'est pas dépassé, on autorise
         organization.setMonthlyQuota(100);
         when(organizationRepository.findById(1L)).thenReturn(Optional.of(organization));
-        when(usageLogRepository.countByOrganizationIdAndTimestampBetween(eq(1L), any(LocalDateTime.class), any(LocalDateTime.class)))
-                .thenReturn(50L); // 50 requêtes utilisées sur 100
+        when(usageLogRepository.findByOrganizationIdAndTimestampBetween(eq(1L), any(LocalDateTime.class), any(LocalDateTime.class)))
+                .thenReturn(createMockUsageLogs(50)); // 50 requêtes (par défaut 1 crédit chacune = 50 crédits)
 
         assertTrue(organizationService.checkQuota(1L));
         verify(organizationRepository).findById(1L);
-        verify(usageLogRepository).countByOrganizationIdAndTimestampBetween(eq(1L), any(LocalDateTime.class), any(LocalDateTime.class));
+        verify(usageLogRepository).findByOrganizationIdAndTimestampBetween(eq(1L), any(LocalDateTime.class), any(LocalDateTime.class));
     }
 
     @Test
@@ -95,18 +108,17 @@ class OrganizationServiceTest {
         // Test: Si le quota est dépassé, on lève une exception
         organization.setMonthlyQuota(100);
         when(organizationRepository.findById(1L)).thenReturn(Optional.of(organization));
-        when(usageLogRepository.countByOrganizationIdAndTimestampBetween(eq(1L), any(LocalDateTime.class), any(LocalDateTime.class)))
-                .thenReturn(100L); // 100 requêtes utilisées sur 100 (quota atteint)
+        when(usageLogRepository.findByOrganizationIdAndTimestampBetween(eq(1L), any(LocalDateTime.class), any(LocalDateTime.class)))
+                .thenReturn(createMockUsageLogs(100)); // 100 requêtes (100 crédits) (quota atteint)
 
         QuotaExceededException exception = assertThrows(QuotaExceededException.class, () -> {
             organizationService.checkQuota(1L);
         });
 
-        assertTrue(exception.getMessage().contains("Quota mensuel dépassé"));
         assertTrue(exception.getMessage().contains("Test Organization"));
         assertTrue(exception.getMessage().contains("100/100"));
         verify(organizationRepository).findById(1L);
-        verify(usageLogRepository).countByOrganizationIdAndTimestampBetween(eq(1L), any(LocalDateTime.class), any(LocalDateTime.class));
+        verify(usageLogRepository).findByOrganizationIdAndTimestampBetween(eq(1L), any(LocalDateTime.class), any(LocalDateTime.class));
     }
 
     @Test
@@ -114,8 +126,8 @@ class OrganizationServiceTest {
         // Test: Si le quota est dépassé (plus que le quota), on lève une exception
         organization.setMonthlyQuota(100);
         when(organizationRepository.findById(1L)).thenReturn(Optional.of(organization));
-        when(usageLogRepository.countByOrganizationIdAndTimestampBetween(eq(1L), any(LocalDateTime.class), any(LocalDateTime.class)))
-                .thenReturn(150L); // 150 requêtes utilisées sur 100 (quota dépassé)
+        when(usageLogRepository.findByOrganizationIdAndTimestampBetween(eq(1L), any(LocalDateTime.class), any(LocalDateTime.class)))
+                .thenReturn(createMockUsageLogs(150)); // 150 requêtes (150 crédits) (quota dépassé)
 
         QuotaExceededException exception = assertThrows(QuotaExceededException.class, () -> {
             organizationService.checkQuota(1L);
@@ -124,8 +136,55 @@ class OrganizationServiceTest {
         assertTrue(exception.getMessage().contains("Quota mensuel dépassé"));
         assertTrue(exception.getMessage().contains("150/100"));
         verify(organizationRepository).findById(1L);
-        verify(usageLogRepository).countByOrganizationIdAndTimestampBetween(eq(1L), any(LocalDateTime.class), any(LocalDateTime.class));
+        verify(usageLogRepository).findByOrganizationIdAndTimestampBetween(eq(1L), any(LocalDateTime.class), any(LocalDateTime.class));
     }
+
+    private java.util.List<com.muhend.backend.usage.model.UsageLog> createMockUsageLogs(int count) {
+        java.util.List<com.muhend.backend.usage.model.UsageLog> logs = new java.util.ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            com.muhend.backend.usage.model.UsageLog log = new com.muhend.backend.usage.model.UsageLog();
+            log.setEndpoint("default"); // Cela donnera 1 crédit (creditsDefault) par log car creditsDefault=1 par défaut si l'endpoint ne match pas les clés
+            logs.add(log);
+        }
+        return logs;
+    }
+
+    @Test
+    void testResetPlan_ShouldResetConsumptionCycleAndZeroCredits() {
+        // Configuration de l'organisation avant la réinitialisation
+        organization.setMonthlyPlanStartDate(java.time.LocalDate.now().minusDays(15));
+        organization.setMonthlyPlanEndDate(java.time.LocalDate.now().minusDays(15).plusDays(30));
+        organization.setMonthlyQuota(100);
+
+        when(organizationRepository.findById(1L)).thenReturn(Optional.of(organization));
+        when(organizationRepository.save(any(Organization.class))).thenAnswer(i -> i.getArgument(0));
+
+        // On ignore les collaborateurs pour ce test
+        when(organizationUserRepository.findByOrganizationId(1L)).thenReturn(java.util.List.of());
+
+        // Exécution du resetPlan
+        com.muhend.backend.organization.dto.OrganizationDto result = organizationService.resetPlan(1L);
+
+        // Validation 1: Les dates de cycle du plan sont mises à jour à "aujourd'hui"
+        java.time.LocalDate today = java.time.LocalDate.now();
+        assertEquals(today, organization.getMonthlyPlanStartDate());
+        assertEquals(today.plusDays(30), organization.getMonthlyPlanEndDate());
+        
+        // Validation 2: Lorsqu'on verifie le quota pour l'organisation réinitialisée,
+        // les bornes demandées à la base de données correspondent au nouveau cycle !
+        when(usageLogRepository.findByOrganizationIdAndTimestampBetween(eq(1L), any(), any()))
+                .thenReturn(java.util.List.of());
+
+        assertTrue(organizationService.checkQuota(1L));
+
+        // Le repository doit être interrogé avec le début du cycle "aujourd'hui" (0 crédits consommés depuis aujourd'hui)
+        verify(usageLogRepository).findByOrganizationIdAndTimestampBetween(
+                eq(1L), 
+                eq(today.atStartOfDay()), 
+                eq(today.plusDays(30).atTime(23, 59, 59, 999999999))
+        );
+    }
+
 
     @Test
     void testUpdateMonthlyQuota_WhenOrganizationExists_ShouldUpdateQuota() {

@@ -622,18 +622,24 @@ public class OrganizationService {
             return true;
         }
         
-        // Calculer le début et la fin du mois en cours
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime startOfMonth = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
-        LocalDateTime endOfMonth = now.withDayOfMonth(now.toLocalDate().lengthOfMonth())
-                .withHour(23).withMinute(59).withSecond(59).withNano(999999999);
+        LocalDateTime startDateTime;
+        LocalDateTime endDateTime;
+        if (organization.getMonthlyPlanStartDate() != null && organization.getMonthlyPlanEndDate() != null) {
+            startDateTime = organization.getMonthlyPlanStartDate().atStartOfDay();
+            endDateTime = organization.getMonthlyPlanEndDate().atTime(23, 59, 59, 999999999);
+        } else {
+            LocalDateTime now = LocalDateTime.now();
+            startDateTime = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+            endDateTime = now.withDayOfMonth(now.toLocalDate().lengthOfMonth())
+                    .withHour(23).withMinute(59).withSecond(59).withNano(999999999);
+        }
         
         // Sommer les crédits consommés ce mois pour TOUTE l'organisation
         long currentUsage = computeCredits(usageLogRepository.findByOrganizationIdAndTimestampBetween(
-                organizationId, startOfMonth, endOfMonth));
+                organizationId, startDateTime, endDateTime));
 
         log.info("🔍 Vérification du quota pour l'organisation {} (ID: {}): crédits utilisés={}, quota={}, planId={}, période: {} à {}",
-            organization.getName(), organizationId, currentUsage, monthlyQuota, pricingPlanId, startOfMonth, endOfMonth);
+            organization.getName(), organizationId, currentUsage, monthlyQuota, pricingPlanId, startDateTime, endDateTime);
         
         // Vérifier si le quota est dépassé
         if (currentUsage >= monthlyQuota) {
@@ -726,17 +732,7 @@ public class OrganizationService {
         LocalDateTime endDateTime;
         
         PricingPlanDto plan = null;
-        boolean isMonthlyPlan = false;
-        if (pricingPlanId != null) {
-            try {
-                plan = pricingPlanService.getPricingPlanById(pricingPlanId);
-                isMonthlyPlan = plan.getPricePerMonth() != null && plan.getPricePerMonth().compareTo(BigDecimal.ZERO) > 0;
-            } catch (Exception e) {
-                log.warn("Impossible de récupérer le plan pour déterminer le type: {}", e.getMessage());
-            }
-        }
-        
-        if (isMonthlyPlan && organization.getMonthlyPlanStartDate() != null && organization.getMonthlyPlanEndDate() != null) {
+        if (organization.getMonthlyPlanStartDate() != null && organization.getMonthlyPlanEndDate() != null) {
             // Utiliser le cycle mensuel du plan (du startDate au endDate inclus)
             LocalDate startDate = organization.getMonthlyPlanStartDate();
             LocalDate endDate = organization.getMonthlyPlanEndDate();
@@ -745,7 +741,7 @@ public class OrganizationService {
             log.debug("Utilisation du cycle mensuel pour l'organisation {}: du {} au {} (inclus)", 
                     organizationId, startDate, endDate);
         } else {
-            // Utiliser le mois calendaire (pour plans pay-per-request ou essai)
+            // Utiliser le mois calendaire (pour plans pay-per-request ou essai en fallback)
             LocalDateTime now = LocalDateTime.now();
             startDateTime = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
             endDateTime = now.withDayOfMonth(now.toLocalDate().lengthOfMonth())
@@ -1151,12 +1147,19 @@ public class OrganizationService {
         long userCount = organizationUserRepository.findByOrganizationId(organization.getId()).size();
         dto.setUserCount(userCount);
         
-        // Calculer les crédits consommés ce mois
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime startOfMonth = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
-        LocalDateTime endOfMonth = now.withDayOfMonth(now.toLocalDate().lengthOfMonth())
-                .withHour(23).withMinute(59).withSecond(59).withNano(999999999);
-        long currentMonthUsage = computeCredits(usageLogRepository.findByOrganizationIdAndTimestampBetween(organization.getId(), startOfMonth, endOfMonth));
+        // Calculer les crédits consommés ce cycle/mois
+        LocalDateTime startDateTime;
+        LocalDateTime endDateTime;
+        if (organization.getMonthlyPlanStartDate() != null && organization.getMonthlyPlanEndDate() != null) {
+            startDateTime = organization.getMonthlyPlanStartDate().atStartOfDay();
+            endDateTime = organization.getMonthlyPlanEndDate().atTime(23, 59, 59, 999999999);
+        } else {
+            LocalDateTime now = LocalDateTime.now();
+            startDateTime = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+            endDateTime = now.withDayOfMonth(now.toLocalDate().lengthOfMonth())
+                    .withHour(23).withMinute(59).withSecond(59).withNano(999999999);
+        }
+        long currentMonthUsage = computeCredits(usageLogRepository.findByOrganizationIdAndTimestampBetween(organization.getId(), startDateTime, endDateTime));
         dto.setCurrentMonthUsage(currentMonthUsage);
         
         return dto;
@@ -1252,13 +1255,20 @@ public class OrganizationService {
         // #endregion
         if (monthlyQuota != null) {
             // Calculer l'utilisation actuelle
-            LocalDateTime now = LocalDateTime.now();
-            LocalDateTime startOfMonth = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
-            LocalDateTime endOfMonth = now.withDayOfMonth(now.toLocalDate().lengthOfMonth())
-                    .withHour(23).withMinute(59).withSecond(59).withNano(999999999);
+            LocalDateTime startDateTime;
+            LocalDateTime endDateTime;
+            if (organization.getMonthlyPlanStartDate() != null && organization.getMonthlyPlanEndDate() != null) {
+                startDateTime = organization.getMonthlyPlanStartDate().atStartOfDay();
+                endDateTime = organization.getMonthlyPlanEndDate().atTime(23, 59, 59, 999999999);
+            } else {
+                LocalDateTime now = LocalDateTime.now();
+                startDateTime = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+                endDateTime = now.withDayOfMonth(now.toLocalDate().lengthOfMonth())
+                        .withHour(23).withMinute(59).withSecond(59).withNano(999999999);
+            }
             
             long currentUsage = computeCredits(usageLogRepository.findByOrganizationIdAndTimestampBetween(
-                    organization.getId(), startOfMonth, endOfMonth));
+                    organization.getId(), startDateTime, endDateTime));
             
             // Si le quota n'est pas atteint, l'essai n'est pas expiré (même si la date est passée)
             // #region agent log
