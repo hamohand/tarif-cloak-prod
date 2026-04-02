@@ -85,7 +85,7 @@ export class SearchService {
     } else if (error.status === 403) {
       errorMessage = 'Accès refusé. Vous n\'avez pas les permissions nécessaires.';
     } else if (error.status === 429) {
-      if (environment.production) {
+      if (environment.betaMode) {
         errorMessage = 'Merci pour votre participation. Veuillez contacter l\'administrateur si vous souhaitez continuer à tester.';
       } else {
         errorMessage = 'Quota de crédits épuisé. Veuillez renouveler votre plan ou choisir un autre plan.';

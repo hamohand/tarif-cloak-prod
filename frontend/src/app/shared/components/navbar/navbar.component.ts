@@ -47,7 +47,7 @@ import { of } from 'rxjs';
         } @else {
           <a routerLink="/" class="nav-link">Accueil</a>
         }
-        @if (!(isCollaboratorAccount$ | async)) {
+        @if (!(isCollaboratorAccount$ | async) && !isBetaMode) {
           <a routerLink="/pricing" class="nav-link pricing-link">
             💳 Tarifs
           </a>

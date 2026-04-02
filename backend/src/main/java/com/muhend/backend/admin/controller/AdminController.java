@@ -4,6 +4,7 @@ import com.muhend.backend.admin.service.OrganizationDeletionService;
 import com.muhend.backend.auth.model.PendingRegistration;
 import com.muhend.backend.auth.service.PendingRegistrationService;
 import com.muhend.backend.organization.service.OrganizationService;
+import com.muhend.backend.organization.dto.OrganizationDto;
 import com.muhend.backend.usage.model.UsageLog;
 import com.muhend.backend.usage.repository.UsageLogRepository;
 import org.slf4j.Logger;
@@ -103,6 +104,27 @@ public class AdminController {
                 "success", false,
                 "error", "Erreur lors de la suppression: " + e.getMessage()
             ));
+        }
+    }
+
+    /**
+     * Réinitialise le cycle d'utilisation de l'organisation.
+     * @param organizationId ID de l'organisation
+     * @return L'organisation mise à jour
+     */
+    @PutMapping("/organizations/{organizationId}/reset-plan")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<OrganizationDto> resetPlan(@PathVariable Long organizationId) {
+        logger.info("Admin request to reset plan for organization ID: {}", organizationId);
+        try {
+            OrganizationDto updatedOrg = organizationService.resetPlan(organizationId);
+            return ResponseEntity.ok(updatedOrg);
+        } catch (IllegalArgumentException e) {
+            logger.warn("Organization not found: {}", e.getMessage());
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            logger.error("Error resetting plan for organization ID: {}", organizationId, e);
+            return ResponseEntity.internalServerError().build();
         }
     }
 

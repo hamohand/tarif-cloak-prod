@@ -5,6 +5,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { OrganizationAccountService } from '../../core/services/organization-account.service';
 import { combineLatest, of } from 'rxjs';
 import { map, switchMap, catchError, distinctUntilChanged } from 'rxjs/operators';
+import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-home',
@@ -21,7 +22,7 @@ import { map, switchMap, catchError, distinctUntilChanged } from 'rxjs/operators
         <p class="hero-desc">Un code de nomenclature inconnu devient lisible en un instant : section, chapitre, position, sous-position.</p>
         <div class="hero-cta" *ngIf="!(isAuthenticated$ | async)">
           <a routerLink="/auth/register" class="cta-button primary">Commencer gratuitement</a>
-          <a routerLink="/pricing" class="cta-button ghost">Voir les tarifs</a>
+          <a *ngIf="!isBetaMode" routerLink="/pricing" class="cta-button ghost">Voir les tarifs</a>
         </div>
       </section>
 
@@ -835,6 +836,7 @@ import { map, switchMap, catchError, distinctUntilChanged } from 'rxjs/operators
 export class HomeComponent {
   private authService = inject(AuthService);
   private organizationAccountService = inject(OrganizationAccountService);
+  isBetaMode = environment.betaMode === true;
 
   isAuthenticated$ = this.authService.isAuthenticated();
   isOrganizationAccount$ = this.authService.isOrganizationAccount();

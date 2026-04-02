@@ -229,7 +229,7 @@ Chart.register(...registerables);
                   <span>Changer de plan</span>
                 }
               </button>
-              @if (!organization.trialPermanentlyExpired) {
+              @if (!organization.trialPermanentlyExpired && !isBetaMode) {
                 <a routerLink="/pricing" class="view-all-plans-link">Voir tous les plans tarifaires</a>
               }
             </div>
@@ -477,6 +477,8 @@ export class OrganizationStatsComponent implements OnInit {
   private organizationAccountService = inject(OrganizationAccountService);
   private currencyService = inject(CurrencyService);
   private paymentService = inject(PaymentService);
+
+  isBetaMode = environment.betaMode === true;
 
   organization: Organization | null = null;
   currencySymbol$ = this.currencyService.getCurrencySymbol();

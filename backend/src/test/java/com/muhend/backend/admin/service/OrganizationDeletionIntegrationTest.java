@@ -16,11 +16,14 @@ import java.time.LocalDate;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
+import org.springframework.context.annotation.Import;
+
 /**
  * Test d'intégration automatisé pour vérifier que le "Feature" de suppression 
  * d'une organisation ne cause jamais d'erreur 500 liée à des dépendances circulaires 
  * de la base de données.
  */
+@Import(OrganizationDeletionService.class)
 public class OrganizationDeletionIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
