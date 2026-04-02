@@ -237,16 +237,9 @@ public class PendingRegistrationService {
             throw new IllegalStateException("Le token de confirmation a expiré");
         }
 
-        // Vérifier l'OTP
-        if (pending.getOtpCode() == null) {
-            throw new IllegalArgumentException("Veuillez d'abord demander un code de vérification");
-        }
-        if (pending.getOtpExpiresAt().isBefore(LocalDateTime.now())) {
-            throw new IllegalStateException("Le code de vérification a expiré. Veuillez en demander un nouveau.");
-        }
-        if (!pending.getOtpCode().equals(otp.trim())) {
-            throw new IllegalArgumentException("Code de vérification incorrect");
-        }
+        // --- OTP VÉRIFICATION SIMPLIFIÉE POUR MVP ---
+        // Le contrôle par code OTP est temporairement désactivé.
+        // L'utilisateur valide uniquement avec son lien.
         
         // Vérifier si l'organisation existe déjà
         Optional<Organization> existingOrg = organizationRepository

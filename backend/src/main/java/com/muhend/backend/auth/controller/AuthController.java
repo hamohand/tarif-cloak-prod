@@ -63,26 +63,18 @@ public class AuthController {
     
     @PostMapping("/send-confirmation-otp")
     public ResponseEntity<?> sendConfirmationOtp(@RequestParam String token) {
-        logger.info("=== OTP confirmation request received ===");
-        try {
-            String maskedEmail = pendingRegistrationService.sendConfirmationOtp(token);
-            return ResponseEntity.ok(Map.of(
-                "message", "Un code de vérification a été envoyé à votre adresse email.",
-                "maskedEmail", maskedEmail
-            ));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
-        } catch (IllegalStateException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
-        } catch (Exception e) {
-            logger.error("✗ Error sending OTP: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "Erreur lors de l'envoi du code de vérification"));
-        }
+        logger.info("=== OTP confirmation bypassed for MVP ===");
+        // Bypassed: On ne fait plus rien, on retourne un succès bidon pour ne pas casser l'ancien frontend si besoin
+        return ResponseEntity.ok(Map.of(
+            "message", "OTP bypassé.",
+            "maskedEmail", "bypassed@example.com"
+        ));
     }
 
     @GetMapping("/confirm-registration")
-    public ResponseEntity<?> confirmRegistration(@RequestParam String token, @RequestParam String otp) {
+    public ResponseEntity<?> confirmRegistration(
+            @RequestParam String token, 
+            @RequestParam(required = false) String otp) {
         logger.info("=== Registration confirmation request received ===");
         try {
             pendingRegistrationService.confirmRegistration(token, otp);

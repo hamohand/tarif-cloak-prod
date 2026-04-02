@@ -315,7 +315,7 @@ import { of } from 'rxjs';
       margin-right: 1rem;
       font-weight: 800;
       padding: 0.5rem 1rem;
-      background: rgba(255, 255, 255, 0.1);
+      background: rgba(3, 217, 255, 0.11);
       border-radius: 20px;
       backdrop-filter: blur(10px);
       border: 1px solid rgba(255, 255, 255, 0.2);
@@ -846,9 +846,9 @@ export class NavbarComponent implements OnInit, OnDestroy {
   toggleContactPopup(): void {
     this.showContactPopup = !this.showContactPopup;
   }
-  
+
   isBetaMode = environment.betaMode === true; // Pour basculer facilement plus tard
-  
+
   orgPricingPlanId: number | null = null;
 
   isAuthenticated$!: Observable<boolean>;
@@ -867,7 +867,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
     this.isAuthenticated$ = this.authService.isAuthenticated();
     this.isOrganizationAccount$ = this.authService.isOrganizationAccount();
     this.isCollaboratorAccount$ = this.authService.isCollaboratorAccount();
-    
+
     // Vérifier si l'organisation peut faire des requêtes (essai non expiré)
     // Par défaut, on suppose que les requêtes sont autorisées
     this.canMakeRequests$ = combineLatest([
@@ -891,7 +891,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
         );
       })
     );
-    
+
     // Charger le code pays du profil de marché configuré dans l'environnement
     // Le profil de marché est défini par la variable d'environnement MARKET_VERSION
     if (environment.marketVersion) {
@@ -905,7 +905,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
     } else {
       this.countryCode$ = of(null);
     }
-    
+
     this.loadAlertCount();
     this.loadNewInvoicesCount();
     this.loadOverdueInvoicesCount();
@@ -963,7 +963,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
         this.invoiceService.getNewInvoicesCount().subscribe({
           next: (response) => {
             const newCount = response.count;
-            
+
             // Afficher une notification si une nouvelle facture est détectée
             // (seulement après la première vérification, pour éviter de notifier au chargement initial)
             if (this.previousInvoicesCount !== null && newCount > this.previousInvoicesCount) {
@@ -974,7 +974,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
                 this.notificationService.info(`${diff} nouvelles factures sont disponibles !`);
               }
             }
-            
+
             this.newInvoicesCount = newCount;
             // Initialiser ou mettre à jour le compteur précédent
             if (this.previousInvoicesCount === null) {
@@ -1003,7 +1003,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
         this.invoiceService.getOverdueInvoicesCount().subscribe({
           next: (response) => {
             const newCount = response.count;
-            
+
             // Afficher une notification si une nouvelle facture en retard est détectée
             if (this.previousOverdueInvoicesCount !== null && newCount > this.previousOverdueInvoicesCount) {
               const diff = newCount - this.previousOverdueInvoicesCount;
@@ -1013,7 +1013,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
                 this.notificationService.warning(`${diff} factures sont maintenant en retard !`);
               }
             }
-            
+
             this.overdueInvoicesCount = newCount;
             if (this.previousOverdueInvoicesCount === null) {
               this.previousOverdueInvoicesCount = newCount;

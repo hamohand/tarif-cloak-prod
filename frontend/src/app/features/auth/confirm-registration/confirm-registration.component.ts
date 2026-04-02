@@ -13,46 +13,6 @@ import { environment } from '../../../../environments/environment';
     <div class="confirm-container">
       <div class="confirm-card">
 
-        <!-- Étape 1 : Envoyer l'OTP -->
-        @if (!isLoading && !errorMessage && !successMessage && step === 1 && token) {
-          <div class="step-state">
-            <h2>Confirmer votre invitation</h2>
-            <p class="intro">Cliquez sur le bouton ci-dessous pour recevoir un code de vérification à l'adresse email associée à cette invitation.</p>
-            <button class="btn btn-primary" (click)="requestOtp()">
-              Recevoir mon code de vérification
-            </button>
-          </div>
-        }
-
-        <!-- Étape 2 : Saisir l'OTP -->
-        @if (!isLoading && !errorMessage && !successMessage && step === 2) {
-          <div class="step-state">
-            <h2>Saisir le code de vérification</h2>
-            <p class="intro">Un code à 6 chiffres a été envoyé à <strong>{{ maskedEmail }}</strong>. Saisissez-le ci-dessous.</p>
-            <div class="form-group">
-              <label for="otpInput">Code de vérification</label>
-              <input
-                id="otpInput"
-                type="text"
-                [(ngModel)]="otpInput"
-                placeholder="000000"
-                maxlength="6"
-                class="otp-input"
-                (keydown.enter)="confirmRegistration()"
-                autocomplete="one-time-code"
-              />
-            </div>
-            <div class="btn-row">
-              <button class="btn btn-primary" (click)="confirmRegistration()" [disabled]="otpInput.trim().length !== 6">
-                Confirmer mon compte
-              </button>
-              <button class="btn btn-link" (click)="requestOtp()">
-                Renvoyer le code
-              </button>
-            </div>
-          </div>
-        }
-
         <!-- Chargement -->
         @if (isLoading) {
           <div class="step-state">
@@ -227,44 +187,29 @@ export class ConfirmRegistrationComponent implements OnInit {
   private http = inject(HttpClient);
 
   token = '';
-  step = 1;
-  maskedEmail = '';
-  otpInput = '';
-  isLoading = false;
+  // On passe directement à l'étape finale
+  step = 3; 
+  isLoading = true;
   errorMessage = '';
   successMessage = '';
   canRetry = false;
 
   ngOnInit() {
     this.token = this.route.snapshot.queryParams['token'] || '';
-  }
-
-  requestOtp() {
-    this.isLoading = true;
-    this.errorMessage = '';
-    this.canRetry = false;
-
-    const url = `${environment.apiUrl}/auth/send-confirmation-otp?token=${encodeURIComponent(this.token)}`;
-    this.http.post(url, {}).subscribe({
-      next: (res: any) => {
-        this.isLoading = false;
-        this.maskedEmail = res.maskedEmail || '';
-        this.step = 2;
-      },
-      error: (err) => {
-        this.isLoading = false;
-        this.errorMessage = err.error?.error || 'Impossible d\'envoyer le code de vérification.';
-        this.canRetry = false;
-      }
-    });
+    if (this.token) {
+      // Direct confirmation without OTP
+      this.confirmRegistration();
+    } else {
+      this.isLoading = false;
+    }
   }
 
   confirmRegistration() {
-    if (this.otpInput.trim().length !== 6) return;
     this.isLoading = true;
     this.errorMessage = '';
 
-    const url = `${environment.apiUrl}/auth/confirm-registration?token=${encodeURIComponent(this.token)}&otp=${encodeURIComponent(this.otpInput.trim())}`;
+    // Envoi de l'OTP vide puiqu'il est optionnel désormais
+    const url = `${environment.apiUrl}/auth/confirm-registration?token=${encodeURIComponent(this.token)}`;
     this.http.get(url).subscribe({
       next: (res: any) => {
         this.isLoading = false;
@@ -273,14 +218,13 @@ export class ConfirmRegistrationComponent implements OnInit {
       error: (err) => {
         this.isLoading = false;
         const msg = err.error?.error || '';
-        this.errorMessage = msg || 'Code incorrect ou expiré.';
-        this.canRetry = msg.includes('incorrect') || msg.includes('expiré');
+        this.errorMessage = msg || 'Lien invalide ou expiré.';
+        this.canRetry = false; // Plus d'OTP, on ne peut pas réessayer.
       }
     });
   }
 
   resetError() {
     this.errorMessage = '';
-    this.otpInput = '';
   }
 }
