@@ -49,6 +49,13 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     List<Payment> findByOrganizationIdAndStatusOrderByCreatedAtDesc(Long organizationId, Payment.PaymentStatus status);
     
     /**
+     * Supprime les liens de clés étrangères avant suppression.
+     */
+    @Modifying
+    @Query("UPDATE Payment p SET p.invoiceId = null, p.subscriptionId = null WHERE p.organizationId = :organizationId")
+    void clearInvoiceAndSubscriptionLinks(@Param("organizationId") Long organizationId);
+
+    /**
      * Supprime tous les paiements d'une organisation.
      */
     @Modifying

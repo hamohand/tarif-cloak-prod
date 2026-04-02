@@ -109,6 +109,10 @@ public class OrganizationDeletionService {
             }
             
             // 2. Supprimer les Invoices
+            // 2.1 Dissocier les liens circulaires avant de supprimer des tables
+            invoiceRepository.clearPaymentAndSubscriptionLinks(organizationId);
+            paymentRepository.clearInvoiceAndSubscriptionLinks(organizationId);
+            
             int deletedInvoices = invoiceRepository.deleteByOrganizationId(organizationId);
             result.setDeletedInvoices(deletedInvoices);
             logger.info("  - {} factures supprimées", deletedInvoices);

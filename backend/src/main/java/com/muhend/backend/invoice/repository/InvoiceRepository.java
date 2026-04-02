@@ -67,6 +67,13 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
     long countByOrganizationIdAndStatus(Long organizationId, Invoice.InvoiceStatus status);
     
     /**
+     * Supprime les liens de clés étrangères avant suppression.
+     */
+    @Modifying
+    @Query("UPDATE Invoice i SET i.paymentId = null, i.subscriptionId = null WHERE i.organizationId = :organizationId")
+    void clearPaymentAndSubscriptionLinks(@Param("organizationId") Long organizationId);
+
+    /**
      * Supprime toutes les factures d'une organisation.
      */
     @Modifying
