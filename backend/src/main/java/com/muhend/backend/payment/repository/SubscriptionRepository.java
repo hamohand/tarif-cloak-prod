@@ -41,7 +41,7 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
     /**
      * Supprime tous les abonnements d'une organisation.
      */
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("DELETE FROM Subscription s WHERE s.organizationId = :organizationId")
     int deleteByOrganizationId(@Param("organizationId") Long organizationId);
 }

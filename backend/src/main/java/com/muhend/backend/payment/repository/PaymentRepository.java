@@ -51,14 +51,14 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     /**
      * Supprime les liens de clés étrangères avant suppression.
      */
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE Payment p SET p.invoiceId = null, p.subscriptionId = null WHERE p.organizationId = :organizationId")
     void clearInvoiceAndSubscriptionLinks(@Param("organizationId") Long organizationId);
 
     /**
      * Supprime tous les paiements d'une organisation.
      */
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("DELETE FROM Payment p WHERE p.organizationId = :organizationId")
     int deleteByOrganizationId(@Param("organizationId") Long organizationId);
 }
