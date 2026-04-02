@@ -9,6 +9,7 @@ import com.muhend.backend.organization.repository.OrganizationUserRepository;
 import com.muhend.backend.payment.repository.PaymentRepository;
 import com.muhend.backend.payment.repository.SubscriptionRepository;
 import com.muhend.backend.pricing.repository.QuoteRequestRepository;
+import com.muhend.backend.pricing.repository.PricingPlanRepository;
 import com.muhend.backend.usage.repository.UsageLogRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,6 +35,7 @@ public class OrganizationDeletionService {
     private final InvoiceItemRepository invoiceItemRepository;
     private final PaymentRepository paymentRepository;
     private final SubscriptionRepository subscriptionRepository;
+    private final PricingPlanRepository pricingPlanRepository;
     
     public OrganizationDeletionService(
             OrganizationRepository organizationRepository,
@@ -44,7 +46,8 @@ public class OrganizationDeletionService {
             InvoiceRepository invoiceRepository,
             InvoiceItemRepository invoiceItemRepository,
             PaymentRepository paymentRepository,
-            SubscriptionRepository subscriptionRepository) {
+            SubscriptionRepository subscriptionRepository,
+            PricingPlanRepository pricingPlanRepository) {
         this.organizationRepository = organizationRepository;
         this.usageLogRepository = usageLogRepository;
         this.quotaAlertRepository = quotaAlertRepository;
@@ -54,6 +57,7 @@ public class OrganizationDeletionService {
         this.invoiceItemRepository = invoiceItemRepository;
         this.paymentRepository = paymentRepository;
         this.subscriptionRepository = subscriptionRepository;
+        this.pricingPlanRepository = pricingPlanRepository;
     }
     
     /**
@@ -138,6 +142,15 @@ public class OrganizationDeletionService {
             int deletedOrganizationUsers = organizationUserRepository.deleteByOrganizationId(organizationId);
             result.setDeletedOrganizationUsers(deletedOrganizationUsers);
             logger.info("  - {} associations utilisateur-organisation supprimées", deletedOrganizationUsers);
+            
+            // 8.5. Dissocier le plan tarifaire pour éviter l'erreur "violates foreign key constraint fk_org_pricing_plan"
+            organization.setPricingPlanId(null);
+            organization.setPendingMonthlyPlanId(null);
+            organization.setPendingPayPerRequestPlanId(null);
+            organizationRepository.saveAndFlush(organization);
+
+            int deletedPricingPlans = pricingPlanRepository.deleteByOrganizationId(organizationId);
+            logger.info("  - {} plans tarifaires sur-mesure supprimés", deletedPricingPlans);
             
             // 9. Supprimer l'organisation elle-même
             organizationRepository.delete(organization);

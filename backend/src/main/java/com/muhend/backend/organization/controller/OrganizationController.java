@@ -34,6 +34,7 @@ import java.util.Map;
 public class OrganizationController {
     
     private final OrganizationService organizationService;
+    private final com.muhend.backend.admin.service.OrganizationDeletionService organizationDeletionService;
     
     @PostMapping
     @Operation(
@@ -211,7 +212,7 @@ public class OrganizationController {
         security = @SecurityRequirement(name = "bearerAuth")
     )
     public ResponseEntity<Void> deleteOrganization(@PathVariable Long id) {
-        organizationService.deleteOrganization(id);
+        organizationDeletionService.deleteOrganization(id);
         return ResponseEntity.noContent().build();
     }
 }

@@ -1601,25 +1601,8 @@ public class OrganizationService {
      */
     @Transactional
     public void deleteOrganization(Long id) {
-        Organization org = organizationRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Organisation introuvable: " + id));
-
-        usageLogRepository.deleteByOrganizationId(id);
-        quotaAlertRepository.deleteByOrganizationId(id);
-
-        List<com.muhend.backend.invoice.model.Invoice> invoices =
-                invoiceRepository.findByOrganizationIdOrderByCreatedAtDesc(id);
-        invoices.forEach(inv -> invoiceItemRepository.deleteByInvoiceId(inv.getId()));
-        invoiceRepository.deleteByOrganizationId(id);
-
-        paymentRepository.deleteByOrganizationId(id);
-        subscriptionRepository.deleteByOrganizationId(id);
-        quoteRequestRepository.deleteByOrganizationId(id);
-        organizationUserRepository.deleteByOrganizationId(id);
-        pricingPlanRepository.deleteByOrganizationId(id);
-        organizationRepository.delete(org);
-
-        log.info("Organisation supprimée: id={}, name={}", id, org.getName());
+        log.error("OrganizationService.deleteOrganization ne doit plus être utilisé. Utilisez OrganizationDeletionService à la place pour éviter les FK constraint errors.");
+        throw new UnsupportedOperationException("Utilisez OrganizationDeletionService.deleteOrganization");
     }
 
     /**
