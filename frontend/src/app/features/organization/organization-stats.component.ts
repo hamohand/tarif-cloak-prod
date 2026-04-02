@@ -478,8 +478,6 @@ export class OrganizationStatsComponent implements OnInit {
   private currencyService = inject(CurrencyService);
   private paymentService = inject(PaymentService);
 
-  isBetaMode = environment.betaMode === true;
-
   organization: Organization | null = null;
   currencySymbol$ = this.currencyService.getCurrencySymbol();
   private currentCurrencyCode = 'EUR'; // Par défaut, sera mis à jour dans ngOnInit

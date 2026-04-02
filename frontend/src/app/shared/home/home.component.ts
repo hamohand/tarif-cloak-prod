@@ -5,7 +5,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { OrganizationAccountService } from '../../core/services/organization-account.service';
 import { combineLatest, of } from 'rxjs';
 import { map, switchMap, catchError, distinctUntilChanged } from 'rxjs/operators';
-import { environment } from '../../../../environments/environment';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-home',
