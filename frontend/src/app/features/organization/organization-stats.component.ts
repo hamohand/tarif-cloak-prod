@@ -382,7 +382,7 @@ Chart.register(...registerables);
           <div class="stats-grid">
             <div class="stat-item">
               <h4>📈 Total crédits</h4>
-              <p class="stat-value">{{ stats.totalRequests }}</p>
+              <p class="stat-value">{{ stats.totalCredits }}</p>
             </div>
             @if (isAdmin()) {
               <div class="stat-item">
@@ -977,10 +977,20 @@ export class OrganizationStatsComponent implements OnInit {
     this.loadingStats = false;
   }
 
+  private creditsForEndpoint(endpoint: string | null): number {
+    if (!endpoint) return 1;
+    if (endpoint.includes('positions10')) return 15;
+    if (endpoint.includes('positions6'))  return 10;
+    if (endpoint.includes('decode-p10'))  return 5;
+    if (endpoint.includes('decode'))      return 2;
+    return 1;
+  }
+
   private calculateStatsFromLogs() {
     if (!this.organizationUsageLogs || !this.organizationUsageLogs.usageLogs) {
       this.stats = {
         totalRequests: 0,
+        totalCredits: 0,
         totalCostUsd: 0,
         totalTokens: 0,
         monthlyRequests: 0,
@@ -1005,13 +1015,17 @@ export class OrganizationStatsComponent implements OnInit {
       periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
     }
 
-    const monthlyRequests = logs.filter((log: OrganizationUsageLog) => {
+    const monthlyLogs = logs.filter((log: OrganizationUsageLog) => {
       const logDate = new Date(log.timestamp);
       return logDate >= periodStart && logDate <= periodEnd;
-    }).length;
+    });
+    const monthlyRequests = monthlyLogs.length;
 
     // Total du cycle actuel (cohérent avec le quota affiché)
     const totalRequests = monthlyRequests;
+    const totalCredits = monthlyLogs.reduce((sum: number, log: OrganizationUsageLog) => {
+      return sum + this.creditsForEndpoint(log.endpoint);
+    }, 0);
 
     // Calculer le coût total
     const totalCostUsd = logs.reduce((sum: number, log: OrganizationUsageLog) => {
@@ -1040,6 +1054,7 @@ export class OrganizationStatsComponent implements OnInit {
 
     this.stats = {
       totalRequests,
+      totalCredits,
       totalCostUsd,
       totalTokens,
       monthlyRequests,

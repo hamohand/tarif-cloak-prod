@@ -420,8 +420,8 @@ export class SearchComponent implements OnInit {
             : aiCode;
 
           const decode$ = this.endpoint === 'positions10'
-            ? this.searchService.decodeP10Code(codeToDecode)
-            : this.searchService.decodeCode(codeToDecode);
+            ? this.searchService.decodeP10Code(codeToDecode, true)
+            : this.searchService.decodeCode(codeToDecode, true);
 
           return decode$.pipe(
             retry(1),

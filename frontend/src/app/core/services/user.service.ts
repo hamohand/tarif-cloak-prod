@@ -25,6 +25,7 @@ export interface Organization {
 
 export interface UserUsageStats {
   totalRequests: number;
+  totalCredits: number;
   totalCostUsd: number;
   totalTokens: number;
   monthlyRequests: number;

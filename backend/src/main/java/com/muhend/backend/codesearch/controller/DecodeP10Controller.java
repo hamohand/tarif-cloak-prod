@@ -46,8 +46,9 @@ public class DecodeP10Controller {
     private final UsageLogService usageLogService;
 
     @GetMapping(produces = "application/json")
-    public ResponseEntity<DecodeResult> decodeCode(@RequestParam String code) {
-        checkQuotaAndLog("/decode-p10", code);
+    public ResponseEntity<DecodeResult> decodeCode(@RequestParam String code,
+            @RequestHeader(value = "X-Source", required = false) String source) {
+        if (!"search".equals(source)) checkQuotaAndLog("/decode-p10", code);
         String normalized = code.replaceAll("[^0-9]", "");
         log.debug("Décodage P10: '{}' → normalisé: '{}'", code, normalized);
 

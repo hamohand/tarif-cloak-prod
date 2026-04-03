@@ -48,8 +48,9 @@ public class DecodeController {
      * @return Hiérarchie : section, chapitre, position4, positions6
      */
     @GetMapping(produces = "application/json")
-    public ResponseEntity<DecodeResult> decodeCode(@RequestParam String code) {
-        checkQuotaAndLog("/decode", code);
+    public ResponseEntity<DecodeResult> decodeCode(@RequestParam String code,
+            @RequestHeader(value = "X-Source", required = false) String source) {
+        if (!"search".equals(source)) checkQuotaAndLog("/decode", code);
         // Normalisation : supprime tout ce qui n'est pas un chiffre
         String normalized = code.replaceAll("[^0-9]", "");
         log.debug("Décodage du code HS: '{}' → normalisé: '{}'", code, normalized);

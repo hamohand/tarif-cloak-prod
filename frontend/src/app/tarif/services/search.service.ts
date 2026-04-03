@@ -32,17 +32,19 @@ export class SearchService {
 
   constructor(private http: HttpClient) { }
 
-  decodeCode(code: string): Observable<DecodeResult> {
+  decodeCode(code: string, embedded = false): Observable<DecodeResult> {
     return this.http.get<DecodeResult>(this.decodeApiUrl, {
-      params: { code }
+      params: { code },
+      headers: embedded ? { 'X-Source': 'search' } : {}
     }).pipe(
       catchError(this.handleError)
     );
   }
 
-  decodeP10Code(code: string): Observable<DecodeResult> {
+  decodeP10Code(code: string, embedded = false): Observable<DecodeResult> {
     return this.http.get<DecodeResult>(this.decodeP10ApiUrl, {
-      params: { code }
+      params: { code },
+      headers: embedded ? { 'X-Source': 'search' } : {}
     }).pipe(
       catchError(this.handleError)
     );
