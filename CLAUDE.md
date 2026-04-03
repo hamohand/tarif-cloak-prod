@@ -26,6 +26,41 @@ tarif-cloak-prod/
 └── .env               # NE PAS COMMITER — uniquement sur le VPS
 ```
 
+## Environnements et flux de déploiement
+
+### Deux environnements sur le VPS
+
+| | **Staging** | **Production / Beta** |
+| --- | --- | --- |
+| Compose | `docker-compose-staging.yml` | `docker-compose-prod.yml` |
+| Domaine | `tarif.enclume-numerique.com` | domaine principal |
+| BDD | Isolée (`staging-app-data`) | Prod |
+| Keycloak | **Partagé** (Keycloak prod) | Keycloak prod |
+| Usage | Développement continu | Beta-testeurs (Mars–Mai 2026) |
+
+**Règle absolue :** le staging est réservé au développement. Les beta-testeurs n'y ont pas accès et n'en connaissent pas l'URL.
+
+### Flux de déploiement
+
+```
+Code → Staging (test) → Production (beta-testeurs)
+```
+
+### Ce qui doit toujours passer par staging d'abord
+
+- Nouvelles fonctionnalités, refactos, corrections de bugs
+- Modifications du schéma BDD (migrations)
+- Changements de configuration backend / search-service / frontend
+
+### Ce qui peut être modifié directement en production
+
+- Données métier via l'admin : plans tarifaires, quotas, organisations
+- Gestion des comptes Keycloak : création d'utilisateurs beta, ajustement de sessions
+- Hotfix critique et minuscule pour un bug bloquant les testeurs
+
+### Note Keycloak
+Keycloak est partagé entre staging et prod. Ne jamais modifier la configuration du realm (flows, scopes, clients) sans vérifier l'impact sur les deux environnements. Les comptes des beta-testeurs créés pendant la phase beta resteront valides en prod lors du lancement commercial.
+
 ## Commandes clés
 
 ```bash
