@@ -68,7 +68,7 @@ public interface UsageLogRepository extends JpaRepository<UsageLog, Long> {
     /**
      * Supprime tous les logs d'une organisation.
      */
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("DELETE FROM UsageLog u WHERE u.organizationId = :organizationId")
     int deleteByOrganizationId(@Param("organizationId") Long organizationId);
 }
