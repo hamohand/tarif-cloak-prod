@@ -33,7 +33,7 @@ import { of } from 'rxjs';
         @if (isAuthenticated$ | async) {
           @if (isOrganizationAccount$ | async) {
             @if (canMakeRequests$ | async) {
-              <a routerLink="/" class="brand-country-code">Positions tarifaires</a>
+              <a routerLink="/" class="nav-link hscode-link">Positions tarifaires</a>
             } @else {
               <button class="nav-link hscode-link-blocked" (click)="openRenewalModal()">Positions tarifaires ⚠️</button>
             }
@@ -55,9 +55,6 @@ import { of } from 'rxjs';
         <button class="nav-link contact-btn" (click)="toggleContactPopup()">📬 Contact</button>
         @if (isAuthenticated$ | async) {
           @if (isOrganizationAccount$ | async) {
-            @if (!isAdmin()) {
-              <a routerLink="/dashboard" class="nav-link">Tableau de bord</a>
-            }
             @if (alertCount > 0) {
               <a routerLink="/alerts" class="nav-link alerts-link">
                 🔔 Alertes
@@ -160,6 +157,7 @@ import { of } from 'rxjs';
       }
       <nav class="organization-navbar">
         <div class="org-nav-links">
+          <a routerLink="/dashboard" routerLinkActive="router-link-active" class="org-nav-link">🏠 Tableau de bord</a>
           <a routerLink="/organization/account" routerLinkActive="router-link-active" class="org-nav-link">👥 Mon organisation</a>
           <a routerLink="/organization/stats" routerLinkActive="router-link-active" class="org-nav-link">💳 Plan tarifaire</a>
           <a routerLink="/organization/invoices" routerLinkActive="router-link-active" class="org-nav-link invoices-link">
@@ -302,7 +300,7 @@ import { of } from 'rxjs';
       margin-right: 1rem;
       font-weight: 500;
       padding: 0.5rem 1rem;
-      background: rgba(255, 255, 255, 0.1);
+      background: rgba(8, 246, 75, 0.51);
       border-radius: 20px;
       backdrop-filter: blur(10px);
       border: 1px solid rgba(255, 255, 255, 0.2);
@@ -315,7 +313,7 @@ import { of } from 'rxjs';
       margin-right: 1rem;
       font-weight: 800;
       padding: 0.5rem 1rem;
-      background: rgba(3, 217, 255, 0.11);
+      background: rgba(3, 217, 255, 0.52);
       border-radius: 20px;
       backdrop-filter: blur(10px);
       border: 1px solid rgba(255, 255, 255, 0.2);
