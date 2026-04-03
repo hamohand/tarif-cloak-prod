@@ -27,7 +27,7 @@ import { CommonModule } from '@angular/common';
       </main>
 
       <footer>
-        <p>&copy; 2025 Enclume-Numérique</p>
+        <p>&copy; 2025-2026 Enclume-Numérique</p>
       </footer>
     </div>
   `,
