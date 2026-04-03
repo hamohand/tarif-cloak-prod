@@ -7,7 +7,10 @@ import com.muhend.backend.organization.dto.OrganizationDto;
 import com.muhend.backend.organization.dto.OrganizationUserDto;
 import com.muhend.backend.organization.dto.UpdateOrganizationRequest;
 import com.muhend.backend.organization.dto.UpdateQuotaRequest;
+import com.muhend.backend.organization.service.CollaboratorService;
 import com.muhend.backend.organization.service.OrganizationService;
+import com.muhend.backend.organization.service.PlanChangeService;
+import com.muhend.backend.organization.service.QuotaService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -34,6 +37,9 @@ import java.util.Map;
 public class OrganizationController {
     
     private final OrganizationService organizationService;
+    private final CollaboratorService collaboratorService;
+    private final QuotaService quotaService;
+    private final PlanChangeService planChangeService;
     private final com.muhend.backend.admin.service.OrganizationDeletionService organizationDeletionService;
     
     @PostMapping
@@ -78,7 +84,7 @@ public class OrganizationController {
     public ResponseEntity<OrganizationUserDto> addUserToOrganization(
             @PathVariable Long id,
             @Valid @RequestBody AddUserToOrganizationRequest request) {
-        OrganizationUserDto organizationUser = organizationService.addUserToOrganization(id, request.getKeycloakUserId());
+        OrganizationUserDto organizationUser = collaboratorService.addUserToOrganization(id, request.getKeycloakUserId());
         return ResponseEntity.status(HttpStatus.CREATED).body(organizationUser);
     }
     
@@ -91,7 +97,7 @@ public class OrganizationController {
     public ResponseEntity<Map<String, String>> removeUserFromOrganization(
             @PathVariable Long id,
             @PathVariable String keycloakUserId) {
-        organizationService.removeUserFromOrganization(id, keycloakUserId);
+        collaboratorService.removeUserFromOrganization(id, keycloakUserId);
         return ResponseEntity.ok(Map.of(
             "message", "Utilisateur retiré de l'organisation avec succès",
             "organizationId", id.toString(),
@@ -147,7 +153,7 @@ public class OrganizationController {
     public ResponseEntity<OrganizationDto> updateMonthlyQuota(
             @PathVariable Long id,
             @Valid @RequestBody UpdateQuotaRequest request) {
-        OrganizationDto organization = organizationService.updateMonthlyQuota(id, request.getMonthlyQuota());
+        OrganizationDto organization = quotaService.updateMonthlyQuota(id, request.getMonthlyQuota());
         return ResponseEntity.ok(organization);
     }
     
@@ -162,7 +168,7 @@ public class OrganizationController {
     public ResponseEntity<OrganizationDto> changePricingPlan(
             @PathVariable Long id,
             @Valid @RequestBody ChangePricingPlanRequest request) {
-        OrganizationDto organization = organizationService.changePricingPlan(id, request.getPricingPlanId());
+        OrganizationDto organization = planChangeService.changePricingPlan(id, request.getPricingPlanId());
         return ResponseEntity.ok(organization);
     }
 
@@ -175,7 +181,7 @@ public class OrganizationController {
         security = @SecurityRequirement(name = "bearerAuth")
     )
     public ResponseEntity<OrganizationDto> resetPlan(@PathVariable Long id) {
-        OrganizationDto organization = organizationService.resetPlan(id);
+        OrganizationDto organization = planChangeService.resetPlan(id);
         return ResponseEntity.ok(organization);
     }
 

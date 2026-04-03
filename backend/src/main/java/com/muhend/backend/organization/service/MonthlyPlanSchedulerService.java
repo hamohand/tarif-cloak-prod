@@ -7,7 +7,6 @@ import com.muhend.backend.organization.repository.OrganizationRepository;
 import com.muhend.backend.pricing.dto.PricingPlanDto;
 import com.muhend.backend.pricing.service.PricingPlanService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,19 +26,22 @@ import java.util.stream.Collectors;
 public class MonthlyPlanSchedulerService {
     
     private final OrganizationRepository organizationRepository;
-    private final OrganizationService organizationService;
     private final PricingPlanService pricingPlanService;
     private final InvoiceService invoiceService;
+    private final QuotaService quotaService;
+    private final PlanChangeService planChangeService;
     
     public MonthlyPlanSchedulerService(
             OrganizationRepository organizationRepository,
-            @Lazy OrganizationService organizationService,
             PricingPlanService pricingPlanService,
-            InvoiceService invoiceService) {
+            InvoiceService invoiceService,
+            QuotaService quotaService,
+            PlanChangeService planChangeService) {
         this.organizationRepository = organizationRepository;
-        this.organizationService = organizationService;
         this.pricingPlanService = pricingPlanService;
         this.invoiceService = invoiceService;
+        this.quotaService = quotaService;
+        this.planChangeService = planChangeService;
     }
     
     /**
@@ -78,7 +80,6 @@ public class MonthlyPlanSchedulerService {
             .findByMonthlyPlanEndDateLessThan(today)
             .stream()
             .filter(org -> {
-                // Vérifier que c'est un plan mensuel actif (pas de changement en attente)
                 return org.getPricingPlanId() != null 
                     && org.getPendingMonthlyPlanId() == null
                     && org.getMonthlyPlanEndDate() != null;
@@ -91,7 +92,6 @@ public class MonthlyPlanSchedulerService {
             try {
                 PricingPlanDto currentPlan = pricingPlanService.getPricingPlanById(org.getPricingPlanId());
                 if (currentPlan.getPricePerMonth() != null && currentPlan.getPricePerMonth().compareTo(java.math.BigDecimal.ZERO) > 0) {
-                    // Reconduction tacite : réinitialiser le cycle avec le même plan
                     renewMonthlyPlanCycle(org, currentPlan);
                     log.info("✅ Plan mensuel reconduit automatiquement pour l'organisation {}: plan {}", 
                             org.getId(), currentPlan.getName());
@@ -111,8 +111,7 @@ public class MonthlyPlanSchedulerService {
         for (Organization org : orgsWithPendingPayPerRequest) {
             if (org.getPendingPayPerRequestPlanId() != null) {
                 try {
-                    // Vérifier si le quota est dépassé OU si la date d'effet est arrivée
-                    QuotaCheckResult quotaCheck = organizationService.checkQuotaWithResult(org.getId());
+                    QuotaCheckResult quotaCheck = quotaService.checkQuotaWithResult(org.getId());
                     boolean isQuotaExceeded = !quotaCheck.isQuotaOk();
                     boolean isChangeDateReached = org.getPendingPayPerRequestChangeDate() != null 
                             && !org.getPendingPayPerRequestChangeDate().isAfter(today);
@@ -137,7 +136,7 @@ public class MonthlyPlanSchedulerService {
                         }
                         
                         // Appliquer le changement
-                        organizationService.applyPlanChangeImmediately(org, newPlan);
+                        planChangeService.applyPlanChangeImmediately(org, newPlan);
                         org.setPendingPayPerRequestPlanId(null);
                         org.setPendingPayPerRequestChangeDate(null);
                         organizationRepository.save(org);
@@ -166,7 +165,6 @@ public class MonthlyPlanSchedulerService {
         PricingPlanDto oldPlan = pricingPlanService.getPricingPlanById(org.getPricingPlanId());
         if (oldPlan.getPricePerMonth() != null && org.getMonthlyPlanStartDate() != null) {
             try {
-                // Facturer le cycle mensuel complet jusqu'à la fin
                 invoiceService.generateMonthlyPlanCycleClosureInvoice(
                     org.getId(), 
                     oldPlan, 
@@ -179,10 +177,9 @@ public class MonthlyPlanSchedulerService {
             }
         }
         
-        // Appliquer le nouveau plan
-        org.setPricingPlanId(newPlan.getId());
-        org.setMonthlyQuota(newPlan.getMonthlyQuota());
-        initializeMonthlyPlanCycle(org, newPlan);
+        // Appliquer le nouveau plan via PlanChangeService (dédupliqué)
+        planChangeService.applyPlanChangeImmediately(org, newPlan);
+        planChangeService.initializeMonthlyPlanCycle(org, newPlan);
         
         // Réinitialiser le changement en attente
         org.setPendingMonthlyPlanId(null);
@@ -210,22 +207,8 @@ public class MonthlyPlanSchedulerService {
             }
         }
         
-        // Réinitialiser le cycle
-        initializeMonthlyPlanCycle(org, plan);
+        // Réinitialiser le cycle via PlanChangeService (dédupliqué)
+        planChangeService.initializeMonthlyPlanCycle(org, plan);
         organizationRepository.save(org);
     }
-    
-    /**
-     * Initialise un nouveau cycle mensuel pour une organisation.
-     * Le cycle va du jour J au jour J-1 du mois suivant (inclus).
-     */
-    private void initializeMonthlyPlanCycle(Organization org, PricingPlanDto plan) {
-        LocalDate today = LocalDate.now();
-        org.setMonthlyPlanStartDate(today);
-        // Calculer la date de fin : même jour du mois suivant, exclu (donc jour-1 inclus)
-        LocalDate endDate = today.plusMonths(1).minusDays(1);
-        org.setMonthlyPlanEndDate(endDate);
-        org.setMonthlyQuota(plan.getMonthlyQuota());
-    }
 }
-

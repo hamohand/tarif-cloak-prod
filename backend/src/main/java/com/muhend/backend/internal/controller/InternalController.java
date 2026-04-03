@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.muhend.backend.internal.dto.QuotaCheckResponse;
 import com.muhend.backend.organization.exception.UserNotAssociatedException;
 import com.muhend.backend.organization.service.OrganizationService;
+import com.muhend.backend.organization.service.PlanChangeService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 public class InternalController {
 
     private final OrganizationService organizationService;
+    private final PlanChangeService planChangeService;
 
     /**
      * Vérifie le quota de l'utilisateur courant.
@@ -54,7 +56,7 @@ public class InternalController {
             }
 
             // Vérifier si l'organisation peut faire des requêtes (plan actif, quota non épuisé)
-            boolean canSearch = organizationService.canOrganizationMakeRequests(organizationId);
+            boolean canSearch = planChangeService.canOrganizationMakeRequests(organizationId);
             String message = canSearch ? null : "Plan expiré ou quota mensuel épuisé.";
 
             log.debug("Quota check pour org {}: canSearch={}", organizationId, canSearch);

@@ -7,6 +7,7 @@ import com.muhend.backend.email.service.EmailService;
 import com.muhend.backend.organization.dto.CreateCollaboratorRequest;
 import com.muhend.backend.organization.model.Organization;
 import com.muhend.backend.organization.repository.OrganizationRepository;
+import com.muhend.backend.organization.service.CollaboratorService;
 import com.muhend.backend.organization.service.OrganizationService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,6 +32,7 @@ public class PendingRegistrationService {
     private final PendingRegistrationRepository pendingRegistrationRepository;
     private final OrganizationRepository organizationRepository;
     private final OrganizationService organizationService;
+    private final CollaboratorService collaboratorService;
     private final KeycloakAdminService keycloakAdminService;
     private final EmailService emailService;
     
@@ -46,11 +48,13 @@ public class PendingRegistrationService {
             PendingRegistrationRepository pendingRegistrationRepository,
             OrganizationRepository organizationRepository,
             OrganizationService organizationService,
+            CollaboratorService collaboratorService,
             KeycloakAdminService keycloakAdminService,
             EmailService emailService) {
         this.pendingRegistrationRepository = pendingRegistrationRepository;
         this.organizationRepository = organizationRepository;
         this.organizationService = organizationService;
+        this.collaboratorService = collaboratorService;
         this.keycloakAdminService = keycloakAdminService;
         this.emailService = emailService;
     }
@@ -330,7 +334,7 @@ public class PendingRegistrationService {
             log.info("Organisation créée: id={}, name={}", organizationDto.getId(), organizationDto.getName());
 
             // Associer le compte organisation à l'entité Organisation (pour les quotas/reporting)
-            organizationService.addUserToOrganization(organizationDto.getId(), organizationKeycloakUserId);
+            collaboratorService.addUserToOrganization(organizationDto.getId(), organizationKeycloakUserId);
             log.info("Compte organisation {} associé à l'organisation {}", organizationKeycloakUserId, organizationDto.getId());
 
         } catch (Exception e) {
@@ -393,7 +397,7 @@ public class PendingRegistrationService {
             keycloakAdminService.assignRealmRoles(keycloakUserId, java.util.List.of("COLLABORATOR", "USER"));
             
             // 3. Associer l'utilisateur à l'organisation existante
-            organizationService.addUserToOrganization(organizationId, keycloakUserId);
+            collaboratorService.addUserToOrganization(organizationId, keycloakUserId);
             log.info("Utilisateur {} associé à l'organisation existante {}", keycloakUserId, organizationId);
             
         } catch (Exception e) {

@@ -1,11 +1,11 @@
 package com.muhend.backend.alert.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.muhend.backend.alert.dto.QuotaAlertDto;
 import com.muhend.backend.alert.model.QuotaAlert;
 import com.muhend.backend.alert.repository.QuotaAlertRepository;
 import com.muhend.backend.organization.dto.OrganizationDto;
 import com.muhend.backend.organization.service.OrganizationService;
+import com.muhend.backend.organization.service.QuotaService;
 import com.muhend.backend.pricing.dto.PricingPlanDto;
 import com.muhend.backend.pricing.service.PricingPlanService;
 import com.muhend.backend.usage.repository.UsageLogRepository;
@@ -14,10 +14,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.FileWriter;
-import java.io.PrintWriter;
 import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -30,30 +27,9 @@ import java.util.stream.Collectors;
 @Slf4j
 public class QuotaAlertService {
     
-    private static final String DEBUG_LOG_PATH = "c:\\Users\\hamoh\\Documents\\projets\\tarif\\tarif-saas\\tarif-cloak-prod\\.cursor\\debug.log";
-    private static final ObjectMapper objectMapper = new ObjectMapper();
-    
-    private static void debugLog(String location, String message, Map<String, Object> data, String hypothesisId) {
-        try {
-            Map<String, Object> logEntry = new HashMap<>();
-            logEntry.put("id", "log_" + System.currentTimeMillis() + "_" + (int)(Math.random() * 1000));
-            logEntry.put("timestamp", System.currentTimeMillis());
-            logEntry.put("location", location);
-            logEntry.put("message", message);
-            logEntry.put("data", data);
-            logEntry.put("sessionId", "debug-session");
-            logEntry.put("runId", "run1");
-            logEntry.put("hypothesisId", hypothesisId);
-            try (PrintWriter writer = new PrintWriter(new FileWriter(DEBUG_LOG_PATH, true))) {
-                writer.println(objectMapper.writeValueAsString(logEntry));
-            }
-        } catch (Exception e) {
-            // Ignorer les erreurs de logging pour ne pas perturber le flux principal
-        }
-    }
-    
     private final QuotaAlertRepository quotaAlertRepository;
     private final OrganizationService organizationService;
+    private final QuotaService quotaService;
     private final UsageLogRepository usageLogRepository;
     private final PricingPlanService pricingPlanService;
     
@@ -64,10 +40,12 @@ public class QuotaAlertService {
     public QuotaAlertService(
             QuotaAlertRepository quotaAlertRepository,
             OrganizationService organizationService,
+            QuotaService quotaService,
             UsageLogRepository usageLogRepository,
             PricingPlanService pricingPlanService) {
         this.quotaAlertRepository = quotaAlertRepository;
         this.organizationService = organizationService;
+        this.quotaService = quotaService;
         this.usageLogRepository = usageLogRepository;
         this.pricingPlanService = pricingPlanService;
     }
@@ -121,40 +99,18 @@ public class QuotaAlertService {
             }
         }
         
-        // #region agent log
-        Map<String, Object> logDataD1 = new HashMap<>();
-        logDataD1.put("organizationId", organizationId);
-        logDataD1.put("organizationMonthlyQuota", organization.getMonthlyQuota());
-        logDataD1.put("planMonthlyQuota", currentMonthlyQuota);
-        logDataD1.put("isNull", currentMonthlyQuota == null);
-        debugLog("QuotaAlertService.java:73", "checkOrganizationQuota - checking monthlyQuota", logDataD1, "F");
-        // #endregion
-        
         if (currentMonthlyQuota == null) {
             return; // Pas de quota à vérifier (quota illimité)
         }
         
-        // Le quota provient du plan tarifaire de l'organisation (organization.monthlyQuota)
-        // qui est défini lors du changement de plan ou à la création de l'organisation
-        
         // Calculer la consommation du mois en cours pour TOUTE l'organisation
-        // (somme de toutes les requêtes de tous les collaborateurs)
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime startOfMonth = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
         LocalDateTime endOfMonth = now.withDayOfMonth(now.toLocalDate().lengthOfMonth())
                 .withHour(23).withMinute(59).withSecond(59).withNano(999999999);
         
-        long currentUsage = organizationService.computeOrganizationCredits(
+        long currentUsage = quotaService.computeOrganizationCredits(
                 organizationId, startOfMonth, endOfMonth);
-        
-        // Calculer le pourcentage : consommation-organisation / quota-organisation (utiliser la valeur actuelle du plan)
-        // #region agent log
-        Map<String, Object> logDataD2 = new HashMap<>();
-        logDataD2.put("currentUsage", currentUsage);
-        logDataD2.put("organizationMonthlyQuota", organization.getMonthlyQuota());
-        logDataD2.put("planMonthlyQuota", currentMonthlyQuota);
-        debugLog("QuotaAlertService.java:91", "checkOrganizationQuota - calculating percentage", logDataD2, "F");
-        // #endregion
         double percentageUsed = (double) currentUsage / currentMonthlyQuota * 100;
         
         // Déterminer le type d'alerte

@@ -6,7 +6,9 @@ import com.muhend.backend.auth.service.PendingRegistrationService;
 import com.muhend.backend.organization.dto.CreateCollaboratorRequest;
 import com.muhend.backend.organization.dto.OrganizationDto;
 import com.muhend.backend.organization.dto.OrganizationUserDto;
+import com.muhend.backend.organization.service.CollaboratorService;
 import com.muhend.backend.organization.service.OrganizationService;
+import com.muhend.backend.organization.service.PlanChangeService;
 import com.muhend.backend.usage.model.UsageLog;
 import com.muhend.backend.usage.repository.UsageLogRepository;
 import io.swagger.v3.oas.annotations.Operation;
@@ -53,6 +55,8 @@ public class OrganizationAccountController {
 
     private final PendingRegistrationService pendingRegistrationService;
     private final OrganizationService organizationService;
+    private final PlanChangeService planChangeService;
+    private final CollaboratorService collaboratorService;
     private final UsageLogRepository usageLogRepository;
     private final KeycloakAdminService keycloakAdminService;
     
@@ -104,7 +108,7 @@ public class OrganizationAccountController {
             
             // Vérifier si l'organisation peut faire des requêtes (cela met à jour trialPermanentlyExpired si nécessaire)
             // Cette méthode appelle isTrialExpired() qui met à jour trialPermanentlyExpired dans la base
-            boolean canMakeRequests = organizationService.canOrganizationMakeRequests(organizationId);
+            boolean canMakeRequests = planChangeService.canOrganizationMakeRequests(organizationId);
             boolean isTrialExpired = !canMakeRequests;
             
             // Récupérer l'organisation APRÈS la vérification pour avoir la valeur mise à jour de trialPermanentlyExpired
@@ -227,7 +231,7 @@ public class OrganizationAccountController {
         }
         try {
             OrganizationDto organization = organizationService.getOrganizationByKeycloakUserId(organizationUserId);
-            organizationService.disableCollaborator(organization.getId(), keycloakUserId);
+            collaboratorService.disableCollaborator(organization.getId(), keycloakUserId);
             return ResponseEntity.ok(Map.of("message", "Collaborateur désactivé avec succès"));
         } catch (IllegalArgumentException e) {
             log.warn("Erreur lors de la désactivation du collaborateur: {}", e.getMessage());
@@ -254,7 +258,7 @@ public class OrganizationAccountController {
         }
         try {
             OrganizationDto organization = organizationService.getOrganizationByKeycloakUserId(organizationUserId);
-            organizationService.enableCollaborator(organization.getId(), keycloakUserId);
+            collaboratorService.enableCollaborator(organization.getId(), keycloakUserId);
             return ResponseEntity.ok(Map.of("message", "Collaborateur activé avec succès"));
         } catch (IllegalArgumentException e) {
             log.warn("Erreur lors de l'activation du collaborateur: {}", e.getMessage());
@@ -284,7 +288,7 @@ public class OrganizationAccountController {
                 return ResponseEntity.badRequest().body(Map.of("error", "DELETE_OWNER", "message", "Le propriétaire de l'organisation ne peut pas être supprimé."));
             }
             OrganizationDto organization = organizationService.getOrganizationByKeycloakUserId(organizationUserId);
-            organizationService.deleteCollaborator(organization.getId(), keycloakUserId);
+            collaboratorService.deleteCollaborator(organization.getId(), keycloakUserId);
             return ResponseEntity.ok(Map.of("message", "Collaborateur supprimé avec succès"));
         } catch (IllegalArgumentException e) {
             log.warn("Erreur lors de la suppression du collaborateur: {}", e.getMessage());

@@ -11,6 +11,7 @@ import com.muhend.backend.auth.service.KeycloakAdminService;
 import com.muhend.backend.organization.dto.OrganizationDto;
 import com.muhend.backend.organization.dto.OrganizationUserDto;
 import com.muhend.backend.organization.service.OrganizationService;
+import com.muhend.backend.organization.service.PlanChangeService;
 import com.muhend.backend.pricing.dto.PricingPlanDto;
 import com.muhend.backend.usage.model.UsageLog;
 import com.muhend.backend.usage.repository.UsageLogRepository;
@@ -45,6 +46,7 @@ public class InvoiceService {
     private final InvoiceItemRepository invoiceItemRepository;
     private final UsageLogRepository usageLogRepository;
     private final OrganizationService organizationService;
+    private final PlanChangeService planChangeService;
     private final EmailService emailService;
     private final KeycloakAdminService keycloakAdminService;
     
@@ -56,12 +58,14 @@ public class InvoiceService {
             InvoiceItemRepository invoiceItemRepository,
             UsageLogRepository usageLogRepository,
             @Lazy OrganizationService organizationService,
+            @Lazy PlanChangeService planChangeService,
             EmailService emailService,
             KeycloakAdminService keycloakAdminService) {
         this.invoiceRepository = invoiceRepository;
         this.invoiceItemRepository = invoiceItemRepository;
         this.usageLogRepository = usageLogRepository;
         this.organizationService = organizationService;
+        this.planChangeService = planChangeService;
         this.emailService = emailService;
         this.keycloakAdminService = keycloakAdminService;
     }
@@ -765,7 +769,7 @@ public class InvoiceService {
         
         try {
             // Récupérer toutes les organisations avec un plan Pay-per-Request
-            List<OrganizationDto> organizations = organizationService.getOrganizationsWithPayPerRequestPlan();
+            List<OrganizationDto> organizations = planChangeService.getOrganizationsWithPayPerRequestPlan();
             
             if (organizations.isEmpty()) {
                 log.info("Aucune organisation avec un plan Pay-per-Request trouvée.");

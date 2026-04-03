@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.muhend.backend.invoice.model.Invoice;
 import com.muhend.backend.invoice.repository.InvoiceRepository;
-import com.muhend.backend.organization.service.OrganizationService;
+import com.muhend.backend.organization.service.PlanChangeService;
 import com.muhend.backend.payment.config.ChargilyConfig;
 import com.muhend.backend.payment.model.Payment;
 import com.muhend.backend.payment.repository.PaymentRepository;
@@ -39,7 +39,7 @@ public class ChargilyWebhookController {
     private final PaymentRepository paymentRepository;
     private final InvoiceRepository invoiceRepository;
     private final ObjectMapper objectMapper;
-    private final OrganizationService organizationService;
+    private final PlanChangeService planChangeService;
 
     @PostMapping
     public ResponseEntity<String> handleWebhook(
@@ -130,7 +130,7 @@ public class ChargilyWebhookController {
         if (planIdStr != null) {
             try {
                 Long planId = Long.parseLong(planIdStr);
-                organizationService.activatePlanAfterPayment(organizationId, planId);
+                planChangeService.activatePlanAfterPayment(organizationId, planId);
             } catch (Exception e) {
                 log.error("Erreur lors de l'activation du plan {} pour l'organisation {}: {}",
                         planIdStr, organizationId, e.getMessage());

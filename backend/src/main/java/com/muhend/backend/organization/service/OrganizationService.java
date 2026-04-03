@@ -2,178 +2,75 @@ package com.muhend.backend.organization.service;
 
 import com.muhend.backend.auth.service.KeycloakAdminService;
 import com.muhend.backend.email.service.EmailService;
-import com.muhend.backend.invoice.service.InvoiceService;
 import com.muhend.backend.organization.dto.CreateOrganizationRequest;
 import com.muhend.backend.organization.dto.OrganizationDto;
+import com.muhend.backend.organization.dto.OrganizationMapper;
 import com.muhend.backend.organization.dto.OrganizationUserDto;
-import com.muhend.backend.organization.dto.QuotaCheckResult;
 import com.muhend.backend.organization.dto.UpdateOrganizationRequest;
-import com.muhend.backend.organization.exception.QuotaExceededException;
 import com.muhend.backend.organization.exception.UserNotAssociatedException;
 import com.muhend.backend.organization.model.Organization;
 import com.muhend.backend.organization.model.OrganizationUser;
 import com.muhend.backend.organization.repository.OrganizationRepository;
 import com.muhend.backend.organization.repository.OrganizationUserRepository;
-import com.muhend.backend.pricing.dto.PricingPlanDto;
 import com.muhend.backend.pricing.service.PricingPlanService;
-import com.muhend.backend.alert.repository.QuotaAlertRepository;
-import com.muhend.backend.invoice.repository.InvoiceItemRepository;
-import com.muhend.backend.invoice.repository.InvoiceRepository;
-import com.muhend.backend.payment.repository.PaymentRepository;
-import com.muhend.backend.payment.repository.SubscriptionRepository;
-import com.muhend.backend.pricing.repository.PricingPlanRepository;
-import com.muhend.backend.pricing.repository.QuoteRequestRepository;
-import com.muhend.backend.usage.repository.UsageLogRepository;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.muhend.backend.usage.model.UsageLog;
-import java.io.FileWriter;
-import java.io.PrintWriter;
-import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
- * Service pour gérer les organisations et les associations
- * utilisateur-organisation.
- * Phase 2 MVP : Association Utilisateur → Entreprise
+ * Service CRUD pour les organisations et résolution utilisateur → organisation.
+ * <p>
+ * Les responsabilités suivantes ont été extraites dans des services dédiés :
+ * <ul>
+ *   <li>{@link QuotaService} — vérification des quotas et calcul des crédits</li>
+ *   <li>{@link PlanChangeService} — changement de plan tarifaire, essai, accès</li>
+ *   <li>{@link CollaboratorService} — gestion des collaborateurs</li>
+ *   <li>{@link OrganizationMapper} — conversion Entity ↔ DTO</li>
+ * </ul>
  */
 @Service
 @Slf4j
 public class OrganizationService {
 
-    private static final String DEBUG_LOG_PATH = "c:\\Users\\hamoh\\Documents\\projets\\tarif\\tarif-saas\\tarif-cloak-prod\\.cursor\\debug.log";
-    private static final ObjectMapper objectMapper = new ObjectMapper();
-
-    private static void debugLog(String location, String message, Map<String, Object> data, String hypothesisId) {
-        try {
-            Map<String, Object> logEntry = new HashMap<>();
-            logEntry.put("id", "log_" + System.currentTimeMillis() + "_" + (int) (Math.random() * 1000));
-            logEntry.put("timestamp", System.currentTimeMillis());
-            logEntry.put("location", location);
-            logEntry.put("message", message);
-            logEntry.put("data", data);
-            logEntry.put("sessionId", "debug-session");
-            logEntry.put("runId", "run1");
-            logEntry.put("hypothesisId", hypothesisId);
-            try (PrintWriter writer = new PrintWriter(new FileWriter(DEBUG_LOG_PATH, true))) {
-                writer.println(objectMapper.writeValueAsString(logEntry));
-            }
-        } catch (Exception e) {
-            // Ignorer les erreurs de logging pour ne pas perturber le flux principal
-        }
-    }
-
     private final OrganizationRepository organizationRepository;
     private final OrganizationUserRepository organizationUserRepository;
-    private final UsageLogRepository usageLogRepository;
     private final KeycloakAdminService keycloakAdminService;
     private final PricingPlanService pricingPlanService;
     private final EmailService emailService;
-    private final InvoiceService invoiceService;
-    private final InvoiceRepository invoiceRepository;
-    private final InvoiceItemRepository invoiceItemRepository;
-    private final PaymentRepository paymentRepository;
-    private final SubscriptionRepository subscriptionRepository;
-    private final QuoteRequestRepository quoteRequestRepository;
-    private final QuotaAlertRepository quotaAlertRepository;
-    private final PricingPlanRepository pricingPlanRepository;
-
-    // ===== Coûts en crédits par prestation (configurables via .env) =====
-    @Value("${credits.positions10:15}")
-    private int creditsPositions10;
-    @Value("${credits.positions6:10}")
-    private int creditsPositions6;
-    @Value("${credits.decode-p10:5}")
-    private int creditsDecodep10;
-    @Value("${credits.decode:2}")
-    private int creditsDecode;
-    @Value("${credits.default:1}")
-    private int creditsDefault;
-
-    /**
-     * Calcule la somme de crédits consommés à partir d'une liste de logs
-     * d'utilisation.
-     * Le coût dépend de l'endpoint appelé.
-     */
-    private long computeCredits(List<UsageLog> logs) {
-        return logs.stream().mapToLong(log -> {
-            String ep = log.getEndpoint();
-            if (ep == null)
-                return creditsDefault;
-            if (ep.contains("positions10"))
-                return creditsPositions10;
-            if (ep.contains("positions6"))
-                return creditsPositions6;
-            if (ep.contains("decode-p10"))
-                return creditsDecodep10;
-            if (ep.contains("decode"))
-                return creditsDecode;
-            return creditsDefault;
-        }).sum();
-    }
-
-    /** Somme des crédits consommés par une organisation sur une période. */
-    public long computeOrganizationCredits(Long organizationId, LocalDateTime start, LocalDateTime end) {
-        return computeCredits(usageLogRepository.findByOrganizationIdAndTimestampBetween(organizationId, start, end));
-    }
-
-    /** Somme des crédits consommés par un utilisateur sur une période. */
-    public long computeUserCredits(String keycloakUserId, LocalDateTime start, LocalDateTime end) {
-        return computeCredits(usageLogRepository.findByKeycloakUserIdAndTimestampBetween(keycloakUserId, start, end));
-    }
+    private final OrganizationMapper organizationMapper;
 
     public OrganizationService(OrganizationRepository organizationRepository,
             OrganizationUserRepository organizationUserRepository,
-            UsageLogRepository usageLogRepository,
             KeycloakAdminService keycloakAdminService,
             PricingPlanService pricingPlanService,
             EmailService emailService,
-            InvoiceService invoiceService,
-            InvoiceRepository invoiceRepository,
-            InvoiceItemRepository invoiceItemRepository,
-            PaymentRepository paymentRepository,
-            SubscriptionRepository subscriptionRepository,
-            QuoteRequestRepository quoteRequestRepository,
-            QuotaAlertRepository quotaAlertRepository,
-            PricingPlanRepository pricingPlanRepository) {
+            OrganizationMapper organizationMapper) {
         this.organizationRepository = organizationRepository;
         this.organizationUserRepository = organizationUserRepository;
-        this.usageLogRepository = usageLogRepository;
         this.keycloakAdminService = keycloakAdminService;
         this.pricingPlanService = pricingPlanService;
         this.emailService = emailService;
-        this.invoiceService = invoiceService;
-        this.invoiceRepository = invoiceRepository;
-        this.invoiceItemRepository = invoiceItemRepository;
-        this.paymentRepository = paymentRepository;
-        this.subscriptionRepository = subscriptionRepository;
-        this.quoteRequestRepository = quoteRequestRepository;
-        this.quotaAlertRepository = quotaAlertRepository;
-        this.pricingPlanRepository = pricingPlanRepository;
+        this.organizationMapper = organizationMapper;
     }
+
+    // =====================================================================
+    //  CRUD Organisations
+    // =====================================================================
 
     /**
      * Crée une nouvelle organisation.
      */
     @Transactional
     public OrganizationDto createOrganization(CreateOrganizationRequest request) {
-        // Vérifier si une organisation avec ce nom existe déjà
         if (organizationRepository.existsByName(request.getName())) {
             throw new IllegalArgumentException("Une organisation avec le nom '" + request.getName() + "' existe déjà");
         }
 
-        // Vérifier si une organisation avec cet email existe déjà (email est
-        // obligatoire et unique)
         if (organizationRepository.existsByEmail(request.getEmail())) {
             throw new IllegalArgumentException(
                     "Une organisation avec l'email '" + request.getEmail() + "' existe déjà");
@@ -200,11 +97,9 @@ public class OrganizationService {
             try {
                 var plan = pricingPlanService.getPricingPlanById(request.getPricingPlanId());
                 organization.setPricingPlanId(request.getPricingPlanId());
-                // Le quota peut être défini par le plan tarifaire
                 if (plan.getMonthlyQuota() != null) {
                     organization.setMonthlyQuota(plan.getMonthlyQuota());
                 }
-                // Si c'est un plan d'essai, définir la date d'expiration
                 if (plan.getTrialPeriodDays() != null && plan.getTrialPeriodDays() > 0) {
                     organization.setTrialExpiresAt(LocalDateTime.now().plusDays(plan.getTrialPeriodDays()));
                     log.info("Plan d'essai activé pour l'organisation {}: expiration dans {} jours",
@@ -235,10 +130,9 @@ public class OrganizationService {
         } catch (Exception e) {
             log.warn("Erreur lors de l'envoi de la notification admin pour la nouvelle organisation {}: {}",
                     organization.getName(), e.getMessage());
-            // Ne pas faire échouer la création d'organisation si l'email admin échoue
         }
 
-        return toDto(organization);
+        return organizationMapper.toDto(organization);
     }
 
     /**
@@ -249,7 +143,6 @@ public class OrganizationService {
         Organization organization = organizationRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Organisation non trouvée avec l'ID: " + id));
 
-        // Vérifier si le nom change et si le nouveau nom existe déjà
         String name = request.getName();
         if (name != null && !name.trim().isEmpty() && !name.equals(organization.getName())) {
             if (organizationRepository.existsByName(name)) {
@@ -258,7 +151,6 @@ public class OrganizationService {
             organization.setName(name.trim());
         }
 
-        // Vérifier si l'email change et si le nouvel email existe déjà
         String email = request.getEmail();
         if (email != null && !email.trim().isEmpty()) {
             String trimmedEmail = email.trim();
@@ -270,7 +162,6 @@ public class OrganizationService {
                 organization.setEmail(trimmedEmail);
             }
         } else if (email != null && email.trim().isEmpty()) {
-            // Permettre de mettre l'email à null en envoyant une chaîne vide
             organization.setEmail(null);
         }
 
@@ -295,7 +186,7 @@ public class OrganizationService {
         organization = organizationRepository.save(organization);
         log.info("Organisation mise à jour: id={}, name={}, email={}", organization.getId(), organization.getName(),
                 organization.getEmail());
-        return toDto(organization);
+        return organizationMapper.toDto(organization);
     }
 
     /**
@@ -303,7 +194,7 @@ public class OrganizationService {
      */
     public List<OrganizationDto> getAllOrganizations() {
         return organizationRepository.findAll().stream()
-                .map(this::toDtoWithUserCount)
+                .map(organizationMapper::toDtoWithUserCount)
                 .collect(Collectors.toList());
     }
 
@@ -313,15 +204,19 @@ public class OrganizationService {
     public OrganizationDto getOrganizationById(Long id) {
         Organization organization = organizationRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Organisation non trouvée avec l'ID: " + id));
-        return toDtoWithUserCount(organization);
+        return organizationMapper.toDtoWithUserCount(organization);
     }
 
     public OrganizationDto getOrganizationByKeycloakUserId(String keycloakUserId) {
         Organization organization = organizationRepository.findByKeycloakUserId(keycloakUserId)
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Organisation non trouvée pour cet identifiant utilisateur."));
-        return toDtoWithUserCount(organization);
+        return organizationMapper.toDtoWithUserCount(organization);
     }
+
+    // =====================================================================
+    //  Résolution Utilisateur → Organisation
+    // =====================================================================
 
     public List<OrganizationUserDto> getOrganizationUsersByKeycloakUserId(String keycloakUserId) {
         Organization organization = organizationRepository.findByKeycloakUserId(keycloakUserId)
@@ -330,7 +225,7 @@ public class OrganizationService {
         String ownerKeycloakUserId = organization.getKeycloakUserId();
         return organizationUserRepository.findByOrganizationId(organization.getId()).stream()
                 .map(ou -> {
-                    OrganizationUserDto dto = toOrganizationUserDto(ou);
+                    OrganizationUserDto dto = organizationMapper.toOrganizationUserDto(ou);
                     dto.setIsOwner(ownerKeycloakUserId != null && ownerKeycloakUserId.equals(ou.getKeycloakUserId()));
                     return dto;
                 })
@@ -338,194 +233,11 @@ public class OrganizationService {
     }
 
     /**
-     * Ajoute un utilisateur à une organisation.
-     */
-    @Transactional
-    public OrganizationUserDto addUserToOrganization(Long organizationId, String keycloakUserId) {
-        // Vérifier que l'organisation existe
-        Organization organization = organizationRepository.findById(organizationId)
-                .orElseThrow(
-                        () -> new IllegalArgumentException("Organisation non trouvée avec l'ID: " + organizationId));
-
-        // Vérifier si l'utilisateur est déjà dans cette organisation
-        if (organizationUserRepository.existsByOrganizationIdAndKeycloakUserId(organizationId, keycloakUserId)) {
-            throw new IllegalArgumentException("L'utilisateur est déjà membre de cette organisation");
-        }
-
-        OrganizationUser organizationUser = new OrganizationUser();
-        organizationUser.setOrganization(organization);
-        organizationUser.setKeycloakUserId(keycloakUserId);
-        organizationUser = organizationUserRepository.save(organizationUser);
-
-        log.info("Utilisateur {} ajouté à l'organisation {} ({})",
-                keycloakUserId, organizationId, organization.getName());
-
-        return toOrganizationUserDto(organizationUser);
-    }
-
-    /**
-     * Retire un utilisateur d'une organisation.
-     */
-    @Transactional
-    public void removeUserFromOrganization(Long organizationId, String keycloakUserId) {
-        if (!organizationUserRepository.existsByOrganizationIdAndKeycloakUserId(organizationId, keycloakUserId)) {
-            throw new IllegalArgumentException("L'utilisateur n'est pas membre de cette organisation");
-        }
-
-        organizationUserRepository.deleteByOrganizationIdAndKeycloakUserId(organizationId, keycloakUserId);
-        log.info("Utilisateur {} retiré de l'organisation {}", keycloakUserId, organizationId);
-    }
-
-    /**
-     * Désactive un collaborateur (désactive son compte Keycloak).
-     */
-    @Transactional
-    public void disableCollaborator(Long organizationId, String keycloakUserId) {
-        // Vérifier que le collaborateur appartient à l'organisation
-        if (!organizationUserRepository.existsByOrganizationIdAndKeycloakUserId(organizationId, keycloakUserId)) {
-            throw new IllegalArgumentException("Le collaborateur n'est pas membre de cette organisation");
-        }
-
-        // Vérifier que ce n'est pas le compte organisation lui-même
-        Organization organization = organizationRepository.findById(organizationId)
-                .orElseThrow(
-                        () -> new IllegalArgumentException("Organisation non trouvée avec l'ID: " + organizationId));
-        if (keycloakUserId.equals(organization.getKeycloakUserId())) {
-            throw new IllegalArgumentException("Impossible de désactiver le compte organisation lui-même");
-        }
-
-        // Désactiver le compte Keycloak
-        try {
-            keycloakAdminService.disableUser(keycloakUserId);
-            log.info("Collaborateur {} désactivé dans Keycloak pour l'organisation {}", keycloakUserId, organizationId);
-        } catch (Exception e) {
-            log.error("Erreur lors de la désactivation du collaborateur {} dans Keycloak: {}", keycloakUserId,
-                    e.getMessage(), e);
-            throw new RuntimeException("Erreur lors de la désactivation du collaborateur: " + e.getMessage(), e);
-        }
-    }
-
-    /**
-     * Active un collaborateur (active son compte Keycloak).
-     */
-    @Transactional
-    public void enableCollaborator(Long organizationId, String keycloakUserId) {
-        // Vérifier que le collaborateur appartient à l'organisation
-        if (!organizationUserRepository.existsByOrganizationIdAndKeycloakUserId(organizationId, keycloakUserId)) {
-            throw new IllegalArgumentException("Le collaborateur n'est pas membre de cette organisation");
-        }
-
-        // Vérifier que ce n'est pas le compte organisation lui-même
-        Organization organization = organizationRepository.findById(organizationId)
-                .orElseThrow(
-                        () -> new IllegalArgumentException("Organisation non trouvée avec l'ID: " + organizationId));
-        if (keycloakUserId.equals(organization.getKeycloakUserId())) {
-            throw new IllegalArgumentException("Impossible d'activer le compte organisation lui-même (déjà actif)");
-        }
-
-        // Activer le compte Keycloak
-        try {
-            keycloakAdminService.enableUser(keycloakUserId);
-            log.info("Collaborateur {} activé dans Keycloak pour l'organisation {}", keycloakUserId, organizationId);
-        } catch (Exception e) {
-            log.error("Erreur lors de l'activation du collaborateur {} dans Keycloak: {}", keycloakUserId,
-                    e.getMessage(), e);
-            throw new RuntimeException("Erreur lors de l'activation du collaborateur: " + e.getMessage(), e);
-        }
-    }
-
-    /**
-     * Supprime un collaborateur (retire de l'organisation et supprime son compte
-     * Keycloak).
-     */
-    @Transactional
-    public void deleteCollaborator(Long organizationId, String keycloakUserId) {
-        // Vérifier que le collaborateur appartient à l'organisation
-        if (!organizationUserRepository.existsByOrganizationIdAndKeycloakUserId(organizationId, keycloakUserId)) {
-            throw new IllegalArgumentException("Le collaborateur n'est pas membre de cette organisation");
-        }
-
-        // Vérifier que ce n'est pas le compte organisation lui-même
-        Organization organization = organizationRepository.findById(organizationId)
-                .orElseThrow(
-                        () -> new IllegalArgumentException("Organisation non trouvée avec l'ID: " + organizationId));
-        if (keycloakUserId.equals(organization.getKeycloakUserId())) {
-            throw new IllegalArgumentException("Impossible de supprimer le compte organisation lui-même");
-        }
-
-        // Retirer de l'organisation
-        organizationUserRepository.deleteByOrganizationIdAndKeycloakUserId(organizationId, keycloakUserId);
-        log.info("Collaborateur {} retiré de l'organisation {}", keycloakUserId, organizationId);
-
-        // Supprimer le compte Keycloak (optionnel, selon la politique de l'application)
-        // Pour l'instant, on désactive plutôt que de supprimer pour garder l'historique
-        try {
-            keycloakAdminService.disableUser(keycloakUserId);
-            log.info("Compte Keycloak {} désactivé après suppression de l'organisation", keycloakUserId);
-        } catch (Exception e) {
-            log.warn("Erreur lors de la désactivation du compte Keycloak {}: {}", keycloakUserId, e.getMessage());
-            // Ne pas faire échouer la transaction si la désactivation Keycloak échoue
-        }
-    }
-
-    /**
-     * Désactive une organisation (interdit l'utilisation de l'application à tous
-     * ses collaborateurs).
-     * Les collaborateurs ne pourront plus effectuer de requêtes tant que
-     * l'organisation est désactivée.
-     *
-     * @param organizationId ID de l'organisation à désactiver
-     * @return L'organisation mise à jour
-     */
-    @Transactional
-    public OrganizationDto disableOrganization(Long organizationId) {
-        Organization organization = organizationRepository.findById(organizationId)
-                .orElseThrow(
-                        () -> new IllegalArgumentException("Organisation non trouvée avec l'ID: " + organizationId));
-
-        if (!Boolean.TRUE.equals(organization.getEnabled())) {
-            throw new IllegalArgumentException("L'organisation est déjà désactivée");
-        }
-
-        organization.setEnabled(false);
-        organization = organizationRepository.save(organization);
-
-        log.info("Organisation {} (ID: {}) désactivée par un administrateur", organization.getName(), organizationId);
-
-        return toDtoWithUserCount(organization);
-    }
-
-    /**
-     * Réactive une organisation (permet à nouveau l'utilisation de l'application à
-     * ses collaborateurs).
-     *
-     * @param organizationId ID de l'organisation à réactiver
-     * @return L'organisation mise à jour
-     */
-    @Transactional
-    public OrganizationDto enableOrganization(Long organizationId) {
-        Organization organization = organizationRepository.findById(organizationId)
-                .orElseThrow(
-                        () -> new IllegalArgumentException("Organisation non trouvée avec l'ID: " + organizationId));
-
-        if (Boolean.TRUE.equals(organization.getEnabled())) {
-            throw new IllegalArgumentException("L'organisation est déjà activée");
-        }
-
-        organization.setEnabled(true);
-        organization = organizationRepository.save(organization);
-
-        log.info("Organisation {} (ID: {}) réactivée par un administrateur", organization.getName(), organizationId);
-
-        return toDtoWithUserCount(organization);
-    }
-
-    /**
      * Récupère toutes les organisations d'un utilisateur.
      */
     public List<OrganizationDto> getOrganizationsByUser(String keycloakUserId) {
         return organizationUserRepository.findByKeycloakUserId(keycloakUserId).stream()
-                .map(ou -> toDto(ou.getOrganization()))
+                .map(ou -> organizationMapper.toDto(ou.getOrganization()))
                 .collect(Collectors.toList());
     }
 
@@ -534,16 +246,14 @@ public class OrganizationService {
      */
     public List<OrganizationUserDto> getUsersByOrganization(Long organizationId) {
         return organizationUserRepository.findByOrganizationId(organizationId).stream()
-                .map(this::toOrganizationUserDto)
+                .map(organizationMapper::toOrganizationUserDto)
                 .collect(Collectors.toList());
     }
 
     /**
      * Récupère l'ID de l'organisation d'un utilisateur.
-     * EXIGE qu'un utilisateur soit associé à une organisation.
-     * Un utilisateur DOIT toujours être associé à une organisation dans cette
-     * application.
-     * 
+     * Un utilisateur DOIT toujours être associé à une organisation.
+     *
      * @param keycloakUserId ID Keycloak de l'utilisateur
      * @return L'ID de l'organisation
      * @throws UserNotAssociatedException si l'utilisateur n'a pas d'organisation
@@ -554,7 +264,6 @@ public class OrganizationService {
             Optional<Organization> organizationByOwner = organizationRepository.findByKeycloakUserId(keycloakUserId);
             if (organizationByOwner.isPresent()) {
                 Organization organization = organizationByOwner.get();
-                // S'assurer que le compte organisation est bien enregistré comme membre
                 if (!organizationUserRepository.existsByOrganizationIdAndKeycloakUserId(organization.getId(),
                         keycloakUserId)) {
                     OrganizationUser organizationUser = new OrganizationUser();
@@ -568,7 +277,6 @@ public class OrganizationService {
                     keycloakUserId,
                     "L'utilisateur doit être associé à une organisation. Aucune organisation trouvée.");
         }
-        // Retourner la première organisation (on pourra améliorer cela plus tard)
         Organization organization = organizationUsers.get(0).getOrganization();
         if (organization == null) {
             throw new UserNotAssociatedException(
@@ -585,1176 +293,64 @@ public class OrganizationService {
         return organizationUserRepository.existsByOrganizationIdAndKeycloakUserId(organizationId, keycloakUserId);
     }
 
+    // =====================================================================
+    //  Activation / Désactivation d'organisations
+    // =====================================================================
+
     /**
-     * Vérifie si le quota mensuel d'une organisation est dépassé.
-     * RÈGLE IMPORTANTE : Si monthlyQuota est null, le quota est illimité et cette
-     * méthode retourne toujours true.
-     * Phase 4 MVP : Quotas Basiques
-     * 
-     * IMPORTANT : La consommation en requêtes est comptée au niveau de
-     * l'organisation.
-     * Elle est égale à la somme des consommations de tous les collaborateurs de
-     * l'organisation.
-     * Le quota est partagé entre tous les utilisateurs de l'organisation.
-     * 
-     * @param organizationId ID de l'organisation
-     * @return true si le quota n'est pas dépassé, false sinon
-     * @throws QuotaExceededException si le quota est dépassé (pour compatibilité
-     *                                avec l'ancien code)
-     * @deprecated Utiliser checkQuotaWithResult() à la place pour obtenir plus
-     *             d'informations
+     * Désactive une organisation.
+     */
+    @Transactional
+    public OrganizationDto disableOrganization(Long organizationId) {
+        Organization organization = organizationRepository.findById(organizationId)
+                .orElseThrow(
+                        () -> new IllegalArgumentException("Organisation non trouvée avec l'ID: " + organizationId));
+
+        if (!Boolean.TRUE.equals(organization.getEnabled())) {
+            throw new IllegalArgumentException("L'organisation est déjà désactivée");
+        }
+
+        organization.setEnabled(false);
+        organization = organizationRepository.save(organization);
+
+        log.info("Organisation {} (ID: {}) désactivée par un administrateur", organization.getName(), organizationId);
+
+        return organizationMapper.toDtoWithUserCount(organization);
+    }
+
+    /**
+     * Réactive une organisation.
+     */
+    @Transactional
+    public OrganizationDto enableOrganization(Long organizationId) {
+        Organization organization = organizationRepository.findById(organizationId)
+                .orElseThrow(
+                        () -> new IllegalArgumentException("Organisation non trouvée avec l'ID: " + organizationId));
+
+        if (Boolean.TRUE.equals(organization.getEnabled())) {
+            throw new IllegalArgumentException("L'organisation est déjà activée");
+        }
+
+        organization.setEnabled(true);
+        organization = organizationRepository.save(organization);
+
+        log.info("Organisation {} (ID: {}) réactivée par un administrateur", organization.getName(), organizationId);
+
+        return organizationMapper.toDtoWithUserCount(organization);
+    }
+
+    // =====================================================================
+    //  Suppression (redirige vers DeletionService)
+    // =====================================================================
+
+    /**
+     * @deprecated Utiliser OrganizationDeletionService.deleteOrganization à la place.
      */
     @Deprecated
-    public boolean checkQuota(Long organizationId) {
-        if (organizationId == null) {
-            throw new IllegalArgumentException(
-                    "Un utilisateur doit être associé à une organisation. organizationId ne peut pas être null.");
-        }
-
-        Organization organization = organizationRepository.findById(organizationId)
-                .orElseThrow(
-                        () -> new IllegalArgumentException("Organisation non trouvée avec l'ID: " + organizationId));
-
-        Integer monthlyQuota = organization.getMonthlyQuota();
-        Long pricingPlanId = organization.getPricingPlanId();
-
-        log.debug("Vérification du quota pour l'organisation {} (ID: {}): quota={}, planId={}",
-                organization.getName(), organizationId, monthlyQuota, pricingPlanId);
-
-        // Vérifier si le plan est pay-per-request (même si le quota n'a pas été
-        // correctement mis à null)
-        // Si c'est un plan pay-per-request, le quota doit être traité comme illimité
-        if (pricingPlanId != null) {
-            try {
-                PricingPlanDto plan = pricingPlanService.getPricingPlanById(pricingPlanId);
-                boolean hasPricePerRequest = plan.getPricePerRequest() != null
-                        && plan.getPricePerRequest().compareTo(BigDecimal.ZERO) > 0;
-                boolean hasPricePerMonth = plan.getPricePerMonth() != null
-                        && plan.getPricePerMonth().compareTo(BigDecimal.ZERO) > 0;
-                boolean isPayPerRequest = hasPricePerRequest && !hasPricePerMonth;
-
-                if (isPayPerRequest) {
-                    // Plan pay-per-request : quota illimité (ignorer le quota de l'organisation)
-                    log.info(
-                            "✅ Quota illimité pour l'organisation {} (ID: {}): plan pay-per-request détecté (plan: {} - ID: {}). "
-                                    +
-                                    "Le quota de l'organisation ({}) est ignoré.",
-                            organization.getName(), organizationId, plan.getName(), pricingPlanId, monthlyQuota);
-                    // Corriger le quota dans la base de données si nécessaire
-                    if (monthlyQuota != null) {
-                        log.warn(
-                                "⚠️ Correction du quota pour l'organisation {} (ID: {}): {} -> null (plan pay-per-request)",
-                                organization.getName(), organizationId, monthlyQuota);
-                        organization.setMonthlyQuota(null);
-                        organizationRepository.save(organization);
-                        organizationRepository.flush();
-                    }
-                    return true;
-                }
-            } catch (Exception e) {
-                log.warn("Impossible de récupérer le plan {} pour vérifier le type de plan: {}", pricingPlanId,
-                        e.getMessage());
-            }
-        }
-
-        // Si le quota est null, il est illimité (plan pay-per-request ou illimité)
-        if (monthlyQuota == null) {
-            log.debug("Quota illimité pour l'organisation {} (plan pay-per-request ou illimité)",
-                    organization.getName());
-            return true;
-        }
-
-        LocalDateTime startDateTime;
-        LocalDateTime endDateTime;
-        if (organization.getMonthlyPlanStartDate() != null && organization.getMonthlyPlanEndDate() != null) {
-            startDateTime = organization.getMonthlyPlanStartDate().atStartOfDay();
-            endDateTime = organization.getMonthlyPlanEndDate().atTime(23, 59, 59, 999999999);
-        } else {
-            LocalDateTime now = LocalDateTime.now();
-            startDateTime = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
-            endDateTime = now.withDayOfMonth(now.toLocalDate().lengthOfMonth())
-                    .withHour(23).withMinute(59).withSecond(59).withNano(999999999);
-        }
-
-        // Sommer les crédits consommés ce mois pour TOUTE l'organisation
-        long currentUsage = computeCredits(usageLogRepository.findByOrganizationIdAndTimestampBetween(
-                organizationId, startDateTime, endDateTime));
-
-        log.info(
-                "🔍 Vérification du quota pour l'organisation {} (ID: {}): crédits utilisés={}, quota={}, planId={}, période: {} à {}",
-                organization.getName(), organizationId, currentUsage, monthlyQuota, pricingPlanId, startDateTime,
-                endDateTime);
-
-        // Vérifier si le quota est dépassé
-        if (currentUsage >= monthlyQuota) {
-            String message = String.format(
-                    "Quota mensuel dépassé pour l'organisation '%s' (ID: %d). Utilisation: %d/%d requêtes (planId: %s)",
-                    organization.getName(), organizationId, currentUsage, monthlyQuota, pricingPlanId);
-            log.warn("❌ {} - Vérifiez que le quota du plan {} correspond bien au quota de l'organisation. " +
-                    "Si le plan vient d'être changé, le quota devrait être mis à jour.", message, pricingPlanId);
-            throw new QuotaExceededException(message);
-        }
-
-        log.info("✅ Quota OK pour l'organisation {} (ID: {}): {}/{} requêtes utilisées ce mois (planId: {})",
-                organization.getName(), organizationId, currentUsage, monthlyQuota, pricingPlanId);
-        return true;
-    }
-
-    /**
-     * Vérifie si le quota mensuel d'une organisation est dépassé et retourne un
-     * résultat détaillé.
-     * RÈGLE IMPORTANTE : Si monthlyQuota est null, le quota est illimité.
-     * Si le quota est dépassé, retourne le prix Pay-per-Request correspondant au
-     * marché pour facturer les requêtes supplémentaires.
-     * 
-     * @param organizationId ID de l'organisation
-     * @return QuotaCheckResult contenant les informations sur le quota et le prix
-     *         Pay-per-Request si applicable
-     */
-    @Transactional(readOnly = true)
-    public QuotaCheckResult checkQuotaWithResult(Long organizationId) {
-        if (organizationId == null) {
-            throw new IllegalArgumentException(
-                    "Un utilisateur doit être associé à une organisation. organizationId ne peut pas être null.");
-        }
-
-        Organization organization = organizationRepository.findById(organizationId)
-                .orElseThrow(
-                        () -> new IllegalArgumentException("Organisation non trouvée avec l'ID: " + organizationId));
-
-        Integer monthlyQuota = organization.getMonthlyQuota();
-        Long pricingPlanId = organization.getPricingPlanId();
-        String marketVersion = organization.getMarketVersion();
-
-        // #region agent log
-        Map<String, Object> logDataB1 = new HashMap<>();
-        logDataB1.put("organizationId", organizationId);
-        logDataB1.put("monthlyQuota", monthlyQuota);
-        logDataB1.put("pricingPlanId", pricingPlanId);
-        debugLog("OrganizationService.java:530", "checkQuotaWithResult - entry", logDataB1, "B");
-        // #endregion
-        log.debug(
-                "Vérification du quota avec résultat pour l'organisation {} (ID: {}): quota={}, planId={}, marketVersion={}",
-                organization.getName(), organizationId, monthlyQuota, pricingPlanId, marketVersion);
-
-        // Vérifier si le plan actuel est pay-per-request
-        if (pricingPlanId != null) {
-            try {
-                PricingPlanDto plan = pricingPlanService.getPricingPlanById(pricingPlanId);
-                boolean hasPricePerRequest = plan.getPricePerRequest() != null
-                        && plan.getPricePerRequest().compareTo(BigDecimal.ZERO) > 0;
-                boolean hasPricePerMonth = plan.getPricePerMonth() != null
-                        && plan.getPricePerMonth().compareTo(BigDecimal.ZERO) > 0;
-                boolean isPayPerRequest = hasPricePerRequest && !hasPricePerMonth;
-
-                if (isPayPerRequest) {
-                    // Plan pay-per-request : quota illimité
-                    log.info("✅ Quota illimité pour l'organisation {} (ID: {}): plan pay-per-request",
-                            organization.getName(), organizationId);
-                    return new QuotaCheckResult(true, false, null, 0, null);
-                }
-            } catch (Exception e) {
-                log.warn("Impossible de récupérer le plan {} pour vérifier le type de plan: {}", pricingPlanId,
-                        e.getMessage());
-            }
-        }
-
-        // RÈGLE IMPORTANTE : monthlyQuota = null signifie quota ILLIMITÉ
-        // Si le quota est null, il est illimité (pas de limite de requêtes)
-        // #region agent log
-        Map<String, Object> logDataB2 = new HashMap<>();
-        logDataB2.put("monthlyQuota", monthlyQuota);
-        logDataB2.put("isNull", monthlyQuota == null);
-        debugLog("OrganizationService.java:557", "checkQuotaWithResult - checking if monthlyQuota is null", logDataB2,
-                "B");
-        // #endregion
-        if (monthlyQuota == null) {
-            log.debug("Quota illimité pour l'organisation {} (plan pay-per-request ou illimité)",
-                    organization.getName());
-            // #region agent log
-            Map<String, Object> logDataB3 = new HashMap<>();
-            logDataB3.put("monthlyQuota", monthlyQuota);
-            debugLog("OrganizationService.java:559", "checkQuotaWithResult - returning unlimited quota", logDataB3,
-                    "B");
-            // #endregion
-            return new QuotaCheckResult(true, false, null, 0, null);
-        }
-
-        // Pour les plans mensuels, utiliser le cycle mensuel du plan (du startDate au
-        // endDate inclus)
-        // Pour les autres plans, utiliser le mois calendaire
-        LocalDateTime startDateTime;
-        LocalDateTime endDateTime;
-
-        PricingPlanDto plan = null;
-        if (organization.getMonthlyPlanStartDate() != null && organization.getMonthlyPlanEndDate() != null) {
-            // Utiliser le cycle mensuel du plan (du startDate au endDate inclus)
-            LocalDate startDate = organization.getMonthlyPlanStartDate();
-            LocalDate endDate = organization.getMonthlyPlanEndDate();
-            startDateTime = startDate.atStartOfDay();
-            endDateTime = endDate.atTime(23, 59, 59, 999999999);
-            log.debug("Utilisation du cycle mensuel pour l'organisation {}: du {} au {} (inclus)",
-                    organizationId, startDate, endDate);
-        } else {
-            // Utiliser le mois calendaire (pour plans pay-per-request ou essai en fallback)
-            LocalDateTime now = LocalDateTime.now();
-            startDateTime = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
-            endDateTime = now.withDayOfMonth(now.toLocalDate().lengthOfMonth())
-                    .withHour(23).withMinute(59).withSecond(59).withNano(999999999);
-            log.debug("Utilisation du mois calendaire pour l'organisation {}", organizationId);
-        }
-
-        // Sommer les crédits consommés dans la période
-        long currentUsage = computeCredits(usageLogRepository.findByOrganizationIdAndTimestampBetween(
-                organizationId, startDateTime, endDateTime));
-
-        log.info("🔍 Vérification du quota pour l'organisation {} (ID: {}): crédits utilisés={}, quota={}, planId={}",
-                organization.getName(), organizationId, currentUsage, monthlyQuota, pricingPlanId);
-
-        // Vérifier si le quota est dépassé
-        if (currentUsage >= monthlyQuota) {
-            // Quota dépassé : chercher le plan Pay-per-Request correspondant au marché
-            BigDecimal payPerRequestPrice = null;
-            try {
-                List<PricingPlanDto> plans = pricingPlanService.getActivePricingPlans(marketVersion);
-                Optional<PricingPlanDto> payPerRequestPlan = plans.stream()
-                        .filter(p -> {
-                            boolean hasPricePerRequest = p.getPricePerRequest() != null
-                                    && p.getPricePerRequest().compareTo(BigDecimal.ZERO) > 0;
-                            boolean hasPricePerMonth = p.getPricePerMonth() != null
-                                    && p.getPricePerMonth().compareTo(BigDecimal.ZERO) > 0;
-                            return hasPricePerRequest && !hasPricePerMonth; // Plan pay-per-request
-                        })
-                        .findFirst();
-
-                if (payPerRequestPlan.isPresent()) {
-                    payPerRequestPrice = payPerRequestPlan.get().getPricePerRequest();
-                    log.info("💰 Plan Pay-per-Request trouvé pour le marché {}: prix={} {}",
-                            marketVersion, payPerRequestPrice, payPerRequestPlan.get().getCurrency());
-                } else {
-                    log.warn("⚠️ Aucun plan Pay-per-Request trouvé pour le marché {} - utilisation du tarif de base",
-                            marketVersion);
-                }
-            } catch (Exception e) {
-                log.warn("Erreur lors de la recherche du plan Pay-per-Request pour le marché {}: {}", marketVersion,
-                        e.getMessage());
-            }
-
-            log.info("⚠️ Quota dépassé pour l'organisation {} (ID: {}): {}/{} requêtes. " +
-                    "Les requêtes supplémentaires seront facturées au prix Pay-per-Request: {} {}",
-                    organization.getName(), organizationId, currentUsage, monthlyQuota,
-                    payPerRequestPrice != null ? payPerRequestPrice : "tarif de base",
-                    organization.getMarketVersion() != null ? organization.getMarketVersion() : "DEFAULT");
-
-            return new QuotaCheckResult(false, true, payPerRequestPrice, currentUsage, monthlyQuota);
-        }
-
-        log.info("✅ Quota OK pour l'organisation {} (ID: {}): {}/{} requêtes utilisées ce mois",
-                organization.getName(), organizationId, currentUsage, monthlyQuota);
-        return new QuotaCheckResult(true, false, null, currentUsage, monthlyQuota);
-    }
-
-    /**
-     * Met à jour le quota mensuel d'une organisation.
-     * Phase 4 MVP : Quotas Basiques
-     * 
-     * @param organizationId ID de l'organisation
-     * @param monthlyQuota   Nouveau quota mensuel (null pour quota illimité)
-     * @return L'organisation mise à jour
-     */
-    @Transactional
-    public OrganizationDto updateMonthlyQuota(Long organizationId, Integer monthlyQuota) {
-        Organization organization = organizationRepository.findById(organizationId)
-                .orElseThrow(
-                        () -> new IllegalArgumentException("Organisation non trouvée avec l'ID: " + organizationId));
-
-        organization.setMonthlyQuota(monthlyQuota);
-        organization = organizationRepository.save(organization);
-
-        log.info("Quota mensuel mis à jour pour l'organisation {} (ID: {}): {} requêtes/mois",
-                organization.getName(), organizationId, monthlyQuota != null ? monthlyQuota : "illimité");
-
-        return toDto(organization);
-    }
-
-    /**
-     * Réinitialise le plan actuel (principalement pour les comptes Invités/Essai).
-     * Prolonge la date d'expiration de 30 jours et réinitialise le cycle de quota.
-     * 
-     * @param organizationId ID de l'organisation
-     * @return L'organisation mise à jour
-     */
-    @Transactional
-    public OrganizationDto resetPlan(Long organizationId) {
-        Organization organization = organizationRepository.findById(organizationId)
-                .orElseThrow(
-                        () -> new IllegalArgumentException("Organisation non trouvée avec l'ID: " + organizationId));
-
-        java.time.LocalDateTime now = java.time.LocalDateTime.now();
-        java.time.LocalDate today = java.time.LocalDate.now();
-
-        // 1. Prolonger l'accès de 30 jours
-        organization.setTrialExpiresAt(now.plusDays(30));
-        organization.setTrialPermanentlyExpired(false);
-
-        // 2. Réinitialiser le cycle pour ramener la consommation de la période en cours
-        // à 0
-        organization.setMonthlyPlanStartDate(today);
-        organization.setMonthlyPlanEndDate(today.plusDays(30));
-
-        // 3. Remettre physiquement les crédits consommés à zéro (en supprimant l'historique)
-        int deletedLogs = usageLogRepository.deleteByOrganizationId(organizationId);
-        log.info("Historique effacé pour forcer la consommation à 0 : {} logs supprimés.", deletedLogs);
-
-        organization = organizationRepository.save(organization);
-
-        // Réactiver les collaborateurs s'ils étaient suspendus à cause d'un quota
-        // épuisé
-        reactivateAllCollaborators(organization);
-
-        log.info("Plan réinitialisé pour l'organisation {} (ID: {}). Nouveau cycle: {} -> {}, Expire le: {}",
-                organization.getName(), organizationId,
-                organization.getMonthlyPlanStartDate(), organization.getMonthlyPlanEndDate(),
-                organization.getTrialExpiresAt());
-
-        return toDto(organization);
-    }
-
-    /**
-     * Change le plan tarifaire d'une organisation selon la nouvelle politique de
-     * facturation.
-     * 
-     * Règles :
-     * - Plan Essai gratuit : effet immédiat, une seule utilisation possible
-     * - Plan mensuel → Plan mensuel : changement en attente (prend effet à la fin
-     * du cycle)
-     * - Plan mensuel → Pay-per-Request : effet immédiat + facture de clôture
-     * mensuelle
-     * - Pay-per-Request → Plan mensuel : effet immédiat + facture de clôture
-     * pay-per-request (depuis dernière facture)
-     * - Pay-per-Request → Pay-per-Request : effet immédiat
-     */
-    @Transactional
-    public OrganizationDto changePricingPlan(Long organizationId, Long pricingPlanId) {
-        Organization organization = organizationRepository.findById(organizationId)
-                .orElseThrow(
-                        () -> new IllegalArgumentException("Organisation non trouvée avec l'ID: " + organizationId));
-
-        // Récupérer l'ancien plan
-        PricingPlanDto oldPlan = null;
-        if (organization.getPricingPlanId() != null) {
-            try {
-                oldPlan = pricingPlanService.getPricingPlanById(organization.getPricingPlanId());
-            } catch (Exception e) {
-                log.warn("Impossible de récupérer l'ancien plan: {}", e.getMessage());
-            }
-        }
-
-        PricingPlanDto newPlan = null;
-        String trialExpiresAtStr = null;
-
-        // Valider le plan tarifaire
-        if (pricingPlanId != null) {
-            try {
-                newPlan = pricingPlanService.getPricingPlanById(pricingPlanId);
-
-                // Déterminer le type de chaque plan
-                boolean isOldPlanTrial = oldPlan != null && oldPlan.getTrialPeriodDays() != null
-                        && oldPlan.getTrialPeriodDays() > 0;
-                boolean isOldPlanMonthly = oldPlan != null && oldPlan.getPricePerMonth() != null
-                        && oldPlan.getPricePerMonth().compareTo(BigDecimal.ZERO) > 0;
-                boolean isOldPlanPayPerRequest = oldPlan != null && oldPlan.getPricePerRequest() != null
-                        && !isOldPlanMonthly;
-
-                boolean isNewPlanTrial = newPlan.getTrialPeriodDays() != null && newPlan.getTrialPeriodDays() > 0;
-                boolean isNewPlanMonthly = newPlan.getPricePerMonth() != null
-                        && newPlan.getPricePerMonth().compareTo(BigDecimal.ZERO) > 0;
-                boolean isNewPlanPayPerRequest = newPlan.getPricePerRequest() != null && !isNewPlanMonthly;
-
-                // CAS 1 : Plan Essai gratuit → Autre plan OU Autre plan → Plan Essai gratuit
-                if (isOldPlanTrial || isNewPlanTrial) {
-                    // Vérifier que l'essai n'a pas déjà été utilisé
-                    if (isNewPlanTrial && (Boolean.TRUE.equals(organization.getTrialPermanentlyExpired())
-                            || organization.getTrialExpiresAt() != null)) {
-                        throw new IllegalArgumentException(
-                                "Contacter l'administrateur par mail ou Whatsapp pour demander une prolongation.");
-                    }
-                    // Effet immédiat
-                    applyPlanChangeImmediately(organization, newPlan);
-                    if (isNewPlanTrial) {
-                        organization.setTrialExpiresAt(LocalDateTime.now().plusDays(newPlan.getTrialPeriodDays()));
-                        trialExpiresAtStr = organization.getTrialExpiresAt().toString();
-                    } else {
-                        organization.setTrialExpiresAt(null);
-                    }
-                }
-                // CAS 2 : Plan mensuel → Plan mensuel
-                else if (isOldPlanMonthly && isNewPlanMonthly) {
-                    // Enregistrer comme changement en attente (prendra effet à la fin du cycle)
-                    organization.setPendingMonthlyPlanId(pricingPlanId);
-                    organization.setPendingMonthlyPlanChangeDate(organization.getMonthlyPlanEndDate());
-                    log.info(
-                            "Changement de plan mensuel enregistré en attente pour l'organisation {}: prendra effet le {}",
-                            organizationId, organization.getMonthlyPlanEndDate());
-                    // Ne pas changer le plan actuel immédiatement
-                }
-                // CAS 3 : Plan mensuel → Pay-per-Request
-                else if (isOldPlanMonthly && isNewPlanPayPerRequest) {
-                    // Vérifier si le quota est dépassé
-                    QuotaCheckResult quotaCheck = checkQuotaWithResult(organizationId);
-                    boolean isQuotaExceeded = !quotaCheck.isQuotaOk();
-
-                    if (isQuotaExceeded) {
-                        // Quota dépassé : effet immédiat + facture de clôture mensuelle
-                        log.info(
-                                "Changement vers Pay-per-Request appliqué immédiatement (quota dépassé) pour l'organisation {}",
-                                organizationId);
-                        if (organization.getMonthlyPlanStartDate() != null
-                                && organization.getMonthlyPlanEndDate() != null) {
-                            generateMonthlyPlanClosureInvoice(organizationId, oldPlan,
-                                    organization.getMonthlyPlanStartDate(), organization.getMonthlyPlanEndDate());
-                        }
-                        applyPlanChangeImmediately(organization, newPlan);
-                        // Réinitialiser les champs de changement en attente s'ils existent
-                        organization.setPendingPayPerRequestPlanId(null);
-                        organization.setPendingPayPerRequestChangeDate(null);
-                    } else {
-                        // Quota non dépassé : changement en attente jusqu'à la fin du cycle
-                        organization.setPendingPayPerRequestPlanId(pricingPlanId);
-                        organization.setPendingPayPerRequestChangeDate(organization.getMonthlyPlanEndDate());
-                        log.info(
-                                "Changement vers Pay-per-Request enregistré en attente pour l'organisation {}: prendra effet le {} (fin du cycle) ou dès que le quota sera dépassé",
-                                organizationId, organization.getMonthlyPlanEndDate());
-                        // Ne pas changer le plan actuel immédiatement
-                    }
-                }
-                // CAS 4 : Pay-per-Request → Plan mensuel
-                else if (isOldPlanPayPerRequest && isNewPlanMonthly) {
-                    // Effet immédiat + facture de clôture pay-per-request (depuis dernière facture)
-                    generatePayPerRequestClosureInvoice(organizationId, organization, oldPlan);
-                    applyPlanChangeImmediately(organization, newPlan);
-                    // Initialiser le cycle mensuel
-                    initializeMonthlyPlanCycle(organization, newPlan);
-                }
-                // CAS 5 : Pay-per-Request → Pay-per-Request
-                else if (isOldPlanPayPerRequest && isNewPlanPayPerRequest) {
-                    // Effet immédiat (changement de tarif)
-                    applyPlanChangeImmediately(organization, newPlan);
-                }
-                // CAS 6 : Pas de plan → Nouveau plan
-                else if (oldPlan == null) {
-                    applyPlanChangeImmediately(organization, newPlan);
-                    if (isNewPlanTrial) {
-                        organization.setTrialExpiresAt(LocalDateTime.now().plusDays(newPlan.getTrialPeriodDays()));
-                        trialExpiresAtStr = organization.getTrialExpiresAt().toString();
-                    }
-                }
-
-            } catch (IllegalArgumentException e) {
-                throw e;
-            } catch (Exception e) {
-                throw new IllegalArgumentException("Erreur lors du changement de plan: " + e.getMessage());
-            }
-        } else {
-            // Permettre de retirer le plan tarifaire
-            organization.setPricingPlanId(null);
-            organization.setTrialExpiresAt(null);
-            organization.setMonthlyPlanStartDate(null);
-            organization.setMonthlyPlanEndDate(null);
-            organization.setPendingMonthlyPlanId(null);
-            organization.setPendingMonthlyPlanChangeDate(null);
-        }
-
-        organization = organizationRepository.save(organization);
-        log.info("💾 Plan tarifaire changé pour l'organisation {} (ID: {}): planId={}, nouveau quota={}",
-                organization.getName(), organizationId, pricingPlanId, organization.getMonthlyQuota());
-
-        // Si l'essai était expiré et qu'un plan payant est maintenant sélectionné,
-        // réactiver les collaborateurs
-        boolean wasTrialExpired = isTrialExpired(organization);
-        if (wasTrialExpired && newPlan != null) {
-            boolean isPaidPlan = (newPlan.getPricePerMonth() != null
-                    && newPlan.getPricePerMonth().compareTo(BigDecimal.ZERO) > 0)
-                    || (newPlan.getPricePerRequest() != null
-                            && newPlan.getPricePerRequest().compareTo(BigDecimal.ZERO) > 0);
-            if (isPaidPlan && canOrganizationMakeRequests(organization)) {
-                log.info("Réactivation automatique des collaborateurs pour l'organisation {} (plan payant sélectionné)",
-                        organization.getName());
-                reactivateAllCollaborators(organization);
-            }
-        }
-
-        // Envoyer l'email de notification
-        try {
-            sendPricingPlanChangeNotification(organization, oldPlan, newPlan, trialExpiresAtStr);
-        } catch (Exception e) {
-            log.error(
-                    "Erreur lors de l'envoi de l'email de notification de changement de plan pour l'organisation {}: {}",
-                    organizationId, e.getMessage(), e);
-        }
-
-        return toDtoWithUserCount(organization);
-    }
-
-    /**
-     * Envoie un email de notification de changement de plan tarifaire.
-     */
-    private void sendPricingPlanChangeNotification(Organization organization, PricingPlanDto oldPlan,
-            PricingPlanDto newPlan, String trialExpiresAtStr) {
-        // Liste des emails à notifier
-        List<String> userEmails = new java.util.ArrayList<>();
-
-        // Ajouter l'email de l'organisation
-        if (organization.getEmail() != null && !organization.getEmail().trim().isEmpty()) {
-            userEmails.add(organization.getEmail());
-        }
-
-        // Récupérer les emails des utilisateurs de l'organisation depuis Keycloak
-        try {
-            List<OrganizationUser> organizationUsers = organizationUserRepository
-                    .findByOrganizationId(organization.getId());
-            List<String> keycloakUserIds = organizationUsers.stream()
-                    .map(OrganizationUser::getKeycloakUserId)
-                    .filter(id -> id != null && !id.trim().isEmpty())
-                    .collect(Collectors.toList());
-
-            if (!keycloakUserIds.isEmpty()) {
-                List<String> userEmailsFromKeycloak = keycloakAdminService.getUserEmails(keycloakUserIds);
-                // Ajouter les emails des utilisateurs (éviter les doublons)
-                for (String email : userEmailsFromKeycloak) {
-                    if (email != null && !email.trim().isEmpty() && !userEmails.contains(email)) {
-                        userEmails.add(email);
-                    }
-                }
-                log.debug("Récupéré {} email(s) d'utilisateurs depuis Keycloak pour l'organisation {}",
-                        userEmailsFromKeycloak.size(), organization.getId());
-            }
-        } catch (Exception e) {
-            log.warn(
-                    "Erreur lors de la récupération des emails des utilisateurs depuis Keycloak pour l'organisation {}: {}. "
-                            +
-                            "L'email sera envoyé uniquement à l'adresse de l'organisation.",
-                    organization.getId(), e.getMessage());
-            // Continuer avec l'email de l'organisation même si la récupération des emails
-            // utilisateurs échoue
-        }
-
-        // Préparer les données pour l'email
-        String oldPlanName = oldPlan != null ? oldPlan.getName() : null;
-        java.math.BigDecimal oldPlanPricePerMonth = oldPlan != null ? oldPlan.getPricePerMonth() : null;
-        java.math.BigDecimal oldPlanPricePerRequest = oldPlan != null ? oldPlan.getPricePerRequest() : null;
-        Integer oldPlanQuota = oldPlan != null ? oldPlan.getMonthlyQuota() : null;
-
-        String newPlanName = newPlan != null ? newPlan.getName() : null;
-        String newPlanDescription = newPlan != null ? newPlan.getDescription() : null;
-        java.math.BigDecimal newPlanPricePerMonth = newPlan != null ? newPlan.getPricePerMonth() : null;
-        java.math.BigDecimal newPlanPricePerRequest = newPlan != null ? newPlan.getPricePerRequest() : null;
-        Integer newPlanQuota = newPlan != null ? newPlan.getMonthlyQuota() : null;
-        Integer trialPeriodDays = newPlan != null ? newPlan.getTrialPeriodDays() : null;
-
-        // Envoyer l'email à l'organisation
-        if (!userEmails.isEmpty()) {
-            emailService.sendPricingPlanChangedEmailToMultiple(
-                    userEmails,
-                    organization.getName(),
-                    oldPlanName,
-                    oldPlanPricePerMonth,
-                    oldPlanPricePerRequest,
-                    oldPlanQuota,
-                    newPlanName,
-                    newPlanDescription,
-                    newPlanPricePerMonth,
-                    newPlanPricePerRequest,
-                    newPlanQuota,
-                    trialPeriodDays,
-                    trialExpiresAtStr);
-        } else {
-            log.warn("Aucun email trouvé pour envoyer la notification de changement de plan à l'organisation {}",
-                    organization.getId());
-        }
-    }
-
-    /**
-     * Convertit une Organisation en DTO.
-     */
-    private OrganizationDto toDto(Organization organization) {
-        OrganizationDto dto = new OrganizationDto();
-        dto.setId(organization.getId());
-        dto.setName(organization.getName());
-        dto.setEmail(organization.getEmail());
-        dto.setAddress(organization.getAddress());
-        dto.setActivityDomain(organization.getActivityDomain());
-        dto.setCountry(organization.getCountry());
-        dto.setPhone(organization.getPhone());
-        dto.setMonthlyQuota(organization.getMonthlyQuota());
-        dto.setPricingPlanId(organization.getPricingPlanId());
-        dto.setMarketVersion(organization.getMarketVersion());
-        dto.setTrialExpiresAt(organization.getTrialExpiresAt());
-        dto.setTrialPermanentlyExpired(organization.getTrialPermanentlyExpired());
-        dto.setMonthlyPlanStartDate(organization.getMonthlyPlanStartDate());
-        dto.setMonthlyPlanEndDate(organization.getMonthlyPlanEndDate());
-        dto.setPendingMonthlyPlanId(organization.getPendingMonthlyPlanId());
-        dto.setPendingMonthlyPlanChangeDate(organization.getPendingMonthlyPlanChangeDate());
-        dto.setLastPayPerRequestInvoiceDate(organization.getLastPayPerRequestInvoiceDate());
-        dto.setPendingPayPerRequestPlanId(organization.getPendingPayPerRequestPlanId());
-        dto.setPendingPayPerRequestChangeDate(organization.getPendingPayPerRequestChangeDate());
-        dto.setEnabled(organization.getEnabled());
-        dto.setCreatedAt(organization.getCreatedAt());
-        return dto;
-    }
-
-    /**
-     * Récupère toutes les organisations avec un plan Pay-per-Request.
-     * Un plan Pay-per-Request a pricePerRequest != null et monthlyQuota == null.
-     */
-    @Transactional(readOnly = true)
-    public List<OrganizationDto> getOrganizationsWithPayPerRequestPlan() {
-        List<Organization> organizations = organizationRepository.findAll();
-
-        return organizations.stream()
-                .filter(org -> org.getPricingPlanId() != null)
-                .filter(org -> {
-                    try {
-                        PricingPlanDto plan = pricingPlanService.getPricingPlanById(org.getPricingPlanId());
-                        return plan.getPricePerRequest() != null && plan.getMonthlyQuota() == null;
-                    } catch (Exception e) {
-                        log.warn("Impossible de récupérer le plan pour l'organisation {}: {}",
-                                org.getId(), e.getMessage());
-                        return false;
-                    }
-                })
-                .map(this::toDto)
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Convertit une Organisation en DTO avec le nombre d'utilisateurs et
-     * l'utilisation du mois.
-     */
-    private OrganizationDto toDtoWithUserCount(Organization organization) {
-        OrganizationDto dto = toDto(organization);
-        long userCount = organizationUserRepository.findByOrganizationId(organization.getId()).size();
-        dto.setUserCount(userCount);
-
-        // Calculer les crédits consommés ce cycle/mois
-        LocalDateTime startDateTime;
-        LocalDateTime endDateTime;
-        if (organization.getMonthlyPlanStartDate() != null && organization.getMonthlyPlanEndDate() != null) {
-            startDateTime = organization.getMonthlyPlanStartDate().atStartOfDay();
-            endDateTime = organization.getMonthlyPlanEndDate().atTime(23, 59, 59, 999999999);
-        } else {
-            LocalDateTime now = LocalDateTime.now();
-            startDateTime = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
-            endDateTime = now.withDayOfMonth(now.toLocalDate().lengthOfMonth())
-                    .withHour(23).withMinute(59).withSecond(59).withNano(999999999);
-        }
-        long currentMonthUsage = computeCredits(usageLogRepository
-                .findByOrganizationIdAndTimestampBetween(organization.getId(), startDateTime, endDateTime));
-        dto.setCurrentMonthUsage(currentMonthUsage);
-
-        return dto;
-    }
-
-    /**
-     * Convertit une OrganizationUser en DTO.
-     */
-    private OrganizationUserDto toOrganizationUserDto(OrganizationUser organizationUser) {
-        OrganizationUserDto dto = new OrganizationUserDto();
-        dto.setId(organizationUser.getId());
-        dto.setOrganizationId(organizationUser.getOrganization().getId());
-        dto.setOrganizationName(organizationUser.getOrganization().getName());
-        dto.setKeycloakUserId(organizationUser.getKeycloakUserId());
-
-        // Récupérer le nom d'utilisateur depuis Keycloak
-        dto.setEmail(null);
-        dto.setFirstName(null);
-        dto.setLastName(null);
-        dto.setEnabled(null);
-        try {
-            var userRepresentation = keycloakAdminService.getUserRepresentation(organizationUser.getKeycloakUserId());
-            if (userRepresentation != null) {
-                dto.setUsername(userRepresentation.getUsername());
-                dto.setEmail(userRepresentation.getEmail());
-                dto.setFirstName(userRepresentation.getFirstName());
-                dto.setLastName(userRepresentation.getLastName());
-                dto.setEnabled(userRepresentation.isEnabled() != null && userRepresentation.isEnabled());
-            } else {
-                dto.setUsername("N/A");
-                dto.setEnabled(false);
-            }
-        } catch (Exception e) {
-            log.warn("Impossible de récupérer les informations utilisateur pour {}: {}",
-                    organizationUser.getKeycloakUserId(), e.getMessage());
-            dto.setUsername("N/A");
-            dto.setEnabled(false);
-        }
-
-        dto.setJoinedAt(organizationUser.getJoinedAt());
-        return dto;
-    }
-
-    /**
-     * Vérifie si l'essai gratuit d'une organisation est expiré.
-     * Pour un plan d'essai avec quota, l'essai est expiré seulement si le quota est
-     * atteint.
-     * La date d'expiration est une limite secondaire : si le quota n'est pas
-     * atteint,
-     * l'organisation peut continuer même si la date est passée.
-     * 
-     * Un essai est considéré comme expiré si :
-     * - Pour un plan avec quota : le quota est atteint ET l'organisation n'a pas de
-     * plan payant
-     * - Pour un plan sans quota : trialExpiresAt n'est pas null ET est dans le
-     * passé ET l'organisation n'a pas de plan payant
-     *
-     * @param organization L'organisation à vérifier
-     * @return true si l'essai est expiré, false sinon
-     */
-    @Transactional(readOnly = true)
-    public boolean isTrialExpired(Organization organization) {
-        if (organization.getTrialExpiresAt() == null) {
-            // Pas d'essai, donc pas expiré
-            return false;
-        }
-
-        // IMPORTANT : Vérifier d'abord si l'organisation a un plan payant
-        // Si elle a un plan payant, l'essai n'est jamais considéré comme expiré
-        // (le quota mensuel sera géré par checkQuota(), pas par isTrialExpired())
-        if (organization.getPricingPlanId() != null) {
-            try {
-                PricingPlanDto plan = pricingPlanService.getPricingPlanById(organization.getPricingPlanId());
-                boolean isPaidPlan = (plan.getPricePerMonth() != null
-                        && plan.getPricePerMonth().compareTo(BigDecimal.ZERO) > 0)
-                        || (plan.getPricePerRequest() != null
-                                && plan.getPricePerRequest().compareTo(BigDecimal.ZERO) > 0);
-                // Si c'est un plan payant, l'essai n'est pas expiré (l'organisation peut
-                // continuer)
-                // Le quota mensuel sera vérifié par checkQuota(), pas ici
-                if (isPaidPlan) {
-                    log.debug("Essai non expiré pour l'organisation {}: plan payant actif (ID: {})",
-                            organization.getId(), organization.getPricingPlanId());
-                    return false;
-                }
-            } catch (Exception e) {
-                log.warn("Impossible de récupérer le plan pour vérifier l'expiration de l'essai: {}", e.getMessage());
-            }
-        }
-
-        // Vérifier le quota si l'organisation en a un (seulement pour les plans d'essai
-        // gratuit)
-        // Pour un plan d'essai avec quota, l'essai expire seulement quand le quota est
-        // atteint
-        Integer monthlyQuota = organization.getMonthlyQuota();
-        // #region agent log
-        Map<String, Object> logDataC1 = new HashMap<>();
-        logDataC1.put("monthlyQuota", monthlyQuota);
-        logDataC1.put("isNull", monthlyQuota == null);
-        logDataC1.put("organizationId", organization.getId());
-        debugLog("OrganizationService.java:1067", "isTrialExpired - checking monthlyQuota", logDataC1, "C");
-        // #endregion
-        if (monthlyQuota != null) {
-            // Calculer l'utilisation actuelle
-            LocalDateTime startDateTime;
-            LocalDateTime endDateTime;
-            if (organization.getMonthlyPlanStartDate() != null && organization.getMonthlyPlanEndDate() != null) {
-                startDateTime = organization.getMonthlyPlanStartDate().atStartOfDay();
-                endDateTime = organization.getMonthlyPlanEndDate().atTime(23, 59, 59, 999999999);
-            } else {
-                LocalDateTime now = LocalDateTime.now();
-                startDateTime = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
-                endDateTime = now.withDayOfMonth(now.toLocalDate().lengthOfMonth())
-                        .withHour(23).withMinute(59).withSecond(59).withNano(999999999);
-            }
-
-            long currentUsage = computeCredits(usageLogRepository.findByOrganizationIdAndTimestampBetween(
-                    organization.getId(), startDateTime, endDateTime));
-
-            // Si le quota n'est pas atteint, l'essai n'est pas expiré (même si la date est
-            // passée)
-            // #region agent log
-            Map<String, Object> logDataC2 = new HashMap<>();
-            logDataC2.put("currentUsage", currentUsage);
-            logDataC2.put("monthlyQuota", monthlyQuota);
-            logDataC2.put("isBelowQuota", currentUsage < monthlyQuota);
-            debugLog("OrganizationService.java:1078", "isTrialExpired - comparing usage with quota", logDataC2, "C");
-            // #endregion
-            if (currentUsage < monthlyQuota) {
-                log.debug("Essai non expiré pour l'organisation {}: quota non atteint ({}/{})",
-                        organization.getId(), currentUsage, monthlyQuota);
-                return false;
-            }
-
-            // Quota atteint et pas de plan payant = essai expiré
-            // Marquer l'essai comme définitivement terminé (ne peut plus être réactivé)
-            if (!Boolean.TRUE.equals(organization.getTrialPermanentlyExpired())) {
-                organization.setTrialPermanentlyExpired(true);
-                organizationRepository.save(organization);
-                log.info("Essai définitivement terminé pour l'organisation {}: quota atteint ({}/{})",
-                        organization.getId(), currentUsage, monthlyQuota);
-            }
-            return true;
-        }
-
-        // Si pas de quota défini, utiliser la date d'expiration comme seule limite
-        LocalDateTime now = LocalDateTime.now();
-        if (organization.getTrialExpiresAt().isBefore(now)) {
-            // L'essai est expiré, vérifier si l'organisation a un plan payant
-            if (organization.getPricingPlanId() != null) {
-                try {
-                    PricingPlanDto plan = pricingPlanService.getPricingPlanById(organization.getPricingPlanId());
-                    // Si le plan a un prix > 0, c'est un plan payant
-                    boolean isPaidPlan = (plan.getPricePerMonth() != null
-                            && plan.getPricePerMonth().compareTo(BigDecimal.ZERO) > 0)
-                            || (plan.getPricePerRequest() != null
-                                    && plan.getPricePerRequest().compareTo(BigDecimal.ZERO) > 0);
-                    // L'essai est expiré ET l'organisation n'a pas de plan payant
-                    return !isPaidPlan;
-                } catch (Exception e) {
-                    log.warn("Impossible de récupérer le plan pour vérifier l'expiration de l'essai: {}",
-                            e.getMessage());
-                    // En cas d'erreur, considérer que l'essai est expiré pour sécurité
-                    return true;
-                }
-            }
-            // Essai expiré et pas de plan = essai expiré
-            return true;
-        }
-
-        // L'essai n'est pas encore expiré
-        return false;
-    }
-
-    /**
-     * Vérifie si une organisation peut effectuer des requêtes.
-     * Une organisation ne peut pas faire de requêtes si :
-     * - Son essai gratuit est expiré et elle n'a pas de plan payant
-     *
-     * @param organization L'organisation à vérifier
-     * @return true si l'organisation peut faire des requêtes, false sinon
-     */
-    @Transactional(readOnly = true)
-    public boolean canOrganizationMakeRequests(Organization organization) {
-        // Vérifier si l'organisation est désactivée par un administrateur
-        if (!Boolean.TRUE.equals(organization.getEnabled())) {
-            log.debug("Organisation {} désactivée par un administrateur", organization.getId());
-            return false;
-        }
-
-        // Essai expiré (quota atteint ou date dépassée)
-        if (isTrialExpired(organization)) {
-            return false;
-        }
-
-        // Plan mensuel payant expiré
-        if (organization.getMonthlyPlanEndDate() != null
-                && LocalDate.now().isAfter(organization.getMonthlyPlanEndDate())) {
-            log.debug("Organisation {} bloquée : plan mensuel expiré le {}",
-                    organization.getId(), organization.getMonthlyPlanEndDate());
-            return false;
-        }
-
-        // Quota mensuel épuisé — période = cycle du plan (monthlyPlanStartDate →
-        // monthlyPlanEndDate)
-        // Quota lu depuis le plan (source de vérité), fallback sur l'organisation
-        Integer monthlyQuota = organization.getMonthlyQuota();
-        if (organization.getPricingPlanId() != null) {
-            try {
-                PricingPlanDto plan = pricingPlanService.getPricingPlanById(organization.getPricingPlanId());
-                monthlyQuota = plan.getMonthlyQuota();
-            } catch (Exception e) {
-                log.warn("Impossible de récupérer le plan {} pour vérifier le quota: {}",
-                        organization.getPricingPlanId(), e.getMessage());
-            }
-        }
-        if (monthlyQuota != null) {
-            LocalDateTime start;
-            LocalDateTime end;
-            if (organization.getMonthlyPlanStartDate() != null && organization.getMonthlyPlanEndDate() != null) {
-                start = organization.getMonthlyPlanStartDate().atStartOfDay();
-                end = organization.getMonthlyPlanEndDate().atTime(23, 59, 59);
-            } else {
-                // Fallback mois calendaire si le cycle n'est pas encore initialisé
-                LocalDate today = LocalDate.now();
-                start = today.withDayOfMonth(1).atStartOfDay();
-                end = today.withDayOfMonth(today.lengthOfMonth()).atTime(23, 59, 59);
-            }
-            long currentUsage = computeCredits(usageLogRepository.findByOrganizationIdAndTimestampBetween(
-                    organization.getId(), start, end));
-            if (currentUsage >= monthlyQuota) {
-                log.debug("Organisation {} bloquée : quota de crédits épuisé ({}/{})",
-                        organization.getId(), currentUsage, monthlyQuota);
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * Vérifie si une organisation peut effectuer des requêtes à partir de son ID.
-     * Cette méthode peut modifier l'organisation (mettre à jour
-     * trialPermanentlyExpired) si nécessaire.
-     *
-     * @param organizationId L'ID de l'organisation à vérifier
-     * @return true si l'organisation peut faire des requêtes, false sinon
-     */
-    @Transactional
-    public boolean canOrganizationMakeRequests(Long organizationId) {
-        Optional<Organization> organizationOpt = organizationRepository.findById(organizationId);
-        if (organizationOpt.isEmpty()) {
-            log.warn("Organisation {} introuvable lors de la vérification de l'essai", organizationId);
-            return false;
-        }
-        return canOrganizationMakeRequests(organizationOpt.get());
-    }
-
-    /**
-     * Suspend tous les collaborateurs d'une organisation en les désactivant dans
-     * Keycloak.
-     * Cette méthode est appelée quand l'essai gratuit est expiré.
-     *
-     * @param organization L'organisation dont les collaborateurs doivent être
-     *                     suspendus
-     */
-    @Transactional
-    public void suspendAllCollaborators(Organization organization) {
-        List<OrganizationUser> collaborators = organizationUserRepository.findByOrganizationId(organization.getId());
-        log.info("Suspension de {} collaborateurs pour l'organisation {}", collaborators.size(), organization.getId());
-
-        for (OrganizationUser collaborator : collaborators) {
-            try {
-                // Vérifier si le collaborateur est différent du propriétaire de l'organisation
-                // (le propriétaire est celui qui a créé l'organisation)
-                if (!collaborator.getKeycloakUserId().equals(organization.getKeycloakUserId())) {
-                    keycloakAdminService.disableUser(collaborator.getKeycloakUserId());
-                    log.info("Collaborateur {} suspendu pour l'organisation {}",
-                            collaborator.getKeycloakUserId(), organization.getId());
-                } else {
-                    log.debug("Le propriétaire de l'organisation {} n'est pas suspendu", organization.getId());
-                }
-            } catch (Exception e) {
-                log.error("Erreur lors de la suspension du collaborateur {}: {}",
-                        collaborator.getKeycloakUserId(), e.getMessage(), e);
-                // Continuer avec les autres collaborateurs même en cas d'erreur
-            }
-        }
-    }
-
-    /**
-     * Réactive tous les collaborateurs d'une organisation en les activant dans
-     * Keycloak.
-     * Cette méthode est appelée quand l'organisation souscrit à un plan payant
-     * après l'expiration de l'essai.
-     *
-     * @param organization L'organisation dont les collaborateurs doivent être
-     *                     réactivés
-     */
-    @Transactional
-    public void reactivateAllCollaborators(Organization organization) {
-        List<OrganizationUser> collaborators = organizationUserRepository.findByOrganizationId(organization.getId());
-        log.info("Réactivation de {} collaborateurs pour l'organisation {}", collaborators.size(),
-                organization.getId());
-
-        for (OrganizationUser collaborator : collaborators) {
-            try {
-                keycloakAdminService.enableUser(collaborator.getKeycloakUserId());
-                log.info("Collaborateur {} réactivé pour l'organisation {}",
-                        collaborator.getKeycloakUserId(), organization.getId());
-            } catch (Exception e) {
-                log.error("Erreur lors de la réactivation du collaborateur {}: {}",
-                        collaborator.getKeycloakUserId(), e.getMessage(), e);
-                // Continuer avec les autres collaborateurs même en cas d'erreur
-            }
-        }
-    }
-
-    /**
-     * Vérifie et suspend automatiquement les collaborateurs si l'essai est expiré.
-     * Cette méthode doit être appelée régulièrement (par exemple via un scheduler).
-     *
-     * @param organization L'organisation à vérifier
-     */
-    @Transactional
-    public void checkAndSuspendIfTrialExpired(Organization organization) {
-        if (isTrialExpired(organization)) {
-            log.info("L'essai de l'organisation {} est expiré. Suspension des collaborateurs.", organization.getId());
-            suspendAllCollaborators(organization);
-        }
-    }
-
-    /**
-     * Initialise un nouveau cycle mensuel pour une organisation.
-     * Le cycle va du jour J au jour J-1 du mois suivant (inclus).
-     * Exemple : si aujourd'hui est le 15 janvier, le cycle va du 15 janvier au 14
-     * février (inclus).
-     */
-    private void initializeMonthlyPlanCycle(Organization org, PricingPlanDto plan) {
-        LocalDate today = LocalDate.now();
-        org.setMonthlyPlanStartDate(today);
-        // Calculer la date de fin : même jour du mois suivant, exclu (donc jour-1
-        // inclus)
-        LocalDate endDate = today.plusMonths(1).minusDays(1);
-        org.setMonthlyPlanEndDate(endDate);
-        org.setMonthlyQuota(plan.getMonthlyQuota());
-        log.info("Cycle mensuel initialisé pour l'organisation {}: du {} au {} (inclus)",
-                org.getId(), today, endDate);
-    }
-
-    /**
-     * Active un plan tarifaire pour une organisation après confirmation de paiement
-     * Chargily.
-     */
-    @Transactional
-    public void activatePlanAfterPayment(Long organizationId, Long planId) {
-        Organization org = organizationRepository.findById(organizationId)
-                .orElseThrow(() -> new IllegalArgumentException("Organisation introuvable: " + organizationId));
-
-        // 1. Générer la facture de clôture pour l'ancien cycle (si plan mensuel payant
-        // avec dates)
-        if (org.getPricingPlanId() != null
-                && org.getMonthlyPlanStartDate() != null
-                && org.getMonthlyPlanEndDate() != null) {
-            try {
-                PricingPlanDto oldPlan = pricingPlanService.getPricingPlanById(org.getPricingPlanId());
-                if (oldPlan.getPricePerMonth() != null
-                        && oldPlan.getPricePerMonth().compareTo(BigDecimal.ZERO) > 0) {
-                    generateMonthlyPlanClosureInvoice(organizationId, oldPlan,
-                            org.getMonthlyPlanStartDate(), org.getMonthlyPlanEndDate());
-                }
-            } catch (Exception e) {
-                log.error("Erreur génération facture de clôture pour org {}: {}", organizationId, e.getMessage(), e);
-            }
-        }
-
-        // 2. Appliquer le nouveau plan (réinitialise les dates de cycle)
-        PricingPlanDto plan = pricingPlanService.getPricingPlanById(planId);
-        applyPlanChangeImmediately(org, plan);
-        // Un plan payant annule définitivement l'état "essai expiré"
-        if (plan.getPricePerMonth() != null && plan.getPricePerMonth().compareTo(BigDecimal.ZERO) > 0) {
-            org.setTrialPermanentlyExpired(false);
-        }
-        organizationRepository.save(org);
-
-        // 3. Réinitialiser l'historique des requêtes pour le nouveau cycle (Total
-        // Requêtes = 0)
-        int deleted = usageLogRepository.deleteByOrganizationId(organizationId);
-        log.info("Plan {} activé pour l'organisation {} — {} logs supprimés pour le nouveau cycle",
-                planId, organizationId, deleted);
-
-        // 4. Supprimer les alertes de quota (WARNING/CRITICAL/EXCEEDED) devenues
-        // obsolètes
-        quotaAlertRepository.deleteByOrganizationId(organizationId);
-        log.info("Alertes quota supprimées pour l'organisation {} après renouvellement du plan", organizationId);
-    }
-
-    /**
-     * Applique un changement de plan immédiatement (remplace tous les paramètres).
-     * Méthode publique pour permettre l'utilisation par le scheduler.
-     */
-    public void applyPlanChangeImmediately(Organization org, PricingPlanDto plan) {
-        // Remplacer TOUS les paramètres de l'ancien plan par ceux du nouveau
-        org.setPricingPlanId(plan.getId());
-        org.setMonthlyQuota(plan.getMonthlyQuota());
-
-        // Réinitialiser les champs de cycle mensuel si nécessaire
-        if (plan.getPricePerMonth() != null && plan.getPricePerMonth().compareTo(BigDecimal.ZERO) > 0) {
-            initializeMonthlyPlanCycle(org, plan);
-        } else {
-            org.setMonthlyPlanStartDate(null);
-            org.setMonthlyPlanEndDate(null);
-        }
-
-        // Réinitialiser tous les changements en attente
-        org.setPendingMonthlyPlanId(null);
-        org.setPendingMonthlyPlanChangeDate(null);
-        org.setPendingPayPerRequestPlanId(null);
-        org.setPendingPayPerRequestChangeDate(null);
-    }
-
-    /**
-     * Génère une facture de clôture pour un plan mensuel (cycle complet).
-     */
-    private void generateMonthlyPlanClosureInvoice(Long organizationId, PricingPlanDto plan,
-            LocalDate startDate, LocalDate endDate) {
-        try {
-            invoiceService.generateMonthlyPlanCycleClosureInvoice(organizationId, plan, startDate, endDate);
-        } catch (Exception e) {
-            log.error("Erreur lors de la génération de la facture de clôture mensuelle pour l'organisation {}: {}",
-                    organizationId, e.getMessage(), e);
-        }
-    }
-
-    /**
-     * Génère une facture de clôture pour un plan pay-per-request (depuis la
-     * dernière facture jusqu'à aujourd'hui).
-     */
-    private void generatePayPerRequestClosureInvoice(Long organizationId, Organization org, PricingPlanDto plan) {
-        try {
-            LocalDate startDate = org.getLastPayPerRequestInvoiceDate() != null
-                    ? org.getLastPayPerRequestInvoiceDate()
-                    : org.getCreatedAt().toLocalDate();
-            LocalDate endDate = LocalDate.now();
-            invoiceService.generatePayPerRequestClosureInvoice(organizationId, plan, startDate, endDate);
-            // Mettre à jour la date de dernière facture
-            org.setLastPayPerRequestInvoiceDate(endDate);
-        } catch (Exception e) {
-            log.error(
-                    "Erreur lors de la génération de la facture de clôture pay-per-request pour l'organisation {}: {}",
-                    organizationId, e.getMessage(), e);
-        }
-    }
-
-    /**
-     * Annule un changement de plan mensuel en attente.
-     */
-    @Transactional
-    public OrganizationDto cancelPendingPlanChange(Long organizationId) {
-        Organization organization = organizationRepository.findById(organizationId)
-                .orElseThrow(
-                        () -> new IllegalArgumentException("Organisation non trouvée avec l'ID: " + organizationId));
-
-        if (organization.getPendingMonthlyPlanId() == null) {
-            throw new IllegalArgumentException("Aucun changement de plan mensuel en attente pour cette organisation");
-        }
-
-        organization.setPendingMonthlyPlanId(null);
-        organization.setPendingMonthlyPlanChangeDate(null);
-        organization = organizationRepository.save(organization);
-
-        log.info("Changement de plan mensuel annulé pour l'organisation {}", organizationId);
-        return toDto(organization);
-    }
-
-    /**
-     * Supprime définitivement une organisation et toutes ses données associées.
-     * Ordre de suppression respectant les contraintes FK.
-     */
     @Transactional
     public void deleteOrganization(Long id) {
         log.error(
                 "OrganizationService.deleteOrganization ne doit plus être utilisé. Utilisez OrganizationDeletionService à la place pour éviter les FK constraint errors.");
         throw new UnsupportedOperationException("Utilisez OrganizationDeletionService.deleteOrganization");
-    }
-
-    /**
-     * Annule un changement vers Pay-per-Request en attente.
-     */
-    @Transactional
-    public OrganizationDto cancelPendingPayPerRequestChange(Long organizationId) {
-        Organization organization = organizationRepository.findById(organizationId)
-                .orElseThrow(
-                        () -> new IllegalArgumentException("Organisation non trouvée avec l'ID: " + organizationId));
-
-        if (organization.getPendingPayPerRequestPlanId() == null) {
-            throw new IllegalArgumentException(
-                    "Aucun changement vers Pay-per-Request en attente pour cette organisation");
-        }
-
-        organization.setPendingPayPerRequestPlanId(null);
-        organization.setPendingPayPerRequestChangeDate(null);
-        organization = organizationRepository.save(organization);
-
-        log.info("Changement vers Pay-per-Request annulé pour l'organisation {}", organizationId);
-        return toDto(organization);
     }
 }

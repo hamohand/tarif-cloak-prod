@@ -4,6 +4,8 @@ import com.muhend.backend.organization.dto.ChangePricingPlanRequest;
 import com.muhend.backend.organization.dto.OrganizationDto;
 import com.muhend.backend.organization.exception.UserNotAssociatedException;
 import com.muhend.backend.organization.service.OrganizationService;
+import com.muhend.backend.organization.service.PlanChangeService;
+import com.muhend.backend.organization.service.QuotaService;
 import com.muhend.backend.pricing.dto.PricingPlanDto;
 import com.muhend.backend.pricing.service.PricingPlanService;
 import com.muhend.backend.usage.model.UsageLog;
@@ -27,16 +29,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.FileWriter;
-import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.time.LocalTime;
-import java.util.*;
 
 /**
  * Contrôleur pour les endpoints utilisateurs (non-admin).
@@ -48,30 +47,10 @@ import java.util.*;
 @Slf4j
 @Tag(name = "User", description = "Endpoints utilisateurs pour consulter leur organisation et leurs statistiques")
 public class UserController {
-    
-    private static final String DEBUG_LOG_PATH = "c:\\Users\\hamoh\\Documents\\projets\\tarif\\tarif-saas\\tarif-cloak-prod\\.cursor\\debug.log";
-    private static final ObjectMapper objectMapper = new ObjectMapper();
-    
-    private static void debugLog(String location, String message, Map<String, Object> data, String hypothesisId) {
-        try {
-            Map<String, Object> logEntry = new HashMap<>();
-            logEntry.put("id", "log_" + System.currentTimeMillis() + "_" + (int)(Math.random() * 1000));
-            logEntry.put("timestamp", System.currentTimeMillis());
-            logEntry.put("location", location);
-            logEntry.put("message", message);
-            logEntry.put("data", data);
-            logEntry.put("sessionId", "debug-session");
-            logEntry.put("runId", "run1");
-            logEntry.put("hypothesisId", hypothesisId);
-            try (PrintWriter writer = new PrintWriter(new FileWriter(DEBUG_LOG_PATH, true))) {
-                writer.println(objectMapper.writeValueAsString(logEntry));
-            }
-        } catch (Exception e) {
-            // Ignorer les erreurs de logging pour ne pas perturber le flux principal
-        }
-    }
 
     private final OrganizationService organizationService;
+    private final QuotaService quotaService;
+    private final PlanChangeService planChangeService;
     private final UsageLogRepository usageLogRepository;
     private final PricingPlanService pricingPlanService;
 
@@ -173,7 +152,7 @@ public class UserController {
             LocalDateTime endOfMonth = LocalDateTime.now().withDayOfMonth(LocalDateTime.now().toLocalDate().lengthOfMonth())
                     .withHour(23).withMinute(59).withSecond(59).withNano(999999999);
             
-            long monthlyCredits = organizationService.computeUserCredits(userId, startOfMonth, endOfMonth);
+            long monthlyCredits = quotaService.computeUserCredits(userId, startOfMonth, endOfMonth);
 
             Map<String, Object> stats = new LinkedHashMap<>();
             stats.put("totalRequests", totalRequests);
@@ -186,7 +165,7 @@ public class UserController {
             OrganizationDto organization = organizationService.getOrganizationById(organizationId);
             if (organization != null) {
                 // Calculer les crédits consommés par l'organisation ce mois
-                long organizationMonthlyUsage = organizationService.computeOrganizationCredits(organizationId, startOfMonth, endOfMonth);
+                long organizationMonthlyUsage = quotaService.computeOrganizationCredits(organizationId, startOfMonth, endOfMonth);
                 
                 // Récupérer la valeur actuelle du quota depuis le plan tarifaire (pas celle stockée dans l'organisation)
                 Integer currentMonthlyQuota = organization.getMonthlyQuota(); // Valeur par défaut (pour compatibilité)
@@ -202,20 +181,12 @@ public class UserController {
                 }
                 
                 Map<String, Object> quotaInfo = new LinkedHashMap<>();
-                // #region agent log
-                Map<String, Object> logDataE1 = new HashMap<>();
-                logDataE1.put("organizationMonthlyQuota", organization.getMonthlyQuota());
-                logDataE1.put("planMonthlyQuota", currentMonthlyQuota);
-                logDataE1.put("currentUsage", organizationMonthlyUsage);
-                logDataE1.put("isNull", currentMonthlyQuota == null);
-                debugLog("UserController.java:166", "getMyStats - calculating quota info", logDataE1, "F");
-                // #endregion
-                quotaInfo.put("monthlyQuota", currentMonthlyQuota); // Utiliser la valeur actuelle du plan
-                quotaInfo.put("currentUsage", organizationMonthlyUsage); // Usage total de l'organisation
-                quotaInfo.put("personalUsage", monthlyCredits); // Crédits personnels
+                quotaInfo.put("monthlyQuota", currentMonthlyQuota);
+                quotaInfo.put("currentUsage", organizationMonthlyUsage);
+                quotaInfo.put("personalUsage", monthlyCredits);
                 quotaInfo.put("remaining", currentMonthlyQuota != null 
                         ? Math.max(0, currentMonthlyQuota - organizationMonthlyUsage)
-                        : -1); // -1 = illimité
+                        : -1);
                 quotaInfo.put("percentageUsed", currentMonthlyQuota != null && currentMonthlyQuota > 0
                         ? (double) organizationMonthlyUsage / currentMonthlyQuota * 100
                         : 0.0);
@@ -268,10 +239,10 @@ public class UserController {
             }
 
             // Crédits consommés par l'organisation sur la période (quota partagé)
-            long currentUsage = organizationService.computeOrganizationCredits(organizationId, periodStart, periodEnd);
+            long currentUsage = quotaService.computeOrganizationCredits(organizationId, periodStart, periodEnd);
 
             // Crédits consommés personnellement par l'utilisateur sur la période
-            long personalUsage = organizationService.computeUserCredits(userId, periodStart, periodEnd);
+            long personalUsage = quotaService.computeUserCredits(userId, periodStart, periodEnd);
 
             // Récupérer la valeur actuelle du quota depuis le plan tarifaire (pas celle stockée dans l'organisation)
             Integer currentMonthlyQuota = organization.getMonthlyQuota(); // Valeur par défaut (pour compatibilité)
@@ -287,14 +258,6 @@ public class UserController {
             }
 
             Map<String, Object> quota = new LinkedHashMap<>();
-            // #region agent log
-            Map<String, Object> logDataE2 = new HashMap<>();
-            logDataE2.put("organizationMonthlyQuota", organization.getMonthlyQuota());
-            logDataE2.put("planMonthlyQuota", currentMonthlyQuota);
-            logDataE2.put("currentUsage", currentUsage);
-            logDataE2.put("isNull", currentMonthlyQuota == null);
-            debugLog("UserController.java:223", "getMyQuota - calculating quota", logDataE2, "F");
-            // #endregion
             quota.put("hasOrganization", true);
             quota.put("organizationId", organizationId);
             quota.put("organizationName", organization.getName());
@@ -336,7 +299,7 @@ public class UserController {
 
         try {
             Long organizationId = organizationService.getOrganizationIdByUserId(userId);
-            OrganizationDto organization = organizationService.changePricingPlan(organizationId, request.getPricingPlanId());
+            OrganizationDto organization = planChangeService.changePricingPlan(organizationId, request.getPricingPlanId());
             return ResponseEntity.ok(organization);
         } catch (UserNotAssociatedException e) {
             log.error("Utilisateur {} non associé à une organisation", userId);

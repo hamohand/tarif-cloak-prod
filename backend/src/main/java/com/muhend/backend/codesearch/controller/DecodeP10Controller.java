@@ -4,6 +4,7 @@ import com.muhend.backend.codesearch.model.*;
 import com.muhend.backend.codesearch.repository.*;
 import com.muhend.backend.organization.exception.QuotaExceededException;
 import com.muhend.backend.organization.service.OrganizationService;
+import com.muhend.backend.organization.service.PlanChangeService;
 import com.muhend.backend.usage.service.UsageLogService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,6 +42,7 @@ public class DecodeP10Controller {
     private final Position6DzRepository position6DzRepository;
     private final Position10DzRepository position10DzRepository;
     private final OrganizationService organizationService;
+    private final PlanChangeService planChangeService;
     private final UsageLogService usageLogService;
 
     @GetMapping(produces = "application/json")
@@ -225,7 +227,7 @@ public class DecodeP10Controller {
             if (!(auth != null && auth.getPrincipal() instanceof Jwt jwt)) return;
             String userId = jwt.getClaimAsString("sub");
             Long organizationId = organizationService.getOrganizationIdByUserId(userId);
-            if (!organizationService.canOrganizationMakeRequests(organizationId)) {
+            if (!planChangeService.canOrganizationMakeRequests(organizationId)) {
                 throw new QuotaExceededException("Quota de crédits épuisé. Veuillez renouveler votre plan ou choisir un autre plan.");
             }
             usageLogService.logUsage(userId, organizationId, endpoint, searchTerm, null, null);
