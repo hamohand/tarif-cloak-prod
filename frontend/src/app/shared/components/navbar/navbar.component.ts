@@ -33,7 +33,7 @@ import { of } from 'rxjs';
         @if (isAuthenticated$ | async) {
           @if (isOrganizationAccount$ | async) {
             @if (canMakeRequests$ | async) {
-              <a routerLink="/" class="cta-button.secondary">Positions tarifaires</a>
+              <a routerLink="/" class="nav-link hscode-link">Positions tarifaires</a>
             } @else {
               <button class="nav-link hscode-link-blocked" (click)="openRenewalModal()">Positions tarifaires ⚠️</button>
             }
