@@ -53,7 +53,7 @@ import { of } from 'rxjs';
           </a>
         }
         <button class="nav-link contact-btn" (click)="toggleContactPopup()">📬 Contact</button>
-        @if (isAuthenticated$ | async) {
+        @if ((isAuthenticated$ | async) && !isBetaMode) {
           @if (isOrganizationAccount$ | async) {
             @if (alertCount > 0) {
               <a routerLink="/alerts" class="nav-link alerts-link">
@@ -136,7 +136,7 @@ import { of } from 'rxjs';
         <div class="trial-expired-banner">
           @if (isBetaMode) {
             <div class="banner-beta-message">
-              <p class="banner-beta-thanks">🙏 Merci pour votre participation à la phase bêta d'Intradia !</p>
+              <p class="banner-beta-thanks">🙏 Merci pour votre participation à la phase bêta d'TCI !</p>
               <p class="banner-beta-sub">Si vous désirez continuer, contactez l'administrateur.</p>
             </div>
             <div class="banner-actions">
@@ -156,20 +156,22 @@ import { of } from 'rxjs';
         <div class="org-nav-links">
           <a routerLink="/dashboard" routerLinkActive="router-link-active" class="org-nav-link">🏠 Tableau de bord</a>
           <a routerLink="/organization/account" routerLinkActive="router-link-active" class="org-nav-link">👥 Mon organisation</a>
-          <a routerLink="/organization/stats" routerLinkActive="router-link-active" class="org-nav-link">💳 Plan tarifaire</a>
-          <a routerLink="/organization/invoices" routerLinkActive="router-link-active" class="org-nav-link invoices-link">
-            📄 Factures
-            @if (newInvoicesCount > 0 || overdueInvoicesCount > 0) {
-              <span class="invoice-badge" [class.overdue-badge]="overdueInvoicesCount > 0">
-                @if (overdueInvoicesCount > 0) {
-                  ⚠️ {{ overdueInvoicesCount }}
-                } @else {
-                  {{ newInvoicesCount }}
-                }
-              </span>
-            }
-          </a>
-          <a routerLink="/organization/quote-requests" routerLinkActive="router-link-active" class="org-nav-link">💼 Demandes de devis</a>
+          <a routerLink="/organization/stats" routerLinkActive="router-link-active" class="org-nav-link">💳 Crédits</a>
+          @if (!isBetaMode) {
+            <a routerLink="/organization/invoices" routerLinkActive="router-link-active" class="org-nav-link invoices-link">
+              📄 Factures
+              @if (newInvoicesCount > 0 || overdueInvoicesCount > 0) {
+                <span class="invoice-badge" [class.overdue-badge]="overdueInvoicesCount > 0">
+                  @if (overdueInvoicesCount > 0) {
+                    ⚠️ {{ overdueInvoicesCount }}
+                  } @else {
+                    {{ newInvoicesCount }}
+                  }
+                </span>
+              }
+            </a>
+            <a routerLink="/organization/quote-requests" routerLinkActive="router-link-active" class="org-nav-link">💼 Demandes de devis</a>
+          }
           <a routerLink="/aide" routerLinkActive="router-link-active" class="org-nav-link">📚 Aide</a>
         </div>
       </nav>

@@ -11,7 +11,7 @@ import { CommonModule } from '@angular/common';
         <div class="expired-icon">🙏</div>
         <h1 class="expired-title">Merci pour votre participation</h1>
         <p class="expired-message">
-          Votre période de test à la phase beta d'<strong>Intradia</strong> est terminée.
+          Votre période de test à la phase beta d'<strong>TCI</strong> est terminée.
         </p>
         <p class="expired-contact-intro">
           Pour la prolonger ou passer à un plan commercial, contactez notre équipe :
@@ -27,7 +27,7 @@ import { CommonModule } from '@angular/common';
           </a>
         </div>
         <p class="expired-footer">
-          Nous vous remercions pour vos retours précieux qui nous aident à améliorer Intradia.
+          Nous vous remercions pour vos retours précieux qui nous aident à améliorer TCI.
         </p>
       </div>
     </div>

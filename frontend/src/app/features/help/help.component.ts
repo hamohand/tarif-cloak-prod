@@ -9,7 +9,7 @@ import { CommonModule } from '@angular/common';
     <div class="help-page">
       <h2>📚 Guide d'utilisation</h2>
       <p class="help-intro">
-        Intradia classe vos produits dans la nomenclature douanière (système harmonisé).
+        TCI classe vos produits dans la nomenclature douanière (système harmonisé).
         Voici l'essentiel pour bien démarrer.
       </p>
 
@@ -53,7 +53,7 @@ import { CommonModule } from '@angular/common';
       <section class="help-section">
         <h3>🔍 Lire un résultat HS-code</h3>
         <p>
-          Un code HS est structuré en niveaux hiérarchiques. Intradia retourne la position
+          Un code HS est structuré en niveaux hiérarchiques. TCI retourne la position
           la plus précise disponible, avec une justification de son choix.
         </p>
         <div class="hierarchy-visual">
@@ -101,7 +101,7 @@ import { CommonModule } from '@angular/common';
             <code>610910</code>
           </div>
           <div class="decode-output">
-            <span class="decode-label">Intradia retourne</span>
+            <span class="decode-label">TCI retourne</span>
             <ul>
               <li>Section XI — Matières textiles et ouvrages en ces matières</li>
               <li>Chapitre 61 — Vêtements et accessoires du vêtement en bonneterie</li>

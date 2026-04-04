@@ -14,12 +14,14 @@ import { environment } from '../../../environments/environment';
   template: `
     <div class="home-container">
       <!-- Hero Section -->
-      <section class="hero">
+      <section class="hero" [class.hero-compact]="isAuthenticated$ | async">
         <div class="hero-glow"></div>
-        <h1>Intradia</h1>
+        <h1>TCI</h1>
         <p class="hero-subtitle">Classification pour le commerce international</p>
-        <p class="hero-desc">Intradia analyse vos produits et retourne la position tarifaire la plus pertinente — avec explication détaillée.</p>
-        <p class="hero-desc">Un code de nomenclature inconnu devient lisible en un instant : section, chapitre, position, sous-position.</p>
+        <ng-container *ngIf="!(isAuthenticated$ | async)">
+          <p class="hero-desc">TCI analyse vos produits et retourne la position tarifaire la plus pertinente — avec explication détaillée.</p>
+          <p class="hero-desc">Un code de nomenclature inconnu devient lisible en un instant : section, chapitre, position, sous-position.</p>
+        </ng-container>
         <div class="hero-cta" *ngIf="!(isAuthenticated$ | async)">
           @if (isBetaMode) {
             <div class="trial-offer-badge">
@@ -261,7 +263,7 @@ import { environment } from '../../../environments/environment';
           </div>
         }
 
-        <div class="features primary" *ngIf="isOrganizationAccount$ | async">
+        <div class="features primary" *ngIf="(isOrganizationAccount$ | async) && !isBetaMode">
           <div class="feature-card advise">
             <h3>Gestion d'organisation</h3>
             <p>Utilisez l'espace <strong>Mon organisation</strong> pour inviter vos collaborateurs et suivre les statistiques globales.</p>
@@ -294,6 +296,25 @@ import { environment } from '../../../environments/environment';
       position: relative;
       padding: 5rem 2rem 4rem;
       margin-bottom: 4rem;
+    }
+
+    .hero.hero-compact {
+      padding: 1.25rem 2rem 0.75rem;
+      margin-bottom: 0;
+    }
+
+    .hero.hero-compact h1 {
+      font-size: 1.8rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .hero.hero-compact .hero-subtitle {
+      font-size: 1rem;
+      margin-bottom: 0;
+    }
+
+    .hero.hero-compact .hero-glow {
+      display: none;
     }
 
     .hero-glow {
@@ -416,7 +437,7 @@ import { environment } from '../../../environments/environment';
     }
 
     .features.primary {
-      margin-top: 2rem;
+      margin-top: 0.5rem;
     }
 
     .features.secondary {
@@ -473,14 +494,14 @@ import { environment } from '../../../environments/environment';
 
     /* ─── User actions (connecté) ─── */
     .user-actions {
-      margin: 3rem 0;
-      padding: 2rem 0;
+      margin: 0.5rem 0;
+      padding: 0.5rem 0;
     }
 
     .section-title {
       color: #f59e0b;
-      font-size: 1.8rem;
-      margin-bottom: 2rem;
+      font-size: 1.3rem;
+      margin-bottom: 1rem;
       font-weight: 700;
       text-align: center;
     }
@@ -490,8 +511,9 @@ import { environment } from '../../../environments/environment';
       border: 1px solid rgba(245, 158, 11, 0.25);
       color: white;
       text-align: center;
-      min-width: 280px;
-      max-width: 350px;
+      min-width: 240px;
+      max-width: 320px;
+      padding: 1.25rem;
     }
 
     .request-card:hover {
@@ -501,18 +523,19 @@ import { environment } from '../../../environments/environment';
 
     .request-card h3 {
       color: #f8fafc;
-      margin-bottom: 0.75rem;
+      margin-bottom: 0.4rem;
+      font-size: 1rem;
     }
 
     .request-card p {
       color: #94a3b8;
-      font-size: 0.95rem;
-      margin-bottom: 1.5rem;
+      font-size: 0.85rem;
+      margin-bottom: 1rem;
     }
 
     .request-icon {
-      font-size: 3rem;
-      margin-bottom: 0.75rem;
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
       display: block;
     }
 

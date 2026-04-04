@@ -14,7 +14,7 @@ import { environment } from '../../../environments/environment';
     <div class="choose-plan-page">
       <div class="choose-plan-container">
         <h1 class="choose-plan-title">Votre période d'essai est terminée</h1>
-        <p class="choose-plan-subtitle">Choisissez un plan pour continuer à utiliser Intradia.</p>
+        <p class="choose-plan-subtitle">Choisissez un plan pour continuer à utiliser TCI.</p>
 
         @if (loading) {
           <div class="loading">Chargement des plans...</div>
