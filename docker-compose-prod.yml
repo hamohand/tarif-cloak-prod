@@ -3,6 +3,8 @@
 # Stack : Angular (Frontend) | Spring Boot (Backend) | Keycloak (Auth) | PostgreSQL (DB)
 # ===============================================================
 # Toutes les variables sont configurables via le fichier .env
+
+name: tarif-cloak-prod
 # ===============================================================
 
 # Utilisation des champs d'extension (x-*) pour une meilleure organisation

@@ -3,6 +3,8 @@
 # Partage le Keycloak de production
 # BDD isolée — données de test séparées de la prod
 # ===============================================================
+
+name: tarif-cloak-staging
 # Usage :
 #   docker compose -f docker-compose-staging.yml up -d --build
 #   docker compose -f docker-compose-staging.yml up -d --build frontend-staging
