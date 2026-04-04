@@ -33,13 +33,13 @@ import { of } from 'rxjs';
         @if (isAuthenticated$ | async) {
           @if (isOrganizationAccount$ | async) {
             @if (canMakeRequests$ | async) {
-              <a routerLink="/" class="nav-link hscode-link">Positions tarifaires</a>
+              <a routerLink="/" class="nav-link hscode-link">Recherche Codes<br>Cliquer ici</a>
             } @else {
               <button class="nav-link hscode-link-blocked" (click)="openRenewalModal()">Positions tarifaires ⚠️</button>
             }
           } @else if (isCollaboratorAccount$ | async) {
             @if (canMakeRequests$ | async) {
-              <a routerLink="/" class="nav-link hscode-link">Positions tarifaires</a>
+              <a routerLink="/" class="nav-link hscode-link">Recherche Codes<br>Cliquer ici</a>
             }
           } @else {
             <a routerLink="/" class="nav-link">Accueil</a>

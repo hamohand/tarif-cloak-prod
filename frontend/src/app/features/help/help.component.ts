@@ -74,12 +74,12 @@ import { CommonModule } from '@angular/common';
           <div class="hierarchy-arrow">↓</div>
           <div class="hierarchy-level level-pos6">
             <span class="level-label">Sous-position (6 chiffres)</span>
-            <span class="level-example">6109.10 — De coton</span>
+            <span class="level-example">610910 — De coton</span>
           </div>
           <div class="hierarchy-arrow">↓</div>
           <div class="hierarchy-level level-pos10">
             <span class="level-label">Position tarifaire (10 chiffres)</span>
-            <span class="level-example">6109.10.00.10 — Sous-position nationale</span>
+            <span class="level-example">6109100010 — Sous-position nationale</span>
           </div>
         </div>
         <p class="help-note">
@@ -98,7 +98,7 @@ import { CommonModule } from '@angular/common';
         <div class="decode-example">
           <div class="decode-input">
             <span class="decode-label">Vous saisissez</span>
-            <code>6109.10</code>
+            <code>610910</code>
           </div>
           <div class="decode-output">
             <span class="decode-label">Intradia retourne</span>
@@ -106,7 +106,7 @@ import { CommonModule } from '@angular/common';
               <li>Section XI — Matières textiles et ouvrages en ces matières</li>
               <li>Chapitre 61 — Vêtements et accessoires du vêtement en bonneterie</li>
               <li>Position 6109 — T-shirts et maillots de corps, en bonneterie</li>
-              <li><strong>Sous-position 6109.10 — De coton</strong></li>
+              <li><strong>Sous-position 610910 — De coton</strong></li>
             </ul>
           </div>
         </div>
