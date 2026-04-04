@@ -170,6 +170,7 @@ import { of } from 'rxjs';
             }
           </a>
           <a routerLink="/organization/quote-requests" routerLinkActive="router-link-active" class="org-nav-link">💼 Demandes de devis</a>
+          <a routerLink="/aide" routerLinkActive="router-link-active" class="org-nav-link">📚 Aide</a>
         </div>
       </nav>
     }

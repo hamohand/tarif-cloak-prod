@@ -29,6 +29,7 @@ import { organizationGuard } from './core/guards/organization.guard';
 import { planRequiredGuard } from './core/guards/plan-required.guard';
 import { ChoosePlanComponent } from './features/choose-plan/choose-plan.component';
 import { AccessExpiredComponent } from './features/access-expired/access-expired.component';
+import { HelpComponent } from './features/help/help.component';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -45,6 +46,11 @@ export const routes: Routes = [
   {
     path: 'access-expired',
     component: AccessExpiredComponent
+  },
+  {
+    path: 'aide',
+    component: HelpComponent,
+    canActivate: [authGuard, collaboratorGuard]
   },
   {
     path: 'recherche',
