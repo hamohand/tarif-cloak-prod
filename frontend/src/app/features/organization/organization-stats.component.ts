@@ -93,44 +93,46 @@ Chart.register(...registerables);
           <h3>💳 Plan Tarifaire</h3>
           @if (loadingPlans) {
             <p>Chargement...</p>
+          } @else if (isBetaMode) {
+            <!-- Mode beta : affichage fixe du plan Invité, aucune option de changement -->
+            <div class="current-plan">
+              <div class="plan-info">
+                <p><strong>Plan actuel :</strong> {{ currentPlan?.name ?? 'Invité' }}</p>
+                <p><strong>Crédits offerts :</strong> {{ currentPlan?.monthlyQuota ?? 500 | number }} crédits</p>
+                @if (currentPlan?.trialPeriodDays) {
+                  <p><strong>Durée :</strong> {{ currentPlan!.trialPeriodDays }} jours</p>
+                }
+                @if (organization.trialExpiresAt) {
+                  <p><strong>Expire le :</strong> {{ formatRenewalDate(organization.trialExpiresAt) }}</p>
+                }
+              </div>
+              <p class="beta-plan-note">
+                🎁 Accès offert pendant la phase bêta. Pour prolonger ou évoluer vers un plan commercial, contactez l'administrateur.
+              </p>
+            </div>
           } @else if (pricingPlans.length > 0) {
             <div class="current-plan">
               @if (currentPlan) {
                 <div class="plan-info">
                   <p><strong>Plan actuel:</strong> {{ currentPlan.name }}</p>
-                  <p><strong>Prix:</strong> 
+                  <p><strong>Prix:</strong>
                     @if (currentPlan.pricePerMonth !== null && currentPlan.pricePerMonth !== undefined) {
                       @if (currentPlan.pricePerMonth === 0) {
-                        @if (!organization.trialPermanentlyExpired) {
-                          Gratuit
-                        }
-                      } @else {
-                        {{ currentPlan.pricePerMonth }} 
-                        @if (currencySymbol$ | async; as symbol) {
-                          {{ symbol }}
-                        } @else {
-                          €
-                        }/mois
-                      }
-                    } @else if (currentPlan.pricePerRequest !== null && currentPlan.pricePerRequest !== undefined) {
-                      {{ currentPlan.pricePerRequest }} 
-                      @if (currencySymbol$ | async; as symbol) {
-                        {{ symbol }}
-                      } @else {
-                        €
-                      }/requête
-                    } @else {
-                      @if (!organization.trialPermanentlyExpired) {
                         Gratuit
                       } @else {
-                        <span style="color: #dc3545;">Plan gratuit - Sélection d'un plan payant requise</span>
+                        {{ currentPlan.pricePerMonth }}
+                        @if (currencySymbol$ | async; as symbol) { {{ symbol }} } @else { € }/mois
                       }
+                    } @else if (currentPlan.pricePerRequest !== null && currentPlan.pricePerRequest !== undefined) {
+                      {{ currentPlan.pricePerRequest }}
+                      @if (currencySymbol$ | async; as symbol) { {{ symbol }} } @else { € }/requête
+                    } @else {
+                      Gratuit
                     }
                   </p>
                   @if (currentPlan.trialPeriodDays) {
                     <p><strong>Période d'essai:</strong> Valable {{ currentPlan.trialPeriodDays }} jours</p>
                   } @else if (currentPlan.pricePerMonth !== null && currentPlan.pricePerMonth !== undefined && currentPlan.pricePerMonth > 0) {
-                    <!-- Plan mensuel -->
                     @if (currentPlan.monthlyQuota) {
                       <p><strong>Quota:</strong> {{ currentPlan.monthlyQuota | number }} crédits/mois</p>
                     } @else {
@@ -153,7 +155,7 @@ Chart.register(...registerables);
               @if (organization.trialPermanentlyExpired) {
                 <h4 class="required-plan-title">🔴 Sélection obligatoire d'un plan tarifaire</h4>
                 <p class="required-plan-message">
-                  Votre essai gratuit étant définitivement terminé, vous devez choisir un plan payant pour continuer à utiliser le service. 
+                  Votre essai gratuit étant définitivement terminé, vous devez choisir un plan payant pour continuer à utiliser le service.
                   <strong>Il suffit de valider le plan sélectionné ci-dessous - aucune création de compte supplémentaire n'est nécessaire.</strong>
                 </p>
                 @if (!selectedPlanId && pricingPlans.length > 0) {
@@ -177,36 +179,23 @@ Chart.register(...registerables);
                 }
                 @for (plan of pricingPlans; track plan.id) {
                   <option [value]="plan.id" [selected]="plan.id === organization.pricingPlanId">
-                    {{ plan.name }} - 
+                    {{ plan.name }} -
                     @if (plan.pricePerMonth !== null && plan.pricePerMonth !== undefined && plan.pricePerMonth > 0) {
-                      {{ plan.pricePerMonth }} 
-                      @if (currencySymbol$ | async; as symbol) {
-                        {{ symbol }}
-                      } @else {
-                        €
-                      }/mois
+                      {{ plan.pricePerMonth }}
+                      @if (currencySymbol$ | async; as symbol) { {{ symbol }} } @else { € }/mois
                     } @else if (plan.pricePerRequest !== null && plan.pricePerRequest !== undefined && plan.pricePerRequest > 0) {
-                      {{ plan.pricePerRequest }} 
-                      @if (currencySymbol$ | async; as symbol) {
-                        {{ symbol }}
-                      } @else {
-                        €
-                      }/requête
+                      {{ plan.pricePerRequest }}
+                      @if (currencySymbol$ | async; as symbol) { {{ symbol }} } @else { € }/requête
                     }
-                    @if (plan.trialPeriodDays) {
-                      ({{ plan.trialPeriodDays }} jours)
-                    } @else if (plan.monthlyQuota) {
-                      ({{ plan.monthlyQuota | number }} crédits/mois)
-                    } @else if (plan.pricePerRequest !== null && plan.pricePerRequest !== undefined) {
-                      (Facturation à la requête)
-                    } @else {
-                      (Quota illimité)
-                    }
+                    @if (plan.trialPeriodDays) { ({{ plan.trialPeriodDays }} jours)
+                    } @else if (plan.monthlyQuota) { ({{ plan.monthlyQuota | number }} crédits/mois)
+                    } @else if (plan.pricePerRequest !== null && plan.pricePerRequest !== undefined) { (Facturation à la requête)
+                    } @else { (Quota illimité) }
                   </option>
                 }
               </select>
-              <button 
-                class="btn btn-primary" 
+              <button
+                class="btn btn-primary"
                 [class.btn-required]="organization.trialPermanentlyExpired"
                 (click)="openConfirmModal()"
                 [disabled]="isChangingPlan || !selectedPlanId"
@@ -221,7 +210,7 @@ Chart.register(...registerables);
                   <span>Changer de plan</span>
                 }
               </button>
-              @if (!organization.trialPermanentlyExpired && !isBetaMode) {
+              @if (!organization.trialPermanentlyExpired) {
                 <a routerLink="/pricing" class="view-all-plans-link">Voir tous les plans tarifaires</a>
               }
             </div>

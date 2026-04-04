@@ -21,6 +21,14 @@ import { environment } from '../../../environments/environment';
         <p class="hero-desc">Intradia analyse vos produits et retourne la position tarifaire la plus pertinente — avec explication détaillée.</p>
         <p class="hero-desc">Un code de nomenclature inconnu devient lisible en un instant : section, chapitre, position, sous-position.</p>
         <div class="hero-cta" *ngIf="!(isAuthenticated$ | async)">
+          @if (isBetaMode) {
+            <div class="trial-offer-badge">
+              <span class="trial-offer-icon">🎁</span>
+              <div class="trial-offer-text">
+                <strong>Offre Invité</strong> — 500 crédits offerts pendant 30 jours
+              </div>
+            </div>
+          }
           <a routerLink="/auth/register" class="cta-button primary">Commencer gratuitement</a>
           <a *ngIf="!isBetaMode" routerLink="/pricing" class="cta-button ghost">Voir les tarifs</a>
         </div>
@@ -325,10 +333,26 @@ import { environment } from '../../../environments/environment';
 
     .hero-cta {
       display: flex;
+      flex-direction: column;
+      align-items: center;
       gap: 1rem;
       justify-content: center;
       flex-wrap: wrap;
     }
+
+    .trial-offer-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+      border: 1px solid #86efac;
+      border-radius: 12px;
+      padding: 0.75rem 1.25rem;
+      font-size: 0.95rem;
+      color: #166534;
+    }
+    .trial-offer-icon { font-size: 1.3rem; }
+    .trial-offer-text strong { display: block; margin-bottom: 0.1rem; }
 
     /* ─── Boutons CTA ─── */
     .cta-button {

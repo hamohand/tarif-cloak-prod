@@ -48,6 +48,7 @@ h2,h3{color:#e2e8f0;margin:0 0 1rem}
 .alert-action{background:rgba(245,158,11,0.1);padding:.5rem;border-radius:8px}
 .current-plan{background:rgba(255,255,255,0.03)}
 .no-plan-message,.no-plans-message{color:#94a3b8}
+.beta-plan-note{margin-top:.75rem;padding:.6rem .8rem;background:rgba(134,239,172,0.1);border:1px solid rgba(134,239,172,0.3);border-radius:8px;color:#86efac;font-size:.82rem;line-height:1.5}
 .change-plan-section{border-top:1px solid rgba(255,255,255,0.08);padding-top:1rem;margin-top:1rem}
 .change-plan-section.required-change{background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);padding:1rem;border-radius:8px}
 .required-plan-title{color:#f87171!important}

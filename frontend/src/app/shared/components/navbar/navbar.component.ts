@@ -135,7 +135,10 @@ import { of } from 'rxjs';
       @if (!(canMakeRequests$ | async)) {
         <div class="trial-expired-banner">
           @if (isBetaMode) {
-            <p>⚠️ Merci pour votre participation. Veuillez contacter l'administrateur si vous souhaitez continuer à tester.</p>
+            <div class="banner-beta-message">
+              <p class="banner-beta-thanks">🙏 Merci pour votre participation à la phase bêta d'Intradia !</p>
+              <p class="banner-beta-sub">Si vous désirez continuer, contactez l'administrateur.</p>
+            </div>
             <div class="banner-actions">
               <button class="btn-banner btn-banner-primary" (click)="toggleContactPopup()">
                 💬 Contacter l'administrateur
@@ -440,13 +443,27 @@ import { of } from 'rxjs';
     }
 
     .trial-expired-banner {
-      background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+      background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
       color: white;
-      padding: 1rem 2rem;
+      padding: 0.75rem 2rem;
       text-align: center;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
       z-index: 997;
       position: relative;
+    }
+
+    .banner-beta-message { margin-bottom: 0.5rem; }
+
+    .banner-beta-thanks {
+      margin: 0;
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+
+    .banner-beta-sub {
+      margin: 0.2rem 0 0;
+      font-size: 0.85rem;
+      opacity: 0.9;
     }
 
     .trial-expired-banner p {
