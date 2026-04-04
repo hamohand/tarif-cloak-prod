@@ -63,16 +63,8 @@ Chart.register(...registerables);
                 <a href="https://wa.me/33622563841" target="_blank" class="btn btn-renew">
                   💬 Nous Contacter (Plus de crédits)
                 </a>
-                <button class="btn btn-change-plan" (click)="scrollToChangePlan()">
-                  Voir nos autres offres
-                </button>
               } @else {
-                <button class="btn btn-renew" (click)="renewCurrentPlan()" [disabled]="isRenewing">
-                  @if (isRenewing) { Redirection en cours... } @else { Renouveler le plan actuel }
-                </button>
-                <button class="btn btn-change-plan" (click)="scrollToChangePlan()">
-                  Changer de plan
-                </button>
+                <a routerLink="/choose-plan" class="btn btn-renew">Gérer mon plan</a>
               }
             </div>
           </div>

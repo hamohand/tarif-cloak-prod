@@ -209,12 +209,18 @@ public class PlanChangeService {
 
     /**
      * Réinitialise le plan actuel (principalement pour les comptes Invités/Essai).
+     * Ne peut être effectué qu'une seule fois par organisation (trialRenewCount).
      */
     @Transactional
     public OrganizationDto resetPlan(Long organizationId) {
         Organization organization = organizationRepository.findById(organizationId)
                 .orElseThrow(
                         () -> new IllegalArgumentException("Organisation non trouvée avec l'ID: " + organizationId));
+
+        if (organization.getTrialRenewCount() != null && organization.getTrialRenewCount() >= 1) {
+            throw new IllegalStateException(
+                    "Le plan de l'organisation " + organizationId + " a déjà été renouvelé une fois.");
+        }
 
         LocalDateTime now = LocalDateTime.now();
         LocalDate today = LocalDate.now();
@@ -227,13 +233,16 @@ public class PlanChangeService {
         int deletedLogs = usageLogRepository.deleteByOrganizationId(organizationId);
         log.info("Historique effacé pour forcer la consommation à 0 : {} logs supprimés.", deletedLogs);
 
+        organization.setTrialRenewCount(
+                organization.getTrialRenewCount() == null ? 1 : organization.getTrialRenewCount() + 1);
+
         organization = organizationRepository.save(organization);
         collaboratorService.reactivateAllCollaborators(organization);
 
-        log.info("Plan réinitialisé pour l'organisation {} (ID: {}). Nouveau cycle: {} -> {}, Expire le: {}",
+        log.info("Plan réinitialisé pour l'organisation {} (ID: {}). Nouveau cycle: {} -> {}, Expire le: {}, trialRenewCount={}",
                 organization.getName(), organizationId,
                 organization.getMonthlyPlanStartDate(), organization.getMonthlyPlanEndDate(),
-                organization.getTrialExpiresAt());
+                organization.getTrialExpiresAt(), organization.getTrialRenewCount());
 
         return organizationMapper.toDto(organization);
     }

@@ -11,7 +11,9 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -154,6 +156,36 @@ public class MonthlyPlanSchedulerService {
             }
         }
         
+        // 4. Générer les factures $0 pour les essais gratuits expirés
+        List<Organization> expiredFreeTrials = organizationRepository
+                .findByTrialExpiresAtBeforeAndTrialPermanentlyExpiredFalse(LocalDateTime.now());
+
+        log.info("📋 Organisations avec essai gratuit expiré à facturer: {}", expiredFreeTrials.size());
+
+        for (Organization org : expiredFreeTrials) {
+            if (org.getPricingPlanId() == null) continue;
+            try {
+                PricingPlanDto plan = pricingPlanService.getPricingPlanById(org.getPricingPlanId());
+                boolean isFreePlan = (plan.getPricePerMonth() == null
+                        || plan.getPricePerMonth().compareTo(BigDecimal.ZERO) == 0)
+                        && (plan.getPricePerRequest() == null
+                                || plan.getPricePerRequest().compareTo(BigDecimal.ZERO) == 0);
+                if (isFreePlan) {
+                    LocalDate start = org.getMonthlyPlanStartDate() != null
+                            ? org.getMonthlyPlanStartDate()
+                            : org.getTrialExpiresAt().toLocalDate().minusDays(30);
+                    LocalDate end = org.getMonthlyPlanEndDate() != null
+                            ? org.getMonthlyPlanEndDate()
+                            : org.getTrialExpiresAt().toLocalDate();
+                    invoiceService.generateFreeTrialClosureInvoice(org.getId(), plan, start, end);
+                    log.info("✅ Facture $0 générée pour l'organisation {} (essai expiré)", org.getId());
+                }
+            } catch (Exception e) {
+                log.error("❌ Erreur lors de la génération de la facture $0 pour l'organisation {}: {}",
+                        org.getId(), e.getMessage(), e);
+            }
+        }
+
         log.info("✅ Traitement des cycles mensuels terminé");
     }
     

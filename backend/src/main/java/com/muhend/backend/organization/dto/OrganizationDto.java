@@ -35,6 +35,7 @@ public class OrganizationDto {
     private Long pendingPayPerRequestPlanId; // Plan Pay-per-Request en attente (prendra effet si quota dépassé immédiatement, sinon à la fin du cycle)
     private LocalDate pendingPayPerRequestChangeDate; // Date à laquelle le changement vers Pay-per-Request prendra effet
     private Boolean enabled; // false = organisation désactivée (aucun collaborateur ne peut utiliser l'application)
+    private Integer trialRenewCount; // Nombre de renouvellements admin (max 1)
     private LocalDateTime createdAt;
     
     // Pour les réponses avec le nombre d'utilisateurs

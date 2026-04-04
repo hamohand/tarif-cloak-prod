@@ -199,6 +199,7 @@ registration:
     token:
       expiration:
         hours: ${REGISTRATION_TOKEN_EXPIRATION_HOURS:24}  # Délai d'expiration du token de confirmation (24h)
+  default-plan-name: ${DEFAULT_PLAN_NAME:Invité}  # Plan assigné automatiquement à l'inscription (Invité en prod, Essai gratuit en staging)
 
 # ===================================================
 # CONFIGURATION SWAGGER/OPENAPI

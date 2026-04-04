@@ -113,7 +113,11 @@ import { NotificationService } from '../../../core/services/notification.service
                   <td>
                     <button class="btn btn-sm btn-secondary" (click)="toggleEdit(org)">✏️</button>
                     <button class="btn btn-sm btn-info" (click)="toggleUsers(org.id)">👥</button>
-                    <button class="btn btn-sm btn-primary" (click)="resetOrganizationPlan(org)" title="Réinitialiser le plan">🔄</button>
+                    @if ((org.trialRenewCount ?? 0) < 1) {
+                      <button class="btn btn-sm btn-primary" (click)="resetOrganizationPlan(org)" title="Réinitialiser le plan">🔄</button>
+                    } @else {
+                      <span class="badge badge-renewed" title="Déjà renouvelé une fois">✅ Renouvelé</span>
+                    }
                     @if (org.enabled === false) {
                       <button class="btn btn-sm btn-success" (click)="enableOrganization(org)" title="Réactiver">✅</button>
                     } @else {
@@ -149,7 +153,11 @@ import { NotificationService } from '../../../core/services/notification.service
                 <div class="org-actions">
                   <button class="btn btn-sm btn-secondary" (click)="toggleEdit(org)">✏️ Modifier</button>
                   <button class="btn btn-sm btn-info" (click)="toggleUsers(org.id)">👥 Utilisateurs</button>
-                  <button class="btn btn-sm btn-primary" (click)="resetOrganizationPlan(org)">🔄 Réinitialiser</button>
+                  @if ((org.trialRenewCount ?? 0) < 1) {
+                    <button class="btn btn-sm btn-primary" (click)="resetOrganizationPlan(org)">🔄 Réinitialiser</button>
+                  } @else {
+                    <span class="badge badge-renewed">✅ Déjà renouvelé</span>
+                  }
                   @if (org.enabled === false) {
                     <button class="btn btn-sm btn-success" (click)="enableOrganization(org)">✅ Réactiver</button>
                   } @else {

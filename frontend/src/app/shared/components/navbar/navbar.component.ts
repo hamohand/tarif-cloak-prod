@@ -106,11 +106,8 @@ import { of } from 'rxjs';
             <h3>Accès Positions tarifaires suspendu</h3>
             <p>Votre plan est expiré ou votre quota de crédits est épuisé.</p>
             <div class="renewal-modal-actions">
-              <button class="btn-modal btn-modal-primary" (click)="renewCurrentPlan()" [disabled]="isRenewing">
-                @if (isRenewing) { Redirection... } @else { Renouveler le plan actuel }
-              </button>
-              <a routerLink="/organization/stats" class="btn-modal btn-modal-secondary" (click)="closeRenewalModal()">
-                Changer de plan
+              <a routerLink="/choose-plan" class="btn-modal btn-modal-primary" (click)="closeRenewalModal()">
+                Gérer mon plan
               </a>
             </div>
           }
@@ -147,10 +144,7 @@ import { of } from 'rxjs';
           } @else {
             <p>⚠️ L'accès Positions tarifaires est suspendu (plan expiré ou quota épuisé).</p>
             <div class="banner-actions">
-              <button class="btn-banner btn-banner-primary" (click)="openRenewalModal()" [disabled]="isRenewing">
-                Renouveler le plan actuel
-              </button>
-              <a routerLink="/organization/stats" class="btn-banner btn-banner-secondary">Changer de plan</a>
+              <a routerLink="/choose-plan" class="btn-banner btn-banner-primary">Gérer mon plan</a>
             </div>
           }
         </div>

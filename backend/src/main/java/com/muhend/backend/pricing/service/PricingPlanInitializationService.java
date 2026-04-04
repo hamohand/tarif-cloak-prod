@@ -29,20 +29,36 @@ public class PricingPlanInitializationService {
     public void initializePricingPlans() {
         log.info("Vérification et initialisation des plans tarifaires par défaut...");
         
-        // Plan d'essai gratuit
+        // Plan d'essai gratuit — 200 crédits / 30 jours
         if (!pricingPlanRepository.existsByName("Essai gratuit")) {
             PricingPlan trial = new PricingPlan();
             trial.setName("Essai gratuit");
-            trial.setDescription("20 requêtes gratuites valables pendant une semaine");
+            trial.setDescription("200 crédits gratuits valables pendant 30 jours");
             trial.setPricePerMonth(BigDecimal.ZERO);
             trial.setPricePerRequest(null);
-            trial.setMonthlyQuota(20);
-            trial.setTrialPeriodDays(7);
-            trial.setFeatures("20 requêtes gratuites, Valable 7 jours, Accès à toutes les fonctionnalités");
+            trial.setMonthlyQuota(200);
+            trial.setTrialPeriodDays(30);
+            trial.setFeatures("200 crédits gratuits, Valable 30 jours, Accès à toutes les fonctionnalités");
             trial.setIsActive(true);
             trial.setDisplayOrder(0);
             pricingPlanRepository.save(trial);
             log.info("Plan 'Essai gratuit' créé");
+        }
+
+        // Plan Invité — réservé aux beta-testeurs (prod), 500 crédits / 30 jours
+        if (!pricingPlanRepository.existsByName("Invité")) {
+            PricingPlan invite = new PricingPlan();
+            invite.setName("Invité");
+            invite.setDescription("Accès beta-testeur — 500 crédits offerts pendant 30 jours");
+            invite.setPricePerMonth(BigDecimal.ZERO);
+            invite.setPricePerRequest(null);
+            invite.setMonthlyQuota(500);
+            invite.setTrialPeriodDays(30);
+            invite.setFeatures("500 crédits gratuits, Accès complet pendant 30 jours, Réservé aux beta-testeurs");
+            invite.setIsActive(true);
+            invite.setDisplayOrder(-1);
+            pricingPlanRepository.save(invite);
+            log.info("Plan 'Invité' créé");
         }
         
         // Plan facturé à la requête

@@ -9,6 +9,7 @@ import com.muhend.backend.organization.model.Organization;
 import com.muhend.backend.organization.repository.OrganizationRepository;
 import com.muhend.backend.organization.service.CollaboratorService;
 import com.muhend.backend.organization.service.OrganizationService;
+import com.muhend.backend.pricing.service.PricingPlanService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -35,12 +36,16 @@ public class PendingRegistrationService {
     private final CollaboratorService collaboratorService;
     private final KeycloakAdminService keycloakAdminService;
     private final EmailService emailService;
-    
+    private final PricingPlanService pricingPlanService;
+
     @Value("${registration.confirmation.token.expiration.hours:24}")
     private int tokenExpirationHours;
-    
+
     @Value("${frontend.url:http://localhost:4200}")
     private String frontendUrl;
+
+    @Value("${registration.default-plan-name:Invité}")
+    private String defaultPlanName;
     
     private static final SecureRandom secureRandom = new SecureRandom();
     
@@ -50,13 +55,15 @@ public class PendingRegistrationService {
             OrganizationService organizationService,
             CollaboratorService collaboratorService,
             KeycloakAdminService keycloakAdminService,
-            EmailService emailService) {
+            EmailService emailService,
+            PricingPlanService pricingPlanService) {
         this.pendingRegistrationRepository = pendingRegistrationRepository;
         this.organizationRepository = organizationRepository;
         this.organizationService = organizationService;
         this.collaboratorService = collaboratorService;
         this.keycloakAdminService = keycloakAdminService;
         this.emailService = emailService;
+        this.pricingPlanService = pricingPlanService;
     }
     
     /**
@@ -103,7 +110,18 @@ public class PendingRegistrationService {
         }
         pending.setOrganizationCountry(request.getOrganizationCountry().toUpperCase());
         pending.setOrganizationPhone(request.getOrganizationPhone());
-        pending.setPricingPlanId(request.getPricingPlanId()); // Inclure le plan tarifaire sélectionné
+        Long planId = request.getPricingPlanId();
+        if (planId == null) {
+            planId = pricingPlanService.findByName(defaultPlanName)
+                    .map(com.muhend.backend.pricing.dto.PricingPlanDto::getId)
+                    .orElse(null);
+            if (planId != null) {
+                log.info("Plan par défaut '{}' assigné automatiquement (id={})", defaultPlanName, planId);
+            } else {
+                log.warn("Plan par défaut '{}' introuvable — inscription sans plan", defaultPlanName);
+            }
+        }
+        pending.setPricingPlanId(planId);
         if (request.getMarketVersion() != null && !request.getMarketVersion().trim().isEmpty()) {
             pending.setMarketVersion(request.getMarketVersion().trim());
         }

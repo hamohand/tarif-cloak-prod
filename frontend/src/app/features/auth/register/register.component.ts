@@ -176,55 +176,10 @@ import { take } from 'rxjs/operators';
           </div>
 
           <div class="form-section">
-            <h3>Plan tarifaire</h3>
             <div class="form-group">
-              <label for="pricingPlanId">Sélectionner un plan</label>
               <div class="pricing-info-bar">
-                Possibilité de changer de plan tarifaire et demande de devis personnalisé à tout moment.
+                Vous bénéficierez automatiquement d'un plan d'essai gratuit à l'inscription.
               </div>
-              <ng-container *ngIf="loadingPlans; else plansLoaded">
-                <div class="loading-plans">Chargement des plans...</div>
-              </ng-container>
-              <ng-template #plansLoaded>
-                <select id="pricingPlanId" formControlName="pricingPlanId" class="pricing-plan-select">
-                  <option *ngFor="let plan of pricingPlans" [value]="plan.id">
-                    {{ plan.name }} -
-                    <ng-container *ngIf="plan.pricePerMonth !== null; else pricePerRequest">
-                      <ng-container *ngIf="plan.pricePerMonth === 0; else paidPlan">
-                        Gratuit
-                      </ng-container>
-                      <ng-template #paidPlan>
-                        {{ plan.pricePerMonth }} 
-                        @if (currencySymbol$ | async; as symbol) {
-                          {{ symbol }}
-                        } @else {
-                          €
-                        }/mois
-                      </ng-template>
-                    </ng-container>
-                    <ng-template #pricePerRequest>
-                      <ng-container *ngIf="plan.pricePerRequest !== null; else unlimited">
-                        {{ plan.pricePerRequest }} 
-                        @if (currencySymbol$ | async; as symbol) {
-                          {{ symbol }}
-                        } @else {
-                          €
-                        }/crédit
-                      </ng-container>
-                      <ng-template #unlimited>Quota illimité</ng-template>
-                    </ng-template>
-                    <ng-container *ngIf="plan.monthlyQuota">
-                      ({{ plan.monthlyQuota | number }} crédits/mois)
-                    </ng-container>
-                    <ng-container *ngIf="!plan.monthlyQuota && plan.trialPeriodDays">
-                      ({{ plan.trialPeriodDays }} jours d'essai)
-                    </ng-container>
-                  </option>
-                </select>
-                <small class="form-hint">
-                  <a routerLink="/pricing" target="_blank">Voir le détail des plans</a>
-                </small>
-              </ng-template>
             </div>
           </div>
 

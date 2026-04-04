@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -60,5 +61,12 @@ public interface OrganizationRepository extends JpaRepository<Organization, Long
      */
     @Query("SELECT o FROM Organization o WHERE o.pendingPayPerRequestPlanId IS NOT NULL")
     List<Organization> findByPendingPayPerRequestPlanIdIsNotNull();
+
+    /**
+     * Trouve les organisations dont l'essai gratuit a expiré et qui ne sont pas encore marquées
+     * comme définitivement expirées — utilisé pour générer les factures $0 de fin d'essai.
+     */
+    @Query("SELECT o FROM Organization o WHERE o.trialExpiresAt IS NOT NULL AND o.trialExpiresAt < :date AND (o.trialPermanentlyExpired IS NULL OR o.trialPermanentlyExpired = false)")
+    List<Organization> findByTrialExpiresAtBeforeAndTrialPermanentlyExpiredFalse(@Param("date") LocalDateTime date);
 }
 

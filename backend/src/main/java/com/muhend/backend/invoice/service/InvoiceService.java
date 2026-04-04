@@ -1174,8 +1174,97 @@ public class InvoiceService {
     }
     
     /**
+     * Génère une facture $0 de clôture d'essai gratuit (Essai gratuit / Invité).
+     * Silencieux si une facture existe déjà pour cette période.
+     *
+     * @param organizationId ID de l'organisation
+     * @param plan Le plan d'essai
+     * @param startDate Date de début de l'essai
+     * @param endDate Date de fin de l'essai
+     * @return La facture générée, ou null si elle existait déjà
+     */
+    @Transactional
+    public InvoiceDto generateFreeTrialClosureInvoice(Long organizationId, PricingPlanDto plan,
+                                                      LocalDate startDate, LocalDate endDate) {
+        OrganizationDto organization = organizationService.getOrganizationById(organizationId);
+        if (organization == null) {
+            throw new IllegalArgumentException("Organisation non trouvée avec l'ID: " + organizationId);
+        }
+
+        if (invoiceRepository.existsByOrganizationIdAndPeriodStartAndPeriodEnd(organizationId, startDate, endDate)) {
+            log.info("Facture $0 déjà existante pour l'organisation {} période {} - {} — ignorée",
+                    organizationId, startDate, endDate);
+            return null;
+        }
+
+        LocalDateTime cycleStart = startDate.atStartOfDay();
+        LocalDateTime cycleEnd = endDate.atTime(LocalTime.MAX);
+        List<UsageLog> usageLogs = usageLogRepository.findByOrganizationIdAndTimestampBetween(
+                organizationId, cycleStart, cycleEnd);
+        long requestCount = usageLogs.size();
+        long totalTokens = usageLogs.stream()
+                .mapToLong(log -> log.getTokensUsed() != null ? log.getTokensUsed() : 0)
+                .sum();
+        Integer planQuota = plan.getMonthlyQuota();
+
+        YearMonth yearMonth = YearMonth.from(startDate);
+        String baseNumber = generateInvoiceNumber(organizationId, yearMonth.getYear(), yearMonth.getMonthValue()) + "-TRIAL";
+        String finalInvoiceNumber = baseNumber;
+        int suffix = 1;
+        while (invoiceRepository.findByInvoiceNumber(finalInvoiceNumber).isPresent()) {
+            finalInvoiceNumber = baseNumber + "-" + suffix++;
+        }
+
+        Invoice invoice = new Invoice();
+        invoice.setOrganizationId(organizationId);
+        invoice.setOrganizationName(organization.getName());
+        invoice.setOrganizationEmail(organization.getEmail());
+        invoice.setInvoiceNumber(finalInvoiceNumber);
+        invoice.setPeriodStart(startDate);
+        invoice.setPeriodEnd(endDate);
+        invoice.setTotalAmount(BigDecimal.ZERO);
+        invoice.setStatus(Invoice.InvoiceStatus.PAID);
+        invoice.setDueDate(endDate);
+        String quotaInfo = planQuota != null
+                ? String.format("%d/%d crédits utilisés", requestCount, planQuota)
+                : String.format("%d crédits utilisés (quota illimité)", requestCount);
+        invoice.setNotes(String.format("Clôture d'essai gratuit — Plan %s (du %s au %s) — %s",
+                plan.getName(), startDate.format(DATE_FORMATTER), endDate.format(DATE_FORMATTER), quotaInfo));
+
+        invoice = invoiceRepository.save(invoice);
+
+        InvoiceItem item = new InvoiceItem();
+        item.setInvoice(invoice);
+        item.setDescription(String.format("Période d'essai — Plan %s (du %s au %s inclus)",
+                plan.getName(), startDate.format(DATE_FORMATTER), endDate.format(DATE_FORMATTER)));
+        item.setQuantity(1);
+        item.setUnitPrice(BigDecimal.ZERO);
+        item.setTotalPrice(BigDecimal.ZERO);
+        item.setItemType("FREE_TRIAL_CLOSURE");
+        invoiceItemRepository.save(item);
+
+        InvoiceItem usageItem = new InvoiceItem();
+        usageItem.setInvoice(invoice);
+        String usageDesc = planQuota != null
+                ? String.format("Utilisation : %d/%d crédits — %d tokens IA", requestCount, planQuota, totalTokens)
+                : String.format("Utilisation : %d crédits — %d tokens IA", requestCount, totalTokens);
+        usageItem.setDescription(usageDesc);
+        usageItem.setQuantity((int) Math.min(requestCount, Integer.MAX_VALUE));
+        usageItem.setUnitPrice(BigDecimal.ZERO);
+        usageItem.setTotalPrice(BigDecimal.ZERO);
+        usageItem.setItemType("USAGE_SUMMARY");
+        invoiceItemRepository.save(usageItem);
+
+        log.info("Facture $0 d'essai générée: {} — org {} — plan {} — {}/{} crédits",
+                finalInvoiceNumber, organization.getName(), plan.getName(),
+                requestCount, planQuota != null ? planQuota : "∞");
+
+        return toDto(invoice);
+    }
+
+    /**
      * Génère une facture de clôture pour un plan Pay-per-Request (depuis la dernière facture jusqu'à aujourd'hui).
-     * 
+     *
      * @param organizationId ID de l'organisation
      * @param plan Le plan Pay-per-Request
      * @param startDate Date de début (dernière facture)

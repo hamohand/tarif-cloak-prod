@@ -133,6 +133,7 @@ services:
       CHARGILY_WEBHOOK_SECRET: "${CHARGILY_WEBHOOK_SECRET:-}"
       CHARGILY_API_URL: "${CHARGILY_API_URL:-https://pay.chargily.net/test/api/v2}"
       BASE_REQUEST_PRICE: "${BASE_REQUEST_PRICE:-0.01}"
+      DEFAULT_PLAN_NAME: "${DEFAULT_PLAN_NAME:-Essai gratuit}"
     labels:
       traefik.enable: "true"
       traefik.docker.network: "webproxy"

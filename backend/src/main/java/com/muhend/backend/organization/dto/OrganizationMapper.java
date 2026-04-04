@@ -68,6 +68,7 @@ public class OrganizationMapper {
         dto.setPendingPayPerRequestPlanId(organization.getPendingPayPerRequestPlanId());
         dto.setPendingPayPerRequestChangeDate(organization.getPendingPayPerRequestChangeDate());
         dto.setEnabled(organization.getEnabled());
+        dto.setTrialRenewCount(organization.getTrialRenewCount());
         dto.setCreatedAt(organization.getCreatedAt());
         return dto;
     }

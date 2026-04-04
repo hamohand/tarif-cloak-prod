@@ -56,6 +56,7 @@ export interface Organization {
   createdAt: string;
   userCount?: number;
   currentMonthUsage?: number; // Nombre de requêtes utilisées ce mois
+  trialRenewCount?: number | null; // Nombre de renouvellements de l'essai
 }
 
 export interface CreateOrganizationRequest {

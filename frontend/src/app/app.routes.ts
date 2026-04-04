@@ -26,6 +26,9 @@ import { OrganizationStatsComponent } from './features/organization/organization
 import { QuoteRequestsComponent } from './features/organization/quote-requests.component';
 import { collaboratorGuard } from './core/guards/collaborator.guard';
 import { organizationGuard } from './core/guards/organization.guard';
+import { planRequiredGuard } from './core/guards/plan-required.guard';
+import { ChoosePlanComponent } from './features/choose-plan/choose-plan.component';
+import { AccessExpiredComponent } from './features/access-expired/access-expired.component';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -35,21 +38,30 @@ export const routes: Routes = [
     children: AUTH_ROUTES
   },
   {
+    path: 'choose-plan',
+    component: ChoosePlanComponent,
+    canActivate: [authGuard]
+  },
+  {
+    path: 'access-expired',
+    component: AccessExpiredComponent
+  },
+  {
     path: 'recherche',
     children: TARIF_ROUTES,
     component: TarifComponent,
     //component: DashboardComponent,
-    canActivate: [authGuard, collaboratorGuard]
+    canActivate: [authGuard, collaboratorGuard, planRequiredGuard]
   },
   {
     path: 'dashboard',
     component: UserDashboardComponent,
-    canActivate: [authGuard, collaboratorGuard]
+    canActivate: [authGuard, collaboratorGuard, planRequiredGuard]
   },
   {
     path: 'alerts',
     component: AlertsComponent,
-    canActivate: [authGuard, collaboratorGuard]
+    canActivate: [authGuard, collaboratorGuard, planRequiredGuard]
   },
   {
     path: 'organization/account',

@@ -192,6 +192,16 @@ public class PricingPlanService {
     }
     
     /**
+     * Récupère un plan tarifaire par son nom (actif uniquement).
+     */
+    @Transactional(readOnly = true)
+    public Optional<PricingPlanDto> findByName(String name) {
+        return pricingPlanRepository.findByName(name)
+                .filter(PricingPlan::getIsActive)
+                .map(this::toDto);
+    }
+
+    /**
      * Récupère un plan tarifaire par son ID (seulement si actif).
      */
     @Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW)

@@ -287,6 +287,7 @@ services:
       CHARGILY_SECRET_KEY: "${CHARGILY_SECRET_KEY:-}"
       CHARGILY_WEBHOOK_SECRET: "${CHARGILY_WEBHOOK_SECRET:-}"
       CHARGILY_API_URL: "${CHARGILY_API_URL:-https://pay.chargily.net/api/v2}"
+      DEFAULT_PLAN_NAME: "${DEFAULT_PLAN_NAME:-Invité}"
     labels:
       <<: *traefik-backend-labels
     restart: unless-stopped
