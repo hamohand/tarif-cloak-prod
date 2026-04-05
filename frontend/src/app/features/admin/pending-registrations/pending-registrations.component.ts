@@ -76,116 +76,181 @@ import { NotificationService } from '../../../core/services/notification.service
     </div>
   `,
   styles: [`
+    :host {
+      --neu-bg: var(--neu-bg, #E0E5EC);
+      --neu-extruded: var(--neu-extruded, 9px 9px 16px rgba(163,177,198,0.6), -9px -9px 16px rgba(255,255,255,0.5));
+      --neu-extruded-sm: var(--neu-extruded-sm, 4px 4px 8px rgba(163,177,198,0.6), -4px -4px 8px rgba(255,255,255,0.5));
+      --neu-extruded-hover: var(--neu-extruded-hover, 12px 12px 20px rgba(163,177,198,0.6), -12px -12px 20px rgba(255,255,255,0.5));
+      --neu-inset: var(--neu-inset, inset 4px 4px 8px rgba(163,177,198,0.6), inset -4px -4px 8px rgba(255,255,255,0.5));
+      --neu-inset-deep: var(--neu-inset-deep, inset 6px 6px 12px rgba(163,177,198,0.6), inset -6px -6px 12px rgba(255,255,255,0.5));
+      --neu-radius-container: var(--neu-radius-container, 32px);
+      --neu-radius-inner: var(--neu-radius-inner, 12px);
+      --neu-accent: var(--neu-accent, #6C63FF);
+      --neu-accent-secondary: var(--neu-accent-secondary, #38B2AC);
+      --neu-accent-danger: var(--neu-accent-danger, #E53E3E);
+      --neu-accent-warning: var(--neu-accent-warning, #ED8936);
+      --neu-text-primary: var(--neu-text-primary, #3D4852);
+      --neu-text-muted: var(--neu-text-muted, #6B7280);
+      --neu-text-heading: var(--neu-text-heading, #2D3748);
+      --font-display: var(--font-display, 'Inter', sans-serif);
+    }
+
     .pending-registrations-container {
       padding: 2rem;
       max-width: 1400px;
       margin: 0 auto;
+      background: var(--neu-bg);
+      min-height: 100vh;
     }
 
     h2 {
-      color: #2c3e50;
+      color: var(--neu-text-heading);
       margin-bottom: 2rem;
       font-size: 1.8rem;
+      font-family: var(--font-display);
     }
 
     .empty-message {
       text-align: center;
       padding: 3rem;
-      color: #6c757d;
+      color: var(--neu-text-muted);
       font-size: 1.1rem;
+      background: var(--neu-bg);
+      border-radius: var(--neu-radius-container);
+      box-shadow: var(--neu-extruded);
     }
 
     .registrations-table-container {
       overflow-x: auto;
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      background: var(--neu-card-bg, linear-gradient(145deg, #E8ECF2, #D8DDE4));
+      border-radius: var(--neu-radius-container);
+      box-shadow: var(--neu-extruded);
+      padding: 1rem;
     }
 
     .registrations-table {
       width: 100%;
-      border-collapse: collapse;
-    }
-
-    .registrations-table thead {
-      background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-      color: white;
+      border-collapse: separate;
+      border-spacing: 0 0.5rem;
     }
 
     .registrations-table th {
-      padding: 1rem;
+      padding: 0.75rem 1rem;
       text-align: left;
       font-weight: 600;
       font-size: 0.9rem;
+      color: var(--neu-text-muted);
+      background: transparent;
     }
 
     .registrations-table td {
-      padding: 1rem;
-      border-bottom: 1px solid #e9ecef;
+      padding: 0.75rem 1rem;
+      background: var(--neu-bg);
+      box-shadow: var(--neu-extruded-sm);
+      color: var(--neu-text-primary);
     }
 
-    .registrations-table tbody tr:hover {
-      background-color: #f8f9fa;
+    .registrations-table td:first-child {
+      border-radius: var(--neu-radius-inner) 0 0 var(--neu-radius-inner);
     }
 
-    .registrations-table tbody tr.expired {
-      background-color: #fff5f5;
-      opacity: 0.7;
+    .registrations-table td:last-child {
+      border-radius: 0 var(--neu-radius-inner) var(--neu-radius-inner) 0;
+    }
+
+    .registrations-table tbody tr:hover td {
+      box-shadow: var(--neu-extruded);
+    }
+
+    .registrations-table tbody tr.expired td {
+      opacity: 0.6;
     }
 
     .badge {
       display: inline-block;
-      padding: 0.25rem 0.75rem;
-      border-radius: 12px;
+      padding: 0.375rem 0.875rem;
+      border-radius: 20px;
       font-size: 0.85rem;
       font-weight: 600;
+      box-shadow: var(--neu-extruded-sm);
     }
 
     .badge-warning {
-      background-color: #ffc107;
-      color: #000;
+      background: var(--neu-bg);
+      color: var(--neu-accent-warning);
     }
 
     .badge-danger {
-      background-color: #dc3545;
+      background: var(--neu-accent-danger);
       color: white;
     }
 
     .expired-date {
-      color: #dc3545;
+      color: var(--neu-accent-danger);
       font-weight: 600;
     }
 
     .stats-bar {
       margin-top: 1.5rem;
-      padding: 1rem;
-      background: #f8f9fa;
-      border-radius: 8px;
+      padding: 1rem 1.5rem;
+      background: var(--neu-bg);
+      border-radius: var(--neu-radius-container);
       text-align: center;
+      box-shadow: var(--neu-inset);
+      color: var(--neu-text-primary);
     }
 
     .expired-count {
-      color: #dc3545;
+      color: var(--neu-accent-danger);
       font-weight: 600;
     }
 
     small {
-      color: #6c757d;
+      color: var(--neu-text-muted);
       font-size: 0.85rem;
     }
 
     .btn-delete {
-      background: none;
+      background: var(--neu-bg);
       border: none;
       cursor: pointer;
       font-size: 1.1rem;
-      padding: 0.25rem 0.5rem;
-      border-radius: 4px;
-      transition: background 0.2s;
+      padding: 0.5rem 0.75rem;
+      border-radius: var(--neu-radius-inner);
+      box-shadow: var(--neu-extruded-sm);
+      min-width: 44px;
+      min-height: 44px;
+      transition: box-shadow 0.2s ease;
     }
 
     .btn-delete:hover {
-      background-color: #fde8e8;
+      box-shadow: var(--neu-extruded);
+    }
+
+    .btn-delete:active {
+      box-shadow: var(--neu-inset);
+    }
+
+    @media (max-width: 768px) {
+      .pending-registrations-container {
+        padding: 1rem;
+      }
+
+      .registrations-table-container {
+        padding: 0.5rem;
+      }
+
+      .registrations-table th,
+      .registrations-table td {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.85rem;
+      }
+    }
+
+    @media (max-width: 1024px) {
+      .registrations-table-container {
+        overflow-x: auto;
+      }
     }
   `]
 })

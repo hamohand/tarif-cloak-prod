@@ -118,131 +118,136 @@ import { NotificationService } from '../../../core/services/notification.service
     </div>
   `,
   styles: [`
+    :host {
+      display: block;
+      background: var(--neu-bg, #E0E5EC);
+      min-height: 100vh;
+    }
+
     .invoices-container {
       padding: 2rem;
       max-width: 1400px;
       margin: 0 auto;
-      background: #e8e8e8;
-      min-height: 100vh;
     }
 
     .invoices-header {
       margin-bottom: 2rem;
-      background: #e0e0e0;
+      background: var(--neu-card-bg, linear-gradient(145deg, #E8ECF2, #D8DDE4));
       padding: 1.5rem;
-      border-radius: 8px;
+      border-radius: var(--neu-radius-container, 32px);
+      box-shadow: var(--neu-extruded, 9px 9px 16px rgba(163,177,198,0.6), -9px -9px 16px rgba(255,255,255,0.5));
     }
 
     .invoices-header h2 {
       margin: 0 0 0.5rem 0;
-      color: #2c3e50;
+      color: var(--neu-text-heading, #2D3748);
+      font-family: var(--font-display);
     }
 
     .subtitle {
-      color: #666;
+      color: var(--neu-text-muted, #6B7280);
       margin: 0;
     }
 
     .loading, .error, .no-invoices {
       text-align: center;
       padding: 3rem;
-      background: #e0e0e0;
-      border-radius: 8px;
+      background: var(--neu-bg, #E0E5EC);
+      border-radius: var(--neu-radius-container, 32px);
       margin-top: 2rem;
+      box-shadow: var(--neu-extruded, 9px 9px 16px rgba(163,177,198,0.6), -9px -9px 16px rgba(255,255,255,0.5));
+      color: var(--neu-text-primary, #3D4852);
     }
 
     .error {
-      background: #ffe0e0;
-      color: #d32f2f;
+      color: var(--neu-accent-danger, #E53E3E);
     }
 
     .no-invoices {
-      background: #e0e0e0;
-      color: #666;
+      color: var(--neu-text-muted, #6B7280);
     }
 
     .invoices-table-wrapper {
-      background: #e0e0e0;
-      border-radius: 8px;
-      overflow: hidden;
       margin-top: 2rem;
+      overflow-x: auto;
     }
 
     .invoices-table {
       width: 100%;
-      border-collapse: collapse;
+      border-collapse: separate;
+      border-spacing: 0 0.5rem;
     }
 
     .invoices-table th {
-      background: #d5d5d5;
       padding: 1rem;
       text-align: left;
       font-weight: 600;
-      color: #2c3e50;
-      border-bottom: 2px solid #bbb;
+      color: var(--neu-text-heading, #2D3748);
+      font-family: var(--font-display);
+      background: transparent;
     }
 
     .invoices-table td {
       padding: 1rem;
-      border-bottom: 1px solid #ccc;
-      background: #e0e0e0;
+      background: var(--neu-bg, #E0E5EC);
+      color: var(--neu-text-primary, #3D4852);
+      box-shadow: var(--neu-extruded-sm, 5px 5px 10px rgba(163,177,198,0.5), -5px -5px 10px rgba(255,255,255,0.4));
+      transition: box-shadow 0.2s ease;
+    }
+
+    .invoices-table td:first-child {
+      border-radius: 16px 0 0 16px;
+    }
+
+    .invoices-table td:last-child {
+      border-radius: 0 16px 16px 0;
     }
 
     .invoices-table tr:hover td {
-      background: #d5d5d5;
+      box-shadow: 7px 7px 14px rgba(163,177,198,0.6), -7px -7px 14px rgba(255,255,255,0.5);
     }
 
     .status-badge {
       display: inline-block;
-      padding: 0.25rem 0.75rem;
-      border-radius: 12px;
+      padding: 0.3rem 0.85rem;
+      border-radius: 20px;
       font-size: 0.875rem;
-      font-weight: 500;
+      font-weight: 600;
+      background: var(--neu-bg, #E0E5EC);
+      box-shadow: var(--neu-extruded-sm, 5px 5px 10px rgba(163,177,198,0.5), -5px -5px 10px rgba(255,255,255,0.4));
     }
 
     .status-draft {
-      background: #e0e0e0;
-      color: #666;
+      color: var(--neu-text-muted, #6B7280);
     }
 
     .status-pending {
-      background: #fff3cd;
-      color: #856404;
+      color: var(--neu-accent-warning, #ED8936);
     }
 
     .status-paid {
-      background: #d4edda;
-      color: #155724;
+      color: var(--neu-accent-secondary, #38B2AC);
     }
 
     .status-overdue {
-      background: #f8d7da;
-      color: #721c24;
+      color: var(--neu-accent-danger, #E53E3E);
     }
 
     .status-cancelled {
-      background: #e0e0e0;
-      color: #666;
+      color: var(--neu-text-muted, #6B7280);
     }
 
     .new-badge {
       display: inline-block;
       margin-left: 0.5rem;
-      padding: 0.15rem 0.5rem;
-      background: #3498db;
-      color: white;
-      border-radius: 10px;
+      padding: 0.2rem 0.6rem;
+      background: var(--neu-accent, #6C63FF);
+      color: #fff;
+      border-radius: 20px;
       font-size: 0.7rem;
       font-weight: 600;
+      box-shadow: var(--neu-extruded-sm, 5px 5px 10px rgba(163,177,198,0.5), -5px -5px 10px rgba(255,255,255,0.4));
       animation: pulse 2s infinite;
-    }
-
-    .new-invoice {
-      background: #e8f4f8 !important;
-    }
-
-    .new-invoice:hover {
-      background: #d0e8f0 !important;
     }
 
     @keyframes pulse {
@@ -257,40 +262,53 @@ import { NotificationService } from '../../../core/services/notification.service
     .btn {
       padding: 0.5rem 1rem;
       border: none;
-      border-radius: 4px;
+      border-radius: 12px;
       cursor: pointer;
       font-size: 0.875rem;
+      font-weight: 600;
       margin-right: 0.5rem;
-      transition: background-color 0.2s;
+      transition: all 0.25s ease;
+      min-height: 44px;
     }
 
     .btn-primary {
-      background: #007bff;
-      color: white;
+      background: var(--neu-accent, #6C63FF);
+      color: #fff;
+      box-shadow: var(--neu-extruded-sm, 5px 5px 10px rgba(163,177,198,0.5), -5px -5px 10px rgba(255,255,255,0.4));
     }
 
     .btn-primary:hover {
-      background: #0056b3;
+      box-shadow: 7px 7px 14px rgba(163,177,198,0.6), -7px -7px 14px rgba(255,255,255,0.5);
+    }
+
+    .btn-primary:active {
+      box-shadow: var(--neu-inset-sm, inset 4px 4px 6px rgba(163,177,198,0.5), inset -4px -4px 6px rgba(255,255,255,0.4));
     }
 
     .btn-secondary {
-      background: #6c757d;
-      color: white;
+      background: var(--neu-bg, #E0E5EC);
+      color: var(--neu-accent, #6C63FF);
+      box-shadow: var(--neu-extruded-sm, 5px 5px 10px rgba(163,177,198,0.5), -5px -5px 10px rgba(255,255,255,0.4));
     }
 
     .btn-secondary:hover {
-      background: #545b62;
+      box-shadow: 7px 7px 14px rgba(163,177,198,0.6), -7px -7px 14px rgba(255,255,255,0.5);
+    }
+
+    .btn-secondary:active {
+      box-shadow: var(--neu-inset-sm, inset 4px 4px 6px rgba(163,177,198,0.5), inset -4px -4px 6px rgba(255,255,255,0.4));
     }
 
     .filters-bar {
-      background: #e0e0e0;
+      background: var(--neu-card-bg, linear-gradient(145deg, #E8ECF2, #D8DDE4));
       padding: 1.5rem;
-      border-radius: 8px;
+      border-radius: var(--neu-radius-container, 32px);
       margin-bottom: 2rem;
       display: flex;
       flex-wrap: wrap;
       gap: 1rem;
       align-items: flex-end;
+      box-shadow: var(--neu-extruded, 9px 9px 16px rgba(163,177,198,0.6), -9px -9px 16px rgba(255,255,255,0.5));
     }
 
     .search-group {
@@ -300,10 +318,23 @@ import { NotificationService } from '../../../core/services/notification.service
 
     .search-input {
       width: 100%;
-      padding: 0.5rem;
-      border: 1px solid #ccc;
-      border-radius: 4px;
+      padding: 0.65rem 0.75rem;
+      border: none;
+      border-radius: 12px;
       font-size: 1rem;
+      background: var(--neu-bg, #E0E5EC);
+      color: var(--neu-text-primary, #3D4852);
+      box-shadow: var(--neu-inset, inset 6px 6px 10px rgba(163,177,198,0.6), inset -6px -6px 10px rgba(255,255,255,0.5));
+      min-height: 44px;
+    }
+
+    .search-input:focus {
+      outline: none;
+      box-shadow: var(--neu-inset-deep, inset 8px 8px 14px rgba(163,177,198,0.7), inset -8px -8px 14px rgba(255,255,255,0.6)), 0 0 0 2px var(--neu-accent, #6C63FF);
+    }
+
+    .search-input::placeholder {
+      color: var(--neu-text-muted, #6B7280);
     }
 
     .filter-group {
@@ -314,16 +345,26 @@ import { NotificationService } from '../../../core/services/notification.service
 
     .filter-group label {
       font-weight: 600;
-      color: #2c3e50;
+      color: var(--neu-text-heading, #2D3748);
       font-size: 0.875rem;
     }
 
     .filter-select,
     .filter-input {
-      padding: 0.5rem;
-      border: 1px solid #ccc;
-      border-radius: 4px;
+      padding: 0.65rem 0.75rem;
+      border: none;
+      border-radius: 12px;
       font-size: 1rem;
+      background: var(--neu-bg, #E0E5EC);
+      color: var(--neu-text-primary, #3D4852);
+      box-shadow: var(--neu-inset, inset 6px 6px 10px rgba(163,177,198,0.6), inset -6px -6px 10px rgba(255,255,255,0.5));
+      min-height: 44px;
+    }
+
+    .filter-select:focus,
+    .filter-input:focus {
+      outline: none;
+      box-shadow: var(--neu-inset-deep, inset 8px 8px 14px rgba(163,177,198,0.7), inset -8px -8px 14px rgba(255,255,255,0.6)), 0 0 0 2px var(--neu-accent, #6C63FF);
     }
 
     .actions-group {
@@ -333,7 +374,7 @@ import { NotificationService } from '../../../core/services/notification.service
 
     .pagination-info {
       margin-bottom: 1rem;
-      color: #666;
+      color: var(--neu-text-muted, #6B7280);
       font-size: 0.875rem;
     }
 
@@ -347,12 +388,28 @@ import { NotificationService } from '../../../core/services/notification.service
 
     .page-info {
       font-weight: 600;
-      color: #2c3e50;
+      color: var(--neu-text-heading, #2D3748);
+      font-family: var(--font-display);
     }
 
     .btn:disabled {
       opacity: 0.5;
       cursor: not-allowed;
+    }
+
+    @media (max-width: 768px) {
+      .invoices-container {
+        padding: 1rem;
+      }
+
+      .filters-bar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .invoices-table {
+        font-size: 0.85rem;
+      }
     }
   `]
 })

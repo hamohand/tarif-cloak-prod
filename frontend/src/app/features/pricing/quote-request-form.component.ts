@@ -76,13 +76,33 @@ import { QuoteRequestService, CreateQuoteRequestDto } from '../../core/services/
     </div>
   `,
   styles: [`
+    :host {
+      --neu-bg: var(--neu-bg, #E0E5EC);
+      --neu-extruded: var(--neu-extruded, 9px 9px 16px rgba(163,177,198,0.6), -9px -9px 16px rgba(255,255,255,0.5));
+      --neu-extruded-hover: var(--neu-extruded-hover, 12px 12px 20px rgba(163,177,198,0.7), -12px -12px 20px rgba(255,255,255,0.6));
+      --neu-extruded-sm: var(--neu-extruded-sm, 5px 5px 10px rgba(163,177,198,0.5), -5px -5px 10px rgba(255,255,255,0.4));
+      --neu-inset: var(--neu-inset, inset 4px 4px 8px rgba(163,177,198,0.5), inset -4px -4px 8px rgba(255,255,255,0.4));
+      --neu-inset-deep: var(--neu-inset-deep, inset 6px 6px 12px rgba(163,177,198,0.6), inset -6px -6px 12px rgba(255,255,255,0.5));
+      --neu-radius-container: var(--neu-radius-container, 32px);
+      --neu-radius-inner: var(--neu-radius-inner, 12px);
+      --neu-accent: var(--neu-accent, #6C63FF);
+      --neu-accent-secondary: var(--neu-accent-secondary, #38B2AC);
+      --neu-accent-danger: var(--neu-accent-danger, #E53E3E);
+      --neu-text-primary: var(--neu-text-primary, #3D4852);
+      --neu-text-muted: var(--neu-text-muted, #6B7280);
+      --neu-text-heading: var(--neu-text-heading, #2D3748);
+      --font-display: var(--font-display, 'Plus Jakarta Sans', sans-serif);
+    }
+
     .quote-form-container {
       position: fixed;
       top: 0;
       left: 0;
       right: 0;
       bottom: 0;
-      background: rgba(0, 0, 0, 0.5);
+      background: rgba(163, 177, 198, 0.4);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
       display: flex;
       justify-content: center;
       align-items: center;
@@ -91,9 +111,9 @@ import { QuoteRequestService, CreateQuoteRequestDto } from '../../core/services/
     }
 
     .quote-form-card {
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+      background: var(--neu-card-bg, linear-gradient(145deg, #E8ECF2, #D8DDE4));
+      border-radius: var(--neu-radius-container);
+      box-shadow: var(--neu-extruded-hover);
       max-width: 600px;
       width: 100%;
       max-height: 90vh;
@@ -104,39 +124,45 @@ import { QuoteRequestService, CreateQuoteRequestDto } from '../../core/services/
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 1.5rem;
-      border-bottom: 1px solid #e1e8ed;
+      padding: 1.5rem 2rem;
     }
 
     .quote-form-header h2 {
       margin: 0;
-      color: #2c3e50;
+      color: var(--neu-text-heading);
+      font-family: var(--font-display);
       font-size: 1.5rem;
     }
 
     .close-btn {
-      background: none;
+      background: var(--neu-bg);
       border: none;
-      font-size: 2rem;
-      color: #7f8c8d;
+      font-size: 1.5rem;
+      color: var(--neu-text-muted);
       cursor: pointer;
       padding: 0;
-      width: 32px;
-      height: 32px;
+      width: 44px;
+      height: 44px;
       display: flex;
       align-items: center;
       justify-content: center;
       border-radius: 50%;
+      box-shadow: var(--neu-extruded-sm);
       transition: all 0.2s;
     }
 
     .close-btn:hover {
-      background: #ecf0f1;
-      color: #2c3e50;
+      box-shadow: var(--neu-inset);
+      color: var(--neu-text-heading);
+    }
+
+    .close-btn:focus-visible {
+      outline: 2px solid var(--neu-accent);
+      outline-offset: 2px;
     }
 
     .quote-form {
-      padding: 1.5rem;
+      padding: 1.5rem 2rem 2rem;
     }
 
     .form-group {
@@ -146,27 +172,36 @@ import { QuoteRequestService, CreateQuoteRequestDto } from '../../core/services/
     label {
       display: block;
       margin-bottom: 0.5rem;
-      color: #2c3e50;
+      color: var(--neu-text-primary);
       font-weight: 500;
     }
 
     .form-control {
       width: 100%;
-      padding: 0.75rem;
-      border: 2px solid #e1e8ed;
-      border-radius: 6px;
+      padding: 0.75rem 1rem;
+      background: var(--neu-bg);
+      box-shadow: var(--neu-inset);
+      border: none;
+      border-radius: var(--neu-radius-inner);
       font-size: 1rem;
-      transition: border-color 0.3s;
+      color: var(--neu-text-primary);
+      transition: box-shadow 0.3s;
       box-sizing: border-box;
+      min-height: 44px;
     }
 
     .form-control:focus {
       outline: none;
-      border-color: #3498db;
+      box-shadow: var(--neu-inset-deep), 0 0 0 2px rgba(108, 99, 255, 0.3);
     }
 
     .form-control.error {
-      border-color: #e74c3c;
+      box-shadow: var(--neu-inset-deep), 0 0 0 2px rgba(229, 62, 62, 0.3);
+    }
+
+    .form-control::placeholder {
+      color: var(--neu-text-muted);
+      opacity: 0.6;
     }
 
     textarea.form-control {
@@ -175,17 +210,18 @@ import { QuoteRequestService, CreateQuoteRequestDto } from '../../core/services/
     }
 
     .error-message {
-      color: #e74c3c;
+      color: var(--neu-accent-danger);
       font-size: 0.875rem;
       margin-top: 0.25rem;
     }
 
     .success-message {
-      color: #27ae60;
+      color: var(--neu-accent-secondary);
       font-size: 0.95rem;
       padding: 1rem;
-      background: #d5f4e6;
-      border-radius: 6px;
+      background: var(--neu-bg);
+      box-shadow: var(--neu-inset);
+      border-radius: var(--neu-radius-inner);
       margin-top: 1rem;
     }
 
@@ -199,44 +235,54 @@ import { QuoteRequestService, CreateQuoteRequestDto } from '../../core/services/
     .btn {
       padding: 0.75rem 1.5rem;
       border: none;
-      border-radius: 6px;
+      border-radius: var(--neu-radius-inner);
       font-size: 1rem;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.3s;
+      min-height: 44px;
+    }
+
+    .btn:focus-visible {
+      outline: 2px solid var(--neu-accent);
+      outline-offset: 2px;
     }
 
     .btn-primary {
-      background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+      background: var(--neu-accent);
       color: white;
+      box-shadow: var(--neu-extruded-sm);
     }
 
     .btn-primary:hover:not(:disabled) {
-      background: linear-gradient(135deg, #2980b9 0%, #1f6391 100%);
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+      transform: translateY(-1px);
+      box-shadow: var(--neu-extruded-hover);
     }
 
     .btn-primary:disabled {
-      background: #bdc3c7;
+      background: var(--neu-bg);
+      color: var(--neu-text-muted);
+      box-shadow: var(--neu-inset);
       cursor: not-allowed;
       transform: none;
     }
 
     .btn-secondary {
-      background: #ecf0f1;
-      color: #2c3e50;
+      background: var(--neu-bg);
+      color: var(--neu-accent);
+      box-shadow: var(--neu-extruded-sm);
     }
 
     .btn-secondary:hover {
-      background: #d5dbdb;
+      transform: translateY(-1px);
+      box-shadow: var(--neu-extruded-hover);
     }
 
     @media (max-width: 768px) {
       .quote-form-card {
         max-width: 100%;
         margin: 0;
-        border-radius: 0;
+        border-radius: var(--neu-radius-inner);
         max-height: 100vh;
       }
 

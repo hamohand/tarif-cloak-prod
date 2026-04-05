@@ -122,15 +122,37 @@ import { NotificationService } from '../../../core/services/notification.service
     </div>
   `,
   styles: [`
+    :host {
+      --neu-bg: var(--neu-bg, #E0E5EC);
+      --neu-extruded: var(--neu-extruded, 9px 9px 16px rgba(163,177,198,0.6), -9px -9px 16px rgba(255,255,255,0.5));
+      --neu-extruded-sm: var(--neu-extruded-sm, 4px 4px 8px rgba(163,177,198,0.6), -4px -4px 8px rgba(255,255,255,0.5));
+      --neu-extruded-hover: var(--neu-extruded-hover, 12px 12px 20px rgba(163,177,198,0.6), -12px -12px 20px rgba(255,255,255,0.5));
+      --neu-inset: var(--neu-inset, inset 4px 4px 8px rgba(163,177,198,0.6), inset -4px -4px 8px rgba(255,255,255,0.5));
+      --neu-inset-deep: var(--neu-inset-deep, inset 6px 6px 12px rgba(163,177,198,0.6), inset -6px -6px 12px rgba(255,255,255,0.5));
+      --neu-radius-container: var(--neu-radius-container, 32px);
+      --neu-radius-inner: var(--neu-radius-inner, 12px);
+      --neu-accent: var(--neu-accent, #6C63FF);
+      --neu-accent-secondary: var(--neu-accent-secondary, #38B2AC);
+      --neu-accent-danger: var(--neu-accent-danger, #E53E3E);
+      --neu-accent-warning: var(--neu-accent-warning, #ED8936);
+      --neu-text-primary: var(--neu-text-primary, #3D4852);
+      --neu-text-muted: var(--neu-text-muted, #6B7280);
+      --neu-text-heading: var(--neu-text-heading, #2D3748);
+      --font-display: var(--font-display, 'Inter', sans-serif);
+    }
+
     .quote-requests-admin-container {
       padding: 2rem;
       max-width: 1400px;
       margin: 0 auto;
+      background: var(--neu-bg);
+      min-height: 100vh;
     }
 
     h2 {
-      color: #2c3e50;
+      color: var(--neu-text-heading);
       margin-bottom: 2rem;
+      font-family: var(--font-display);
     }
 
     .filters-bar {
@@ -138,62 +160,88 @@ import { NotificationService } from '../../../core/services/notification.service
       gap: 1rem;
       margin-bottom: 2rem;
       align-items: center;
+      background: var(--neu-bg);
+      padding: 1rem 1.5rem;
+      border-radius: var(--neu-radius-container);
+      box-shadow: var(--neu-inset);
     }
 
     .filter-select {
-      padding: 0.5rem 1rem;
-      border: 2px solid #e1e8ed;
-      border-radius: 6px;
+      padding: 0.625rem 1rem;
+      background: var(--neu-bg);
+      box-shadow: var(--neu-inset);
+      border: none;
+      border-radius: var(--neu-radius-inner);
       font-size: 1rem;
+      color: var(--neu-text-primary);
+      min-height: 44px;
+      transition: box-shadow 0.2s ease;
+    }
+
+    .filter-select:focus {
+      outline: none;
+      box-shadow: var(--neu-inset-deep), 0 0 0 2px var(--neu-accent);
     }
 
     .btn {
-      padding: 0.5rem 1rem;
+      padding: 0.625rem 1.25rem;
       border: none;
-      border-radius: 6px;
+      border-radius: var(--neu-radius-inner);
       font-size: 1rem;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.3s;
+      min-height: 44px;
+      transition: box-shadow 0.2s ease;
     }
 
     .btn-primary {
-      background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+      background: var(--neu-accent);
       color: white;
+      box-shadow: var(--neu-extruded-sm);
     }
 
     .btn-primary:hover:not(:disabled) {
-      background: linear-gradient(135deg, #2980b9 0%, #1f6391 100%);
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+      box-shadow: var(--neu-extruded);
+    }
+
+    .btn-primary:active:not(:disabled) {
+      box-shadow: var(--neu-inset);
     }
 
     .btn-primary:disabled {
-      background: #bdc3c7;
+      opacity: 0.5;
       cursor: not-allowed;
     }
 
     .btn-secondary {
-      background: #ecf0f1;
-      color: #2c3e50;
+      background: var(--neu-bg);
+      color: var(--neu-text-muted);
+      box-shadow: var(--neu-extruded-sm);
     }
 
     .btn-secondary:hover {
-      background: #d5dbdb;
+      box-shadow: var(--neu-extruded);
+    }
+
+    .btn-secondary:active {
+      box-shadow: var(--neu-inset);
     }
 
     .loading, .error, .empty-state {
       text-align: center;
       padding: 2rem;
       font-size: 1.2rem;
+      background: var(--neu-bg);
+      border-radius: var(--neu-radius-container);
+      box-shadow: var(--neu-extruded);
     }
 
     .error {
-      color: #e74c3c;
+      color: var(--neu-accent-danger);
     }
 
     .empty-state {
-      color: #7f8c8d;
+      color: var(--neu-text-muted);
     }
 
     .quote-requests-list {
@@ -203,33 +251,33 @@ import { NotificationService } from '../../../core/services/notification.service
     }
 
     .quote-request-card {
-      background: white;
-      border-radius: 12px;
-      padding: 1.5rem;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      border-left: 4px solid #95a5a6;
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      background: var(--neu-card-bg, linear-gradient(145deg, #E8ECF2, #D8DDE4));
+      border-radius: var(--neu-radius-container);
+      padding: 1.5rem 2rem;
+      box-shadow: var(--neu-extruded);
+      border-left: 5px solid var(--neu-text-muted);
+      transition: box-shadow 0.3s ease, background 0.3s ease;
     }
 
     .quote-request-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+      background: var(--neu-card-bg-hover, linear-gradient(145deg, #EDF0F5, #DCE1E8));
+      box-shadow: var(--neu-extruded-hover);
     }
 
     .quote-request-card.status-pending {
-      border-left-color: #f39c12;
+      border-left-color: var(--neu-accent-warning);
     }
 
     .quote-request-card.status-in_review {
-      border-left-color: #3498db;
+      border-left-color: var(--neu-accent);
     }
 
     .quote-request-card.status-responded {
-      border-left-color: #27ae60;
+      border-left-color: var(--neu-accent-secondary);
     }
 
     .quote-request-card.status-closed {
-      border-left-color: #95a5a6;
+      border-left-color: var(--neu-text-muted);
     }
 
     .card-header {
@@ -238,17 +286,17 @@ import { NotificationService } from '../../../core/services/notification.service
       align-items: flex-start;
       margin-bottom: 1rem;
       padding-bottom: 1rem;
-      border-bottom: 1px solid #ecf0f1;
     }
 
     .card-header h3 {
       margin: 0 0 0.5rem 0;
-      color: #2c3e50;
+      color: var(--neu-text-heading);
       font-size: 1.3rem;
+      font-family: var(--font-display);
     }
 
     .meta-info {
-      color: #7f8c8d;
+      color: var(--neu-text-muted);
       font-size: 0.9rem;
       margin: 0;
     }
@@ -259,26 +307,27 @@ import { NotificationService } from '../../../core/services/notification.service
       font-size: 0.875rem;
       font-weight: 600;
       text-transform: uppercase;
+      box-shadow: var(--neu-extruded-sm);
     }
 
     .status-badge.status-pending {
-      background: #fff3cd;
-      color: #856404;
+      background: var(--neu-bg);
+      color: var(--neu-accent-warning);
     }
 
     .status-badge.status-in_review {
-      background: #d1ecf1;
-      color: #0c5460;
+      background: var(--neu-bg);
+      color: var(--neu-accent);
     }
 
     .status-badge.status-responded {
-      background: #d4edda;
-      color: #155724;
+      background: var(--neu-bg);
+      color: var(--neu-accent-secondary);
     }
 
     .status-badge.status-closed {
-      background: #e2e3e5;
-      color: #383d41;
+      background: var(--neu-bg);
+      color: var(--neu-text-muted);
     }
 
     .card-body {
@@ -299,42 +348,44 @@ import { NotificationService } from '../../../core/services/notification.service
     }
 
     .info-row strong {
-      color: #2c3e50;
+      color: var(--neu-text-heading);
       min-width: 150px;
     }
 
     .info-row span {
-      color: #7f8c8d;
+      color: var(--neu-text-muted);
     }
 
     .message-section {
-      padding: 1rem;
-      background: #f8f9fa;
-      border-radius: 6px;
+      padding: 1rem 1.5rem;
+      background: var(--neu-bg);
+      border-radius: var(--neu-radius-inner);
+      box-shadow: var(--neu-inset);
     }
 
     .message-section strong {
       display: block;
-      color: #2c3e50;
+      color: var(--neu-text-heading);
       margin-bottom: 0.5rem;
     }
 
     .message-section p {
-      color: #7f8c8d;
+      color: var(--neu-text-muted);
       margin: 0;
       white-space: pre-wrap;
     }
 
     .update-section {
       padding: 1.5rem;
-      background: #f8f9fa;
-      border-radius: 8px;
-      border: 1px solid #e1e8ed;
+      background: var(--neu-bg);
+      border-radius: var(--neu-radius-inner);
+      box-shadow: var(--neu-inset);
     }
 
     .update-section h4 {
       margin: 0 0 1rem 0;
-      color: #2c3e50;
+      color: var(--neu-text-heading);
+      font-family: var(--font-display);
     }
 
     .update-form {
@@ -351,20 +402,24 @@ import { NotificationService } from '../../../core/services/notification.service
 
     .form-group label {
       font-weight: 500;
-      color: #2c3e50;
+      color: var(--neu-text-primary);
     }
 
     .form-control {
       padding: 0.75rem;
-      border: 2px solid #e1e8ed;
-      border-radius: 6px;
+      background: var(--neu-bg);
+      box-shadow: var(--neu-inset);
+      border: none;
+      border-radius: var(--neu-radius-inner);
       font-size: 1rem;
-      transition: border-color 0.3s;
+      color: var(--neu-text-primary);
+      min-height: 44px;
+      transition: box-shadow 0.2s ease;
     }
 
     .form-control:focus {
       outline: none;
-      border-color: #3498db;
+      box-shadow: var(--neu-inset-deep), 0 0 0 2px var(--neu-accent);
     }
 
     textarea.form-control {
@@ -379,25 +434,30 @@ import { NotificationService } from '../../../core/services/notification.service
 
     .current-notes {
       margin-top: 1rem;
-      padding: 1rem;
-      background: white;
-      border-radius: 6px;
-      border-left: 3px solid #3498db;
+      padding: 1rem 1.5rem;
+      background: var(--neu-bg);
+      border-radius: var(--neu-radius-inner);
+      border-left: 4px solid var(--neu-accent);
+      box-shadow: var(--neu-extruded-sm);
     }
 
     .current-notes strong {
       display: block;
-      color: #2c3e50;
+      color: var(--neu-text-heading);
       margin-bottom: 0.5rem;
     }
 
     .current-notes p {
-      color: #7f8c8d;
+      color: var(--neu-text-muted);
       margin: 0;
       white-space: pre-wrap;
     }
 
     @media (max-width: 768px) {
+      .quote-requests-admin-container {
+        padding: 1rem;
+      }
+
       .card-header {
         flex-direction: column;
         gap: 1rem;
@@ -410,6 +470,17 @@ import { NotificationService } from '../../../core/services/notification.service
 
       .info-row strong {
         min-width: auto;
+      }
+
+      .filters-bar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+    }
+
+    @media (max-width: 1024px) {
+      .quote-request-card {
+        padding: 1.25rem 1.5rem;
       }
     }
   `]

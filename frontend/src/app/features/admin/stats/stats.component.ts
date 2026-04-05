@@ -193,28 +193,52 @@ Chart.register(...registerables);
     </div>
   `,
   styles: [`
+    :host {
+      --neu-bg: var(--neu-bg, #E0E5EC);
+      --neu-extruded: var(--neu-extruded, 9px 9px 16px rgba(163,177,198,0.6), -9px -9px 16px rgba(255,255,255,0.5));
+      --neu-extruded-sm: var(--neu-extruded-sm, 4px 4px 8px rgba(163,177,198,0.6), -4px -4px 8px rgba(255,255,255,0.5));
+      --neu-extruded-hover: var(--neu-extruded-hover, 12px 12px 20px rgba(163,177,198,0.6), -12px -12px 20px rgba(255,255,255,0.5));
+      --neu-inset: var(--neu-inset, inset 4px 4px 8px rgba(163,177,198,0.6), inset -4px -4px 8px rgba(255,255,255,0.5));
+      --neu-inset-deep: var(--neu-inset-deep, inset 6px 6px 12px rgba(163,177,198,0.6), inset -6px -6px 12px rgba(255,255,255,0.5));
+      --neu-radius-container: var(--neu-radius-container, 32px);
+      --neu-radius-inner: var(--neu-radius-inner, 12px);
+      --neu-accent: var(--neu-accent, #6C63FF);
+      --neu-accent-secondary: var(--neu-accent-secondary, #38B2AC);
+      --neu-accent-danger: var(--neu-accent-danger, #E53E3E);
+      --neu-accent-warning: var(--neu-accent-warning, #ED8936);
+      --neu-text-primary: var(--neu-text-primary, #3D4852);
+      --neu-text-muted: var(--neu-text-muted, #6B7280);
+      --neu-text-heading: var(--neu-text-heading, #2D3748);
+      --font-display: var(--font-display, 'Inter', sans-serif);
+    }
+
     .stats-container {
       padding: 2rem;
       max-width: 1400px;
       margin: 0 auto;
+      background: var(--neu-bg);
+      min-height: 100vh;
     }
 
     h2 {
-      color: #2c3e50;
+      color: var(--neu-text-heading);
       margin-bottom: 2rem;
+      font-family: var(--font-display);
     }
 
     h3 {
-      color: #34495e;
+      color: var(--neu-text-heading);
       margin-top: 0;
       margin-bottom: 1rem;
+      font-family: var(--font-display);
     }
 
     .filters-card {
-      background: #f8f9fa;
+      background: var(--neu-bg);
       padding: 1.5rem;
-      border-radius: 8px;
+      border-radius: var(--neu-radius-container);
       margin-bottom: 2rem;
+      box-shadow: var(--neu-inset);
     }
 
     .filters {
@@ -232,40 +256,60 @@ Chart.register(...registerables);
 
     .filter-group label {
       font-weight: 500;
-      color: #555;
+      color: var(--neu-text-muted);
     }
 
     .filter-group input,
     .filter-group select {
-      padding: 0.5rem;
-      border: 1px solid #ddd;
-      border-radius: 4px;
+      padding: 0.625rem 0.75rem;
+      background: var(--neu-bg);
+      box-shadow: var(--neu-inset);
+      border: none;
+      border-radius: var(--neu-radius-inner);
       font-size: 1rem;
+      color: var(--neu-text-primary);
+      min-height: 44px;
+      transition: box-shadow 0.2s ease;
+    }
+
+    .filter-group input:focus,
+    .filter-group select:focus {
+      outline: none;
+      box-shadow: var(--neu-inset-deep), 0 0 0 2px var(--neu-accent);
     }
 
     .filter-group select[disabled] {
-      background-color: #f5f5f5;
+      background: var(--neu-bg);
+      opacity: 0.5;
       cursor: not-allowed;
     }
 
     .loading-text {
       font-size: 0.875rem;
-      color: #6c757d;
+      color: var(--neu-text-muted);
       margin-left: 0.5rem;
     }
 
     .btn-reset {
-      padding: 0.5rem 1rem;
-      background: #6c757d;
-      color: white;
+      padding: 0.625rem 1.25rem;
+      background: var(--neu-bg);
+      color: var(--neu-text-muted);
       border: none;
-      border-radius: 4px;
+      border-radius: var(--neu-radius-inner);
       cursor: pointer;
       font-size: 1rem;
+      font-weight: 600;
+      box-shadow: var(--neu-extruded-sm);
+      min-height: 44px;
+      transition: box-shadow 0.2s ease;
     }
 
     .btn-reset:hover {
-      background: #5a6268;
+      box-shadow: var(--neu-extruded);
+    }
+
+    .btn-reset:active {
+      box-shadow: var(--neu-inset);
     }
 
     .stats-grid {
@@ -276,31 +320,33 @@ Chart.register(...registerables);
     }
 
     .stat-card {
-      background: #e0e0e0;
+      background: var(--neu-card-bg, linear-gradient(145deg, #E8ECF2, #D8DDE4));
       padding: 1.5rem;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      border-radius: var(--neu-radius-container);
+      box-shadow: var(--neu-extruded);
       text-align: center;
     }
 
     .stat-card h4 {
-      color: #2c3e50;
+      color: var(--neu-text-muted);
       margin-bottom: 0.5rem;
       font-size: 1rem;
+      font-family: var(--font-display);
     }
 
     .stat-value {
       font-size: 2rem;
       font-weight: bold;
-      color: #3498db;
+      color: var(--neu-accent);
       margin: 0;
+      font-family: var(--font-display);
     }
 
     .section-card {
-      background: #e8e8e8;
+      background: var(--neu-card-bg, linear-gradient(145deg, #E8ECF2, #D8DDE4));
       padding: 1.5rem;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      border-radius: var(--neu-radius-container);
+      box-shadow: var(--neu-extruded);
       margin-bottom: 2rem;
     }
 
@@ -312,16 +358,17 @@ Chart.register(...registerables);
     }
 
     .chart-wrapper {
-      background: #e0e0e0;
+      background: var(--neu-card-bg, linear-gradient(145deg, #E8ECF2, #D8DDE4));
       padding: 1.5rem;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      border-radius: var(--neu-radius-container);
+      box-shadow: var(--neu-extruded);
     }
 
     .chart-wrapper h4 {
       margin: 0 0 1rem 0;
-      color: #2c3e50;
+      color: var(--neu-text-heading);
       font-size: 1.1rem;
+      font-family: var(--font-display);
     }
 
     .chart-wrapper canvas {
@@ -330,30 +377,40 @@ Chart.register(...registerables);
 
     .stats-table {
       width: 100%;
-      border-collapse: collapse;
+      border-collapse: separate;
+      border-spacing: 0 0.5rem;
       margin-top: 1rem;
     }
 
     .stats-table th {
-      background: #d5d5d5;
-      padding: 0.75rem;
+      padding: 0.75rem 1rem;
       text-align: left;
       font-weight: 600;
-      color: #2c3e50;
-      border-bottom: 2px solid #dee2e6;
+      color: var(--neu-text-muted);
+      background: transparent;
     }
 
     .stats-table td {
-      padding: 0.75rem;
-      border-bottom: 1px solid #dee2e6;
+      padding: 0.75rem 1rem;
+      background: var(--neu-bg);
+      box-shadow: var(--neu-extruded-sm);
+      color: var(--neu-text-primary);
     }
 
-    .stats-table tr:hover {
-      background: #f8f9fa;
+    .stats-table td:first-child {
+      border-radius: var(--neu-radius-inner) 0 0 var(--neu-radius-inner);
+    }
+
+    .stats-table td:last-child {
+      border-radius: 0 var(--neu-radius-inner) var(--neu-radius-inner) 0;
+    }
+
+    .stats-table tr:hover td {
+      box-shadow: var(--neu-extruded);
     }
 
     .no-data {
-      color: #6c757d;
+      color: var(--neu-text-muted);
       font-style: italic;
       margin-top: 1rem;
     }
@@ -361,23 +418,25 @@ Chart.register(...registerables);
     .loading {
       text-align: center;
       padding: 2rem;
-      color: #3498db;
+      color: var(--neu-accent);
     }
 
     .error {
-      background: #f8d7da;
-      color: #721c24;
-      padding: 1rem;
-      border-radius: 4px;
+      background: var(--neu-bg);
+      color: var(--neu-accent-danger);
+      padding: 1rem 1.5rem;
+      border-radius: var(--neu-radius-inner);
       margin-top: 1rem;
+      box-shadow: var(--neu-extruded-sm);
     }
 
     .info {
-      background: #d1ecf1;
-      color: #0c5460;
-      padding: 1rem;
-      border-radius: 4px;
+      background: var(--neu-bg);
+      color: var(--neu-accent);
+      padding: 1rem 1.5rem;
+      border-radius: var(--neu-radius-inner);
       margin-top: 1rem;
+      box-shadow: var(--neu-extruded-sm);
     }
 
     @media (max-width: 768px) {
@@ -399,7 +458,17 @@ Chart.register(...registerables);
 
       .stats-table th,
       .stats-table td {
-        padding: 0.5rem;
+        padding: 0.5rem 0.75rem;
+      }
+
+      .charts-container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 1024px) {
+      .charts-container {
+        grid-template-columns: 1fr;
       }
     }
   `]

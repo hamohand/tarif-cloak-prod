@@ -148,11 +148,29 @@ import { of } from 'rxjs';
     </app-quote-request-form>
   `,
   styles: [`
+    :host {
+      --neu-bg: var(--neu-bg, #E0E5EC);
+      --neu-extruded: var(--neu-extruded, 9px 9px 16px rgba(163,177,198,0.6), -9px -9px 16px rgba(255,255,255,0.5));
+      --neu-extruded-hover: var(--neu-extruded-hover, 12px 12px 20px rgba(163,177,198,0.7), -12px -12px 20px rgba(255,255,255,0.6));
+      --neu-extruded-sm: var(--neu-extruded-sm, 5px 5px 10px rgba(163,177,198,0.5), -5px -5px 10px rgba(255,255,255,0.4));
+      --neu-inset: var(--neu-inset, inset 4px 4px 8px rgba(163,177,198,0.5), inset -4px -4px 8px rgba(255,255,255,0.4));
+      --neu-radius-container: var(--neu-radius-container, 32px);
+      --neu-radius-inner: var(--neu-radius-inner, 12px);
+      --neu-accent: var(--neu-accent, #6C63FF);
+      --neu-accent-secondary: var(--neu-accent-secondary, #38B2AC);
+      --neu-accent-danger: var(--neu-accent-danger, #E53E3E);
+      --neu-text-primary: var(--neu-text-primary, #3D4852);
+      --neu-text-muted: var(--neu-text-muted, #6B7280);
+      --neu-text-heading: var(--neu-text-heading, #2D3748);
+      --font-display: var(--font-display, 'Plus Jakarta Sans', sans-serif);
+    }
+
     .pricing-container {
       padding: 3rem 2rem;
       max-width: 1200px;
       margin: 0 auto;
       min-height: calc(100vh - 200px);
+      background: var(--neu-bg);
     }
 
     .pricing-header {
@@ -161,30 +179,35 @@ import { of } from 'rxjs';
     }
 
     .pricing-header h1 {
+      font-family: var(--font-display);
       font-size: 2.5rem;
-      color: #2c3e50;
+      color: var(--neu-text-heading);
       margin-bottom: 1rem;
     }
 
     .pricing-header p {
       font-size: 1.2rem;
-      color: #7f8c8d;
+      color: var(--neu-text-muted);
+    }
+
+    .quote-badge {
+      color: var(--neu-accent);
+      font-weight: 600;
     }
 
     .quote-notice {
       margin-top: 1.5rem;
       padding: 1rem 1.5rem;
-      background: linear-gradient(135deg, rgba(250, 204, 21, 0.15) 0%, rgba(250, 204, 21, 0.05) 100%);
-      border: 2px solid rgba(250, 204, 21, 0.4);
-      border-radius: 12px;
-      color: #1f2937;
+      background: var(--neu-bg);
+      box-shadow: var(--neu-inset);
+      border-radius: var(--neu-radius-inner);
+      color: var(--neu-text-primary);
       font-size: 1rem;
       display: inline-block;
-      box-shadow: 0 4px 12px rgba(250, 204, 21, 0.2);
     }
 
     .quote-notice strong {
-      color: #facc15;
+      color: var(--neu-accent);
       font-weight: 700;
     }
 
@@ -192,13 +215,14 @@ import { of } from 'rxjs';
       max-width: 600px;
       margin: 0 auto 2.5rem;
       padding: 1.25rem 1.5rem;
-      background: #1a2634;
-      border: 1px solid #3d566e;
-      border-radius: 10px;
+      background: var(--neu-bg);
+      box-shadow: var(--neu-inset);
+      border-radius: var(--neu-radius-inner);
     }
 
     .credits-note h4 {
-      color: #bdc3c7;
+      color: var(--neu-text-muted);
+      font-family: var(--font-display);
       font-size: 0.85rem;
       text-transform: uppercase;
       letter-spacing: 0.06em;
@@ -216,19 +240,20 @@ import { of } from 'rxjs';
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 0.45rem 0.75rem;
-      border-radius: 6px;
-      background: #243447;
+      padding: 0.55rem 0.85rem;
+      border-radius: var(--neu-radius-inner);
+      background: var(--neu-bg);
+      box-shadow: var(--neu-extruded-sm);
     }
 
     .credit-label {
-      color: #bdc3c7;
+      color: var(--neu-text-primary);
       font-size: 0.9rem;
     }
 
     .credit-value {
       font-weight: 700;
-      color: #3498db;
+      color: var(--neu-accent);
       font-size: 0.9rem;
       white-space: nowrap;
       margin-left: 1rem;
@@ -243,12 +268,12 @@ import { of } from 'rxjs';
 
     .pricing-info-bar {
       text-align: center;
-      padding: 0.75rem 1rem;
+      padding: 0.85rem 1.25rem;
       margin-bottom: 2rem;
-      background: #2c3e50;
-      border: 1px solid #e1e8ed;
-      border-radius: 6px;
-      color:rgb(211, 225, 240);
+      background: var(--neu-bg);
+      box-shadow: var(--neu-inset);
+      border-radius: var(--neu-radius-inner);
+      color: var(--neu-text-muted);
       font-size: 0.9rem;
       font-style: italic;
       max-width: 800px;
@@ -257,10 +282,10 @@ import { of } from 'rxjs';
     }
 
     .pricing-plan-card {
-      background: #2c3e50;
-      border-radius: 12px;
-      padding: 1.5rem;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      background: var(--neu-card-violet, linear-gradient(145deg, #EAE8F8, #DDDAF0));
+      border-radius: var(--neu-radius-container);
+      padding: 2rem;
+      box-shadow: var(--neu-extruded);
       position: relative;
       transition: transform 0.3s ease, box-shadow 0.3s ease;
       min-height: auto;
@@ -268,13 +293,15 @@ import { of } from 'rxjs';
     }
 
     .pricing-plan-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+      transform: translateY(-2px);
+      box-shadow: var(--neu-extruded-hover);
+      background: var(--neu-card-violet-hover, linear-gradient(145deg, #EFECFB, #E2E0F4));
     }
 
     .pricing-plan-card h3 {
+      font-family: var(--font-display);
       font-size: 1.5rem;
-      color: #ecf0f1;
+      color: var(--neu-text-heading);
       margin-bottom: 0.75rem;
     }
 
@@ -287,24 +314,26 @@ import { of } from 'rxjs';
 
     .currency {
       font-size: 1.3rem;
-      color: #bdc3c7;
+      color: var(--neu-text-muted);
       margin-right: 0.25rem;
+      font-family: var(--font-display);
     }
 
     .amount {
+      font-family: var(--font-display);
       font-size: 2.5rem;
       font-weight: 700;
-      color: #ecf0f1;
+      color: var(--neu-accent);
     }
 
     .period {
       font-size: 1rem;
-      color: #bdc3c7;
+      color: var(--neu-text-muted);
       margin-left: 0.25rem;
     }
 
     .description {
-      color: #bdc3c7;
+      color: var(--neu-text-muted);
       margin-bottom: 0.75rem;
       text-align: center;
       font-size: 0.9rem;
@@ -314,9 +343,10 @@ import { of } from 'rxjs';
       text-align: center;
       margin: 1rem 0;
       padding: 0.75rem;
-      background: #34495e;
-      border-radius: 8px;
-      color: #ecf0f1;
+      background: var(--neu-bg);
+      box-shadow: var(--neu-inset);
+      border-radius: var(--neu-radius-inner);
+      color: var(--neu-text-primary);
     }
 
     .features {
@@ -325,7 +355,7 @@ import { of } from 'rxjs';
 
     .features h4 {
       font-size: 1rem;
-      color: #ecf0f1;
+      color: var(--neu-text-heading);
       margin-bottom: 0.5rem;
     }
 
@@ -336,18 +366,13 @@ import { of } from 'rxjs';
 
     .features li {
       padding: 0.4rem 0;
-      color: #bdc3c7;
-      border-bottom: 1px solid #34495e;
+      color: var(--neu-text-primary);
       font-size: 0.9rem;
     }
 
-    .features li:last-child {
-      border-bottom: none;
-    }
-
     .features li:before {
-      content: "✓ ";
-      color: #27ae60;
+      content: "\\2713  ";
+      color: var(--neu-accent-secondary);
       font-weight: bold;
       margin-right: 0.5rem;
     }
@@ -356,7 +381,7 @@ import { of } from 'rxjs';
       width: 100%;
       padding: 0.75rem;
       border: none;
-      border-radius: 8px;
+      border-radius: var(--neu-radius-inner);
       font-size: 1rem;
       font-weight: 600;
       cursor: pointer;
@@ -365,28 +390,33 @@ import { of } from 'rxjs';
       display: block;
       text-align: center;
       margin-top: 1rem;
+      min-height: 44px;
+    }
+
+    .btn:focus-visible {
+      outline: 2px solid var(--neu-accent);
+      outline-offset: 2px;
     }
 
     .btn-primary {
-      background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+      background: var(--neu-accent);
       color: white;
+      box-shadow: var(--neu-extruded-sm);
     }
 
     .btn-primary:hover {
-      background: linear-gradient(135deg, #2980b9 0%, #1f6391 100%);
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+      transform: translateY(-1px);
+      box-shadow: var(--neu-extruded-hover);
     }
 
     .pricing-footer {
       text-align: center;
       margin-top: 3rem;
       padding-top: 2rem;
-      border-top: 1px solid #ecf0f1;
     }
 
     .pricing-footer p {
-      color: #7f8c8d;
+      color: var(--neu-text-muted);
       margin-bottom: 1rem;
     }
 
@@ -398,25 +428,31 @@ import { of } from 'rxjs';
     }
 
     .btn-secondary {
-      background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
-      color: white;
+      background: var(--neu-bg);
+      color: var(--neu-accent);
       padding: 0.75rem 1.5rem;
       border: none;
-      border-radius: 8px;
+      border-radius: var(--neu-radius-inner);
       font-size: 1rem;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.3s ease;
+      box-shadow: var(--neu-extruded-sm);
+      min-height: 44px;
     }
 
     .btn-secondary:hover {
-      background: linear-gradient(135deg, #7f8c8d 0%, #6c7a7a 100%);
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(149, 165, 166, 0.3);
+      transform: translateY(-1px);
+      box-shadow: var(--neu-extruded-hover);
+    }
+
+    .btn-secondary:focus-visible {
+      outline: 2px solid var(--neu-accent);
+      outline-offset: 2px;
     }
 
     .link {
-      color: #3498db;
+      color: var(--neu-accent);
       text-decoration: none;
       font-weight: 600;
     }
@@ -425,21 +461,34 @@ import { of } from 'rxjs';
       text-decoration: underline;
     }
 
+    .link:focus-visible {
+      outline: 2px solid var(--neu-accent);
+      outline-offset: 2px;
+    }
+
     .loading, .error {
       text-align: center;
       padding: 2rem;
       font-size: 1.2rem;
+      color: var(--neu-text-muted);
     }
 
     .error {
-      color: #e74c3c;
+      color: var(--neu-accent-danger);
     }
 
     @media (max-width: 768px) {
+      .pricing-container {
+        padding: 2rem 1rem;
+      }
+
+      .pricing-header h1 {
+        font-size: 1.75rem;
+      }
+
       .pricing-plans-grid {
         grid-template-columns: 1fr;
       }
-
     }
   `]
 })

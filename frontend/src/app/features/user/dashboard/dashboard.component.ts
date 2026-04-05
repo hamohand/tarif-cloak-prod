@@ -145,6 +145,12 @@ import { take } from 'rxjs/operators';
     </div>
   `,
   styles: [`
+    :host {
+      display: block;
+      background: var(--neu-bg, #E0E5EC);
+      min-height: 100vh;
+    }
+
     .dashboard-container {
       padding: 2rem;
       max-width: 1200px;
@@ -152,12 +158,14 @@ import { take } from 'rxjs/operators';
     }
 
     h2 {
-      color: #f8fafc;
+      color: var(--neu-text-heading, #2D3748);
+      font-family: var(--font-display);
       margin-bottom: 2rem;
     }
 
     h3 {
-      color: #e2e8f0;
+      color: var(--neu-text-heading, #2D3748);
+      font-family: var(--font-display);
       margin-top: 0;
       margin-bottom: 1rem;
     }
@@ -166,22 +174,21 @@ import { take } from 'rxjs/operators';
     .organization-card,
     .quota-card,
     .stats-card {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 8px;
+      background: var(--neu-card-bg, linear-gradient(145deg, #E8ECF2, #D8DDE4));
+      border-radius: var(--neu-radius-container, 32px);
       padding: 1.5rem;
       margin-bottom: 1.5rem;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      box-shadow: var(--neu-extruded, 9px 9px 16px rgba(163,177,198,0.6), -9px -9px 16px rgba(255,255,255,0.5));
     }
 
     .org-details p,
     .user-info-card p {
       margin: 0.5rem 0;
-      color: #94a3b8;
+      color: var(--neu-text-primary, #3D4852);
     }
 
     .no-org-message {
-      color: #64748b;
+      color: var(--neu-text-muted, #6B7280);
       font-style: italic;
     }
 
@@ -191,13 +198,14 @@ import { take } from 'rxjs/operators';
 
     .quota-unlimited {
       padding: 1rem;
-      background: rgba(46, 125, 50, 0.15);
-      border-radius: 4px;
+      background: var(--neu-bg, #E0E5EC);
+      border-radius: 16px;
+      box-shadow: var(--neu-inset-sm, inset 4px 4px 6px rgba(163,177,198,0.5), inset -4px -4px 6px rgba(255,255,255,0.4));
     }
 
     .quota-status {
       font-weight: 600;
-      color: #4caf50;
+      color: var(--neu-accent-secondary, #38B2AC);
       margin: 0.5rem 0;
     }
 
@@ -212,30 +220,32 @@ import { take } from 'rxjs/operators';
     .quota-progress-bar {
       width: 100%;
       height: 30px;
-      background: rgba(255, 255, 255, 0.1);
+      background: var(--neu-bg, #E0E5EC);
       border-radius: 15px;
       overflow: hidden;
       margin-bottom: 0.5rem;
+      box-shadow: var(--neu-inset-sm, inset 4px 4px 6px rgba(163,177,198,0.5), inset -4px -4px 6px rgba(255,255,255,0.4));
     }
 
     .quota-progress-fill {
       height: 100%;
-      background: linear-gradient(90deg, #4caf50, #8bc34a);
+      background: var(--neu-accent-secondary, #38B2AC);
       transition: width 0.3s ease;
+      border-radius: 15px;
     }
 
     .quota-progress-fill.quota-warning {
-      background: linear-gradient(90deg, #ff9800, #ffc107);
+      background: var(--neu-accent-warning, #ED8936);
     }
 
     .quota-progress-fill.quota-danger {
-      background: linear-gradient(90deg, #f44336, #ef5350);
+      background: var(--neu-accent-danger, #E53E3E);
     }
 
     .quota-text {
       text-align: center;
       font-weight: 600;
-      color: #e2e8f0;
+      color: var(--neu-text-heading, #2D3748);
       margin: 0.5rem 0;
     }
 
@@ -245,17 +255,17 @@ import { take } from 'rxjs/operators';
     }
 
     .quota-remaining-text {
-      color: #ff9800;
+      color: var(--neu-accent-warning, #ED8936);
       font-weight: 600;
     }
 
     .quota-exceeded {
-      color: #f44336;
+      color: var(--neu-accent-danger, #E53E3E);
       font-weight: 600;
     }
 
     .quota-usage {
-      color: #94a3b8;
+      color: var(--neu-text-muted, #6B7280);
       margin: 0.5rem 0;
     }
 
@@ -266,7 +276,7 @@ import { take } from 'rxjs/operators';
     }
 
     .quota-usage-text {
-      color: #94a3b8;
+      color: var(--neu-text-muted, #6B7280);
       margin: 0 0.5rem;
     }
 
@@ -285,35 +295,39 @@ import { take } from 'rxjs/operators';
       justify-content: space-between;
       align-items: center;
       padding: 0.75rem 1rem;
-      background: rgba(255, 255, 255, 0.06);
-      border-radius: 6px;
+      min-height: 44px;
+      background: var(--neu-bg, #E0E5EC);
+      border-radius: 16px;
+      box-shadow: var(--neu-inset-sm, inset 4px 4px 6px rgba(163,177,198,0.5), inset -4px -4px 6px rgba(255,255,255,0.4));
     }
 
     .org-usage-label {
       font-weight: 500;
-      color: #94a3b8;
+      color: var(--neu-text-muted, #6B7280);
     }
 
     .org-usage-value {
       font-weight: 600;
       font-size: 1.1rem;
-      color: #e2e8f0;
+      color: var(--neu-text-heading, #2D3748);
+      font-family: var(--font-display);
     }
 
     .org-usage-value.quota-warning {
-      color: #ff9800;
+      color: var(--neu-accent-warning, #ED8936);
     }
 
     .org-usage-value.quota-danger {
-      color: #f44336;
+      color: var(--neu-accent-danger, #E53E3E);
     }
 
     .quota-exceeded-message {
       margin-top: 1rem;
       padding: 0.75rem;
-      background: rgba(198, 40, 40, 0.15);
-      border-radius: 6px;
-      color: #ef5350;
+      background: var(--neu-bg, #E0E5EC);
+      border-radius: 16px;
+      box-shadow: var(--neu-inset-sm, inset 4px 4px 6px rgba(163,177,198,0.5), inset -4px -4px 6px rgba(255,255,255,0.4));
+      color: var(--neu-accent-danger, #E53E3E);
       font-weight: 600;
       text-align: center;
     }
@@ -326,23 +340,26 @@ import { take } from 'rxjs/operators';
     }
 
     .stat-item {
-      background: rgba(255, 255, 255, 0.06);
+      background: var(--neu-card-bg, linear-gradient(145deg, #E8ECF2, #D8DDE4));
       padding: 1rem;
-      border-radius: 8px;
+      border-radius: var(--neu-radius-container, 32px);
       text-align: center;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      box-shadow: var(--neu-extruded, 9px 9px 16px rgba(163,177,198,0.6), -9px -9px 16px rgba(255,255,255,0.5));
+      min-height: 44px;
     }
 
     .stat-item h4 {
       margin: 0 0 0.5rem 0;
-      color: #94a3b8;
+      color: var(--neu-text-muted, #6B7280);
       font-size: 0.9rem;
+      font-family: var(--font-display);
     }
 
     .stat-value {
       font-size: 1.5rem;
-      font-weight: 600;
-      color: #f59e0b;
+      font-weight: 700;
+      color: var(--neu-accent, #6C63FF);
+      font-family: var(--font-display);
       margin: 0;
     }
 
@@ -362,16 +379,23 @@ import { take } from 'rxjs/operators';
 
     .filter-group label {
       font-weight: 600;
-      color: #e2e8f0;
+      color: var(--neu-text-heading, #2D3748);
       font-size: 0.9rem;
     }
 
     .filter-group input {
-      padding: 0.5rem;
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: 4px;
-      background: rgba(255, 255, 255, 0.06);
-      color: #e2e8f0;
+      padding: 0.65rem 0.75rem;
+      border: none;
+      border-radius: 12px;
+      background: var(--neu-bg, #E0E5EC);
+      color: var(--neu-text-primary, #3D4852);
+      box-shadow: var(--neu-inset, inset 6px 6px 10px rgba(163,177,198,0.6), inset -6px -6px 10px rgba(255,255,255,0.5));
+      min-height: 44px;
+    }
+
+    .filter-group input:focus {
+      outline: none;
+      box-shadow: var(--neu-inset-deep, inset 8px 8px 14px rgba(163,177,198,0.7), inset -8px -8px 14px rgba(255,255,255,0.6)), 0 0 0 2px var(--neu-accent, #6C63FF);
     }
 
     .recent-usage {
@@ -380,28 +404,38 @@ import { take } from 'rxjs/operators';
 
     .recent-usage h4 {
       margin-bottom: 1rem;
+      color: var(--neu-text-heading, #2D3748);
+      font-family: var(--font-display);
     }
 
     .usage-table {
       width: 100%;
-      border-collapse: collapse;
-      background: rgba(255, 255, 255, 0.03);
-      border-radius: 4px;
-      overflow: hidden;
-    }
-
-    .usage-table th,
-    .usage-table td {
-      padding: 0.75rem;
-      text-align: left;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      color: #cbd5e1;
+      border-collapse: separate;
+      border-spacing: 0 0.5rem;
     }
 
     .usage-table th {
-      background: rgba(245, 158, 11, 0.15);
+      padding: 0.75rem 1rem;
+      text-align: left;
       font-weight: 600;
-      color: #f59e0b;
+      color: var(--neu-text-heading, #2D3748);
+      font-family: var(--font-display);
+      background: transparent;
+    }
+
+    .usage-table td {
+      padding: 0.75rem 1rem;
+      color: var(--neu-text-primary, #3D4852);
+      background: var(--neu-bg, #E0E5EC);
+      box-shadow: var(--neu-extruded-sm, 5px 5px 10px rgba(163,177,198,0.5), -5px -5px 10px rgba(255,255,255,0.4));
+    }
+
+    .usage-table td:first-child {
+      border-radius: 16px 0 0 16px;
+    }
+
+    .usage-table td:last-child {
+      border-radius: 0 16px 16px 0;
     }
 
     .search-term {
@@ -414,49 +448,55 @@ import { take } from 'rxjs/operators';
     .btn {
       padding: 0.6rem 1.2rem;
       border: none;
-      border-radius: 6px;
+      border-radius: 12px;
       cursor: pointer;
       font-weight: 600;
-      transition: all 0.3s ease;
+      transition: all 0.25s ease;
+      min-height: 44px;
     }
 
     .btn-secondary {
-      background: rgba(255, 255, 255, 0.1);
-      color: #e2e8f0;
-      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: var(--neu-bg, #E0E5EC);
+      color: var(--neu-accent, #6C63FF);
+      box-shadow: var(--neu-extruded-sm, 5px 5px 10px rgba(163,177,198,0.5), -5px -5px 10px rgba(255,255,255,0.4));
     }
 
     .btn-secondary:hover {
-      background: rgba(255, 255, 255, 0.15);
+      box-shadow: 7px 7px 14px rgba(163,177,198,0.6), -7px -7px 14px rgba(255,255,255,0.5);
+    }
+
+    .btn-secondary:active {
+      box-shadow: var(--neu-inset-sm, inset 4px 4px 6px rgba(163,177,198,0.5), inset -4px -4px 6px rgba(255,255,255,0.4));
     }
 
     .empty-message {
-      color: #64748b;
+      color: var(--neu-text-muted, #6B7280);
       font-style: italic;
       text-align: center;
       padding: 2rem;
     }
 
     .error-message {
-      background: rgba(231, 76, 60, 0.2);
-      color: #ef5350;
+      background: var(--neu-bg, #E0E5EC);
+      color: var(--neu-accent-danger, #E53E3E);
       padding: 1rem;
-      border-radius: 4px;
+      border-radius: 16px;
       margin-top: 1rem;
+      box-shadow: var(--neu-inset-sm, inset 4px 4px 6px rgba(163,177,198,0.5), inset -4px -4px 6px rgba(255,255,255,0.4));
     }
 
     .chart-section {
       margin: 2rem 0;
       padding: 1.5rem;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      background: var(--neu-card-bg, linear-gradient(145deg, #E8ECF2, #D8DDE4));
+      border-radius: var(--neu-radius-container, 32px);
+      box-shadow: var(--neu-extruded, 9px 9px 16px rgba(163,177,198,0.6), -9px -9px 16px rgba(255,255,255,0.5));
     }
 
     .chart-section h4 {
       margin: 0 0 1rem 0;
-      color: #e2e8f0;
+      color: var(--neu-text-heading, #2D3748);
+      font-family: var(--font-display);
     }
 
     .chart-wrapper {
@@ -478,81 +518,98 @@ import { take } from 'rxjs/operators';
     }
 
     .pricing-plan-card {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 12px;
+      background: var(--neu-card-bg, linear-gradient(145deg, #E8ECF2, #D8DDE4));
+      border-radius: var(--neu-radius-container, 32px);
       padding: 2rem;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      box-shadow: var(--neu-extruded, 9px 9px 16px rgba(163,177,198,0.6), -9px -9px 16px rgba(255,255,255,0.5));
       margin-bottom: 2rem;
     }
 
     .pricing-plan-card h3 {
       margin-top: 0;
       margin-bottom: 1.5rem;
-      color: #e2e8f0;
+      color: var(--neu-text-heading, #2D3748);
     }
 
     .current-plan {
       margin-bottom: 2rem;
       padding: 1rem;
-      background: rgba(255, 255, 255, 0.06);
-      border-radius: 8px;
+      background: var(--neu-bg, #E0E5EC);
+      border-radius: 16px;
+      box-shadow: var(--neu-inset-sm, inset 4px 4px 6px rgba(163,177,198,0.5), inset -4px -4px 6px rgba(255,255,255,0.4));
     }
 
     .plan-info p {
       margin: 0.5rem 0;
-      color: #cbd5e1;
+      color: var(--neu-text-primary, #3D4852);
     }
 
     .no-plan-message, .no-plans-message {
-      color: #64748b;
+      color: var(--neu-text-muted, #6B7280);
       font-style: italic;
     }
 
     .change-plan-section {
       margin-top: 2rem;
       padding-top: 2rem;
-      border-top: 2px solid rgba(255, 255, 255, 0.1);
     }
 
     .change-plan-section h4 {
       margin-bottom: 1rem;
-      color: #e2e8f0;
+      color: var(--neu-text-heading, #2D3748);
+      font-family: var(--font-display);
     }
 
     .plan-select {
       width: 100%;
       padding: 0.75rem;
-      border: 2px solid rgba(255, 255, 255, 0.15);
-      border-radius: 6px;
+      border: none;
+      border-radius: 12px;
       font-size: 1rem;
       margin-bottom: 1rem;
-      background: rgba(255, 255, 255, 0.06);
-      color: #e2e8f0;
+      background: var(--neu-bg, #E0E5EC);
+      color: var(--neu-text-primary, #3D4852);
+      box-shadow: var(--neu-inset, inset 6px 6px 10px rgba(163,177,198,0.6), inset -6px -6px 10px rgba(255,255,255,0.5));
+      min-height: 44px;
     }
 
     .plan-select option {
-      background: #1e293b;
-      color: #e2e8f0;
+      background: var(--neu-bg, #E0E5EC);
+      color: var(--neu-text-primary, #3D4852);
     }
 
     .plan-select:focus {
       outline: none;
-      border-color: #f59e0b;
+      box-shadow: var(--neu-inset-deep, inset 8px 8px 14px rgba(163,177,198,0.7), inset -8px -8px 14px rgba(255,255,255,0.6)), 0 0 0 2px var(--neu-accent, #6C63FF);
     }
 
     .view-all-plans-link {
       display: block;
       margin-top: 1rem;
       text-align: center;
-      color: #f59e0b;
+      color: var(--neu-accent, #6C63FF);
       text-decoration: none;
       font-size: 0.9rem;
+      font-weight: 600;
     }
 
     .view-all-plans-link:hover {
       text-decoration: underline;
-      color: #fbbf24;
+      color: var(--neu-accent-secondary, #38B2AC);
+    }
+
+    @media (max-width: 768px) {
+      .dashboard-container {
+        padding: 1rem;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .usage-table {
+        font-size: 0.85rem;
+      }
     }
   `]
 })

@@ -289,12 +289,33 @@ import { NotificationService } from '../../../core/services/notification.service
     </div>
   `,
   styles: [`
+    :host {
+      --neu-bg: var(--neu-bg, #E0E5EC);
+      --neu-extruded: var(--neu-extruded, 9px 9px 16px rgba(163,177,198,0.6), -9px -9px 16px rgba(255,255,255,0.5));
+      --neu-extruded-sm: var(--neu-extruded-sm, 4px 4px 8px rgba(163,177,198,0.6), -4px -4px 8px rgba(255,255,255,0.5));
+      --neu-extruded-hover: var(--neu-extruded-hover, 12px 12px 20px rgba(163,177,198,0.6), -12px -12px 20px rgba(255,255,255,0.5));
+      --neu-inset: var(--neu-inset, inset 4px 4px 8px rgba(163,177,198,0.6), inset -4px -4px 8px rgba(255,255,255,0.5));
+      --neu-inset-deep: var(--neu-inset-deep, inset 6px 6px 12px rgba(163,177,198,0.6), inset -6px -6px 12px rgba(255,255,255,0.5));
+      --neu-radius-container: var(--neu-radius-container, 32px);
+      --neu-radius-inner: var(--neu-radius-inner, 12px);
+      --neu-accent: var(--neu-accent, #6C63FF);
+      --neu-accent-secondary: var(--neu-accent-secondary, #38B2AC);
+      --neu-accent-danger: var(--neu-accent-danger, #E53E3E);
+      --neu-accent-warning: var(--neu-accent-warning, #ED8936);
+      --neu-text-primary: var(--neu-text-primary, #3D4852);
+      --neu-text-muted: var(--neu-text-muted, #6B7280);
+      --neu-text-heading: var(--neu-text-heading, #2D3748);
+      --font-display: var(--font-display, 'Inter', sans-serif);
+    }
+
     .organizations-container {
       padding: 2rem;
       max-width: 100%;
       width: 100%;
       margin: 0 auto;
       box-sizing: border-box;
+      background: var(--neu-bg);
+      min-height: 100vh;
     }
 
     @media (min-width: 1200px) {
@@ -310,8 +331,9 @@ import { NotificationService } from '../../../core/services/notification.service
     }
 
     h2 {
-      color: #2c3e50;
+      color: var(--neu-text-heading);
       margin-bottom: 2rem;
+      font-family: var(--font-display);
     }
 
     .actions-bar {
@@ -329,23 +351,41 @@ import { NotificationService } from '../../../core/services/notification.service
       align-items: center;
     }
 
-      .search-input {
-        padding: 0.6rem 1rem;
-        border: 1px solid #ddd;
-        border-radius: 6px;
-        font-size: 1rem;
-        min-width: 250px;
-        background: #f5f5f5;
-      }
+    .search-input {
+      padding: 0.625rem 1rem;
+      background: var(--neu-bg);
+      box-shadow: var(--neu-inset);
+      border: none;
+      border-radius: var(--neu-radius-inner);
+      font-size: 1rem;
+      min-width: 250px;
+      color: var(--neu-text-primary);
+      min-height: 44px;
+      transition: box-shadow 0.2s ease;
+    }
 
-      .view-select {
-        padding: 0.6rem 1rem;
-        border: 1px solid #ddd;
-        border-radius: 6px;
-        font-size: 1rem;
-        background: #f5f5f5;
-        cursor: pointer;
-      }
+    .search-input:focus {
+      outline: none;
+      box-shadow: var(--neu-inset-deep), 0 0 0 2px var(--neu-accent);
+    }
+
+    .view-select {
+      padding: 0.625rem 1rem;
+      background: var(--neu-bg);
+      box-shadow: var(--neu-inset);
+      border: none;
+      border-radius: var(--neu-radius-inner);
+      font-size: 1rem;
+      cursor: pointer;
+      color: var(--neu-text-primary);
+      min-height: 44px;
+      transition: box-shadow 0.2s ease;
+    }
+
+    .view-select:focus {
+      outline: none;
+      box-shadow: var(--neu-inset-deep), 0 0 0 2px var(--neu-accent);
+    }
 
     .organizations-list {
       display: flex;
@@ -354,10 +394,16 @@ import { NotificationService } from '../../../core/services/notification.service
     }
 
     .organization-card {
-      background: #e0e0e0;
-      border-radius: 8px;
-      padding: 1.5rem;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      background: var(--neu-card-bg, linear-gradient(145deg, #E8ECF2, #D8DDE4));
+      border-radius: var(--neu-radius-container);
+      padding: 1.5rem 2rem;
+      box-shadow: var(--neu-extruded);
+      transition: box-shadow 0.3s ease, background 0.3s ease;
+    }
+
+    .organization-card:hover {
+      background: var(--neu-card-bg-hover, linear-gradient(145deg, #EDF0F5, #DCE1E8));
+      box-shadow: var(--neu-extruded-hover);
     }
 
     .org-header {
@@ -369,16 +415,17 @@ import { NotificationService } from '../../../core/services/notification.service
 
     .org-info h3 {
       margin: 0 0 0.5rem 0;
-      color: #2c3e50;
+      color: var(--neu-text-heading);
+      font-family: var(--font-display);
     }
 
     .org-email {
-      color: #666;
+      color: var(--neu-text-muted);
       margin: 0.25rem 0;
     }
 
     .org-meta {
-      color: #888;
+      color: var(--neu-text-muted);
       font-size: 0.9rem;
       margin: 0.25rem 0;
     }
@@ -386,20 +433,24 @@ import { NotificationService } from '../../../core/services/notification.service
     .org-actions {
       display: flex;
       gap: 0.5rem;
+      flex-wrap: wrap;
     }
 
     .quota-section {
       margin: 1rem 0;
-      padding: 1rem;
-      background: #d5d5d5;
-      border-radius: 4px;
+      padding: 1rem 1.5rem;
+      background: var(--neu-bg);
+      border-radius: var(--neu-radius-inner);
       display: flex;
       align-items: center;
       gap: 1rem;
+      box-shadow: var(--neu-inset);
+      flex-wrap: wrap;
     }
 
     .quota-section label {
       font-weight: 600;
+      color: var(--neu-text-primary);
     }
 
     .quota-edit {
@@ -410,9 +461,19 @@ import { NotificationService } from '../../../core/services/notification.service
 
     .quota-edit input {
       width: 150px;
-      padding: 0.5rem;
-      border: 1px solid #ddd;
-      border-radius: 4px;
+      padding: 0.625rem 0.75rem;
+      background: var(--neu-bg);
+      box-shadow: var(--neu-inset);
+      border: none;
+      border-radius: var(--neu-radius-inner);
+      color: var(--neu-text-primary);
+      min-height: 44px;
+      transition: box-shadow 0.2s ease;
+    }
+
+    .quota-edit input:focus {
+      outline: none;
+      box-shadow: var(--neu-inset-deep), 0 0 0 2px var(--neu-accent);
     }
 
     .quota-display {
@@ -431,55 +492,60 @@ import { NotificationService } from '../../../core/services/notification.service
 
     .quota-value {
       font-weight: 600;
-      color: #2c3e50;
+      color: var(--neu-text-heading);
+      font-family: var(--font-display);
     }
 
     .quota-usage {
       font-size: 0.85rem;
-      color: #666;
+      color: var(--neu-text-muted);
     }
 
     .quota-usage.quota-warning {
-      color: #ff9800;
+      color: var(--neu-accent-warning);
       font-weight: 600;
     }
 
     .quota-usage.quota-danger {
-      color: #f44336;
+      color: var(--neu-accent-danger);
       font-weight: 600;
     }
 
     .quota-progress-bar-card {
       width: 100%;
       height: 8px;
-      background: #e0e0e0;
+      background: var(--neu-bg);
       border-radius: 4px;
       overflow: hidden;
       margin-top: 0.5rem;
+      box-shadow: var(--neu-inset);
     }
 
     .quota-progress-fill-card {
       height: 100%;
-      background: linear-gradient(90deg, #4caf50, #8bc34a);
+      background: var(--neu-accent-secondary);
       transition: width 0.3s ease;
+      border-radius: 4px;
     }
 
     .quota-progress-fill-card.quota-warning {
-      background: linear-gradient(90deg, #ff9800, #ffc107);
+      background: var(--neu-accent-warning);
     }
 
     .quota-progress-fill-card.quota-danger {
-      background: linear-gradient(90deg, #f44336, #ef5350);
+      background: var(--neu-accent-danger);
     }
 
     .organizations-table {
       width: 100%;
-      border-collapse: collapse;
-      background: #e0e0e0;
-      border-radius: 8px;
+      border-collapse: separate;
+      border-spacing: 0 0.5rem;
+      background: var(--neu-card-bg, linear-gradient(145deg, #E8ECF2, #D8DDE4));
+      border-radius: var(--neu-radius-container);
       overflow-x: auto;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      box-shadow: var(--neu-extruded);
       display: block;
+      padding: 1rem;
     }
 
     @media (min-width: 768px) {
@@ -488,23 +554,31 @@ import { NotificationService } from '../../../core/services/notification.service
       }
     }
 
-    .organizations-table th,
-    .organizations-table td {
-      padding: 1rem;
-      text-align: left;
-      border-bottom: 1px solid #ddd;
-    }
-
     .organizations-table th {
-      background: #d5d5d5;
+      padding: 0.75rem 1rem;
+      text-align: left;
       font-weight: 600;
-      color: #2c3e50;
-      position: sticky;
-      top: 0;
+      color: var(--neu-text-muted);
+      background: transparent;
     }
 
-    .organizations-table tr:hover {
-      background: #f5f5f5;
+    .organizations-table td {
+      padding: 0.75rem 1rem;
+      background: var(--neu-bg);
+      box-shadow: var(--neu-extruded-sm);
+      color: var(--neu-text-primary);
+    }
+
+    .organizations-table td:first-child {
+      border-radius: var(--neu-radius-inner) 0 0 var(--neu-radius-inner);
+    }
+
+    .organizations-table td:last-child {
+      border-radius: 0 var(--neu-radius-inner) var(--neu-radius-inner) 0;
+    }
+
+    .organizations-table tr:hover td {
+      box-shadow: var(--neu-extruded);
     }
 
     .quota-progress-mini {
@@ -516,39 +590,42 @@ import { NotificationService } from '../../../core/services/notification.service
     .quota-progress-bar-mini {
       width: 80px;
       height: 6px;
-      background: #e0e0e0;
+      background: var(--neu-bg);
       border-radius: 3px;
       overflow: hidden;
+      box-shadow: var(--neu-inset);
     }
 
     .quota-progress-fill-mini {
       height: 100%;
-      background: linear-gradient(90deg, #4caf50, #8bc34a);
+      background: var(--neu-accent-secondary);
       transition: width 0.3s ease;
+      border-radius: 3px;
     }
 
     .quota-progress-fill-mini.quota-warning {
-      background: linear-gradient(90deg, #ff9800, #ffc107);
+      background: var(--neu-accent-warning);
     }
 
     .quota-progress-fill-mini.quota-danger {
-      background: linear-gradient(90deg, #f44336, #ef5350);
+      background: var(--neu-accent-danger);
     }
 
     .quota-warning {
-      color: #ff9800;
+      color: var(--neu-accent-warning);
     }
 
     .quota-danger {
-      color: #f44336;
+      color: var(--neu-accent-danger);
     }
 
-      .form-card, .edit-form {
-        background: #e0e0e0;
-        padding: 1.5rem;
-        border-radius: 8px;
-        margin-bottom: 1.5rem;
-      }
+    .form-card, .edit-form {
+      background: var(--neu-card-bg, linear-gradient(145deg, #E8ECF2, #D8DDE4));
+      padding: 1.5rem 2rem;
+      border-radius: var(--neu-radius-container);
+      margin-bottom: 1.5rem;
+      box-shadow: var(--neu-extruded);
+    }
 
     .form-group {
       margin-bottom: 1rem;
@@ -558,15 +635,25 @@ import { NotificationService } from '../../../core/services/notification.service
       display: block;
       margin-bottom: 0.5rem;
       font-weight: 600;
-      color: #2c3e50;
+      color: var(--neu-text-primary);
     }
 
     .form-group input {
       width: 100%;
       padding: 0.75rem;
-      border: 1px solid #ddd;
-      border-radius: 4px;
+      background: var(--neu-bg);
+      box-shadow: var(--neu-inset);
+      border: none;
+      border-radius: var(--neu-radius-inner);
       font-size: 1rem;
+      color: var(--neu-text-primary);
+      min-height: 44px;
+      transition: box-shadow 0.2s ease;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      box-shadow: var(--neu-inset-deep), 0 0 0 2px var(--neu-accent);
     }
 
     .form-actions {
@@ -575,16 +662,18 @@ import { NotificationService } from '../../../core/services/notification.service
       margin-top: 1rem;
     }
 
-      .users-section {
-        margin-top: 1.5rem;
-        padding: 1.5rem;
-        background: #e0e0e0;
-        border-radius: 8px;
-      }
+    .users-section {
+      margin-top: 1.5rem;
+      padding: 1.5rem 2rem;
+      background: var(--neu-bg);
+      border-radius: var(--neu-radius-inner);
+      box-shadow: var(--neu-inset);
+    }
 
     .users-table {
       width: 100%;
-      border-collapse: collapse;
+      border-collapse: separate;
+      border-spacing: 0 0.5rem;
       margin: 1rem 0;
       overflow-x: auto;
       display: block;
@@ -596,145 +685,232 @@ import { NotificationService } from '../../../core/services/notification.service
       }
     }
 
-    .users-table th,
-    .users-table td {
-      padding: 0.75rem;
+    .users-table th {
+      padding: 0.75rem 1rem;
       text-align: left;
-      border-bottom: 1px solid #ddd;
+      font-weight: 600;
+      color: var(--neu-text-muted);
+      background: transparent;
     }
 
-    .users-table th {
-      background: #d5d5d5;
-      font-weight: 600;
-      color: #2c3e50;
+    .users-table td {
+      padding: 0.75rem 1rem;
+      background: var(--neu-bg);
+      box-shadow: var(--neu-extruded-sm);
+      color: var(--neu-text-primary);
+    }
+
+    .users-table td:first-child {
+      border-radius: var(--neu-radius-inner) 0 0 var(--neu-radius-inner);
+    }
+
+    .users-table td:last-child {
+      border-radius: 0 var(--neu-radius-inner) var(--neu-radius-inner) 0;
     }
 
     .add-user-form {
       margin-top: 1.5rem;
-      padding: 1rem;
-      background: #d5d5d5;
-      border-radius: 4px;
+      padding: 1rem 1.5rem;
+      background: var(--neu-bg);
+      border-radius: var(--neu-radius-inner);
+      box-shadow: var(--neu-inset);
     }
 
     .btn {
-      padding: 0.6rem 1.2rem;
+      padding: 0.625rem 1.2rem;
       border: none;
-      border-radius: 6px;
+      border-radius: var(--neu-radius-inner);
       cursor: pointer;
       font-weight: 600;
-      transition: all 0.3s ease;
+      min-height: 44px;
+      transition: box-shadow 0.2s ease;
     }
 
     .btn-primary {
-      background: #3498db;
+      background: var(--neu-accent);
       color: white;
+      box-shadow: var(--neu-extruded-sm);
     }
 
     .btn-primary:hover {
-      background: #2980b9;
+      box-shadow: var(--neu-extruded);
+    }
+
+    .btn-primary:active {
+      box-shadow: var(--neu-inset);
     }
 
     .btn-secondary {
-      background: #95a5a6;
-      color: white;
+      background: var(--neu-bg);
+      color: var(--neu-text-muted);
+      box-shadow: var(--neu-extruded-sm);
     }
 
     .btn-secondary:hover {
-      background: #7f8c8d;
+      box-shadow: var(--neu-extruded);
+    }
+
+    .btn-secondary:active {
+      box-shadow: var(--neu-inset);
     }
 
     .btn-info {
-      background: #17a2b8;
+      background: var(--neu-accent-secondary);
       color: white;
+      box-shadow: var(--neu-extruded-sm);
     }
 
     .btn-info:hover {
-      background: #138496;
+      box-shadow: var(--neu-extruded);
+    }
+
+    .btn-info:active {
+      box-shadow: var(--neu-inset);
     }
 
     .btn-danger {
-      background: #e74c3c;
+      background: var(--neu-accent-danger);
       color: white;
+      box-shadow: var(--neu-extruded-sm);
     }
 
     .btn-danger:hover {
-      background: #c0392b;
+      box-shadow: var(--neu-extruded);
+    }
+
+    .btn-danger:active {
+      box-shadow: var(--neu-inset);
     }
 
     .btn-success {
-      background: #28a745;
+      background: var(--neu-accent-secondary);
       color: white;
+      box-shadow: var(--neu-extruded-sm);
     }
 
     .btn-success:hover {
-      background: #218838;
+      box-shadow: var(--neu-extruded);
+    }
+
+    .btn-success:active {
+      box-shadow: var(--neu-inset);
     }
 
     .btn-warning {
-      background: #ffc107;
-      color: #212529;
+      background: var(--neu-accent-warning);
+      color: white;
+      box-shadow: var(--neu-extruded-sm);
     }
 
     .btn-warning:hover {
-      background: #e0a800;
+      box-shadow: var(--neu-extruded);
+    }
+
+    .btn-warning:active {
+      box-shadow: var(--neu-inset);
     }
 
     .btn-sm {
       padding: 0.4rem 0.8rem;
       font-size: 0.9rem;
+      min-height: 36px;
     }
 
     .empty-message {
-      color: #888;
+      color: var(--neu-text-muted);
       font-style: italic;
       text-align: center;
       padding: 2rem;
     }
 
     .error-message {
-      background: #e74c3c;
+      background: var(--neu-accent-danger);
       color: white;
-      padding: 1rem;
-      border-radius: 4px;
+      padding: 1rem 1.5rem;
+      border-radius: var(--neu-radius-inner);
       margin-top: 1rem;
+      box-shadow: var(--neu-extruded-sm);
     }
 
     .loading {
       text-align: center;
       padding: 2rem;
-      color: #666;
+      color: var(--neu-text-muted);
     }
 
     .status-badge {
       display: inline-block;
-      padding: 0.25rem 0.5rem;
-      border-radius: 4px;
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
       font-size: 0.75rem;
       font-weight: 600;
       text-transform: uppercase;
+      box-shadow: var(--neu-extruded-sm);
     }
 
     .status-active {
-      background: #d4edda;
-      color: #155724;
+      background: var(--neu-bg);
+      color: var(--neu-accent-secondary);
     }
 
     .status-disabled {
-      background: #f8d7da;
-      color: #721c24;
+      background: var(--neu-bg);
+      color: var(--neu-accent-danger);
+    }
+
+    .badge-renewed {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      background: var(--neu-bg);
+      color: var(--neu-accent-secondary);
+      box-shadow: var(--neu-extruded-sm);
     }
 
     .org-disabled {
       opacity: 0.7;
-      border-left: 4px solid #dc3545;
+      border-left: 5px solid var(--neu-accent-danger);
     }
 
-    tr.org-disabled {
-      background-color: #fff5f5 !important;
+    tr.org-disabled td {
+      opacity: 0.6;
     }
 
-    tr.org-disabled:hover {
-      background-color: #ffe0e0 !important;
+    @media (max-width: 768px) {
+      .organizations-container {
+        padding: 1rem;
+      }
+
+      .actions-bar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .search-bar {
+        flex-direction: column;
+      }
+
+      .search-input {
+        min-width: auto;
+        width: 100%;
+      }
+
+      .org-header {
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      .org-actions {
+        flex-wrap: wrap;
+      }
+    }
+
+    @media (max-width: 1024px) {
+      .organizations-table {
+        overflow-x: auto;
+      }
     }
   `]
 })
