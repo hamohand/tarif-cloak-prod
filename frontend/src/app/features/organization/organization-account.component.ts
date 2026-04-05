@@ -276,72 +276,83 @@ import { Observable } from 'rxjs';
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
       gap: 1rem;
-      margin-bottom: 1rem;
+      margin-bottom: 1.25rem;
     }
 
     .form-group {
       display: flex;
       flex-direction: column;
-      gap: 0.5rem;
+      gap: 0.4rem;
     }
 
     label {
       font-weight: 600;
-      color: var(--neu-text-primary);
+      font-size: 0.85rem;
+      color: var(--neu-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
     }
 
     input {
       padding: 0.75rem 1rem;
-      border: 1px solid rgba(163,177,198,0.35);
+      border: 1.5px solid rgba(163,177,198,0.5);
       border-radius: var(--neu-radius-inner);
       font-size: 1rem;
-      background: var(--neu-bg);
-      box-shadow: var(--neu-inset);
+      background: #fff;
+      box-shadow: inset 2px 2px 5px rgba(163,177,198,0.25);
       color: var(--neu-text-primary);
-      transition: box-shadow 0.2s ease;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
       min-height: 44px;
+      width: 100%;
+      box-sizing: border-box;
     }
 
     input:focus {
       outline: none;
-      box-shadow: var(--neu-inset-deep), 0 0 0 2px var(--neu-accent);
+      border-color: var(--neu-accent);
+      box-shadow: inset 2px 2px 5px rgba(163,177,198,0.25), 0 0 0 3px rgba(108,99,255,0.15);
     }
 
     input.error {
-      box-shadow: var(--neu-inset-deep), 0 0 0 2px var(--neu-accent-danger);
+      border-color: var(--neu-accent-danger);
+      box-shadow: inset 2px 2px 5px rgba(163,177,198,0.25), 0 0 0 3px rgba(229,72,77,0.15);
     }
 
     .form-actions {
       display: flex;
-      align-items: flex-end;
+      padding-top: 0.25rem;
     }
 
     button {
-      padding: 0.75rem 1.5rem;
+      padding: 0.875rem 2rem;
       background: var(--neu-accent);
       color: #fff;
       border: none;
       border-radius: var(--neu-radius-inner);
       font-size: 1rem;
-      font-weight: 600;
+      font-weight: 700;
       cursor: pointer;
       transition: all 0.2s ease;
-      min-width: 140px;
       min-height: 44px;
-      box-shadow: var(--neu-extruded-sm);
+      box-shadow: 0 4px 12px rgba(108,99,255,0.35);
+      letter-spacing: 0.02em;
     }
 
     button:disabled {
-      opacity: 0.5;
+      opacity: 0.45;
       cursor: not-allowed;
+      box-shadow: none;
     }
 
     button:not(:disabled):hover {
-      box-shadow: var(--neu-extruded-hover);
+      background: var(--neu-accent-hover, #5A52D5);
+      box-shadow: 0 6px 18px rgba(108,99,255,0.45);
+      transform: translateY(-1px);
     }
 
     button:not(:disabled):active {
-      box-shadow: var(--neu-inset);
+      transform: translateY(0);
+      box-shadow: 0 2px 6px rgba(108,99,255,0.3);
     }
 
     .error-message {
