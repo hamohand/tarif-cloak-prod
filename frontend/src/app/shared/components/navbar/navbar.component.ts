@@ -46,10 +46,10 @@ import { of } from 'rxjs';
               <a routerLink="/" class="nav-link hscode-link" (click)="closeMobileMenu()">Recherche Codes</a>
             }
           } @else {
-            <a routerLink="/" class="nav-link" (click)="closeMobileMenu()">Accueil</a>
+            <a routerLink="/" class="nav-link" (click)="closeMobileMenu()">Accueil إستقبال</a>
           }
         } @else {
-          <a routerLink="/" class="nav-link" (click)="closeMobileMenu()">Accueil</a>
+          <a routerLink="/" class="nav-link" (click)="closeMobileMenu()">Accueil إستقبال</a>
         }
         @if (!(isCollaboratorAccount$ | async) && !isBetaMode) {
           <a routerLink="/pricing" class="nav-link pricing-link" (click)="closeMobileMenu()">
@@ -58,7 +58,7 @@ import { of } from 'rxjs';
         }
         <button class="nav-link contact-btn" (click)="toggleContactPopup(); closeMobileMenu()">
           <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-          Contact
+          Contact اتصال
         </button>
         @if ((isAuthenticated$ | async) && !isBetaMode) {
           @if (isOrganizationAccount$ | async) {
