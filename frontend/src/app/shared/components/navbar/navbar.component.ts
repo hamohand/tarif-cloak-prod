@@ -33,13 +33,13 @@ import { of } from 'rxjs';
         @if (isAuthenticated$ | async) {
           @if (isOrganizationAccount$ | async) {
             @if (canMakeRequests$ | async) {
-              <a routerLink="/" class="nav-link hscode-link">Recherche Codes<br>Cliquer ici</a>
+              <a routerLink="/" class="nav-link hscode-link">Recherche Codes</a>
             } @else {
               <button class="nav-link hscode-link-blocked" (click)="openRenewalModal()">Positions tarifaires ⚠️</button>
             }
           } @else if (isCollaboratorAccount$ | async) {
             @if (canMakeRequests$ | async) {
-              <a routerLink="/" class="nav-link hscode-link">Recherche Codes<br>Cliquer ici</a>
+              <a routerLink="/" class="nav-link hscode-link">Recherche Codes</a>
             }
           } @else {
             <a routerLink="/" class="nav-link">Accueil</a>
@@ -313,7 +313,7 @@ import { of } from 'rxjs';
       margin-right: 1rem;
       font-weight: 800;
       padding: 0.5rem 1rem;
-      background: rgba(3, 255, 188, 0.23);
+      background: rgba(255, 188, 3, 0.23);
       border-radius: 20px;
       backdrop-filter: blur(10px);
       border: 1px solid rgba(255, 255, 255, 0.2);

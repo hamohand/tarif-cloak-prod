@@ -1,4 +1,4 @@
-# Intradia — Classification pour le commerce international
+# Intradia — Tarif Commerce International
 
 Application SaaS de recherche et de décodage de codes de nomenclature douanière (système harmonisé HS), alimentée par l'intelligence artificielle.
 

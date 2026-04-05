@@ -17,7 +17,7 @@ import { environment } from '../../../environments/environment';
       <section class="hero" [class.hero-compact]="isAuthenticated$ | async">
         <div class="hero-glow"></div>
         <h1>TCI</h1>
-        <p class="hero-subtitle">Classification pour le commerce international</p>
+        <p class="hero-subtitle">Tarif Commerce International</p>
         <ng-container *ngIf="!(isAuthenticated$ | async)">
           <p class="hero-desc">TCI analyse vos produits et retourne la position tarifaire la plus pertinente — avec explication détaillée.</p>
           <p class="hero-desc">Un code de nomenclature inconnu devient lisible en un instant : section, chapitre, position, sous-position.</p>
