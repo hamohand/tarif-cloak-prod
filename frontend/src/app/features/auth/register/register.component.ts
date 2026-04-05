@@ -5,14 +5,14 @@ import { RegisterService } from '../../../core/services/register.service';
 import { PricingPlanService, PricingPlan } from '../../../core/services/pricing-plan.service';
 import { MarketProfileService, MarketProfile } from '../../../core/services/market-profile.service';
 import { CurrencyService } from '../../../core/services/currency.service';
-import { CommonModule, AsyncPipe } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { environment } from '../../../../environments/environment';
 import { take } from 'rxjs/operators';
 
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink, CommonModule, AsyncPipe],
+  imports: [ReactiveFormsModule, RouterLink, CommonModule],
   template: `
     <div class="register-container">
       <div class="register-card">

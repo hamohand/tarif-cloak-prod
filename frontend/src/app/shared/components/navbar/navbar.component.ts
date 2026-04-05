@@ -647,67 +647,20 @@ import { of } from 'rxjs';
 
     /* ─── Credits counter ─── */
     .credits-counter {
-      margin: 0.25rem 0.6rem 0.5rem;
-      padding: 0.6rem 0.8rem;
-      background: rgba(255, 255, 255, 0.07);
-      border: 1px solid rgba(52, 211, 153, 0.3);
+      margin: .25rem .6rem .5rem;
+      padding: .6rem .8rem;
+      background: rgba(255,255,255,.07);
+      border: 1px solid rgba(52,211,153,.3);
       border-radius: 8px;
       box-sizing: border-box;
+      --cc: #34d399;
     }
-
-    .credits-counter.credits-medium {
-      border-color: rgba(251, 191, 36, 0.4);
-    }
-
-    .credits-counter.credits-low {
-      border-color: rgba(239, 68, 68, 0.5);
-      background: rgba(239, 68, 68, 0.08);
-    }
-
-    .credits-label {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 0.75rem;
-      color: rgba(255, 255, 255, 0.7);
-      margin-bottom: 0.4rem;
-    }
-
-    .credits-numbers {
-      font-weight: 700;
-      font-size: 0.8rem;
-      color: #34d399;
-    }
-
-    .credits-counter.credits-medium .credits-numbers {
-      color: #fbbf24;
-    }
-
-    .credits-counter.credits-low .credits-numbers {
-      color: #f87171;
-    }
-
-    .credits-bar-track {
-      height: 5px;
-      background: rgba(255, 255, 255, 0.12);
-      border-radius: 3px;
-      overflow: hidden;
-    }
-
-    .credits-bar-fill {
-      height: 100%;
-      background: #34d399;
-      border-radius: 3px;
-      transition: width 0.4s ease;
-    }
-
-    .credits-counter.credits-medium .credits-bar-fill {
-      background: #fbbf24;
-    }
-
-    .credits-counter.credits-low .credits-bar-fill {
-      background: #f87171;
-    }
+    .credits-counter.credits-medium { border-color: rgba(251,191,36,.4); --cc: #fbbf24; }
+    .credits-counter.credits-low { border-color: rgba(239,68,68,.5); background: rgba(239,68,68,.08); --cc: #f87171; }
+    .credits-label { display: flex; justify-content: space-between; align-items: center; font-size: .75rem; color: rgba(255,255,255,.7); margin-bottom: .4rem; }
+    .credits-numbers { font-weight: 700; font-size: .8rem; color: var(--cc); }
+    .credits-bar-track { height: 5px; background: rgba(255,255,255,.12); border-radius: 3px; overflow: hidden; }
+    .credits-bar-fill { height: 100%; background: var(--cc); border-radius: 3px; transition: width .4s ease; }
 
     @media (max-width: 768px) {
       .navbar {
