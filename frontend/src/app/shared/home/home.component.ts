@@ -17,7 +17,7 @@ import { environment } from '../../../environments/environment';
       <section class="hero" [class.hero-compact]="isAuthenticated$ | async">
         <div class="hero-glow"></div>
         <h1>TCI</h1>
-        <p class="hero-subtitle">Tarif Commerce International التعريفة الجمركية للتجارة الدولية
+        <p class="hero-subtitle">Tarif Commerce International - رمز سعر التجارة الدولية
         <br>Recherche multilingue - Multilingual search - 多语言搜索 - بحث متعدد اللغات
         </p>
         <ng-container *ngIf="!(isAuthenticated$ | async)">
