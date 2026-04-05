@@ -6,7 +6,7 @@ import { AlertService } from '../../../core/services/alert.service';
 import { InvoiceService } from '../../../core/services/invoice.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { MarketProfileService } from '../../../core/services/market-profile.service';
-import { OrganizationAccountService } from '../../../core/services/organization-account.service';
+import { OrganizationAccountService, OrganizationInfo } from '../../../core/services/organization-account.service';
 import { PaymentService } from '../../../core/services/payment.service';
 import { UserService } from '../../../core/services/user.service';
 import { environment } from '../../../../environments/environment';
@@ -157,6 +157,17 @@ import { of } from 'rxjs';
           <a routerLink="/dashboard" routerLinkActive="router-link-active" class="org-nav-link">🏠 Tableau de bord</a>
           <a routerLink="/organization/account" routerLinkActive="router-link-active" class="org-nav-link">👥 Mon organisation</a>
           <a routerLink="/organization/stats" routerLinkActive="router-link-active" class="org-nav-link">💳 Crédits</a>
+          @if (orgQuota !== null) {
+            <div class="credits-counter" [class.credits-low]="creditsRatio <= 0.2" [class.credits-medium]="creditsRatio > 0.2 && creditsRatio <= 0.5">
+              <div class="credits-label">
+                <span>Crédits restants</span>
+                <span class="credits-numbers">{{ creditsRemaining }} / {{ orgQuota }}</span>
+              </div>
+              <div class="credits-bar-track">
+                <div class="credits-bar-fill" [style.width.%]="creditsRatio * 100"></div>
+              </div>
+            </div>
+          }
           @if (!isBetaMode) {
             <a routerLink="/organization/invoices" routerLinkActive="router-link-active" class="org-nav-link invoices-link">
               📄 Factures
@@ -634,6 +645,70 @@ import { of } from 'rxjs';
       animation: pulse-red 2s infinite;
     }
 
+    /* ─── Credits counter ─── */
+    .credits-counter {
+      margin: 0.25rem 0.6rem 0.5rem;
+      padding: 0.6rem 0.8rem;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(52, 211, 153, 0.3);
+      border-radius: 8px;
+      box-sizing: border-box;
+    }
+
+    .credits-counter.credits-medium {
+      border-color: rgba(251, 191, 36, 0.4);
+    }
+
+    .credits-counter.credits-low {
+      border-color: rgba(239, 68, 68, 0.5);
+      background: rgba(239, 68, 68, 0.08);
+    }
+
+    .credits-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.75rem;
+      color: rgba(255, 255, 255, 0.7);
+      margin-bottom: 0.4rem;
+    }
+
+    .credits-numbers {
+      font-weight: 700;
+      font-size: 0.8rem;
+      color: #34d399;
+    }
+
+    .credits-counter.credits-medium .credits-numbers {
+      color: #fbbf24;
+    }
+
+    .credits-counter.credits-low .credits-numbers {
+      color: #f87171;
+    }
+
+    .credits-bar-track {
+      height: 5px;
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .credits-bar-fill {
+      height: 100%;
+      background: #34d399;
+      border-radius: 3px;
+      transition: width 0.4s ease;
+    }
+
+    .credits-counter.credits-medium .credits-bar-fill {
+      background: #fbbf24;
+    }
+
+    .credits-counter.credits-low .credits-bar-fill {
+      background: #f87171;
+    }
+
     @media (max-width: 768px) {
       .navbar {
         flex-wrap: wrap;
@@ -871,6 +946,9 @@ export class NavbarComponent implements OnInit, OnDestroy {
   alertCount = 0;
   newInvoicesCount = 0;
   overdueInvoicesCount = 0;
+  orgQuota: number | null = null;
+  creditsRemaining = 0;
+  creditsRatio = 1;
   private previousInvoicesCount: number | null = null;
   private previousOverdueInvoicesCount: number | null = null;
   private refreshSubscription?: Subscription;
@@ -921,11 +999,13 @@ export class NavbarComponent implements OnInit, OnDestroy {
     this.loadAlertCount();
     this.loadNewInvoicesCount();
     this.loadOverdueInvoicesCount();
+    this.loadOrgQuota();
     // Rafraîchir les compteurs toutes les 30 secondes
     this.refreshSubscription = interval(30000).subscribe(() => {
       this.loadAlertCount();
       this.loadNewInvoicesCount();
       this.loadOverdueInvoicesCount();
+      this.loadOrgQuota();
     });
   }
 
@@ -966,6 +1046,25 @@ export class NavbarComponent implements OnInit, OnDestroy {
           }
         });
       }
+    });
+  }
+
+  loadOrgQuota() {
+    this.isOrganizationAccount$.pipe(take(1)).subscribe(isOrganization => {
+      if (!isOrganization) return;
+      this.organizationAccountService.getMyOrganization().subscribe({
+        next: (org: OrganizationInfo) => {
+          if (org.monthlyQuota != null) {
+            this.orgQuota = org.monthlyQuota;
+            const used = org.currentMonthUsage ?? 0;
+            this.creditsRemaining = Math.max(0, this.orgQuota - used);
+            this.creditsRatio = this.orgQuota > 0 ? this.creditsRemaining / this.orgQuota : 0;
+          } else {
+            this.orgQuota = null;
+          }
+        },
+        error: () => { this.orgQuota = null; }
+      });
     });
   }
 

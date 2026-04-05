@@ -31,6 +31,7 @@ import { environment } from '../../../environments/environment';
               </div>
             </div>
           }
+          <a routerLink="/aide" class="cta-button ghost">📚 Guide d'utilisation</a>
           <a routerLink="/auth/register" class="cta-button primary">Commencer gratuitement</a>
           <a *ngIf="!isBetaMode" routerLink="/pricing" class="cta-button ghost">Voir les tarifs</a>
         </div>

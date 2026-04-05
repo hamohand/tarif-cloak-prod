@@ -49,8 +49,7 @@ export const routes: Routes = [
   },
   {
     path: 'aide',
-    component: HelpComponent,
-    canActivate: [authGuard, collaboratorGuard]
+    component: HelpComponent
   },
   {
     path: 'recherche',
