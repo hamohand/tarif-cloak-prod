@@ -185,7 +185,7 @@ interface GroupedP4 {
       min-height: 44px;
       font-size: 16px;
       background: var(--neu-accent-secondary, #2DD4BF);
-      color: var(--neu-text-heading, #2D3748);
+      color: var(--neu-text-heading, #5b626e);
       border: none;
       font-weight: 600;
       border-radius: var(--neu-radius-inner, 12px);
@@ -200,8 +200,10 @@ interface GroupedP4 {
     }
 
     .search-button:active:not(:disabled) {
-      box-shadow: var(--neu-inset, inset 6px 6px 10px rgba(163,177,198,0.6), inset -6px -6px 10px rgba(255,255,255,0.5));
-      transform: translateY(0);
+      background: var(--neu-accent-secondary-dark, #14B8A6);
+      box-shadow: inset 3px 3px 6px rgba(0,0,0,0.15), inset -3px -3px 6px rgba(255,255,255,0.2);
+      transform: translateY(1px);
+      color: #fff;
     }
 
     .search-button:disabled {

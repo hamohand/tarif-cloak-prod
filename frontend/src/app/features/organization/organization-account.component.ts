@@ -218,7 +218,6 @@ import { Observable } from 'rxjs';
       background: var(--neu-card-bg, linear-gradient(145deg, #E8ECF2, #D8DDE4));
       box-shadow: var(--neu-extruded);
       border-radius: var(--neu-radius-container);
-      overflow: hidden;
     }
 
     .card-header {
@@ -231,6 +230,7 @@ import { Observable } from 'rxjs';
 
     .card-body {
       padding: 1.5rem 2rem;
+      overflow-x: auto;
     }
 
     .subtitle {
@@ -292,7 +292,7 @@ import { Observable } from 'rxjs';
 
     input {
       padding: 0.75rem 1rem;
-      border: none;
+      border: 1px solid rgba(163,177,198,0.35);
       border-radius: var(--neu-radius-inner);
       font-size: 1rem;
       background: var(--neu-bg);

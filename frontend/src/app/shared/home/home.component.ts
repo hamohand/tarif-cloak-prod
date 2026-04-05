@@ -17,7 +17,9 @@ import { environment } from '../../../environments/environment';
       <section class="hero" [class.hero-compact]="isAuthenticated$ | async">
         <div class="hero-glow"></div>
         <h1>TCI</h1>
-        <p class="hero-subtitle">Tarif Commerce International</p>
+        <p class="hero-subtitle">Tarif Commerce International
+        <br>Recherche multilingue - Multilingual search - 多语言搜索 - بحث متعدد اللغات
+        </p>
         <ng-container *ngIf="!(isAuthenticated$ | async)">
           <p class="hero-desc">TCI analyse vos produits et retourne la position tarifaire la plus pertinente — avec explication détaillée.</p>
           <p class="hero-desc">Un code de nomenclature inconnu devient lisible en un instant : section, chapitre, position, sous-position.</p>
@@ -225,10 +227,12 @@ import { environment } from '../../../environments/environment';
             </div>
           </div>
         } @else {
-          <h4 class="section-title">Outils de recherche Code tarifaires</h4>
+          <h4 class="section-title">Outils de recherche Code tarifaire</h4>
           <div class="features primary">
             <div class="feature-card request-card">
-              <div class="request-icon">🔍</div>
+              <div class="request-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+              </div>
               <h3>Recherche d'un article</h3>
               <p>Recherchez le code HS d'un produit spécifique en quelques secondes.</p>
               <a [routerLink]="['/recherche/search']" class="cta-button secondary">
@@ -237,7 +241,9 @@ import { environment } from '../../../environments/environment';
             </div>
 
             <div class="feature-card request-card">
-              <div class="request-icon">📋</div>
+              <div class="request-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
+              </div>
               <h3>Recherche par liste</h3>
               <p>Traitez une liste de produits en une seule fois.</p>
               <a class="cta-button secondary">
@@ -295,8 +301,8 @@ import { environment } from '../../../environments/environment';
     /* ═══ Hero Section ═══ */
     .hero {
       position: relative;
-      padding: 4rem 2rem 3rem;
-      margin-bottom: 3rem;
+      padding: 1.5rem 2rem 2.5rem;
+      margin-bottom: 2rem;
     }
 
     .hero.hero-compact {
@@ -528,7 +534,8 @@ import { environment } from '../../../environments/environment';
     .request-card p { color: var(--neu-text-muted, #6B7280); font-size: 0.85rem; margin-bottom: 1rem; }
 
     .request-icon {
-      font-size: 2rem;
+      width: 36px;
+      height: 36px;
       margin-bottom: 0.5rem;
       display: flex;
       align-items: center;

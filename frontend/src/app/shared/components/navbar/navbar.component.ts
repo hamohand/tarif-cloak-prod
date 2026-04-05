@@ -171,9 +171,18 @@ import { of } from 'rxjs';
       }
       <nav class="organization-navbar">
         <div class="org-nav-links">
-          <a routerLink="/dashboard" routerLinkActive="router-link-active" class="org-nav-link">🏠 Tableau de bord</a>
-          <a routerLink="/organization/account" routerLinkActive="router-link-active" class="org-nav-link">👥 Mon organisation</a>
-          <a routerLink="/organization/stats" routerLinkActive="router-link-active" class="org-nav-link">💳 Crédits</a>
+          <a routerLink="/dashboard" routerLinkActive="router-link-active" class="org-nav-link">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12L12 3l9 9"/><path d="M5 10v11h5v-6h4v6h5V10"/></svg>
+            <span>Tableau de bord</span>
+          </a>
+          <a routerLink="/organization/account" routerLinkActive="router-link-active" class="org-nav-link">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+            <span>Mon organisation</span>
+          </a>
+          <a routerLink="/organization/stats" routerLinkActive="router-link-active" class="org-nav-link">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/></svg>
+            <span>Crédits</span>
+          </a>
           @if (orgQuota !== null) {
             <div class="credits-counter" [class.credits-low]="creditsRatio <= 0.2" [class.credits-medium]="creditsRatio > 0.2 && creditsRatio <= 0.5">
               <div class="credits-label">
@@ -187,20 +196,23 @@ import { of } from 'rxjs';
           }
           @if (!isBetaMode) {
             <a routerLink="/organization/invoices" routerLinkActive="router-link-active" class="org-nav-link invoices-link">
-              📄 Factures
+              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+              <span>Factures</span>
               @if (newInvoicesCount > 0 || overdueInvoicesCount > 0) {
                 <span class="invoice-badge" [class.overdue-badge]="overdueInvoicesCount > 0">
-                  @if (overdueInvoicesCount > 0) {
-                    ⚠️ {{ overdueInvoicesCount }}
-                  } @else {
-                    {{ newInvoicesCount }}
-                  }
+                  {{ overdueInvoicesCount > 0 ? overdueInvoicesCount : newInvoicesCount }}
                 </span>
               }
             </a>
-            <a routerLink="/organization/quote-requests" routerLinkActive="router-link-active" class="org-nav-link">💼 Demandes de devis</a>
+            <a routerLink="/organization/quote-requests" routerLinkActive="router-link-active" class="org-nav-link">
+              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2M12 12v3M10.5 13.5h3"/></svg>
+              <span>Demandes de devis</span>
+            </a>
           }
-          <a routerLink="/aide" routerLinkActive="router-link-active" class="org-nav-link">📚 Aide</a>
+          <a routerLink="/aide" routerLinkActive="router-link-active" class="org-nav-link">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/><path d="M12 6v6M12 15h.01"/></svg>
+            <span>Aide</span>
+          </a>
         </div>
       </nav>
     }
@@ -209,11 +221,26 @@ import { of } from 'rxjs';
       @if (isAdmin()) {
         <nav class="admin-navbar">
           <div class="admin-nav-links">
-            <a routerLink="/admin/stats" class="admin-nav-link">📊 Stats</a>
-            <a routerLink="/admin/organizations" class="admin-nav-link">🏢 Organisations</a>
-            <a routerLink="/admin/invoices" class="admin-nav-link">📄 Factures (Admin)</a>
-            <a routerLink="/admin/quote-requests" routerLinkActive="router-link-active" class="admin-nav-link">💼 Demandes de devis</a>
-            <a routerLink="/admin/pending-registrations" class="admin-nav-link">⏳ Inscriptions en attente</a>
+            <a routerLink="/admin/stats" class="admin-nav-link">
+              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+              Stats
+            </a>
+            <a routerLink="/admin/organizations" class="admin-nav-link">
+              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 012-2h8a2 2 0 012 2v18M2 22h20M10 7h.01M14 7h.01M10 11h.01M14 11h.01M10 15h.01M14 15h.01"/></svg>
+              Organisations
+            </a>
+            <a routerLink="/admin/invoices" class="admin-nav-link">
+              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+              Factures
+            </a>
+            <a routerLink="/admin/quote-requests" routerLinkActive="router-link-active" class="admin-nav-link">
+              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2M12 12v3M10.5 13.5h3"/></svg>
+              Demandes de devis
+            </a>
+            <a routerLink="/admin/pending-registrations" class="admin-nav-link">
+              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+              Inscriptions en attente
+            </a>
           </div>
         </nav>
       }
@@ -589,6 +616,18 @@ import { of } from 'rxjs';
       flex-direction: column;
       gap: 0.5rem;
       padding: 0 0.75rem;
+    }
+
+    .nav-icon {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+    }
+
+    .admin-nav-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
     }
 
     .org-nav-link {
