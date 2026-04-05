@@ -67,6 +67,8 @@ import { OAuthService } from 'angular-oauth2-oidc';
     </div>
   `,
   styles: [`
+    /* ── Neumorphism Design System ── */
+
     .login-container {
       display: flex;
       justify-content: center;
@@ -74,69 +76,21 @@ import { OAuthService } from 'angular-oauth2-oidc';
       min-height: 100vh;
       position: relative;
       padding: 2rem;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: var(--neu-bg, #E0E5EC);
       overflow: hidden;
     }
 
-    .login-background {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      z-index: 0;
-    }
-
+    /* Background shapes hidden — neumorphism uses flat bg */
+    .login-background,
     .background-shape {
-      position: absolute;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.1);
-      animation: float 20s infinite ease-in-out;
-    }
-
-    .shape-1 {
-      width: 300px;
-      height: 300px;
-      top: -100px;
-      left: -100px;
-      animation-delay: 0s;
-    }
-
-    .shape-2 {
-      width: 200px;
-      height: 200px;
-      bottom: -50px;
-      right: -50px;
-      animation-delay: 5s;
-    }
-
-    .shape-3 {
-      width: 150px;
-      height: 150px;
-      top: 50%;
-      right: 10%;
-      animation-delay: 10s;
-    }
-
-    @keyframes float {
-      0%, 100% {
-        transform: translate(0, 0) rotate(0deg);
-      }
-      33% {
-        transform: translate(30px, -30px) rotate(120deg);
-      }
-      66% {
-        transform: translate(-20px, 20px) rotate(240deg);
-      }
+      display: none;
     }
 
     .login-card {
-      background: rgba(255, 255, 255, 0.98);
-      backdrop-filter: blur(10px);
+      background: var(--neu-card-violet, linear-gradient(145deg, #EAE8F8, #DDDAF0));
       padding: 3.5rem 2.5rem;
-      border-radius: 24px;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      border-radius: var(--neu-radius-container, 32px);
+      box-shadow: var(--neu-extruded, 9px 9px 16px rgba(163,177,198,0.6), -9px -9px 16px rgba(255,255,255,0.5));
       text-align: center;
       max-width: 450px;
       width: 100%;
@@ -167,28 +121,19 @@ import { OAuthService } from 'angular-oauth2-oidc';
     .logo-icon {
       font-size: 4rem;
       display: inline-block;
-      animation: pulse 2s infinite ease-in-out;
-    }
-
-    @keyframes pulse {
-      0%, 100% {
-        transform: scale(1);
-      }
-      50% {
-        transform: scale(1.05);
-      }
     }
 
     h1 {
-      color: #2c3e50;
+      color: var(--neu-text-primary, #3D4852);
       margin: 0 0 0.5rem 0;
       font-size: 2rem;
       font-weight: 700;
       letter-spacing: -0.5px;
+      font-family: var(--font-display, 'Plus Jakarta Sans', sans-serif);
     }
 
     .subtitle {
-      color: #7f8c8d;
+      color: var(--neu-text-muted, #6B7280);
       margin: 0;
       font-size: 1rem;
       font-weight: 400;
@@ -199,7 +144,7 @@ import { OAuthService } from 'angular-oauth2-oidc';
     }
 
     .login-button {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: var(--neu-accent, #6C63FF);
       color: white;
       padding: 1.1rem 2rem;
       font-size: 1.05rem;
@@ -208,38 +153,31 @@ import { OAuthService } from 'angular-oauth2-oidc';
       border-radius: 12px;
       cursor: pointer;
       width: 100%;
+      min-height: 44px;
       transition: all 0.3s ease;
-      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+      box-shadow: var(--neu-extruded-sm, 4px 4px 8px rgba(163,177,198,0.5), -4px -4px 8px rgba(255,255,255,0.4));
       position: relative;
       overflow: hidden;
+      font-family: var(--font-display, 'Plus Jakarta Sans', sans-serif);
     }
 
-    .login-button::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: -100%;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-      transition: left 0.5s;
-    }
-
-    .login-button:hover:not(:disabled)::before {
-      left: 100%;
+    .login-button:focus-visible {
+      outline: 2px solid var(--neu-accent, #6C63FF);
+      outline-offset: 2px;
     }
 
     .login-button:hover:not(:disabled) {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+      transform: translateY(-1px);
+      box-shadow: var(--neu-extruded-hover, 6px 6px 12px rgba(163,177,198,0.65), -6px -6px 12px rgba(255,255,255,0.55));
     }
 
     .login-button:active:not(:disabled) {
       transform: translateY(0);
+      box-shadow: var(--neu-inset-sm, inset 3px 3px 6px rgba(163,177,198,0.5), inset -3px -3px 6px rgba(255,255,255,0.4));
     }
 
     .login-button:disabled {
-      background: #95a5a6;
+      background: #A0AEC0;
       cursor: not-allowed;
       opacity: 0.7;
       box-shadow: none;
@@ -264,7 +202,7 @@ import { OAuthService } from 'angular-oauth2-oidc';
       width: 18px;
       height: 18px;
       border: 3px solid rgba(255, 255, 255, 0.3);
-      border-top-color: white;
+      border-top-color: var(--neu-accent, #6C63FF);
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
     }
@@ -276,17 +214,17 @@ import { OAuthService } from 'angular-oauth2-oidc';
     }
 
     .error-message {
-      background: linear-gradient(135deg, #fee 0%, #fdd 100%);
-      color: #c33;
+      background: var(--neu-bg, #E0E5EC);
+      color: var(--neu-accent-danger, #E53E3E);
       padding: 1.1rem 1.25rem;
       border-radius: 12px;
       margin-bottom: 1.5rem;
-      border: 2px solid #fcc;
+      border: none;
       display: flex;
       align-items: center;
       gap: 0.75rem;
       animation: shake 0.5s ease-in-out;
-      box-shadow: 0 2px 8px rgba(204, 51, 51, 0.15);
+      box-shadow: var(--neu-inset-sm, inset 3px 3px 6px rgba(163,177,198,0.5), inset -3px -3px 6px rgba(255,255,255,0.4));
     }
 
     @keyframes shake {
@@ -311,6 +249,7 @@ import { OAuthService } from 'angular-oauth2-oidc';
       text-align: left;
       font-size: 0.95rem;
       line-height: 1.4;
+      color: var(--neu-accent-danger, #E53E3E);
     }
 
     .login-footer {
@@ -330,50 +269,57 @@ import { OAuthService } from 'angular-oauth2-oidc';
       left: 0;
       right: 0;
       height: 1px;
-      background: linear-gradient(90deg, transparent, #e0e0e0, transparent);
+      background: linear-gradient(90deg, transparent, rgba(163,177,198,0.4), transparent);
     }
 
     .divider span {
       position: relative;
-      background: rgba(255, 255, 255, 0.98);
+      background: var(--neu-bg, #E0E5EC);
       padding: 0 1rem;
-      color: #95a5a6;
+      color: var(--neu-text-muted, #6B7280);
       font-size: 0.9rem;
     }
 
     .footer-text {
-      color: #7f8c8d;
+      color: var(--neu-text-muted, #6B7280);
       margin: 1rem 0;
       font-size: 0.95rem;
     }
 
     .register-button {
-      background: transparent;
-      color: #667eea;
+      background: var(--neu-bg, #E0E5EC);
+      color: var(--neu-accent, #6C63FF);
       padding: 0.9rem 1.75rem;
       font-size: 1rem;
       font-weight: 600;
-      border: 2px solid #667eea;
+      border: none;
       border-radius: 12px;
       cursor: pointer;
+      min-height: 44px;
       transition: all 0.3s ease;
       display: inline-flex;
       align-items: center;
       gap: 0.5rem;
       width: 100%;
       justify-content: center;
+      box-shadow: var(--neu-extruded-sm, 4px 4px 8px rgba(163,177,198,0.5), -4px -4px 8px rgba(255,255,255,0.4));
+      font-family: var(--font-display, 'Plus Jakarta Sans', sans-serif);
+    }
+
+    .register-button:focus-visible {
+      outline: 2px solid var(--neu-accent, #6C63FF);
+      outline-offset: 2px;
     }
 
     .register-button:hover {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      transform: translateY(-2px);
-      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-      border-color: transparent;
+      transform: translateY(-1px);
+      box-shadow: var(--neu-extruded-hover, 6px 6px 12px rgba(163,177,198,0.65), -6px -6px 12px rgba(255,255,255,0.55));
+      color: var(--neu-accent, #6C63FF);
     }
 
     .register-button:active {
       transform: translateY(0);
+      box-shadow: var(--neu-inset-sm, inset 3px 3px 6px rgba(163,177,198,0.5), inset -3px -3px 6px rgba(255,255,255,0.4));
     }
 
     .arrow {
@@ -385,13 +331,15 @@ import { OAuthService } from 'angular-oauth2-oidc';
       transform: translateX(4px);
     }
 
-    @media (max-width: 480px) {
+    /* ── Responsive: Tablet & smaller ── */
+    @media (max-width: 768px) {
       .login-container {
-        padding: 1rem;
+        padding: 1.5rem;
       }
 
       .login-card {
-        padding: 2.5rem 1.5rem;
+        padding: 2.5rem 1.75rem;
+        border-radius: 24px;
       }
 
       h1 {
@@ -399,7 +347,39 @@ import { OAuthService } from 'angular-oauth2-oidc';
       }
 
       .logo-icon {
+        font-size: 3.5rem;
+      }
+
+      .login-button,
+      .register-button {
+        min-height: 48px;
+        font-size: 1rem;
+      }
+    }
+
+    /* ── Responsive: Small phones ── */
+    @media (max-width: 480px) {
+      .login-container {
+        padding: 1rem;
+      }
+
+      .login-card {
+        padding: 2rem 1.25rem;
+        border-radius: 20px;
+      }
+
+      h1 {
+        font-size: 1.5rem;
+      }
+
+      .logo-icon {
         font-size: 3rem;
+      }
+
+      .login-button,
+      .register-button {
+        min-height: 48px;
+        padding: 1rem 1.5rem;
       }
     }
   `]

@@ -155,12 +155,16 @@ import { NotificationService } from '../../../core/services/notification.service
     </div>
   `,
   styles: [`
+    :host {
+      display: block;
+      background: var(--neu-bg, #E0E5EC);
+      min-height: 100vh;
+    }
+
     .invoice-detail-container {
       padding: 2rem;
       max-width: 1200px;
       margin: 0 auto;
-      background: #e8e8e8;
-      min-height: 100vh;
     }
 
     .invoice-header {
@@ -168,41 +172,52 @@ import { NotificationService } from '../../../core/services/notification.service
       align-items: center;
       gap: 1rem;
       margin-bottom: 2rem;
-      background: #e0e0e0;
+      background: var(--neu-bg, #E0E5EC);
       padding: 1.5rem;
-      border-radius: 8px;
+      border-radius: var(--neu-radius-container, 32px);
+      box-shadow: var(--neu-extruded, 9px 9px 16px rgba(163,177,198,0.6), -9px -9px 16px rgba(255,255,255,0.5));
     }
 
     .invoice-header h2 {
       margin: 0;
-      color: #2c3e50;
+      color: var(--neu-text-heading, #2D3748);
+      font-family: var(--font-display);
     }
 
     .btn-back {
-      background: #6c757d;
-      color: white;
+      background: var(--neu-bg, #E0E5EC);
+      color: var(--neu-accent, #6C63FF);
       border: none;
       padding: 0.5rem 1rem;
-      border-radius: 4px;
+      border-radius: 12px;
       cursor: pointer;
       font-size: 0.875rem;
+      font-weight: 600;
+      min-height: 44px;
+      box-shadow: var(--neu-extruded-sm, 5px 5px 10px rgba(163,177,198,0.5), -5px -5px 10px rgba(255,255,255,0.4));
+      transition: all 0.25s ease;
     }
 
     .btn-back:hover {
-      background: #545b62;
+      box-shadow: 7px 7px 14px rgba(163,177,198,0.6), -7px -7px 14px rgba(255,255,255,0.5);
+    }
+
+    .btn-back:active {
+      box-shadow: var(--neu-inset-sm, inset 4px 4px 6px rgba(163,177,198,0.5), inset -4px -4px 6px rgba(255,255,255,0.4));
     }
 
     .loading, .error {
       text-align: center;
       padding: 3rem;
-      background: #e0e0e0;
-      border-radius: 8px;
+      background: var(--neu-bg, #E0E5EC);
+      border-radius: var(--neu-radius-container, 32px);
       margin-top: 2rem;
+      box-shadow: var(--neu-extruded, 9px 9px 16px rgba(163,177,198,0.6), -9px -9px 16px rgba(255,255,255,0.5));
+      color: var(--neu-text-primary, #3D4852);
     }
 
     .error {
-      background: #ffe0e0;
-      color: #d32f2f;
+      color: var(--neu-accent-danger, #E53E3E);
     }
 
     .invoice-content {
@@ -211,15 +226,24 @@ import { NotificationService } from '../../../core/services/notification.service
       gap: 1.5rem;
     }
 
-    .invoice-info-card, .invoice-items-card, .invoice-stats-card, .invoice-total-card, .invoice-notes-card {
-      background: #e0e0e0;
+    .invoice-info-card,
+    .invoice-items-card,
+    .invoice-stats-card,
+    .invoice-total-card,
+    .invoice-notes-card {
+      background: var(--neu-card-bg, linear-gradient(145deg, #E8ECF2, #D8DDE4));
       padding: 1.5rem;
-      border-radius: 8px;
+      border-radius: var(--neu-radius-container, 32px);
+      box-shadow: var(--neu-extruded, 9px 9px 16px rgba(163,177,198,0.6), -9px -9px 16px rgba(255,255,255,0.5));
     }
 
-    .invoice-info-card h3, .invoice-items-card h3, .invoice-stats-card h3, .invoice-notes-card h3 {
+    .invoice-info-card h3,
+    .invoice-items-card h3,
+    .invoice-stats-card h3,
+    .invoice-notes-card h3 {
       margin-top: 0;
-      color: #2c3e50;
+      color: var(--neu-text-heading, #2D3748);
+      font-family: var(--font-display);
     }
 
     .info-grid {
@@ -236,66 +260,73 @@ import { NotificationService } from '../../../core/services/notification.service
 
     .info-item label {
       font-weight: 600;
-      color: #666;
+      color: var(--neu-text-muted, #6B7280);
       font-size: 0.875rem;
     }
 
     .info-item span {
-      color: #2c3e50;
+      color: var(--neu-text-primary, #3D4852);
     }
 
     .status-badge {
       display: inline-block;
-      padding: 0.25rem 0.75rem;
-      border-radius: 12px;
+      padding: 0.3rem 0.85rem;
+      border-radius: 20px;
       font-size: 0.875rem;
-      font-weight: 500;
+      font-weight: 600;
+      background: var(--neu-bg, #E0E5EC);
+      box-shadow: var(--neu-extruded-sm, 5px 5px 10px rgba(163,177,198,0.5), -5px -5px 10px rgba(255,255,255,0.4));
     }
 
     .status-draft {
-      background: #e0e0e0;
-      color: #666;
+      color: var(--neu-text-muted, #6B7280);
     }
 
     .status-pending {
-      background: #fff3cd;
-      color: #856404;
+      color: var(--neu-accent-warning, #ED8936);
     }
 
     .status-paid {
-      background: #d4edda;
-      color: #155724;
+      color: var(--neu-accent-secondary, #38B2AC);
     }
 
     .status-overdue {
-      background: #f8d7da;
-      color: #721c24;
+      color: var(--neu-accent-danger, #E53E3E);
     }
 
     .status-cancelled {
-      background: #e0e0e0;
-      color: #666;
+      color: var(--neu-text-muted, #6B7280);
     }
 
     .items-table {
       width: 100%;
-      border-collapse: collapse;
+      border-collapse: separate;
+      border-spacing: 0 0.5rem;
       margin-top: 1rem;
     }
 
     .items-table th {
-      background: #d5d5d5;
       padding: 1rem;
       text-align: left;
       font-weight: 600;
-      color: #2c3e50;
-      border-bottom: 2px solid #bbb;
+      color: var(--neu-text-heading, #2D3748);
+      font-family: var(--font-display);
+      background: transparent;
     }
 
     .items-table td {
       padding: 1rem;
-      border-bottom: 1px solid #ccc;
-      background: #e0e0e0;
+      background: var(--neu-bg, #E0E5EC);
+      color: var(--neu-text-primary, #3D4852);
+      box-shadow: var(--neu-extruded-sm, 5px 5px 10px rgba(163,177,198,0.5), -5px -5px 10px rgba(255,255,255,0.4));
+    }
+
+    .items-table td:first-child {
+      border-radius: 16px 0 0 16px;
+    }
+
+    .items-table td:last-child {
+      border-radius: 0 16px 16px 0;
     }
 
     .text-center {
@@ -317,17 +348,24 @@ import { NotificationService } from '../../../core/services/notification.service
       display: flex;
       flex-direction: column;
       gap: 0.25rem;
+      padding: 1rem;
+      background: var(--neu-card-bg, linear-gradient(145deg, #E8ECF2, #D8DDE4));
+      border-radius: var(--neu-radius-container, 32px);
+      box-shadow: var(--neu-extruded, 9px 9px 16px rgba(163,177,198,0.6), -9px -9px 16px rgba(255,255,255,0.5));
+      text-align: center;
     }
 
     .stat-item label {
       font-weight: 600;
-      color: #666;
+      color: var(--neu-text-muted, #6B7280);
       font-size: 0.875rem;
     }
 
     .stat-item span {
-      color: #2c3e50;
+      color: var(--neu-accent, #6C63FF);
       font-size: 1.25rem;
+      font-family: var(--font-display);
+      font-weight: 700;
     }
 
     .invoice-total-card {
@@ -338,28 +376,40 @@ import { NotificationService } from '../../../core/services/notification.service
       display: flex;
       justify-content: space-between;
       padding: 0.75rem 0;
-      border-bottom: 1px solid #ccc;
+    }
+
+    .total-row + .total-row {
+      margin-top: 0.25rem;
     }
 
     .total-row label {
       font-weight: 600;
-      color: #2c3e50;
+      color: var(--neu-text-heading, #2D3748);
     }
 
     .total-row span {
-      color: #2c3e50;
+      color: var(--neu-text-primary, #3D4852);
+      font-family: var(--font-display);
     }
 
     .total-final {
-      border-bottom: 2px solid #2c3e50;
       font-size: 1.25rem;
-      font-weight: 600;
-      margin-top: 0.5rem;
+      font-weight: 700;
+      margin-top: 0.75rem;
+      padding-top: 1rem;
+      background: var(--neu-bg, #E0E5EC);
+      border-radius: 16px;
+      padding: 1rem;
+      box-shadow: var(--neu-inset-sm, inset 4px 4px 6px rgba(163,177,198,0.5), inset -4px -4px 6px rgba(255,255,255,0.4));
+    }
+
+    .total-final span {
+      color: var(--neu-accent, #6C63FF);
     }
 
     .invoice-notes-card p {
       margin: 0;
-      color: #666;
+      color: var(--neu-text-muted, #6B7280);
       white-space: pre-wrap;
     }
 
@@ -372,19 +422,45 @@ import { NotificationService } from '../../../core/services/notification.service
     .btn {
       padding: 0.75rem 1.5rem;
       border: none;
-      border-radius: 4px;
+      border-radius: 12px;
       cursor: pointer;
       font-size: 1rem;
-      transition: background-color 0.2s;
+      font-weight: 600;
+      transition: all 0.25s ease;
+      min-height: 44px;
     }
 
     .btn-primary {
-      background: #007bff;
-      color: white;
+      background: var(--neu-accent, #6C63FF);
+      color: #fff;
+      box-shadow: var(--neu-extruded-sm, 5px 5px 10px rgba(163,177,198,0.5), -5px -5px 10px rgba(255,255,255,0.4));
     }
 
     .btn-primary:hover {
-      background: #0056b3;
+      box-shadow: 7px 7px 14px rgba(163,177,198,0.6), -7px -7px 14px rgba(255,255,255,0.5);
+    }
+
+    .btn-primary:active {
+      box-shadow: var(--neu-inset-sm, inset 4px 4px 6px rgba(163,177,198,0.5), inset -4px -4px 6px rgba(255,255,255,0.4));
+    }
+
+    @media (max-width: 768px) {
+      .invoice-detail-container {
+        padding: 1rem;
+      }
+
+      .info-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .invoice-header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
     }
   `]
 })

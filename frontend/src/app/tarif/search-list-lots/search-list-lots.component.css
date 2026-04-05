@@ -1,20 +1,26 @@
+/* ============================================================
+   Search List Lots – Neumorphism Design
+   ============================================================ */
+
 .home-container {
   text-align: center;
   padding: 2rem;
 }
 
 h1 {
-  color: #2c3e50;
+  font-family: var(--font-display, 'Plus Jakarta Sans', sans-serif);
+  color: var(--neu-text-heading, #2D3748);
   font-size: 2.5rem;
   margin-bottom: 1rem;
 }
 
 p {
   font-size: 1.2rem;
-  color: #7f8c8d;
+  color: var(--neu-text-muted, #6B7280);
   margin-bottom: 3rem;
 }
 
+/* ---- Feature cards ---- */
 .features {
   display: flex;
   justify-content: center;
@@ -24,77 +30,135 @@ p {
 }
 
 .feature-card {
-  background: white;
+  background: var(--neu-card-bg, linear-gradient(145deg, #E8ECF2, #D8DDE4));
   padding: 2rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  border-radius: var(--neu-radius-container, 32px);
+  box-shadow: var(--neu-extruded, 9px 9px 16px rgba(163,177,198,0.6), -9px -9px 16px rgba(255,255,255,0.5));
   width: 250px;
+  border: none;
+  transition: background 0.3s ease;
+}
+
+.feature-card:hover {
+  background: var(--neu-card-bg-hover, linear-gradient(145deg, #EDF0F5, #DCE1E8));
 }
 
 .feature-card h3 {
-  color: #2c3e50;
+  font-family: var(--font-display, 'Plus Jakarta Sans', sans-serif);
+  color: var(--neu-text-heading, #2D3748);
   margin-bottom: 1rem;
 }
 
+/* ---- Buttons ---- */
 .cta-button {
-  background-color: #3498db;
-  color: white;
+  background: var(--neu-accent-secondary, #2DD4BF);
+  color: var(--neu-text-heading, #2D3748);
   padding: 1rem 2rem;
+  min-height: 44px;
   font-size: 1.1rem;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--neu-radius-inner, 12px);
+  box-shadow: var(--neu-extruded-sm, 5px 5px 10px rgba(163,177,198,0.6), -5px -5px 10px rgba(255,255,255,0.5));
   cursor: pointer;
-  transition: background-color 0.3s;
+  font-weight: 600;
+  transition: box-shadow 0.3s ease, transform 0.15s ease;
 }
 
 .cta-button:hover {
-  background-color: #2980b9;
+  box-shadow: var(--neu-extruded, 9px 9px 16px rgba(163,177,198,0.6), -9px -9px 16px rgba(255,255,255,0.5));
+  transform: translateY(-1px);
 }
-  /* En savoir plus .... */
-  .more-content {
-    margin-top: 20px;
-    padding: 15px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    background-color: #f9f9f9;
-    text-align: left;
-    color: #2c3e50;
-  }
 
-  .btn {
-    padding: 10px 20px;
-    background-color: #9b9b9b;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-  }
+.cta-button:active {
+  box-shadow: var(--neu-inset, inset 6px 6px 10px rgba(163,177,198,0.6), inset -6px -6px 10px rgba(255,255,255,0.5));
+  transform: translateY(0);
+}
 
-  .btn:hover {
-    background-color: #0056b3;
-  }
+/* ---- More content ---- */
+.more-content {
+  margin-top: 20px;
+  padding: 15px;
+  background: var(--neu-bg, #E0E5EC);
+  box-shadow: var(--neu-inset, inset 6px 6px 10px rgba(163,177,198,0.6), inset -6px -6px 10px rgba(255,255,255,0.5));
+  border-radius: var(--neu-radius-inner, 12px);
+  border: none;
+  text-align: left;
+  color: var(--neu-text-primary, #3D4852);
+}
 
-  /* Liste à puces avec flèches */
-  .arrow-list {
-    list-style: none;
-    padding-left: 0;
-  }
-  .arrow-list li {
-    display: inline-block;
-    margin-bottom: 15px; /* Espacement entre les éléments */
-    padding: 10px;
-    background-color: #f8f9fa;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-  }
-  .arrow-list li:hover {
-    background-color: #e9ecef;
-  }
-  /* Ajout d'une flèche en forme de triangle */
-  .arrow-list li::before {
-    content: "→"; /* Symbole de flèche */
-    color: #6c757d;
-    margin-right: 10px;
-    font-weight: bold;
-  }
+.btn {
+  padding: 10px 20px;
+  min-height: 44px;
+  background: var(--neu-bg, #E0E5EC);
+  color: var(--neu-accent, #6C63FF);
+  border: none;
+  border-radius: var(--neu-radius-inner, 12px);
+  box-shadow: var(--neu-extruded-sm, 5px 5px 10px rgba(163,177,198,0.6), -5px -5px 10px rgba(255,255,255,0.5));
+  cursor: pointer;
+  font-weight: 600;
+  transition: box-shadow 0.3s ease, transform 0.15s ease;
+}
+
+.btn:hover {
+  box-shadow: var(--neu-extruded, 9px 9px 16px rgba(163,177,198,0.6), -9px -9px 16px rgba(255,255,255,0.5));
+  transform: translateY(-1px);
+}
+
+.btn:active {
+  box-shadow: var(--neu-inset, inset 6px 6px 10px rgba(163,177,198,0.6), inset -6px -6px 10px rgba(255,255,255,0.5));
+  transform: translateY(0);
+}
+
+/* ---- Arrow list (neumorphic pills) ---- */
+.arrow-list {
+  list-style: none;
+  padding-left: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+}
+
+.arrow-list li {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-bottom: 0;
+  padding: 10px 18px;
+  background: var(--neu-bg, #E0E5EC);
+  border-radius: var(--neu-radius-inner, 12px);
+  box-shadow: var(--neu-extruded-sm, 5px 5px 10px rgba(163,177,198,0.6), -5px -5px 10px rgba(255,255,255,0.5));
+  cursor: pointer;
+  color: var(--neu-text-primary, #3D4852);
+  transition: box-shadow 0.3s ease, color 0.3s ease;
+}
+
+.arrow-list li:hover {
+  box-shadow: var(--neu-extruded, 9px 9px 16px rgba(163,177,198,0.6), -9px -9px 16px rgba(255,255,255,0.5));
+  color: var(--neu-accent, #6C63FF);
+}
+
+.arrow-list li:active {
+  box-shadow: var(--neu-inset, inset 6px 6px 10px rgba(163,177,198,0.6), inset -6px -6px 10px rgba(255,255,255,0.5));
+}
+
+.arrow-list li::before {
+  content: "\2192";
+  color: var(--neu-accent, #6C63FF);
+  margin-right: 10px;
+  font-weight: bold;
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 768px) {
+  .home-container { padding: 1rem; }
+  h1 { font-size: 1.8rem; }
+  .features { gap: 1rem; }
+  .feature-card { width: 100%; border-radius: 20px; }
+  .arrow-list { flex-direction: column; }
+}
+
+@media (max-width: 1024px) {
+  .features { gap: 1.5rem; }
+  .feature-card { width: 220px; }
+}

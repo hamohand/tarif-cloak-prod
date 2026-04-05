@@ -130,73 +130,114 @@ import { CommonModule } from '@angular/common';
     </div>
   `,
   styles: [`
+    :host {
+      --neu-bg: var(--neu-bg, #E0E5EC);
+      --neu-extruded: var(--neu-extruded, 9px 9px 16px rgba(163,177,198,0.6), -9px -9px 16px rgba(255,255,255,0.5));
+      --neu-extruded-hover: var(--neu-extruded-hover, 12px 12px 20px rgba(163,177,198,0.7), -12px -12px 20px rgba(255,255,255,0.6));
+      --neu-extruded-sm: var(--neu-extruded-sm, 5px 5px 10px rgba(163,177,198,0.5), -5px -5px 10px rgba(255,255,255,0.4));
+      --neu-inset: var(--neu-inset, inset 4px 4px 8px rgba(163,177,198,0.5), inset -4px -4px 8px rgba(255,255,255,0.4));
+      --neu-radius-container: var(--neu-radius-container, 32px);
+      --neu-radius-inner: var(--neu-radius-inner, 12px);
+      --neu-accent: var(--neu-accent, #6C63FF);
+      --neu-accent-secondary: var(--neu-accent-secondary, #38B2AC);
+      --neu-accent-danger: var(--neu-accent-danger, #E53E3E);
+      --neu-accent-warning: var(--neu-accent-warning, #ED8936);
+      --neu-text-primary: var(--neu-text-primary, #3D4852);
+      --neu-text-muted: var(--neu-text-muted, #6B7280);
+      --neu-text-heading: var(--neu-text-heading, #2D3748);
+      --font-display: var(--font-display, 'Plus Jakarta Sans', sans-serif);
+    }
+
     .help-page {
       max-width: 760px;
       padding: 1.5rem 0 3rem;
+      background: var(--neu-bg);
     }
     .help-page h2 {
+      font-family: var(--font-display);
       font-size: 1.4rem;
       font-weight: 700;
-      color: #f1f5f9;
+      color: var(--neu-text-heading);
       margin-bottom: 0.5rem;
     }
     .help-intro {
-      color: #94a3b8;
+      color: var(--neu-text-muted);
       margin-bottom: 2rem;
       font-size: 0.95rem;
     }
+
+    /* Sections as extruded cards */
     .help-section {
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 12px;
-      padding: 1.5rem;
+      background: var(--neu-card-bg, linear-gradient(145deg, #E8ECF2, #D8DDE4));
+      box-shadow: var(--neu-extruded);
+      border-radius: var(--neu-radius-container);
+      padding: 1.75rem;
       margin-bottom: 1.5rem;
+      transition: box-shadow 0.3s ease, transform 0.3s ease;
+    }
+    .help-section:hover {
+      box-shadow: var(--neu-extruded-hover);
+      transform: translateY(-2px);
+      background: var(--neu-card-bg-hover, linear-gradient(145deg, #EDF0F5, #DCE1E8));
     }
     .help-section h3 {
+      font-family: var(--font-display);
       font-size: 1rem;
       font-weight: 700;
-      color: #e2e8f0;
+      color: var(--neu-text-heading);
       margin: 0 0 1rem;
     }
     .help-section p {
-      color: #94a3b8;
+      color: var(--neu-text-primary);
       font-size: 0.875rem;
       line-height: 1.6;
       margin: 0 0 0.75rem;
     }
+
+    /* Notes / tips as inset containers */
     .help-note {
-      background: rgba(99,102,241,0.08);
-      border-left: 3px solid #6366f1;
-      padding: 0.6rem 0.8rem;
-      border-radius: 0 6px 6px 0;
+      background: var(--neu-bg);
+      box-shadow: var(--neu-inset);
+      padding: 0.75rem 1rem;
+      border-radius: var(--neu-radius-inner);
       font-size: 0.82rem !important;
-      color: #a5b4fc !important;
+      color: var(--neu-accent) !important;
     }
 
-    /* Crédits table */
+    /* Credits table — separate spacing, extruded cells */
     .credits-table {
       width: 100%;
-      border-collapse: collapse;
+      border-collapse: separate;
+      border-spacing: 0 0.5rem;
       font-size: 0.85rem;
       margin: 0.75rem 0;
     }
     .credits-table th {
       text-align: left;
-      padding: 0.5rem 0.75rem;
-      background: rgba(255,255,255,0.05);
-      color: #cbd5e1;
+      padding: 0.6rem 0.85rem;
+      background: var(--neu-bg);
+      box-shadow: var(--neu-inset);
+      color: var(--neu-text-heading);
       font-weight: 600;
+      border-radius: var(--neu-radius-inner);
     }
     .credits-table td {
-      padding: 0.5rem 0.75rem;
-      border-top: 1px solid rgba(255,255,255,0.06);
-      color: #94a3b8;
+      padding: 0.6rem 0.85rem;
+      color: var(--neu-text-primary);
+      background: var(--neu-bg);
+      box-shadow: var(--neu-extruded-sm);
     }
-    .credits-table tr:hover td {
-      background: rgba(255,255,255,0.02);
+    .credits-table td:first-child {
+      border-radius: var(--neu-radius-inner) 0 0 var(--neu-radius-inner);
+    }
+    .credits-table td:last-child {
+      border-radius: 0 var(--neu-radius-inner) var(--neu-radius-inner) 0;
+    }
+    .credits-table td strong {
+      color: var(--neu-accent);
     }
 
-    /* Hiérarchie */
+    /* Hierarchy — monochrome accent shades */
     .hierarchy-visual {
       margin: 0.75rem 0;
     }
@@ -204,29 +245,32 @@ import { CommonModule } from '@angular/common';
       display: flex;
       align-items: baseline;
       gap: 0.75rem;
-      padding: 0.5rem 0.75rem;
-      border-radius: 6px;
+      padding: 0.6rem 0.85rem;
+      border-radius: var(--neu-radius-inner);
       font-size: 0.82rem;
+      background: var(--neu-bg);
+      box-shadow: var(--neu-extruded-sm);
+      margin-bottom: 0.25rem;
     }
     .level-label {
       font-weight: 600;
       min-width: 160px;
       flex-shrink: 0;
     }
-    .level-example { color: #94a3b8; }
-    .level-section  { background: rgba(99,102,241,0.1); color: #a5b4fc; }
-    .level-chapter  { background: rgba(59,130,246,0.1); color: #93c5fd; }
-    .level-pos4     { background: rgba(16,185,129,0.1); color: #6ee7b7; }
-    .level-pos6     { background: rgba(245,158,11,0.1); color: #fcd34d; }
-    .level-pos10    { background: rgba(239,68,68,0.1);  color: #fca5a5; }
+    .level-example { color: var(--neu-text-muted); }
+    .level-section  { color: var(--neu-accent); opacity: 1; }
+    .level-chapter  { color: var(--neu-accent); opacity: 0.88; }
+    .level-pos4     { color: var(--neu-accent); opacity: 0.76; }
+    .level-pos6     { color: var(--neu-accent); opacity: 0.64; }
+    .level-pos10    { color: var(--neu-accent); opacity: 0.52; }
     .hierarchy-arrow {
       text-align: center;
-      color: #475569;
+      color: var(--neu-text-muted);
       font-size: 0.75rem;
       padding: 0.1rem 0;
     }
 
-    /* Décodage */
+    /* Decode example */
     .decode-example {
       display: flex;
       gap: 1.5rem;
@@ -240,17 +284,18 @@ import { CommonModule } from '@angular/common';
     .decode-label {
       display: block;
       font-size: 0.75rem;
-      color: #64748b;
+      color: var(--neu-text-muted);
       text-transform: uppercase;
       letter-spacing: 0.05em;
       margin-bottom: 0.4rem;
     }
     .decode-input code {
       font-size: 1.1rem;
-      color: #fcd34d;
-      background: rgba(245,158,11,0.1);
-      padding: 0.3rem 0.6rem;
-      border-radius: 6px;
+      color: var(--neu-accent);
+      background: var(--neu-bg);
+      box-shadow: var(--neu-inset);
+      padding: 0.35rem 0.7rem;
+      border-radius: var(--neu-radius-inner);
     }
     .decode-output ul {
       list-style: none;
@@ -258,38 +303,61 @@ import { CommonModule } from '@angular/common';
       margin: 0;
     }
     .decode-output li {
-      color: #94a3b8;
+      color: var(--neu-text-muted);
       font-size: 0.82rem;
-      padding: 0.2rem 0;
-      border-left: 2px solid rgba(255,255,255,0.08);
-      padding-left: 0.6rem;
+      padding: 0.25rem 0 0.25rem 0.6rem;
       margin-bottom: 0.2rem;
+      box-shadow: inset 2px 0 0 0 rgba(108, 99, 255, 0.25);
     }
-    .decode-output li strong { color: #e2e8f0; }
+    .decode-output li strong { color: var(--neu-text-heading); }
 
-    /* Tip */
+    /* Tip section as inset container */
     .help-tip {
-      border-color: rgba(34,197,94,0.2);
-      background: rgba(34,197,94,0.04);
+      background: var(--neu-bg);
+      box-shadow: var(--neu-inset);
     }
-    .help-tip h3 { color: #86efac; }
+    .help-tip:hover {
+      box-shadow: var(--neu-inset);
+      transform: none;
+    }
+    .help-tip h3 { color: var(--neu-accent-secondary); }
     .help-tip ul {
       list-style: none;
       padding: 0;
       margin: 0;
     }
     .help-tip li {
-      color: #94a3b8;
+      color: var(--neu-text-primary);
       font-size: 0.875rem;
       padding: 0.3rem 0;
       padding-left: 1rem;
       position: relative;
     }
     .help-tip li::before {
-      content: '→';
+      content: '\\2192';
       position: absolute;
       left: 0;
-      color: #4ade80;
+      color: var(--neu-accent-secondary);
+    }
+
+    @media (max-width: 768px) {
+      .help-page {
+        padding: 1rem 0.5rem 2rem;
+      }
+      .help-section {
+        padding: 1.25rem;
+        border-radius: var(--neu-radius-inner);
+      }
+      .hierarchy-level {
+        flex-direction: column;
+        gap: 0.25rem;
+      }
+      .level-label {
+        min-width: auto;
+      }
+      .decode-example {
+        flex-direction: column;
+      }
     }
   `]
 })

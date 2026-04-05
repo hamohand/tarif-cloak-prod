@@ -68,9 +68,26 @@ import { environment } from '../../../environments/environment';
     </div>
   `,
   styles: [`
+    :host {
+      --neu-bg: var(--neu-bg, #E0E5EC);
+      --neu-extruded: var(--neu-extruded, 9px 9px 16px rgba(163,177,198,0.6), -9px -9px 16px rgba(255,255,255,0.5));
+      --neu-extruded-hover: var(--neu-extruded-hover, 12px 12px 20px rgba(163,177,198,0.7), -12px -12px 20px rgba(255,255,255,0.6));
+      --neu-extruded-sm: var(--neu-extruded-sm, 5px 5px 10px rgba(163,177,198,0.5), -5px -5px 10px rgba(255,255,255,0.4));
+      --neu-inset: var(--neu-inset, inset 4px 4px 8px rgba(163,177,198,0.5), inset -4px -4px 8px rgba(255,255,255,0.4));
+      --neu-radius-container: var(--neu-radius-container, 32px);
+      --neu-radius-inner: var(--neu-radius-inner, 12px);
+      --neu-accent: var(--neu-accent, #6C63FF);
+      --neu-accent-secondary: var(--neu-accent-secondary, #38B2AC);
+      --neu-accent-danger: var(--neu-accent-danger, #E53E3E);
+      --neu-text-primary: var(--neu-text-primary, #3D4852);
+      --neu-text-muted: var(--neu-text-muted, #6B7280);
+      --neu-text-heading: var(--neu-text-heading, #2D3748);
+      --font-display: var(--font-display, 'Plus Jakarta Sans', sans-serif);
+    }
+
     .choose-plan-page {
       min-height: 100vh;
-      background: #f8fafc;
+      background: var(--neu-bg);
       display: flex;
       align-items: flex-start;
       justify-content: center;
@@ -81,118 +98,180 @@ import { environment } from '../../../environments/environment';
       width: 100%;
     }
     .choose-plan-title {
+      font-family: var(--font-display);
       font-size: 1.75rem;
       font-weight: 700;
-      color: #1e293b;
+      color: var(--neu-text-heading);
       text-align: center;
       margin-bottom: 0.5rem;
     }
     .choose-plan-subtitle {
       text-align: center;
-      color: #64748b;
+      color: var(--neu-text-muted);
       margin-bottom: 2rem;
     }
     .loading, .error-message {
       text-align: center;
       padding: 2rem;
-      color: #64748b;
+      color: var(--neu-text-muted);
     }
-    .error-message { color: #ef4444; }
+    .error-message { color: var(--neu-accent-danger); }
+
+    /* Renew section as inset container */
     .renew-section {
       text-align: center;
-      padding: 1.5rem;
-      background: #eff6ff;
-      border-radius: 12px;
+      padding: 1.75rem;
+      background: var(--neu-bg);
+      box-shadow: var(--neu-inset);
+      border-radius: var(--neu-radius-inner);
       margin-bottom: 1.5rem;
     }
     .renew-section h2 {
+      font-family: var(--font-display);
       font-size: 1.1rem;
       margin-bottom: 1rem;
-      color: #1e40af;
+      color: var(--neu-accent);
     }
     .separator {
       text-align: center;
-      color: #94a3b8;
+      color: var(--neu-text-muted);
       margin: 1.5rem 0;
       position: relative;
+      font-size: 0.9rem;
     }
     .separator::before, .separator::after {
       content: '';
       display: inline-block;
-      width: 40%;
-      height: 1px;
-      background: #e2e8f0;
+      width: 35%;
+      height: 2px;
+      background: var(--neu-bg);
+      box-shadow: var(--neu-inset);
       vertical-align: middle;
-      margin: 0 0.5rem;
+      margin: 0 0.75rem;
+      border-radius: 1px;
     }
     .plans-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
       gap: 1.5rem;
     }
+
+    /* Plan cards — extruded with hover lift */
     .plan-card {
-      background: white;
-      border: 1px solid #e2e8f0;
-      border-radius: 12px;
-      padding: 1.5rem;
+      background: var(--neu-card-violet, linear-gradient(145deg, #EAE8F8, #DDDAF0));
+      box-shadow: var(--neu-extruded);
+      border-radius: var(--neu-radius-container);
+      padding: 2rem;
       display: flex;
       flex-direction: column;
       gap: 0.75rem;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .plan-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--neu-extruded-hover);
+      background: var(--neu-card-violet-hover, linear-gradient(145deg, #EFECFB, #E2E0F4));
     }
     .plan-name {
+      font-family: var(--font-display);
       font-size: 1.1rem;
       font-weight: 700;
-      color: #1e293b;
+      color: var(--neu-text-heading);
       margin: 0;
     }
     .plan-description {
       font-size: 0.875rem;
-      color: #64748b;
+      color: var(--neu-text-muted);
       margin: 0;
     }
     .plan-price {
+      font-family: var(--font-display);
       font-size: 1.5rem;
       font-weight: 700;
-      color: #0f172a;
+      color: var(--neu-accent);
+    }
+    .price-amount {
+      color: var(--neu-accent);
     }
     .price-currency, .price-period {
       font-size: 0.875rem;
       font-weight: 400;
-      color: #64748b;
+      color: var(--neu-text-muted);
     }
     .plan-quota {
       font-size: 0.875rem;
-      color: #475569;
+      color: var(--neu-text-primary);
       margin: 0;
+      padding: 0.5rem 0.75rem;
+      background: var(--neu-bg);
+      box-shadow: var(--neu-inset);
+      border-radius: var(--neu-radius-inner);
+      text-align: center;
     }
     .plan-features {
       list-style: none;
       padding: 0;
       margin: 0;
       font-size: 0.8rem;
-      color: #64748b;
+      color: var(--neu-text-muted);
     }
-    .plan-features li::before { content: '✓ '; color: #22c55e; }
+    .plan-features li::before {
+      content: '\\2713  ';
+      color: var(--neu-accent-secondary);
+      font-weight: 700;
+    }
+
     .btn {
       padding: 0.75rem 1.5rem;
       border: none;
-      border-radius: 8px;
+      border-radius: var(--neu-radius-inner);
       font-weight: 600;
       cursor: pointer;
-      transition: opacity 0.2s;
+      transition: all 0.3s ease;
+      min-height: 44px;
     }
-    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn:focus-visible {
+      outline: 2px solid var(--neu-accent);
+      outline-offset: 2px;
+    }
+    .btn:disabled {
+      background: var(--neu-bg);
+      color: var(--neu-text-muted);
+      box-shadow: var(--neu-inset);
+      cursor: not-allowed;
+    }
     .btn-renew {
-      background: #1d4ed8;
+      background: var(--neu-accent);
       color: white;
       font-size: 1rem;
+      box-shadow: var(--neu-extruded-sm);
+    }
+    .btn-renew:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: var(--neu-extruded-hover);
     }
     .btn-subscribe {
-      background: #0f172a;
+      background: var(--neu-accent);
       color: white;
       margin-top: auto;
+      box-shadow: var(--neu-extruded-sm);
     }
-    .btn:hover:not(:disabled) { opacity: 0.85; }
+    .btn-subscribe:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: var(--neu-extruded-hover);
+    }
+
+    @media (max-width: 768px) {
+      .choose-plan-page {
+        padding: 2rem 1rem;
+      }
+      .plans-grid {
+        grid-template-columns: 1fr;
+      }
+      .separator::before, .separator::after {
+        width: 25%;
+      }
+    }
   `]
 })
 export class ChoosePlanComponent implements OnInit {

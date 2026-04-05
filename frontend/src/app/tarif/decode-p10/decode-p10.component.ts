@@ -144,33 +144,34 @@ import { OAuthService } from 'angular-oauth2-oidc';
     .search-form {
       display: flex;
       margin-bottom: 10px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-      border-radius: 12px;
+      background: var(--neu-bg, #E0E5EC);
+      box-shadow: var(--neu-inset, inset 6px 6px 10px rgba(163,177,198,0.6), inset -6px -6px 10px rgba(255,255,255,0.5));
+      border-radius: var(--neu-radius-inner, 12px);
       overflow: hidden;
-      background: white;
-      border: 2px solid transparent;
-      transition: all 0.3s ease;
+      border: none;
+      transition: box-shadow 0.3s ease;
     }
 
     .search-form:focus-within {
-      border-color: #8e44ad;
-      box-shadow: 0 12px 32px rgba(142, 68, 173, 0.2);
-      transform: translateY(-2px);
+      box-shadow: var(--neu-inset-deep, inset 8px 8px 14px rgba(163,177,198,0.7), inset -8px -8px 14px rgba(255,255,255,0.6)),
+                  0 0 0 3px rgba(108,99,255,0.25);
     }
 
     .search-input {
       flex: 1;
       padding: 16px 20px;
+      min-height: 44px;
       font-size: 20px;
       font-family: 'Courier New', monospace;
       border: none;
       outline: none;
       letter-spacing: 2px;
       background: transparent;
+      color: var(--neu-text-primary, #3D4852);
     }
 
     .search-input::placeholder {
-      color: #95a5a6;
+      color: var(--neu-text-muted, #6B7280);
       font-size: 16px;
       letter-spacing: normal;
       font-family: 'Segoe UI', sans-serif;
@@ -178,30 +179,39 @@ import { OAuthService } from 'angular-oauth2-oidc';
 
     .search-button {
       padding: 16px 32px;
+      min-height: 44px;
       font-size: 16px;
-      background: linear-gradient(135deg, #8e44ad 0%, #7d3c98 100%);
-      color: white;
+      background: var(--neu-accent-secondary, #2DD4BF);
+      color: var(--neu-text-heading, #2D3748);
       border: none;
       font-weight: 600;
       letter-spacing: 0.5px;
-      transition: all 0.3s ease;
+      border-radius: var(--neu-radius-inner, 12px);
+      box-shadow: var(--neu-extruded-sm, 5px 5px 10px rgba(163,177,198,0.6), -5px -5px 10px rgba(255,255,255,0.5));
+      transition: box-shadow 0.3s ease, transform 0.15s ease;
       cursor: pointer;
     }
 
     .search-button:hover:not(:disabled) {
-      background: linear-gradient(135deg, #7d3c98 0%, #6c3483 100%);
-      box-shadow: 0 4px 16px rgba(142, 68, 173, 0.4);
-      transform: translateY(-2px);
+      box-shadow: var(--neu-extruded, 9px 9px 16px rgba(163,177,198,0.6), -9px -9px 16px rgba(255,255,255,0.5));
+      transform: translateY(-1px);
+    }
+
+    .search-button:active:not(:disabled) {
+      box-shadow: var(--neu-inset, inset 6px 6px 10px rgba(163,177,198,0.6), inset -6px -6px 10px rgba(255,255,255,0.5));
+      transform: translateY(0);
     }
 
     .search-button:disabled {
-      background: linear-gradient(135deg, #bdc3c7 0%, #95a5a6 100%);
+      background: var(--neu-bg, #E0E5EC);
+      color: var(--neu-text-muted, #6B7280);
+      box-shadow: var(--neu-extruded-sm, 5px 5px 10px rgba(163,177,198,0.6), -5px -5px 10px rgba(255,255,255,0.5));
       cursor: not-allowed;
       opacity: 0.7;
     }
 
     .hint {
-      color: #7f8c8d;
+      color: var(--neu-text-muted, #6B7280);
       font-size: 0.85rem;
       margin-bottom: 24px;
       padding-left: 4px;
@@ -210,7 +220,7 @@ import { OAuthService } from 'angular-oauth2-oidc';
     .loading {
       margin: 30px 0;
       text-align: center;
-      color: #8e44ad;
+      color: var(--neu-accent, #6C63FF);
       font-size: 1.1rem;
       font-weight: 500;
       animation: pulse 1.5s ease-in-out infinite;
@@ -224,10 +234,10 @@ import { OAuthService } from 'angular-oauth2-oidc';
     .error {
       margin: 20px 0;
       color: #c0392b;
-      background: linear-gradient(135deg, #fadbd8 0%, #f8d7da 100%);
+      background: var(--neu-bg, #E0E5EC);
       padding: 16px 20px;
-      border-radius: 10px;
-      border-left: 4px solid #e74c3c;
+      border-radius: var(--neu-radius-inner, 12px);
+      box-shadow: var(--neu-inset, inset 6px 6px 10px rgba(163,177,198,0.6), inset -6px -6px 10px rgba(255,255,255,0.5));
     }
 
     .results { margin-top: 20px; animation: slideUp 0.4s ease; }
@@ -239,17 +249,19 @@ import { OAuthService } from 'angular-oauth2-oidc';
 
     .results h3 {
       margin-bottom: 20px;
-      color: #2c3e50;
+      color: var(--neu-text-heading, #2D3748);
+      font-family: var(--font-display, 'Plus Jakarta Sans', sans-serif);
       font-size: 1.3rem;
       font-weight: 600;
     }
 
     .code-badge {
       display: inline-block;
-      background: #8e44ad;
+      background: var(--neu-accent, #6C63FF);
       color: white;
-      padding: 2px 10px;
-      border-radius: 4px;
+      padding: 4px 14px;
+      border-radius: var(--neu-radius-inner, 12px);
+      box-shadow: var(--neu-extruded-sm, 5px 5px 10px rgba(163,177,198,0.6), -5px -5px 10px rgba(255,255,255,0.5));
       font-family: 'Courier New', monospace;
       font-size: 1.1rem;
       letter-spacing: 1px;
@@ -258,7 +270,7 @@ import { OAuthService } from 'angular-oauth2-oidc';
     .hierarchy {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 12px;
       margin-bottom: 24px;
     }
 
@@ -266,20 +278,27 @@ import { OAuthService } from 'angular-oauth2-oidc';
       display: flex;
       align-items: baseline;
       gap: 12px;
-      padding: 12px 16px;
-      border-radius: 8px;
-      border-left: 4px solid;
+      padding: 14px 18px;
+      border-radius: var(--neu-radius-inner, 12px);
+      background: var(--neu-card-bg, linear-gradient(145deg, #E8ECF2, #D8DDE4));
+      box-shadow: var(--neu-extruded-sm, 5px 5px 10px rgba(163,177,198,0.6), -5px -5px 10px rgba(255,255,255,0.5));
+      border: none;
+      transition: background 0.3s ease;
     }
 
-    .level-section   { background: #eaf4fb; border-left-color: #2980b9; }
-    .level-chapitre  { background: #eafaf1; border-left-color: #27ae60; margin-left: 16px; }
-    .level-position4 { background: #fef9e7; border-left-color: #f39c12; margin-left: 32px; }
+    .level:hover {
+      background: var(--neu-card-bg-hover, linear-gradient(145deg, #EDF0F5, #DCE1E8));
+    }
+
+    .level-section { border-left: 4px solid var(--neu-accent, #6C63FF); }
+    .level-chapitre { border-left: 4px solid var(--neu-accent-secondary, #38B2AC); margin-left: 16px; }
+    .level-position4 { border-left: 4px solid #F6AD55; margin-left: 32px; }
 
     .level-label {
       font-size: 0.75rem;
       font-weight: 700;
       text-transform: uppercase;
-      color: #7f8c8d;
+      color: var(--neu-text-muted, #6B7280);
       min-width: 70px;
     }
 
@@ -287,73 +306,96 @@ import { OAuthService } from 'angular-oauth2-oidc';
       font-family: 'Courier New', monospace;
       font-weight: 700;
       font-size: 1rem;
-      color: #2c3e50;
+      color: var(--neu-text-heading, #2D3748);
       min-width: 60px;
     }
 
-    .level-desc { color: #34495e; font-size: 0.95rem; line-height: 1.4; }
+    .level-desc { color: var(--neu-text-primary, #3D4852); font-size: 0.95rem; line-height: 1.4; }
 
     .subpositions { margin-top: 20px; }
 
     .subpositions h4 {
-      color: #2c3e50;
+      color: var(--neu-text-heading, #2D3748);
+      font-family: var(--font-display, 'Plus Jakarta Sans', sans-serif);
       font-size: 1rem;
       font-weight: 600;
       margin-bottom: 12px;
       padding-bottom: 6px;
-      border-bottom: 2px solid #ecf0f1;
     }
 
     table {
       width: 100%;
       border-collapse: separate;
-      border-spacing: 0;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-      border-radius: 10px;
-      overflow: hidden;
-      background: white;
+      border-spacing: 0 0.5rem;
+      background: transparent;
       margin-bottom: 20px;
     }
 
-    th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid #ecf0f1; }
-
     th {
-      background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%);
+      padding: 12px 16px;
+      text-align: left;
+      background: var(--neu-bg, #E0E5EC);
       font-weight: 600;
-      color: white;
+      color: var(--neu-text-heading, #2D3748);
       text-transform: uppercase;
       font-size: 0.82rem;
       letter-spacing: 0.5px;
     }
 
-    tbody tr:hover { background: #f5eef8; }
-    tbody tr:last-child td { border-bottom: none; }
+    td {
+      padding: 12px 16px;
+      text-align: left;
+      background: var(--neu-bg, #E0E5EC);
+      box-shadow: var(--neu-extruded-sm, 5px 5px 10px rgba(163,177,198,0.6), -5px -5px 10px rgba(255,255,255,0.5));
+    }
+
+    td:first-child { border-radius: var(--neu-radius-inner, 12px) 0 0 var(--neu-radius-inner, 12px); }
+    td:last-child { border-radius: 0 var(--neu-radius-inner, 12px) var(--neu-radius-inner, 12px) 0; }
+
+    tbody tr:hover td { opacity: 0.85; }
 
     .code-cell {
       font-family: 'Courier New', monospace;
       font-weight: 600;
-      color: #27ae60;
+      color: var(--neu-accent-secondary, #38B2AC);
       font-size: 0.95rem;
     }
 
-    .code-cell.p10 { color: #8e44ad; }
+    .code-cell.p10 { color: var(--neu-accent, #6C63FF); }
 
     .titres-p10 {
       margin-bottom: 10px;
-      border-left: 3px solid #8e44ad;
+      border-left: 3px solid var(--neu-accent, #6C63FF);
       padding-left: 8px;
     }
 
-    .titre-row td { background: #faf5ff; padding: 4px 16px 2px; border-bottom: none; }
-    .titre-row:hover td { background: #faf5ff; }
+    .titre-row td {
+      background: var(--neu-bg, #E0E5EC);
+      box-shadow: none;
+      padding: 4px 16px 2px;
+    }
+    .titre-row:hover td { opacity: 1; }
     .titres-cell { padding: 6px 16px 2px !important; }
 
     .titre-p10 {
       font-style: italic;
-      color: #7f8c8d;
+      color: var(--neu-text-muted, #6B7280);
       font-size: 0.88rem;
       padding: 2px 0 1px 8px;
-      border-left: 3px solid #8e44ad;
+      border-left: 3px solid var(--neu-accent, #6C63FF);
+    }
+
+    @media (max-width: 768px) {
+      .decode-container { padding: 20px 12px; }
+      .search-form { flex-direction: column; }
+      .search-button { border-radius: 0 0 var(--neu-radius-inner, 12px) var(--neu-radius-inner, 12px); }
+      .level { flex-direction: column; gap: 4px; }
+      .level-chapitre { margin-left: 0; }
+      .level-position4 { margin-left: 0; }
+    }
+
+    @media (max-width: 1024px) {
+      .decode-container { padding: 30px 16px; }
     }
   `]
 })

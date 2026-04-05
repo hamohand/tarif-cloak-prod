@@ -216,28 +216,49 @@ import { NotificationService } from '../../../core/services/notification.service
     </div>
   `,
   styles: [`
+    :host {
+      --neu-bg: var(--neu-bg, #E0E5EC);
+      --neu-extruded: var(--neu-extruded, 9px 9px 16px rgba(163,177,198,0.6), -9px -9px 16px rgba(255,255,255,0.5));
+      --neu-extruded-sm: var(--neu-extruded-sm, 4px 4px 8px rgba(163,177,198,0.6), -4px -4px 8px rgba(255,255,255,0.5));
+      --neu-extruded-hover: var(--neu-extruded-hover, 12px 12px 20px rgba(163,177,198,0.6), -12px -12px 20px rgba(255,255,255,0.5));
+      --neu-inset: var(--neu-inset, inset 4px 4px 8px rgba(163,177,198,0.6), inset -4px -4px 8px rgba(255,255,255,0.5));
+      --neu-inset-deep: var(--neu-inset-deep, inset 6px 6px 12px rgba(163,177,198,0.6), inset -6px -6px 12px rgba(255,255,255,0.5));
+      --neu-radius-container: var(--neu-radius-container, 32px);
+      --neu-radius-inner: var(--neu-radius-inner, 12px);
+      --neu-accent: var(--neu-accent, #6C63FF);
+      --neu-accent-secondary: var(--neu-accent-secondary, #38B2AC);
+      --neu-accent-danger: var(--neu-accent-danger, #E53E3E);
+      --neu-accent-warning: var(--neu-accent-warning, #ED8936);
+      --neu-text-primary: var(--neu-text-primary, #3D4852);
+      --neu-text-muted: var(--neu-text-muted, #6B7280);
+      --neu-text-heading: var(--neu-text-heading, #2D3748);
+      --font-display: var(--font-display, 'Inter', sans-serif);
+    }
+
     .invoices-admin-container {
       padding: 2rem;
       max-width: 1600px;
       margin: 0 auto;
-      background: #e8e8e8;
+      background: var(--neu-bg);
       min-height: 100vh;
     }
 
     .invoices-header {
       margin-bottom: 2rem;
-      background: #e0e0e0;
-      padding: 1.5rem;
-      border-radius: 8px;
+      background: var(--neu-card-bg, linear-gradient(145deg, #E8ECF2, #D8DDE4));
+      padding: 1.5rem 2rem;
+      border-radius: var(--neu-radius-container);
+      box-shadow: var(--neu-extruded);
     }
 
     .invoices-header h2 {
       margin: 0 0 0.5rem 0;
-      color: #2c3e50;
+      color: var(--neu-text-heading);
+      font-family: var(--font-display);
     }
 
     .subtitle {
-      color: #666;
+      color: var(--neu-text-muted);
       margin: 0;
     }
 
@@ -245,18 +266,21 @@ import { NotificationService } from '../../../core/services/notification.service
       display: flex;
       gap: 1rem;
       margin-bottom: 2rem;
+      flex-wrap: wrap;
     }
 
     .form-card {
-      background: #e0e0e0;
-      padding: 1.5rem;
-      border-radius: 8px;
+      background: var(--neu-card-bg, linear-gradient(145deg, #E8ECF2, #D8DDE4));
+      padding: 1.5rem 2rem;
+      border-radius: var(--neu-radius-container);
       margin-bottom: 2rem;
+      box-shadow: var(--neu-extruded);
     }
 
     .form-card h3 {
       margin-top: 0;
-      color: #2c3e50;
+      color: var(--neu-text-heading);
+      font-family: var(--font-display);
     }
 
     .form-group {
@@ -267,16 +291,27 @@ import { NotificationService } from '../../../core/services/notification.service
       display: block;
       margin-bottom: 0.5rem;
       font-weight: 600;
-      color: #2c3e50;
+      color: var(--neu-text-primary);
     }
 
     .form-group input,
     .form-group select {
       width: 100%;
-      padding: 0.5rem;
-      border: 1px solid #ccc;
-      border-radius: 4px;
+      padding: 0.625rem 0.75rem;
+      background: var(--neu-bg);
+      box-shadow: var(--neu-inset);
+      border: none;
+      border-radius: var(--neu-radius-inner);
       font-size: 1rem;
+      color: var(--neu-text-primary);
+      min-height: 44px;
+      transition: box-shadow 0.2s ease;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+      outline: none;
+      box-shadow: var(--neu-inset-deep), 0 0 0 2px var(--neu-accent);
     }
 
     .form-actions {
@@ -286,14 +321,15 @@ import { NotificationService } from '../../../core/services/notification.service
     }
 
     .filters-bar {
-      background: #e0e0e0;
-      padding: 1.5rem;
-      border-radius: 8px;
+      background: var(--neu-bg);
+      padding: 1.5rem 2rem;
+      border-radius: var(--neu-radius-container);
       margin-bottom: 2rem;
       display: flex;
       flex-wrap: wrap;
       gap: 1rem;
       align-items: flex-end;
+      box-shadow: var(--neu-inset);
     }
 
     .search-group {
@@ -303,10 +339,20 @@ import { NotificationService } from '../../../core/services/notification.service
 
     .search-input {
       width: 100%;
-      padding: 0.5rem;
-      border: 1px solid #ccc;
-      border-radius: 4px;
+      padding: 0.625rem 0.75rem;
+      background: var(--neu-bg);
+      box-shadow: var(--neu-inset);
+      border: none;
+      border-radius: var(--neu-radius-inner);
       font-size: 1rem;
+      color: var(--neu-text-primary);
+      min-height: 44px;
+      transition: box-shadow 0.2s ease;
+    }
+
+    .search-input:focus {
+      outline: none;
+      box-shadow: var(--neu-inset-deep), 0 0 0 2px var(--neu-accent);
     }
 
     .filter-group {
@@ -317,16 +363,27 @@ import { NotificationService } from '../../../core/services/notification.service
 
     .filter-group label {
       font-weight: 600;
-      color: #2c3e50;
+      color: var(--neu-text-muted);
       font-size: 0.875rem;
     }
 
     .filter-select,
     .filter-input {
-      padding: 0.5rem;
-      border: 1px solid #ccc;
-      border-radius: 4px;
+      padding: 0.625rem 0.75rem;
+      background: var(--neu-bg);
+      box-shadow: var(--neu-inset);
+      border: none;
+      border-radius: var(--neu-radius-inner);
       font-size: 1rem;
+      color: var(--neu-text-primary);
+      min-height: 44px;
+      transition: box-shadow 0.2s ease;
+    }
+
+    .filter-select:focus,
+    .filter-input:focus {
+      outline: none;
+      box-shadow: var(--neu-inset-deep), 0 0 0 2px var(--neu-accent);
     }
 
     .actions-group {
@@ -337,89 +394,106 @@ import { NotificationService } from '../../../core/services/notification.service
     .loading, .error, .no-invoices {
       text-align: center;
       padding: 3rem;
-      background: #e0e0e0;
-      border-radius: 8px;
+      background: var(--neu-bg);
+      border-radius: var(--neu-radius-container);
       margin-top: 2rem;
+      box-shadow: var(--neu-extruded);
     }
 
     .error {
-      background: #ffe0e0;
-      color: #d32f2f;
+      color: var(--neu-accent-danger);
     }
 
     .no-invoices {
-      background: #e0e0e0;
-      color: #666;
+      color: var(--neu-text-muted);
     }
 
     .pagination-info {
       margin-bottom: 1rem;
-      color: #666;
+      color: var(--neu-text-muted);
       font-size: 0.875rem;
     }
 
     .invoices-table-wrapper {
-      background: #e0e0e0;
-      border-radius: 8px;
+      background: var(--neu-card-bg, linear-gradient(145deg, #E8ECF2, #D8DDE4));
+      border-radius: var(--neu-radius-container);
       overflow: hidden;
       margin-bottom: 2rem;
+      padding: 1rem;
+      box-shadow: var(--neu-extruded);
     }
 
     .invoices-table {
       width: 100%;
-      border-collapse: collapse;
+      border-collapse: separate;
+      border-spacing: 0 0.5rem;
     }
 
     .invoices-table th {
-      background: #d5d5d5;
-      padding: 1rem;
+      padding: 0.75rem 1rem;
       text-align: left;
       font-weight: 600;
-      color: #2c3e50;
-      border-bottom: 2px solid #bbb;
+      color: var(--neu-text-muted);
+      background: transparent;
     }
 
     .invoices-table td {
-      padding: 1rem;
-      border-bottom: 1px solid #ccc;
-      background: #e0e0e0;
+      padding: 0.75rem 1rem;
+      background: var(--neu-bg);
+      box-shadow: var(--neu-extruded-sm);
+      color: var(--neu-text-primary);
+    }
+
+    .invoices-table td:first-child {
+      border-radius: var(--neu-radius-inner) 0 0 var(--neu-radius-inner);
+    }
+
+    .invoices-table td:last-child {
+      border-radius: 0 var(--neu-radius-inner) var(--neu-radius-inner) 0;
     }
 
     .invoices-table tr:hover td {
-      background: #d5d5d5;
+      box-shadow: var(--neu-extruded);
     }
 
     .status-select {
-      padding: 0.25rem 0.5rem;
-      border: 1px solid #ccc;
-      border-radius: 4px;
+      padding: 0.375rem 0.625rem;
+      border: none;
+      border-radius: var(--neu-radius-inner);
       font-size: 0.875rem;
       cursor: pointer;
+      min-height: 44px;
+      transition: box-shadow 0.2s ease;
     }
 
     .status-select-draft {
-      background: #e0e0e0;
-      color: #666;
+      background: var(--neu-bg);
+      color: var(--neu-text-muted);
+      box-shadow: var(--neu-extruded-sm);
     }
 
     .status-select-pending {
-      background: #fff3cd;
+      background: #FFF8E1;
       color: #856404;
+      box-shadow: var(--neu-extruded-sm);
     }
 
     .status-select-paid {
-      background: #d4edda;
+      background: #E8F5E9;
       color: #155724;
+      box-shadow: var(--neu-extruded-sm);
     }
 
     .status-select-overdue {
-      background: #f8d7da;
+      background: #FFEBEE;
       color: #721c24;
+      box-shadow: var(--neu-extruded-sm);
     }
 
     .status-select-cancelled {
-      background: #e0e0e0;
-      color: #666;
+      background: var(--neu-bg);
+      color: var(--neu-text-muted);
+      box-shadow: var(--neu-extruded-sm);
     }
 
     .pagination {
@@ -432,16 +506,19 @@ import { NotificationService } from '../../../core/services/notification.service
 
     .page-info {
       font-weight: 600;
-      color: #2c3e50;
+      color: var(--neu-text-heading);
+      font-family: var(--font-display);
     }
 
     .btn {
-      padding: 0.5rem 1rem;
+      padding: 0.625rem 1.25rem;
       border: none;
-      border-radius: 4px;
+      border-radius: var(--neu-radius-inner);
       cursor: pointer;
       font-size: 0.875rem;
-      transition: background-color 0.2s;
+      font-weight: 600;
+      min-height: 44px;
+      transition: box-shadow 0.2s ease;
     }
 
     .btn:disabled {
@@ -450,27 +527,67 @@ import { NotificationService } from '../../../core/services/notification.service
     }
 
     .btn-primary {
-      background: #007bff;
+      background: var(--neu-accent);
       color: white;
+      box-shadow: var(--neu-extruded-sm);
     }
 
     .btn-primary:hover:not(:disabled) {
-      background: #0056b3;
+      box-shadow: var(--neu-extruded);
+    }
+
+    .btn-primary:active:not(:disabled) {
+      box-shadow: var(--neu-inset);
     }
 
     .btn-secondary {
-      background: #6c757d;
-      color: white;
+      background: var(--neu-bg);
+      color: var(--neu-text-muted);
+      box-shadow: var(--neu-extruded-sm);
     }
 
     .btn-secondary:hover:not(:disabled) {
-      background: #545b62;
+      box-shadow: var(--neu-extruded);
+    }
+
+    .btn-secondary:active:not(:disabled) {
+      box-shadow: var(--neu-inset);
     }
 
     .btn-small {
-      padding: 0.25rem 0.5rem;
+      padding: 0.375rem 0.625rem;
       font-size: 0.75rem;
       margin-right: 0.5rem;
+      min-height: 36px;
+    }
+
+    @media (max-width: 768px) {
+      .invoices-admin-container {
+        padding: 1rem;
+      }
+
+      .filters-bar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .actions-bar {
+        flex-direction: column;
+      }
+
+      .actions-group {
+        flex-direction: column;
+      }
+
+      .invoices-table-wrapper {
+        overflow-x: auto;
+      }
+    }
+
+    @media (max-width: 1024px) {
+      .invoices-table-wrapper {
+        overflow-x: auto;
+      }
     }
   `]
 })
