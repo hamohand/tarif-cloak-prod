@@ -288,19 +288,6 @@ import { of } from 'rxjs';
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     }
 
-    .nav-link.disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-      text-decoration: line-through;
-      pointer-events: none;
-    }
-
-    .nav-link.disabled:hover {
-      background-color: transparent;
-      transform: none;
-      box-shadow: none;
-    }
-
     .nav-auth {
       display: flex;
       align-items: center;
@@ -376,30 +363,17 @@ import { of } from 'rxjs';
       box-shadow: 0 6px 16px rgba(52, 152, 219, 0.4);
     }
 
-    .btn-outline {
+    .btn-outline, .btn-secondary {
       background-color: transparent;
       border: 2px solid white;
       color: white;
       box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
     }
 
-    .btn-outline:hover {
+    .btn-outline:hover, .btn-secondary:hover {
       background-color: rgba(255, 255, 255, 0.15);
       transform: translateY(-2px);
       box-shadow: 0 6px 16px rgba(255, 255, 255, 0.2);
-    }
-
-    .btn-secondary {
-      background-color: transparent;
-      border: 2px solid white;
-      color: white;
-      box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
-    }
-
-    .btn-secondary:hover {
-      background-color: rgba(255, 255, 255, 0.2);
-      transform: translateY(-2px);
-      box-shadow: 0 6px 16px rgba(255, 255, 255, 0.25);
     }
 
     .btn:active {
@@ -414,19 +388,6 @@ import { of } from 'rxjs';
       display: inline-flex;
       align-items: center;
       gap: 0.5rem;
-    }
-
-    .quote-badge {
-      font-size: 0.65rem;
-      font-weight: 600;
-      color: #facc15;
-      background: rgba(250, 204, 21, 0.2);
-      padding: 0.25rem 0.6rem;
-      border-radius: 12px;
-      white-space: nowrap;
-      border: 1px solid rgba(250, 204, 21, 0.4);
-      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-      box-shadow: 0 2px 4px rgba(250, 204, 21, 0.2);
     }
 
     .alert-badge, .invoice-badge {
@@ -618,32 +579,6 @@ import { of } from 'rxjs';
       background-color: rgba(255, 255, 255, 0.2);
     }
 
-    .org-nav-link.invoices-link {
-      position: relative;
-    }
-
-    .org-nav-link .invoice-badge {
-      position: absolute;
-      top: -5px;
-      right: -5px;
-      background: #3498db;
-      color: white;
-      border-radius: 50%;
-      width: 20px;
-      height: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.7rem;
-      font-weight: 700;
-      border: 2px solid rgba(255, 255, 255, 0.3);
-      animation: pulse 2s infinite;
-    }
-
-    .org-nav-link .invoice-badge.overdue-badge {
-      background: #e74c3c;
-      animation: pulse-red 2s infinite;
-    }
 
     /* ─── Credits counter ─── */
     .credits-counter {
