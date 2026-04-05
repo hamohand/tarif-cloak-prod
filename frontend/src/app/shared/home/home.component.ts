@@ -279,7 +279,7 @@ import { environment } from '../../../environments/environment';
         <p>Développement d'applications pour les entreprises</p>
         <p>Auto-entreprise Hamroun<br>
         Contact : mohhamroun&#64;gmail.com <br>
-        WathsApp : +213 5 60 96 80 66</p>
+        WhatsApp : +213 5 60 96 80 66</p>
         
       </footer>
     </div>
