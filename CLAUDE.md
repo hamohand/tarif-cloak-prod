@@ -2,11 +2,11 @@
 
 ## Vue d'ensemble
 
-Application SaaS de recherche de codes HS (harmonized system) pour le commerce international.
-Les utilisateurs soumettent des termes de recherche, l'IA retourne les codes HS correspondants.
+**TCI (Tarif du Commerce International)** — Application SaaS de recherche de codes HS (harmonized system) pour le commerce international.
+Les utilisateurs soumettent des termes de recherche, l'IA retourne les codes HS correspondants avec hiérarchie complète et justification.
 
 **Stack principale :**
-- Frontend : Angular (port 4200)
+- Frontend : Angular 18 standalone (port 4200)
 - Backend : Spring Boot 3.5 / Java 21 (port 8081)
 - Search-service : Spring Boot / Java 21 (port 8082) — moteur IA
 - Auth : Keycloak 22 (port 8080)
@@ -21,29 +21,32 @@ tarif-cloak-prod/
 ├── frontend/          # Application Angular
 ├── search-service/    # Microservice IA (recherche HS-codes, batch API)
 ├── keycloak/          # Configuration realm Keycloak
-├── docker-compose-staging.yml # Environnement de développement principal (Staging)
-├── docker-compose-prod.yml    # Environnement de production
+├── docker-compose-staging.yml # Environnement de développement principal
+├── docker-compose-prod.yml    # Environnement Invité (beta)
 └── .env               # NE PAS COMMITER — uniquement sur le VPS
 ```
 
 ## Environnements et flux de déploiement
 
-### Deux environnements sur le VPS
+### Environnements sur le VPS
 
-| | **Staging** | **Production / Beta** |
+| | **Staging** | **Invité (Beta)** |
 | --- | --- | --- |
 | Compose | `docker-compose-staging.yml` | `docker-compose-prod.yml` |
-| Domaine | `tarif.enclume-numerique.com` | domaine principal |
+| Domaine | `tarif.enclume-numerique.com` | `hscode.enclume-numerique.com` |
 | BDD | Isolée (`staging-app-data`) | Prod |
 | Keycloak | **Partagé** (Keycloak prod) | Keycloak prod |
+| `BETA_MODE` | false | true |
 | Usage | Développement continu | Beta-testeurs (Mars–Mai 2026) |
 
 **Règle absolue :** le staging est réservé au développement. Les beta-testeurs n'y ont pas accès et n'en connaissent pas l'URL.
 
+**Troisième environnement Client** (lancement commercial post-beta) : délibérément différé, sera déployé après validation de la Phase 1.
+
 ### Flux de déploiement
 
 ```
-Code → Staging (test) → Production (beta-testeurs)
+Code → Staging (test) → Invité/Prod (beta-testeurs)
 ```
 
 ### Ce qui doit toujours passer par staging d'abord
@@ -59,6 +62,7 @@ Code → Staging (test) → Production (beta-testeurs)
 - Hotfix critique et minuscule pour un bug bloquant les testeurs
 
 ### Note Keycloak
+
 Keycloak est partagé entre staging et prod. Ne jamais modifier la configuration du realm (flows, scopes, clients) sans vérifier l'impact sur les deux environnements. Les comptes des beta-testeurs créés pendant la phase beta resteront valides en prod lors du lancement commercial.
 
 ## Commandes clés
@@ -68,7 +72,7 @@ Keycloak est partagé entre staging et prod. Ne jamais modifier la configuration
 # Le staging sur le VPS sert d'environnement de dev et de test principal.
 docker compose -f docker-compose-staging.yml up -d --build
 
-# Production (sur VPS)
+# Production Invité (sur VPS)
 docker compose -f docker-compose-prod.yml up -d --build
 
 # Rebuild d'un seul service (exemple Staging)
@@ -86,20 +90,36 @@ docker compose -f docker-compose-staging.yml logs -f search-service
 ./scripts/backup-prod-dbs.sh
 
 # Cloner la Production vers le Staging (Sync Parfait)
-# Le Keycloak de prod étant déjà partagé avec le staging, il suffit de restaurer l'App DB
 cd /root/backups-hscode
 ls -t app-db*.sql.gz | head -1 | xargs zcat | docker exec -i staging-app-db sh -c 'psql -U $POSTGRES_USER -d $POSTGRES_DB'
 cd /root/tarif-cloak-prod && docker compose -f docker-compose-staging.yml restart
 ```
 
+## Mode Beta (`BETA_MODE`)
+
+Le frontend lit `environment.betaMode` (injecté via `ARG BETA_MODE` dans le Dockerfile).
+
+Quand `BETA_MODE=true` :
+
+- **Inscription** : plan Invité assigné automatiquement (via `DEFAULT_PLAN_NAME=Invité` côté backend)
+- **Sidebar organisation** : Factures et Demandes de devis masquées
+- **Navbar principale** : Alertes masquées, lien Tarifs masqué
+- **Page d'accueil** : bouton "Ouvrir l'espace organisation" masqué, badge offre Invité visible
+- **Plan bloqué** : redirige vers `/access-expired` (page de remerciement) au lieu de `/choose-plan`
+- **Bannière quota épuisé** : fond vert, message de remerciement sur deux lignes
+- **Stats organisation** : section plan simplifiée (info fixe Invité, pas de changement de plan)
+- **Réinitialisation admin** : limitée à 1 fois par organisation (`trialRenewCount`)
+
 ## Architecture IA (search-service)
 
 ### Providers standard (requêtes unitaires)
+
 - `AiService` → route vers `OpenAiProvider`, `AnthropicProvider`, ou `OllamaProvider`
 - Sélection via variable `AI_PROVIDER` (openai | anthropic | ollama)
 - `AiProvider.demanderAiAide(titre, question, withJustification)` — le paramètre `withJustification` contrôle le system message
 
 ### Justification — stratégie d'optimisation des coûts
+
 - La justification est activée **uniquement au dernier niveau** de la cascade IA
 - Niveaux intermédiaires (L0-L3) : `withJustification = false` → system message plus court, output minimal
 - Dernier niveau (ex: L4 pour Position10, L3 pour HScode) : `withJustification = true` → justification en français
@@ -107,12 +127,14 @@ cd /root/tarif-cloak-prod && docker compose -f docker-compose-staging.yml restar
 - Si le dernier niveau échoue et qu'un niveau précédent est utilisé en fallback, les résultats n'ont pas de justification
 
 ### Providers batch (requêtes en lot)
+
 - `BatchService` → route vers `AnthropicBatchProvider` ou `OpenAiBatchProvider`
 - Interface commune : `BatchProvider`
 - Modèles partagés dans `batch/models/` : `SearchRequest`, `BatchStatus`, `BatchResult`
 - Ollama ne supporte PAS le batch
 
 ### Endpoints batch
+
 - `POST /api/batch-search/submit` — soumettre un lot
 - `GET  /api/batch-search/status/{id}` — statut
 - `GET  /api/batch-search/results/{id}` — résultats
@@ -127,6 +149,7 @@ cd /root/tarif-cloak-prod && docker compose -f docker-compose-staging.yml restar
 | search-service | Host + PathPrefix(`/api/recherche`, `/api/batch-search`) | 20 |
 
 **Important :**
+
 - `search-service` a priorité 20, donc ses routes doivent être précises.
 - Ne pas ajouter `/api/swagger-ui` à search-service (intercepterait le swagger du backend).
 - **Protection DDoS / Quotas API** : `search-service` utilise le middleware `search-ratelimit` (5 req/sec en moyenne) défini dans Traefik pour bloquer les requêtes abusives qui feraient exploser la facture OpenAI.
@@ -147,6 +170,7 @@ Entité avec les champs : `name`, `marketVersion`, `currency`, `isCustom`, `orga
 - Plans custom : `isCustom = true`, liés à une organisation
 
 Endpoints :
+
 - `GET /api/pricing-plans` — liste tous les plans
 - `GET /api/pricing-plans/market/{marketVersion}` — par marché
 - `POST /api/pricing-plans` — créer (ADMIN)
@@ -164,6 +188,10 @@ ANTHROPIC_API_KEY=...
 MARKET_VERSION=DZ
 FRONTEND_DOMAIN=...
 WWW_FRONTEND_DOMAIN=...
+
+# Beta mode
+BETA_MODE=true                  # Injecté dans le build Angular via Dockerfile ARG
+DEFAULT_PLAN_NAME=Invité        # Plan assigné automatiquement à l'inscription (backend)
 ```
 
 Le fichier `.env.dev` sert de template — copier vers `.env` sur le VPS et adapter.
@@ -179,6 +207,7 @@ Accepte 2, 4, 6 ou 10 chiffres et retourne la hiérarchie complète (section →
 Dans la table `position10_dz`, les lignes avec `code=''` sont des **titres de catégorie** préfixés par `"- "` (1 tiret = niveau 1, `"- - "` = niveau 2, etc.).
 
 **Algorithme `findTitres`** (pour un code unique, niveau POSITION10) :
+
 - Remonte les ids décroissants depuis le code P10
 - Cherche le premier titre avec `nb_tirets < n_tirets` courant
 - Si ce titre a **≤ 1 tiret → STOP total** (frontière de section, aucun titre affiché)
@@ -186,6 +215,7 @@ Dans la table `position10_dz`, les lignes avec `code=''` sont des **titres de ca
 - Arrêt quand `n_tirets = 1`
 
 **Algorithme `buildTitresParCode`** (pour une liste de codes, niveau POSITION6) :
+
 - Étape 1 : `findTitres` pour le premier code (les titres précédant le 1er code ont des ids < MIN des codes, exclus de la requête de plage)
 - Étape 2 : parcourt `findAllWithContextByPrefix` (plage MIN..MAX ids), maintient une pile de titres
 - Titre à **1 tiret → vide la pile** (frontière de section), ne l'ajoute pas
@@ -193,16 +223,37 @@ Dans la table `position10_dz`, les lignes avec `code=''` sont des **titres de ca
 
 **Affichage frontend (delta)** : pour chaque code P10, seuls les titres qui **changent** par rapport au code précédent sont affichés (`titreDelta(current, prev)`).
 
-## Navigation Frontend (tarif module)
+## Navigation Frontend
 
-Les 3 modes de recherche sont accessibles via :
-- **Onglets** dans `frontend/.../tarif/home/tarif.component.ts` (barre de navigation persistante)
-- **Cartes** sur la page d'accueil `frontend/.../shared/home/home.component.ts`
+### Routes principales
 
-Routes :
+- `/` — Page d'accueil
+- `/aide` — Guide d'utilisation (**public**, pas d'auth requise)
+- `/auth/register` — Inscription (plan Invité assigné automatiquement en beta)
 - `/recherche/search` → Recherche d'article unique
 - `/recherche/searchListLots` → Recherche par liste
 - `/recherche/batch-search` → Recherche par lots (async)
+- `/choose-plan` — Choix / renouvellement de plan (mode normal uniquement)
+- `/access-expired` — Page de fin d'accès (mode beta uniquement)
+
+### Guards
+
+- `authGuard` — authentification requise
+- `collaboratorGuard` — compte org ou collaborateur requis
+- `organizationGuard` — compte org uniquement
+- `planRequiredGuard` — vérifie `canMakeRequests` ; redirige vers `/access-expired` (betaMode) ou `/choose-plan` (!betaMode) si bloqué. Appliqué sur `recherche`, `dashboard`, `alerts`.
+
+### Compteur de crédits (sidebar)
+
+Affiché dans la sidebar organisation via `getMyOrganization()` :
+
+- Vert si > 50% restants, orange entre 20–50%, rouge sous 20%
+- Masqué si `monthlyQuota == null` (plan illimité)
+- Rafraîchi toutes les 30 secondes
+
+### Les 3 modes de recherche
+
+Accessibles via onglets dans `frontend/.../tarif/home/tarif.component.ts` et cartes sur la page d'accueil.
 
 ## Facturation — Stratégie actuelle
 
@@ -222,56 +273,65 @@ Vérifications dans l'ordre :
 4. Quota mensuel épuisé (pour les plans payants avec `monthlyQuota != null`) → `false`
 5. Sinon → `true`
 
-### UX frontend selon le rôle (plan bloqué)
+### Champ `trialRenewCount` (Organisation)
 
-| Rôle | Navbar | Page d'accueil |
+Limite la réinitialisation du plan Invité à **1 fois** par organisation.
+
+- Incrémenté dans `PlanChangeService.resetPlan()` après chaque reset
+- Si `trialRenewCount >= 1`, un second reset lève `IllegalStateException`
+- Visible dans l'interface admin : bouton "Réinitialiser" masqué et remplacé par badge "✅ Déjà renouvelé"
+
+### UX frontend selon le mode et le rôle (plan bloqué)
+
+| Mode | Rôle | Comportement |
 | --- | --- | --- |
-| ORGANIZATION | Bouton "HS-code ⚠️" → modal avec "Renouveler" + "Changer de plan" | Message blocage + liens vers stats |
-| COLLABORATOR | **Bouton HS-code masqué complètement** | Message blocage + "contacter l'admin" |
-
-- Modal de renouvellement : également accessible depuis `/organization/stats` via bannière de blocage
-- `renewCurrentPlan()` : déclenche Chargily checkout avec le `pricingPlanId` actuel
-- `scrollToChangePlan()` : fait défiler vers la section de sélection de plan dans stats
-- Service frontend : `frontend/.../core/services/payment.service.ts` — `createCheckout(request)`
-- Plans gratuits (prix = 0) : activés directement via `PUT /api/user/organization/pricing-plan` sans Chargily
+| Normal | ORGANIZATION | Modal → `/choose-plan` |
+| Normal | COLLABORATOR | Bouton HS-code masqué |
+| Beta | ORGANIZATION | Bannière verte + `/access-expired` |
+| Beta | COLLABORATOR | Bouton HS-code masqué |
 
 ## Paiement Chargily Pay
 
-Intégration Chargily Pay v2 pour les paiements en DZD (CIB / EDAHABIA).
+Intégration Chargily Pay v2 pour les paiements en DZD (CIB / EDAHABIA). **Non utilisé en mode beta.**
 
 ### Flux de paiement
+
 1. Frontend appelle `POST /api/payments/chargily/checkout` → backend crée un checkout via l'API Chargily
 2. Backend retourne un `checkout_url` → frontend redirige l'utilisateur
 3. L'utilisateur paie sur la page Chargily
 4. Chargily envoie un webhook `checkout.paid` → backend active le plan automatiquement
 
 ### Webhook
+
 - **URL** : `https://[domaine]/api/webhooks/chargily` (public, pas d'auth JWT)
 - **Contrôleur** : `ChargilyWebhookController` — vérifie la signature HMAC-SHA256
 - **Événements gérés** : `checkout.paid`, `checkout.failed`, `checkout.canceled`
 - **Activation du plan** : `OrganizationService.activatePlanAfterPayment(organizationId, planId)` appelée sur `checkout.paid`
 
 ### Metadata transmises à Chargily
+
 ```json
 {
   "organization_id": "6",
   "pricing_plan_id": "9",
-  "invoice_id": "1"   // optionnel
+  "invoice_id": "1"
 }
 ```
 
 ### Configuration
+
 ```
 CHARGILY_API_KEY=...      # Clé secrète Chargily (test ou live)
 CHARGILY_SECRET_KEY=...   # Clé de signature webhook
 ```
+
 - Dashboard test : `https://pay.chargily.com/test/dashboard/developers-corner`
 - Dashboard live : `https://pay.chargily.com/dashboard/developers-corner`
 - Routage Traefik : `/api/webhooks/**` → backend (strip `/api`), backend voit `/webhooks/chargily`
 
 ## Fichiers sensibles
 
-- `tarif-cloak-prod` (à la racine) : fichier `.env` de production mal nommé — ignoré par git, ne jamais commiter
+- `.env` à la racine : fichier de production — ignoré par git, ne jamais commiter
 - `.env` et `.env.*` : ignorés par git
 - Le vrai `.env` de production est uniquement sur le VPS
 
@@ -288,3 +348,4 @@ CHARGILY_SECRET_KEY=...   # Clé de signature webhook
 - [CONFIGURATION.md](CONFIGURATION.md) — toutes les variables d'environnement
 - [search-service/BATCH_API_GUIDE.md](search-service/BATCH_API_GUIDE.md) — guide batch API
 - [docs/PLAN_FACTURATION.md](docs/PLAN_FACTURATION.md) — système de facturation
+- [docs/STRATEGIE_COMMERCIALE.md](docs/STRATEGIE_COMMERCIALE.md) — stratégie de lancement

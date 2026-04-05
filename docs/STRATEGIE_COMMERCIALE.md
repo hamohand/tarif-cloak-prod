@@ -1,12 +1,12 @@
-# Stratégie commerciale — Intradia
-**Classification tarifaire HS-code par intelligence artificielle**
+# Stratégie commerciale — TCI
+**Tarif du Commerce International — Classification HS-code par intelligence artificielle**
 *Document de lancement — Mars 2026*
 
 ---
 
 ## 1. Le produit
 
-**Intradia** est un SaaS de recherche de codes HS (Système Harmonisé) par IA multilingue.
+**TCI (Tarif du Commerce International)** est un SaaS de recherche de codes HS (Système Harmonisé) par IA multilingue.
 Il permet à tout professionnel du commerce international de trouver la position tarifaire d'un produit en décrivant l'article en langage naturel, dans n'importe quelle langue.
 
 ### Précision importante : HS-code vs Position tarifaire nationale
@@ -17,10 +17,10 @@ Au-delà de ces 6 chiffres, chaque pays ajoute ses propres subdivisions national
 - **8 chiffres** pour l'Union Européenne (TARIC)
 - **10 chiffres** pour l'Algérie (Position tarifaire nationale, dite **P10**)
 
-**Intradia va jusqu'au niveau P10 (10 chiffres)**, ce qui est indispensable pour toute opération douanière en Algérie. C'est à ce niveau que sont déterminés les droits de douane, les taxes et les régimes d'importation applicables.
+**TCI va jusqu'au niveau P10 (10 chiffres)**, ce qui est indispensable pour toute opération douanière en Algérie. C'est à ce niveau que sont déterminés les droits de douane, les taxes et les régimes d'importation applicables.
 
 > Aucun outil générique de recherche HS-code ne descend au niveau P10 algérien.
-> C'est l'un des différenciateurs majeurs d'Intradia.
+> C'est l'un des différenciateurs majeurs de TCI.
 
 ### Fonctionnalités clés
 
@@ -60,7 +60,7 @@ Au-delà de ces 6 chiffres, chaque pays ajoute ses propres subdivisions national
 
 ## 3. Analyse concurrentielle
 
-| Outil | Points forts | Faiblesses vs Intradia |
+| Outil | Points forts | Faiblesses vs TCI |
 |---|---|---|
 | Customs Info / Schedule B | Données officielles US | S'arrête à 6 chiffres, anglais uniquement, pas d'IA |
 | HS Code Finder (outils génériques) | Gratuits | S'arrête à 6 chiffres, pas multilingue, pas de batch |
@@ -68,7 +68,7 @@ Au-delà de ces 6 chiffres, chaque pays ajoute ses propres subdivisions national
 | Douanes.gouv.fr / TARIC | Officiel EU (8 chiffres) | Pas d'IA, pas multilingue, ne couvre pas la nomenclature DZ |
 | Portail des douanes algériennes | Officiel DZ (10 chiffres) | Pas d'IA, recherche manuelle uniquement, pas de batch |
 
-**Avantages différenciateurs d'Intradia :**
+**Avantages différenciateurs de TCI :**
 
 - **Seul outil IA qui descend jusqu'au niveau P10 (10 chiffres) de la nomenclature algérienne**
 - Multilingue : arabe, chinois, français, anglais...
@@ -81,26 +81,24 @@ Au-delà de ces 6 chiffres, chaque pays ajoute ses propres subdivisions national
 
 ## 4. Stratégie d'entrée sur le marché
 
-### Phase 1 — Validation (Mars → Mai 2026)
+### Phase 1 — Validation Invité (Mars → Mai 2026)
 
 **Objectif :** Prouver la précision et l'utilité auprès de 10 à 20 beta-testeurs professionnels.
 
-**Actions :**
-1. Créer un plan "Beta Testeur" dans l'application
-   - 500 crédits offerts (~50 recherches HS-code)
-   - Accès complet pendant 30 jours
-   - Aucune carte bancaire requise
+**Environnement dédié :** Instance de production séparée avec `BETA_MODE=true`
+- Interface simplifiée (pas de facturation, pas de devis, pas de gestion d'alertes)
+- Plan **Invité** assigné automatiquement à l'inscription : 500 crédits / 30 jours
+- Réinitialisation du plan possible une seule fois par l'admin (`trialRenewCount` ≤ 1)
+- Page `/aide` publique avec guide d'utilisation intégré
 
-2. Identifier et contacter 20 professionnels ciblés
+**Actions :**
+1. Identifier et contacter 10 à 20 professionnels ciblés
    - Priorité : transitaires indépendants et PME exportatrices
    - Canaux : LinkedIn, réseaux douaniers, chambres de commerce
 
-3. Recueillir le feedback structuré
-   - Formulaire court à mi-parcours (15 jours)
-   - Questions clés : précision des codes, cas d'erreur, utilité du batch
-   - Entretien de 30 minutes en fin de période
+2. Recueillir le feedback structuré (5 questions — voir section 7)
 
-4. Itérer rapidement sur les retours
+3. Itérer rapidement sur les retours
    - Corriger les erreurs de classification identifiées
    - Améliorer l'UX selon les retours terrain
 
@@ -108,6 +106,7 @@ Au-delà de ces 6 chiffres, chaque pays ajoute ses propres subdivisions national
 - Taux de précision déclaré ≥ 85% par les testeurs
 - Au moins 3 témoignages positifs exploitables
 - Au moins 2 beta-testeurs prêts à passer en plan payant
+- Validation du prix cible (question directe dans le formulaire)
 
 ---
 
@@ -117,16 +116,16 @@ Au-delà de ces 6 chiffres, chaque pays ajoute ses propres subdivisions national
 
 **Actions :**
 1. Affiner la grille tarifaire selon les retours beta
-2. Proposer un plan d'entrée accessible (ex : 1 000 crédits/mois à prix réduit)
-3. Créer une page de témoignages sur le site
-4. Démarcher les chambres de commerce algériennes et françaises
+2. Déployer l'instance Client (sans `BETA_MODE`) avec paiement Chargily Pay
+3. Proposer un plan d'entrée accessible (ex : 1 000 crédits/mois à prix réduit)
+4. Créer une page de témoignages sur le site
+5. Démarcher les chambres de commerce algériennes et françaises
    - Proposer un accord de partenariat : accès groupé pour leurs membres
-5. Publier du contenu de démonstration (LinkedIn, YouTube)
-   - "Comment trouver le code HS de votre produit en 10 secondes"
-6. Approcher 2–3 freight forwarders pour une intégration ou un accord de revente
+6. Publier du contenu de démonstration (LinkedIn, YouTube)
+7. Approcher 2–3 freight forwarders pour une intégration ou un accord de revente
 
 **Indicateurs de succès Phase 2 :**
-- 10 clients payants actifs 
+- 10 clients payants actifs
 - MRR (revenu mensuel récurrent) > 500 €
 - NPS (satisfaction) ≥ 7/10
 
@@ -149,20 +148,20 @@ Au-delà de ces 6 chiffres, chaque pays ajoute ses propres subdivisions national
 
 | Plan | Crédits/mois | Prix | Cible |
 |---|---|---|---|
-| Beta Testeur | 500 | Gratuit (30 jours) | Validation |
+| Invité | 500 | Gratuit (30 jours) | Validation beta |
 | Starter | 1 000 | ~15 €/mois | PME, auto-entrepreneurs |
 | Professionnel | 5 000 | ~50 €/mois | Transitaires, cabinets |
 | Entreprise | Illimité | Sur devis | Grands comptes, intégrateurs |
 
-**Rappel coût en crédits :**
-- Recherche HS-code : 10 crédits
-- Recherche Position10 : 15 crédits
+**Coût en crédits par opération :**
+- Recherche HS-code (6 chiffres) : 10 crédits
+- Recherche Position10 (10 chiffres) : 15 crédits
 - Décodage inverse HS : 2 crédits
 - Décodage inverse P10 : 5 crédits
 
 ---
 
-## 6. Mail de contact — Template beta-testeur
+## 6. Mail d'invitation beta — Template
 
 **Objet :** Testez gratuitement notre outil de classification douanière HS-code — 30 jours offerts
 
@@ -170,42 +169,40 @@ Au-delà de ces 6 chiffres, chaque pays ajoute ses propres subdivisions national
 
 Madame, Monsieur,
 
-Je développe **Intradia**, un outil de recherche de codes HS par intelligence artificielle,
-et je recherche des professionnels du commerce international pour le tester en conditions
-réelles avant son lancement commercial.
+Je développe **TCI (Tarif du Commerce International)**, un outil de recherche de codes HS
+par intelligence artificielle, et je recherche des professionnels du commerce international
+pour le tester en conditions réelles avant son lancement commercial.
 
 **Ce que je vous propose :**
 - Accès complet et gratuit pendant **30 jours**
-- **500 crédits** offerts (soit ~50 recherches HS-code)
+- **500 crédits** offerts (soit ~33 recherches Position10 ou ~50 recherches HS-code)
 - Aucune carte bancaire requise
+- Un guide d'utilisation intégré directement dans l'application
 
-En échange, je vous demanderai simplement **30 minutes de retour d'expérience**
-à mi-parcours — vos observations m'aideront directement à améliorer l'outil.
-
-**Intradia en pratique :**
+**TCI en pratique :**
 - Décrivez votre produit en français, anglais, arabe ou toute autre langue
-- L'IA retourne le code HS, la hiérarchie complète et une justification
-- Traitez des listes entières en mode batch (jusqu'à 1 000 articles)
+- L'IA retourne le code HS, la hiérarchie complète jusqu'au niveau P10 et une justification
+- Décodez instantanément un code existant pour obtenir sa désignation officielle
 
-👉 Créer mon compte beta gratuitement : https://[votre-domaine]/auth/register
+👉 Créer mon compte : https://[domaine-invité]/auth/register
 
-Je reste disponible pour toute question.
+Je reste disponible par email ou WhatsApp pour toute question.
 
 Cordialement,
 **Hamroun Mohammed** — Enclume-Numérique
-mohhamroun@gmail.com | WhatsApp : +33 6 22 56 38 41
+mohhamroun@gmail.com | WhatsApp : +213 5 60 96 80 66
 
 ---
 
-## 7. Formulaire de feedback beta (questions clés)
+## 7. Formulaire de feedback beta (5 questions)
 
-1. Quel est votre secteur d'activité ?
-2. Combien de classifications HS effectuez-vous par semaine en moyenne ?
-3. Sur les recherches effectuées, estimez-vous que les codes retournés étaient corrects dans quelle proportion ? (< 50% / 50-75% / 75-90% / > 90%)
-4. Avez-vous utilisé la fonctionnalité batch ? Si oui, était-elle utile ?
-5. Qu'est-ce qui vous a le plus manqué ?
-6. À quel prix mensuel seriez-vous prêt à utiliser cet outil régulièrement ?
-7. Recommanderiez-vous Intradia à un collègue ? (note de 1 à 10)
+1. **La recherche** — Les codes retournés vous semblent-ils corrects et utiles dans votre activité ?
+2. **La facilité d'utilisation** — Avez-vous eu des difficultés à prendre en main l'outil ? Lesquelles ?
+3. **Les crédits** — 500 crédits vous ont-ils semblé suffisants pour évaluer le service ?
+4. **Ce qui manque** — Quelle fonctionnalité vous aurait été la plus utile et qui n'est pas présente ?
+5. **La suite** — À quel prix mensuel seriez-vous prêt(e) à utiliser cet outil dans votre entreprise ?
+
+> La question 5 est stratégique : elle valide la grille tarifaire avant le lancement commercial.
 
 ---
 
@@ -221,4 +218,4 @@ mohhamroun@gmail.com | WhatsApp : +33 6 22 56 38 41
 
 ---
 
-*Document rédigé en Mars 2026 — à réviser après la Phase 1 de validation.*
+*Document rédigé en Mars 2026 — à réviser après la Phase 1 de validation (Mai 2026).*

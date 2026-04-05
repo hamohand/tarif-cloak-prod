@@ -15,7 +15,7 @@ import { CommonModule } from '@angular/common';
 
       <!-- Crédits -->
       <section class="help-section">
-        <h3>💳 Crédits et quota</h3>
+        <h3>💳 Recherches et crédits</h3>
         <p>Chaque recherche consomme un certain nombre de crédits selon son type :</p>
         <table class="credits-table">
           <thead>
@@ -26,19 +26,19 @@ import { CommonModule } from '@angular/common';
           </thead>
           <tbody>
             <tr>
-              <td>Recherche Position10 (avec IA)</td>
+              <td>Recherche Position10 (10 chiffres)</td>
               <td><strong>15 crédits</strong></td>
             </tr>
             <tr>
-              <td>Recherche HS-code Position6 (avec IA)</td>
+              <td>Recherche HS-code Position6 (6 chiffres)</td>
               <td><strong>10 crédits</strong></td>
             </tr>
             <tr>
-              <td>Décodage inverse Position10</td>
+              <td>Décodage inverse Position10 (Désignation à partir d'un code à 10 chiffres)</td>
               <td><strong>5 crédits</strong></td>
             </tr>
             <tr>
-              <td>Décodage inverse HS-code</td>
+              <td>Décodage inverse HS-code (Désignation à partir d'un code à 2, 4 ou 6 chiffres)</td>
               <td><strong>2 crédits</strong></td>
             </tr>
           </tbody>
