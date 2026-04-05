@@ -56,7 +56,10 @@ import { of } from 'rxjs';
             💳 Tarifs
           </a>
         }
-        <button class="nav-link contact-btn" (click)="toggleContactPopup(); closeMobileMenu()">📬 Contact</button>
+        <button class="nav-link contact-btn" (click)="toggleContactPopup(); closeMobileMenu()">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          Contact
+        </button>
         @if ((isAuthenticated$ | async) && !isBetaMode) {
           @if (isOrganizationAccount$ | async) {
             @if (alertCount > 0) {
@@ -396,6 +399,9 @@ import { of } from 'rxjs';
       cursor: pointer;
       font-size: 0.9rem;
       color: var(--neu-text-primary, #3D4852);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
     }
 
     .pricing-link {

@@ -21,19 +21,24 @@ import { environment } from '../../../environments/environment';
         <br>Recherche multilingue - Multilingual search - 多语言搜索 - بحث متعدد اللغات
         </p>
         <ng-container *ngIf="!(isAuthenticated$ | async)">
-          <p class="hero-desc">TCI analyse vos produits et retourne la position tarifaire la plus pertinente — avec explication détaillée.</p>
-          <p class="hero-desc">Un code de nomenclature inconnu devient lisible en un instant : section, chapitre, position, sous-position.</p>
+          <p class="hero-desc">TCI analyse vos produits et retourne la position tarifaire la plus pertinente — avec explication détaillée.
+          <br>Un code de nomenclature inconnu devient lisible en un instant : section, chapitre, position, sous-position.</p>
         </ng-container>
         <div class="hero-cta" *ngIf="!(isAuthenticated$ | async)">
-          @if (isBetaMode) {
-            <div class="trial-offer-badge">
-              <span class="trial-offer-icon">🎁</span>
-              <div class="trial-offer-text">
-                <strong>Offre Invité</strong> — 500 crédits offerts pendant 30 jours
+          <div class="hero-cta-top">
+            @if (isBetaMode) {
+              <div class="trial-offer-badge">
+                <svg class="trial-offer-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12v9H4v-9"/><path d="M22 7H2v5h20V7z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg>
+                <div class="trial-offer-text">
+                  <strong>Offre Invité</strong> — 500 crédits / 30 jours
+                </div>
               </div>
-            </div>
-          }
-          <a routerLink="/aide" class="cta-button ghost">📚 Guide d'utilisation</a>
+            }
+            <a routerLink="/aide" class="cta-button ghost guide-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/><path d="M12 6v6M12 15h.01"/></svg>
+              Guide d'utilisation
+            </a>
+          </div>
           <a routerLink="/auth/register" class="cta-button primary">Commencer gratuitement</a>
           <a *ngIf="!isBetaMode" routerLink="/pricing" class="cta-button ghost">Voir les tarifs</a>
         </div>
@@ -360,6 +365,26 @@ import { environment } from '../../../environments/environment';
       flex-wrap: wrap;
     }
 
+    .hero-cta-top {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .guide-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .guide-btn svg {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+    }
+
     .trial-offer-badge {
       display: flex;
       align-items: center;
@@ -372,7 +397,7 @@ import { environment } from '../../../environments/environment';
       color: var(--neu-accent-secondary, #38B2AC);
       border: none;
     }
-    .trial-offer-icon { font-size: 1.3rem; }
+    .trial-offer-svg { width: 20px; height: 20px; flex-shrink: 0; }
     .trial-offer-text strong { display: block; margin-bottom: 0.1rem; color: var(--neu-text-heading, #2D3748); }
 
     /* ═══ CTA Buttons ═══ */
@@ -750,7 +775,7 @@ import { environment } from '../../../environments/environment';
       .hero-glow { width: 250px; height: 250px; }
       .hero h1 { font-size: 2.2rem; }
       .hero-subtitle { font-size: 1.05rem; }
-      .hero-desc { font-size: 0.95rem; }
+      .hero-desc { font-size: 1.0rem; }
 
       .feature-card { width: 100%; min-width: unset; }
       .request-card { min-width: unset; max-width: 100%; width: 100%; }
