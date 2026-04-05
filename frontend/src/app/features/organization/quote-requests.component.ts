@@ -79,10 +79,34 @@ import { QuoteRequestFormComponent } from '../pricing/quote-request-form.compone
     </app-quote-request-form>
   `,
   styles: [`
+    /* ── Neumorphism tokens ── */
+    :host {
+      --neu-bg: var(--neu-bg, #E0E5EC);
+      --neu-extruded: var(--neu-extruded, 9px 9px 16px rgba(163,177,198,0.6), -9px -9px 16px rgba(255,255,255,0.5));
+      --neu-extruded-sm: var(--neu-extruded-sm, 4px 4px 8px rgba(163,177,198,0.6), -4px -4px 8px rgba(255,255,255,0.5));
+      --neu-extruded-hover: var(--neu-extruded-hover, 12px 12px 20px rgba(163,177,198,0.7), -12px -12px 20px rgba(255,255,255,0.6));
+      --neu-inset: var(--neu-inset, inset 4px 4px 8px rgba(163,177,198,0.6), inset -4px -4px 8px rgba(255,255,255,0.5));
+      --neu-inset-sm: var(--neu-inset-sm, inset 2px 2px 4px rgba(163,177,198,0.5), inset -2px -2px 4px rgba(255,255,255,0.4));
+      --neu-accent: var(--neu-accent, #6C63FF);
+      --neu-accent-secondary: var(--neu-accent-secondary, #36B37E);
+      --neu-accent-danger: var(--neu-accent-danger, #E5484D);
+      --neu-accent-warning: var(--neu-accent-warning, #E8912D);
+      --neu-accent-info: var(--neu-accent-info, #38bdf8);
+      --neu-text-primary: var(--neu-text-primary, #3D4852);
+      --neu-text-muted: var(--neu-text-muted, #6B7280);
+      --neu-text-heading: var(--neu-text-heading, #2D3748);
+      --neu-radius-container: var(--neu-radius-container, 32px);
+      --neu-radius-inner: var(--neu-radius-inner, 12px);
+      --font-display: var(--font-display, 'Inter', sans-serif);
+      display: block;
+      background: var(--neu-bg);
+    }
+
     .quote-requests-container {
       padding: 2rem;
       max-width: 1000px;
       margin: 0 auto;
+      background: var(--neu-bg);
     }
 
     .header {
@@ -93,51 +117,57 @@ import { QuoteRequestFormComponent } from '../pricing/quote-request-form.compone
     }
 
     .header h2 {
-      color: #e2e8f0;
+      color: var(--neu-text-heading);
+      font-family: var(--font-display);
       margin: 0;
     }
 
     .btn {
       padding: 0.75rem 1.5rem;
       border: none;
-      border-radius: 6px;
+      border-radius: var(--neu-radius-inner);
       font-size: 1rem;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.3s;
+      transition: all 0.2s ease;
+      min-height: 44px;
     }
 
     .btn-primary {
-      background: linear-gradient(135deg, #f59e0b, #d97706);
-      color: #0f172a;
+      background: var(--neu-accent);
+      color: #fff;
+      box-shadow: var(--neu-extruded-sm);
     }
 
     .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 16px rgba(245, 158, 11, 0.35);
+      box-shadow: var(--neu-extruded-hover);
+    }
+
+    .btn-primary:active {
+      box-shadow: var(--neu-inset);
     }
 
     .loading, .error {
       text-align: center;
       padding: 2rem;
       font-size: 1.2rem;
-      color: #94a3b8;
+      color: var(--neu-text-muted);
     }
 
     .error {
-      color: #f87171;
+      color: var(--neu-accent-danger);
     }
 
     .empty-state {
       text-align: center;
       padding: 4rem 2rem;
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 12px;
+      background: var(--neu-bg);
+      box-shadow: var(--neu-inset);
+      border-radius: var(--neu-radius-container);
     }
 
     .empty-state p {
-      color: #94a3b8;
+      color: var(--neu-text-muted);
       margin-bottom: 1.5rem;
       font-size: 1.1rem;
     }
@@ -148,34 +178,47 @@ import { QuoteRequestFormComponent } from '../pricing/quote-request-form.compone
       gap: 1.5rem;
     }
 
+    /* ── Quote request cards with accent left strip ── */
     .quote-request-card {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 12px;
-      padding: 1.5rem;
-      border-left: 4px solid rgba(255, 255, 255, 0.15);
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      background: var(--neu-card-bg, linear-gradient(145deg, #E8ECF2, #D8DDE4));
+      box-shadow: var(--neu-extruded);
+      border-radius: var(--neu-radius-container);
+      padding: 1.5rem 1.5rem 1.5rem 2rem;
+      position: relative;
+      overflow: hidden;
+      transition: box-shadow 0.3s ease, background 0.3s ease;
+    }
+
+    .quote-request-card::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 5px;
+      background: var(--neu-text-muted);
+      border-radius: var(--neu-radius-container) 0 0 var(--neu-radius-container);
     }
 
     .quote-request-card:hover {
-      transform: translateY(-2px);
-      background: rgba(255, 255, 255, 0.07);
+      background: var(--neu-card-bg-hover, linear-gradient(145deg, #EDF0F5, #DCE1E8));
+      box-shadow: var(--neu-extruded-hover);
     }
 
-    .quote-request-card.status-pending {
-      border-left-color: #f59e0b;
+    .quote-request-card.status-pending::before {
+      background: var(--neu-accent-warning);
     }
 
-    .quote-request-card.status-in_review {
-      border-left-color: #38bdf8;
+    .quote-request-card.status-in_review::before {
+      background: var(--neu-accent-info);
     }
 
-    .quote-request-card.status-responded {
-      border-left-color: #4ade80;
+    .quote-request-card.status-responded::before {
+      background: var(--neu-accent-secondary);
     }
 
-    .quote-request-card.status-closed {
-      border-left-color: rgba(255, 255, 255, 0.2);
+    .quote-request-card.status-closed::before {
+      background: var(--neu-text-muted);
     }
 
     .card-header {
@@ -184,47 +227,46 @@ import { QuoteRequestFormComponent } from '../pricing/quote-request-form.compone
       align-items: flex-start;
       margin-bottom: 1rem;
       padding-bottom: 1rem;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     }
 
     .card-header h3 {
       margin: 0 0 0.5rem 0;
-      color: #e2e8f0;
+      color: var(--neu-text-heading);
+      font-family: var(--font-display);
       font-size: 1.3rem;
     }
 
     .date {
-      color: #94a3b8;
+      color: var(--neu-text-muted);
       font-size: 0.9rem;
       margin: 0;
     }
 
+    /* ── Status badges (extruded-sm pills) ── */
     .status-badge {
       padding: 0.5rem 1rem;
-      border-radius: 20px;
+      border-radius: 999px;
       font-size: 0.875rem;
       font-weight: 600;
       text-transform: uppercase;
+      background: var(--neu-bg);
+      box-shadow: var(--neu-extruded-sm);
     }
 
     .status-badge.status-pending {
-      background: rgba(245, 158, 11, 0.15);
-      color: #fbbf24;
+      color: var(--neu-accent-warning);
     }
 
     .status-badge.status-in_review {
-      background: rgba(56, 189, 248, 0.15);
-      color: #38bdf8;
+      color: var(--neu-accent-info);
     }
 
     .status-badge.status-responded {
-      background: rgba(74, 222, 128, 0.15);
-      color: #4ade80;
+      color: var(--neu-accent-secondary);
     }
 
     .status-badge.status-closed {
-      background: rgba(255, 255, 255, 0.08);
-      color: #94a3b8;
+      color: var(--neu-text-muted);
     }
 
     .card-body {
@@ -239,33 +281,38 @@ import { QuoteRequestFormComponent } from '../pricing/quote-request-form.compone
     }
 
     .info-row strong {
-      color: #e2e8f0;
+      color: var(--neu-text-heading);
       min-width: 120px;
     }
 
     .info-row span {
-      color: #94a3b8;
+      color: var(--neu-text-muted);
     }
 
     .message-section, .admin-notes-section {
       padding: 1rem;
-      background: rgba(255, 255, 255, 0.04);
-      border-radius: 6px;
+      background: var(--neu-bg);
+      box-shadow: var(--neu-inset-sm);
+      border-radius: var(--neu-radius-inner);
     }
 
     .message-section strong, .admin-notes-section strong {
       display: block;
-      color: #e2e8f0;
+      color: var(--neu-text-heading);
       margin-bottom: 0.5rem;
     }
 
     .message-section p, .admin-notes-section p {
-      color: #94a3b8;
+      color: var(--neu-text-muted);
       margin: 0;
       white-space: pre-wrap;
     }
 
     @media (max-width: 768px) {
+      .quote-requests-container {
+        padding: 1rem;
+      }
+
       .header {
         flex-direction: column;
         align-items: flex-start;
@@ -284,6 +331,10 @@ import { QuoteRequestFormComponent } from '../pricing/quote-request-form.compone
 
       .info-row strong {
         min-width: auto;
+      }
+
+      .quote-request-card {
+        border-radius: 20px;
       }
     }
   `]

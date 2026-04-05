@@ -172,22 +172,52 @@ import { Observable } from 'rxjs';
     </ng-template>
   `,
   styles: [`
+    /* ── Neumorphism tokens ── */
+    :host {
+      --neu-bg: var(--neu-bg, #E0E5EC);
+      --neu-extruded: var(--neu-extruded, 9px 9px 16px rgba(163,177,198,0.6), -9px -9px 16px rgba(255,255,255,0.5));
+      --neu-extruded-sm: var(--neu-extruded-sm, 4px 4px 8px rgba(163,177,198,0.6), -4px -4px 8px rgba(255,255,255,0.5));
+      --neu-extruded-hover: var(--neu-extruded-hover, 12px 12px 20px rgba(163,177,198,0.7), -12px -12px 20px rgba(255,255,255,0.6));
+      --neu-inset: var(--neu-inset, inset 4px 4px 8px rgba(163,177,198,0.6), inset -4px -4px 8px rgba(255,255,255,0.5));
+      --neu-inset-deep: var(--neu-inset-deep, inset 6px 6px 12px rgba(163,177,198,0.7), inset -6px -6px 12px rgba(255,255,255,0.6));
+      --neu-accent: var(--neu-accent, #6C63FF);
+      --neu-accent-secondary: var(--neu-accent-secondary, #36B37E);
+      --neu-accent-danger: var(--neu-accent-danger, #E5484D);
+      --neu-text-primary: var(--neu-text-primary, #3D4852);
+      --neu-text-muted: var(--neu-text-muted, #6B7280);
+      --neu-text-heading: var(--neu-text-heading, #2D3748);
+      --neu-radius-container: var(--neu-radius-container, 32px);
+      --neu-radius-inner: var(--neu-radius-inner, 12px);
+      --font-display: var(--font-display, 'Inter', sans-serif);
+      display: block;
+      background: var(--neu-bg);
+    }
+
     .page-container {
       display: flex;
       flex-direction: column;
       gap: 1.5rem;
       padding: 2rem;
+      background: var(--neu-bg);
+      min-height: 100%;
     }
 
     h1 {
       margin: 0;
-      color: #f8fafc;
+      color: var(--neu-text-heading);
+      font-family: var(--font-display);
+    }
+
+    h2 {
+      color: var(--neu-text-heading);
+      font-family: var(--font-display);
+      margin: 0;
     }
 
     .card {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 12px;
+      background: var(--neu-card-bg, linear-gradient(145deg, #E8ECF2, #D8DDE4));
+      box-shadow: var(--neu-extruded);
+      border-radius: var(--neu-radius-container);
       overflow: hidden;
     }
 
@@ -196,7 +226,6 @@ import { Observable } from 'rxjs';
       justify-content: space-between;
       align-items: center;
       padding: 1.5rem 2rem;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
       gap: 1rem;
     }
 
@@ -206,7 +235,7 @@ import { Observable } from 'rxjs';
 
     .subtitle {
       margin: 0;
-      color: #94a3b8;
+      color: var(--neu-text-muted);
     }
 
     .stats {
@@ -218,11 +247,11 @@ import { Observable } from 'rxjs';
       display: block;
       font-size: 1.5rem;
       font-weight: 600;
-      color: #f59e0b;
+      color: var(--neu-accent);
     }
 
     .stat-label {
-      color: #94a3b8;
+      color: var(--neu-text-muted);
       font-size: 0.875rem;
     }
 
@@ -234,12 +263,13 @@ import { Observable } from 'rxjs';
 
     .info-grid h3 {
       margin-bottom: 0.25rem;
-      color: #e2e8f0;
+      color: var(--neu-text-heading);
+      font-family: var(--font-display);
     }
 
     .info-grid p {
       margin: 0;
-      color: #94a3b8;
+      color: var(--neu-text-muted);
     }
 
     .form-grid {
@@ -257,27 +287,28 @@ import { Observable } from 'rxjs';
 
     label {
       font-weight: 600;
-      color: #e2e8f0;
+      color: var(--neu-text-primary);
     }
 
     input {
       padding: 0.75rem 1rem;
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: 8px;
+      border: none;
+      border-radius: var(--neu-radius-inner);
       font-size: 1rem;
-      background: rgba(255, 255, 255, 0.06);
-      color: #f8fafc;
-      transition: border-color 0.2s ease;
+      background: var(--neu-bg);
+      box-shadow: var(--neu-inset);
+      color: var(--neu-text-primary);
+      transition: box-shadow 0.2s ease;
+      min-height: 44px;
     }
 
     input:focus {
       outline: none;
-      border-color: #f59e0b;
-      box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+      box-shadow: var(--neu-inset-deep), 0 0 0 2px var(--neu-accent);
     }
 
     input.error {
-      border-color: #dc2626;
+      box-shadow: var(--neu-inset-deep), 0 0 0 2px var(--neu-accent-danger);
     }
 
     .form-actions {
@@ -287,40 +318,46 @@ import { Observable } from 'rxjs';
 
     button {
       padding: 0.75rem 1.5rem;
-      background: linear-gradient(135deg, #f59e0b, #d97706);
-      color: #0f172a;
+      background: var(--neu-accent);
+      color: #fff;
       border: none;
-      border-radius: 8px;
+      border-radius: var(--neu-radius-inner);
       font-size: 1rem;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.2s ease;
       min-width: 140px;
+      min-height: 44px;
+      box-shadow: var(--neu-extruded-sm);
     }
 
     button:disabled {
-      opacity: 0.6;
+      opacity: 0.5;
       cursor: not-allowed;
     }
 
     button:not(:disabled):hover {
-      box-shadow: 0 4px 16px rgba(245, 158, 11, 0.35);
+      box-shadow: var(--neu-extruded-hover);
+    }
+
+    button:not(:disabled):active {
+      box-shadow: var(--neu-inset);
     }
 
     .error-message {
-      color: #f87171;
+      color: var(--neu-accent-danger);
       font-size: 0.875rem;
       margin: 0;
     }
 
     .success-message {
-      color: #4ade80;
+      color: var(--neu-accent-secondary);
       font-weight: 500;
       margin: 0;
     }
 
     .warning-message {
-      color: #fb923c;
+      color: #E8912D;
       font-weight: 500;
       margin: 0;
     }
@@ -329,31 +366,44 @@ import { Observable } from 'rxjs';
       padding: 3rem;
       margin: 2rem;
       text-align: center;
-      background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(217, 119, 6, 0.1));
-      border: 1px solid rgba(245, 158, 11, 0.3);
-      color: #e2e8f0;
-      border-radius: 12px;
+      background: var(--neu-bg);
+      box-shadow: var(--neu-inset);
+      color: var(--neu-text-primary);
+      border-radius: var(--neu-radius-container);
     }
 
     .collaborators-table {
       width: 100%;
-      border-collapse: collapse;
-    }
-
-    .collaborators-table th,
-    .collaborators-table td {
-      padding: 0.75rem;
-      text-align: left;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      border-collapse: separate;
+      border-spacing: 0 0.5rem;
     }
 
     .collaborators-table th {
+      padding: 0.75rem 1rem;
+      text-align: left;
       font-weight: 600;
-      color: #f59e0b;
+      color: var(--neu-accent);
+      font-family: var(--font-display);
+    }
+
+    .collaborators-table td {
+      padding: 0.75rem 1rem;
+      text-align: left;
+      color: var(--neu-text-primary);
+      background: var(--neu-bg);
+      box-shadow: var(--neu-extruded-sm);
+    }
+
+    .collaborators-table td:first-child {
+      border-radius: var(--neu-radius-inner) 0 0 var(--neu-radius-inner);
+    }
+
+    .collaborators-table td:last-child {
+      border-radius: 0 var(--neu-radius-inner) var(--neu-radius-inner) 0;
     }
 
     .empty-state {
-      color: #94a3b8;
+      color: var(--neu-text-muted);
       margin: 0;
     }
 
@@ -364,69 +414,83 @@ import { Observable } from 'rxjs';
     }
 
     .btn-warning {
-      background-color: #f59e0b;
-      color: white;
+      background: #E8912D;
+      color: #fff;
       padding: 0.5rem 1rem;
       border: none;
-      border-radius: 6px;
+      border-radius: var(--neu-radius-inner);
       cursor: pointer;
       font-size: 0.875rem;
-      transition: background-color 0.2s ease;
+      transition: all 0.2s ease;
+      box-shadow: var(--neu-extruded-sm);
+      min-height: 44px;
     }
 
     .btn-warning:hover:not(:disabled) {
-      background-color: #d97706;
+      box-shadow: var(--neu-extruded-hover);
+    }
+
+    .btn-warning:active:not(:disabled) {
+      box-shadow: var(--neu-inset);
     }
 
     .btn-warning:disabled {
-      opacity: 0.6;
+      opacity: 0.5;
       cursor: not-allowed;
     }
 
     .btn-danger {
-      background-color: #dc2626;
-      color: white;
+      background: var(--neu-accent-danger);
+      color: #fff;
       padding: 0.5rem 1rem;
       border: none;
-      border-radius: 6px;
+      border-radius: var(--neu-radius-inner);
       cursor: pointer;
       font-size: 0.875rem;
-      transition: background-color 0.2s ease;
+      transition: all 0.2s ease;
+      box-shadow: var(--neu-extruded-sm);
+      min-height: 44px;
     }
 
     .btn-danger:hover:not(:disabled) {
-      background-color: #b91c1c;
+      box-shadow: var(--neu-extruded-hover);
+    }
+
+    .btn-danger:active:not(:disabled) {
+      box-shadow: var(--neu-inset);
     }
 
     .btn-danger:disabled {
-      opacity: 0.6;
+      opacity: 0.5;
       cursor: not-allowed;
     }
 
     .status-badge {
       display: inline-block;
       padding: 0.25rem 0.75rem;
-      border-radius: 12px;
+      border-radius: 999px;
       font-size: 0.875rem;
       font-weight: 600;
+      box-shadow: var(--neu-extruded-sm);
+      background: var(--neu-bg);
     }
 
     .status-active {
-      background-color: #d1fae5;
-      color: #065f46;
+      color: var(--neu-accent-secondary);
     }
 
     .status-inactive {
-      background-color: #fee2e2;
-      color: #991b1b;
+      color: var(--neu-accent-danger);
     }
 
+    /* ── Toggle switch (neumorphic) ── */
     .toggle-switch {
       position: relative;
       display: inline-block;
       width: 50px;
-      height: 24px;
+      height: 26px;
       margin-right: 0.5rem;
+      min-width: 50px;
     }
 
     .toggle-switch input {
@@ -442,7 +506,8 @@ import { Observable } from 'rxjs';
       left: 0;
       right: 0;
       bottom: 0;
-      background-color: rgba(255, 255, 255, 0.2);
+      background: var(--neu-bg);
+      box-shadow: var(--neu-inset);
       transition: 0.3s;
       border-radius: 24px;
     }
@@ -450,37 +515,55 @@ import { Observable } from 'rxjs';
     .toggle-slider:before {
       position: absolute;
       content: "";
-      height: 18px;
-      width: 18px;
+      height: 20px;
+      width: 20px;
       left: 3px;
       bottom: 3px;
-      background-color: white;
+      background: var(--neu-bg);
+      box-shadow: var(--neu-extruded-sm);
       transition: 0.3s;
       border-radius: 50%;
     }
 
     .toggle-switch input:checked + .toggle-slider {
-      background-color: #16a34a;
+      background: var(--neu-accent-secondary);
+      box-shadow: var(--neu-inset);
     }
 
     .toggle-switch input:checked + .toggle-slider:before {
-      transform: translateX(26px);
+      transform: translateX(24px);
+      background: #fff;
+      box-shadow: var(--neu-extruded-sm);
     }
 
     .toggle-switch input:disabled + .toggle-slider {
-      opacity: 0.6;
+      opacity: 0.5;
       cursor: not-allowed;
     }
 
     @media (max-width: 768px) {
+      .page-container {
+        padding: 1rem;
+      }
+
       .card-header {
         flex-direction: column;
         align-items: flex-start;
       }
 
+      .card-body {
+        padding: 1rem;
+      }
+
       .stats {
         width: 100%;
         justify-content: space-between;
+      }
+
+      .collaborators-table td,
+      .collaborators-table th {
+        padding: 0.5rem;
+        font-size: 0.85rem;
       }
     }
   `]

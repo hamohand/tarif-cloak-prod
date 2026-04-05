@@ -165,11 +165,30 @@ import { NotificationService } from '../../../core/services/notification.service
     </div>
   `,
   styles: [`
+    :host {
+      --neu-bg: var(--neu-bg, #E0E5EC);
+      --neu-extruded: var(--neu-extruded, 9px 9px 16px rgba(163,177,198,0.6), -9px -9px 16px rgba(255,255,255,0.5));
+      --neu-extruded-sm: var(--neu-extruded-sm, 4px 4px 8px rgba(163,177,198,0.6), -4px -4px 8px rgba(255,255,255,0.5));
+      --neu-extruded-hover: var(--neu-extruded-hover, 12px 12px 20px rgba(163,177,198,0.6), -12px -12px 20px rgba(255,255,255,0.5));
+      --neu-inset: var(--neu-inset, inset 4px 4px 8px rgba(163,177,198,0.6), inset -4px -4px 8px rgba(255,255,255,0.5));
+      --neu-inset-deep: var(--neu-inset-deep, inset 6px 6px 12px rgba(163,177,198,0.6), inset -6px -6px 12px rgba(255,255,255,0.5));
+      --neu-radius-container: var(--neu-radius-container, 32px);
+      --neu-radius-inner: var(--neu-radius-inner, 12px);
+      --neu-accent: var(--neu-accent, #6C63FF);
+      --neu-accent-secondary: var(--neu-accent-secondary, #38B2AC);
+      --neu-accent-danger: var(--neu-accent-danger, #E53E3E);
+      --neu-accent-warning: var(--neu-accent-warning, #ED8936);
+      --neu-text-primary: var(--neu-text-primary, #3D4852);
+      --neu-text-muted: var(--neu-text-muted, #6B7280);
+      --neu-text-heading: var(--neu-text-heading, #2D3748);
+      --font-display: var(--font-display, 'Inter', sans-serif);
+    }
+
     .invoice-detail-container {
       padding: 2rem;
       max-width: 1200px;
       margin: 0 auto;
-      background: #e8e8e8;
+      background: var(--neu-bg);
       min-height: 100vh;
     }
 
@@ -178,41 +197,51 @@ import { NotificationService } from '../../../core/services/notification.service
       align-items: center;
       gap: 1rem;
       margin-bottom: 2rem;
-      background: #e0e0e0;
-      padding: 1.5rem;
-      border-radius: 8px;
+      background: var(--neu-bg);
+      padding: 1.5rem 2rem;
+      border-radius: var(--neu-radius-container);
+      box-shadow: var(--neu-extruded);
     }
 
     .invoice-header h2 {
       margin: 0;
-      color: #2c3e50;
+      color: var(--neu-text-heading);
+      font-family: var(--font-display);
     }
 
     .btn-back {
-      background: #6c757d;
-      color: white;
+      background: var(--neu-bg);
+      color: var(--neu-text-muted);
       border: none;
-      padding: 0.5rem 1rem;
-      border-radius: 4px;
+      padding: 0.625rem 1.25rem;
+      border-radius: var(--neu-radius-inner);
       cursor: pointer;
       font-size: 0.875rem;
+      font-weight: 600;
+      box-shadow: var(--neu-extruded-sm);
+      min-height: 44px;
+      transition: box-shadow 0.2s ease;
     }
 
     .btn-back:hover {
-      background: #545b62;
+      box-shadow: var(--neu-extruded);
+    }
+
+    .btn-back:active {
+      box-shadow: var(--neu-inset);
     }
 
     .loading, .error {
       text-align: center;
       padding: 3rem;
-      background: #e0e0e0;
-      border-radius: 8px;
+      background: var(--neu-bg);
+      border-radius: var(--neu-radius-container);
       margin-top: 2rem;
+      box-shadow: var(--neu-extruded);
     }
 
     .error {
-      background: #ffe0e0;
-      color: #d32f2f;
+      color: var(--neu-accent-danger);
     }
 
     .invoice-content {
@@ -222,14 +251,16 @@ import { NotificationService } from '../../../core/services/notification.service
     }
 
     .invoice-info-card, .invoice-items-card, .invoice-stats-card, .invoice-total-card, .invoice-notes-card {
-      background: #e0e0e0;
-      padding: 1.5rem;
-      border-radius: 8px;
+      background: var(--neu-card-bg, linear-gradient(145deg, #E8ECF2, #D8DDE4));
+      padding: 1.5rem 2rem;
+      border-radius: var(--neu-radius-container);
+      box-shadow: var(--neu-extruded);
     }
 
     .invoice-info-card h3, .invoice-items-card h3, .invoice-stats-card h3, .invoice-notes-card h3 {
       margin-top: 0;
-      color: #2c3e50;
+      color: var(--neu-text-heading);
+      font-family: var(--font-display);
     }
 
     .info-grid {
@@ -246,41 +277,64 @@ import { NotificationService } from '../../../core/services/notification.service
 
     .info-item label {
       font-weight: 600;
-      color: #666;
+      color: var(--neu-text-muted);
       font-size: 0.875rem;
     }
 
     .info-item span {
-      color: #2c3e50;
+      color: var(--neu-text-primary);
     }
 
     .status-select {
-      padding: 0.5rem;
-      border: 1px solid #ccc;
-      border-radius: 4px;
+      padding: 0.625rem 0.75rem;
+      background: var(--neu-bg);
+      box-shadow: var(--neu-inset);
+      border: none;
+      border-radius: var(--neu-radius-inner);
       font-size: 1rem;
       cursor: pointer;
+      color: var(--neu-text-primary);
+      min-height: 44px;
+      transition: box-shadow 0.2s ease;
+    }
+
+    .status-select:focus {
+      outline: none;
+      box-shadow: var(--neu-inset-deep), 0 0 0 2px var(--neu-accent);
     }
 
     .items-table {
       width: 100%;
-      border-collapse: collapse;
+      border-collapse: separate;
+      border-spacing: 0 0.5rem;
       margin-top: 1rem;
     }
 
     .items-table th {
-      background: #d5d5d5;
-      padding: 1rem;
+      padding: 0.75rem 1rem;
       text-align: left;
       font-weight: 600;
-      color: #2c3e50;
-      border-bottom: 2px solid #bbb;
+      color: var(--neu-text-muted);
+      background: transparent;
     }
 
     .items-table td {
-      padding: 1rem;
-      border-bottom: 1px solid #ccc;
-      background: #e0e0e0;
+      padding: 0.75rem 1rem;
+      background: var(--neu-bg);
+      box-shadow: var(--neu-extruded-sm);
+      color: var(--neu-text-primary);
+    }
+
+    .items-table td:first-child {
+      border-radius: var(--neu-radius-inner) 0 0 var(--neu-radius-inner);
+    }
+
+    .items-table td:last-child {
+      border-radius: 0 var(--neu-radius-inner) var(--neu-radius-inner) 0;
+    }
+
+    .items-table tr:hover td {
+      box-shadow: var(--neu-extruded);
     }
 
     .text-center {
@@ -302,17 +356,22 @@ import { NotificationService } from '../../../core/services/notification.service
       display: flex;
       flex-direction: column;
       gap: 0.25rem;
+      background: var(--neu-card-bg, linear-gradient(145deg, #E8ECF2, #D8DDE4));
+      padding: 1rem;
+      border-radius: var(--neu-radius-inner);
+      box-shadow: var(--neu-extruded-sm);
     }
 
     .stat-item label {
       font-weight: 600;
-      color: #666;
+      color: var(--neu-text-muted);
       font-size: 0.875rem;
     }
 
     .stat-item span {
-      color: #2c3e50;
+      color: var(--neu-accent);
       font-size: 1.25rem;
+      font-family: var(--font-display);
     }
 
     .invoice-total-card {
@@ -323,34 +382,48 @@ import { NotificationService } from '../../../core/services/notification.service
       display: flex;
       justify-content: space-between;
       padding: 0.75rem 0;
-      border-bottom: 1px solid #ccc;
     }
 
     .total-row label {
       font-weight: 600;
-      color: #2c3e50;
+      color: var(--neu-text-primary);
     }
 
     .total-row span {
-      color: #2c3e50;
+      color: var(--neu-text-primary);
     }
 
     .total-final {
-      border-bottom: 2px solid #2c3e50;
       font-size: 1.25rem;
       font-weight: 600;
       margin-top: 0.5rem;
+      padding-top: 1rem;
+      color: var(--neu-accent);
+    }
+
+    .total-final label,
+    .total-final span {
+      color: var(--neu-accent);
     }
 
     .notes-textarea {
       width: 100%;
       min-height: 100px;
-      padding: 0.5rem;
-      border: 1px solid #ccc;
-      border-radius: 4px;
+      padding: 0.75rem;
+      background: var(--neu-bg);
+      box-shadow: var(--neu-inset);
+      border: none;
+      border-radius: var(--neu-radius-inner);
       font-size: 1rem;
       font-family: inherit;
       resize: vertical;
+      color: var(--neu-text-primary);
+      transition: box-shadow 0.2s ease;
+    }
+
+    .notes-textarea:focus {
+      outline: none;
+      box-shadow: var(--neu-inset-deep), 0 0 0 2px var(--neu-accent);
     }
 
     .invoice-actions {
@@ -362,19 +435,45 @@ import { NotificationService } from '../../../core/services/notification.service
     .btn {
       padding: 0.75rem 1.5rem;
       border: none;
-      border-radius: 4px;
+      border-radius: var(--neu-radius-inner);
       cursor: pointer;
       font-size: 1rem;
-      transition: background-color 0.2s;
+      font-weight: 600;
+      min-height: 44px;
+      transition: box-shadow 0.2s ease;
     }
 
     .btn-primary {
-      background: #007bff;
+      background: var(--neu-accent);
       color: white;
+      box-shadow: var(--neu-extruded-sm);
     }
 
     .btn-primary:hover {
-      background: #0056b3;
+      box-shadow: var(--neu-extruded);
+    }
+
+    .btn-primary:active {
+      box-shadow: var(--neu-inset);
+    }
+
+    @media (max-width: 768px) {
+      .invoice-detail-container {
+        padding: 1rem;
+      }
+
+      .invoice-header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .info-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
     }
   `]
 })
