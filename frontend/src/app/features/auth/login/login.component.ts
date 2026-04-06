@@ -57,9 +57,8 @@ import { OAuthService } from 'angular-oauth2-oidc';
           </div>
           <p class="footer-text">Pas encore de compte ?</p>
           <button
-            (click)="login()"
-            class="register-button"
-            [disabled]="isLoading || !isReady">
+            (click)="goToRegister()"
+            class="register-button">
             <span>Créer un compte</span>
             <span class="arrow">→</span>
           </button>
