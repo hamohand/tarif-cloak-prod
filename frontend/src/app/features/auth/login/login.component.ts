@@ -287,7 +287,7 @@ import { OAuthService } from 'angular-oauth2-oidc';
     }
 
     .register-button {
-      background: var(--neu-bg, #E0E5EC);
+      background: var(--neu-bg, #a9d7f5);
       color: var(--neu-accent, #6C63FF);
       padding: 0.9rem 1.75rem;
       font-size: 1rem;

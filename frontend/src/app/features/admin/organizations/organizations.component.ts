@@ -14,7 +14,7 @@ import { NotificationService } from '../../../core/services/notification.service
 
       <!-- Barre d'actions et recherche -->
       <div class="actions-bar">
-        <button class="btn btn-primary" (click)="showCreateForm = true">+ Créer une organisation</button>
+        <button class="btn btn-secondary" (click)="showCreateForm = true">+ Créer une organisation</button>
         <div class="search-bar">
           <input type="text" 
                  [(ngModel)]="searchTerm" 
@@ -154,14 +154,14 @@ import { NotificationService } from '../../../core/services/notification.service
                   <button class="btn btn-sm btn-secondary" (click)="toggleEdit(org)">✏️ Modifier</button>
                   <button class="btn btn-sm btn-secondary" (click)="toggleUsers(org.id)">👥 Utilisateurs</button>
                   @if ((org.trialRenewCount ?? 0) < 1) {
-                    <button class="btn btn-sm btn-primary" (click)="resetOrganizationPlan(org)">🔄 Réinitialiser</button>
+                    <button class="btn btn-sm btn-secondary" (click)="resetOrganizationPlan(org)">🔄 Réinitialiser</button>
                   } @else {
                     <span class="badge badge-renewed">✅ Déjà renouvelé</span>
                   }
                   @if (org.enabled === false) {
                     <button class="btn btn-sm btn-success" (click)="enableOrganization(org)">✅ Réactiver</button>
                   } @else {
-                    <button class="btn btn-sm btn-warning" (click)="disableOrganization(org)">⛔ Désactiver</button>
+                    <button class="btn btn-sm btn-secondary" (click)="disableOrganization(org)">⛔ Désactiver</button>
                   }
                 </div>
               </div>
