@@ -39,7 +39,11 @@ import { environment } from '../../../environments/environment';
               Guide d'utilisation
             </a>
           </div>
-          <a routerLink="/auth/register" class="cta-button primary">Commencer gratuitement</a>
+          @if (isBetaMode) {
+            <button (click)="login()" class="cta-button primary">Commencer gratuitement</button>
+          } @else {
+            <a routerLink="/auth/register" class="cta-button primary">Commencer gratuitement</a>
+          }
           <a *ngIf="!isBetaMode" routerLink="/pricing" class="cta-button ghost">Voir les tarifs</a>
         </div>
       </section>
@@ -805,6 +809,10 @@ export class HomeComponent {
   isAuthenticated$ = this.authService.isAuthenticated();
   isOrganizationAccount$ = this.authService.isOrganizationAccount();
   isCollaboratorAccount$ = this.authService.isCollaboratorAccount();
+
+  login() {
+    this.authService.login();
+  }
 
   // Observable combiné pour afficher les boutons d'utilisation de requêtes
   showRequestButtons$ = combineLatest([

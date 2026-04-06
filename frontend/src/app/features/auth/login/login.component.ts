@@ -56,9 +56,10 @@ import { OAuthService } from 'angular-oauth2-oidc';
             <span>ou</span>
           </div>
           <p class="footer-text">Pas encore de compte ?</p>
-          <button 
-            (click)="goToRegister()" 
-            class="register-button">
+          <button
+            (click)="login()"
+            class="register-button"
+            [disabled]="isLoading || !isReady">
             <span>Créer un compte</span>
             <span class="arrow">→</span>
           </button>
@@ -287,7 +288,7 @@ import { OAuthService } from 'angular-oauth2-oidc';
     }
 
     .register-button {
-      background: var(--neu-bg, #a9d7f5);
+      background: var(--neu-bg, #77bceb);
       color: var(--neu-accent, #6C63FF);
       padding: 0.9rem 1.75rem;
       font-size: 1rem;
