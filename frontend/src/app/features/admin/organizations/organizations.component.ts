@@ -152,7 +152,7 @@ import { NotificationService } from '../../../core/services/notification.service
                 </div>
                 <div class="org-actions">
                   <button class="btn btn-sm btn-secondary" (click)="toggleEdit(org)">✏️ Modifier</button>
-                  <button class="btn btn-sm btn-info" (click)="toggleUsers(org.id)">👥 Utilisateurs</button>
+                  <button class="btn btn-sm btn-secondary" (click)="toggleUsers(org.id)">👥 Utilisateurs</button>
                   @if ((org.trialRenewCount ?? 0) < 1) {
                     <button class="btn btn-sm btn-primary" (click)="resetOrganizationPlan(org)">🔄 Réinitialiser</button>
                   } @else {
