@@ -15,6 +15,17 @@ import { CommonModule } from '@angular/common';
 
       <!-- Crédits -->
       <section class="help-section">
+        <h3>💳 Créer votre compte</h3>
+        <p>Pour commencer à utiliser TCI : https://hscode.enclume-numerique.com, vous devez créer un compte :</p>
+        <ol>
+          <li>Bouton 'Commencer gratuitement'.</li>
+          <li>Créer votre compte : Remplissez les champs requis.</li>
+          <li>Rechercher un article...</li>
+        </ol>
+      </section>
+
+      <!-- Recherches et crédits -->
+      <section class="help-section">
         <h3>💳 Recherches et crédits</h3>
         <p>Chaque recherche consomme un certain nombre de crédits selon son type :</p>
         <table class="credits-table">

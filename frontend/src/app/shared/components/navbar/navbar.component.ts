@@ -89,8 +89,8 @@ import { of } from 'rxjs';
             </span>
             <button (click)="logout(); closeMobileMenu()" class="btn btn-outline">Déconnexion</button>
           } @else {
-            <button (click)="goToRegister(); closeMobileMenu()" class="btn btn-secondary">Créer un compte</button>
-            <button (click)="login(); closeMobileMenu()" class="btn btn-primary">Connexion</button>
+            <button (click)="goToRegister(); closeMobileMenu()" class="btn btn-secondary">Créer un compte إنشاء حساب</button>
+            <button (click)="login(); closeMobileMenu()" class="btn btn-primary">Connexion اتصال</button>
           }
         </div>
       </div>
@@ -102,8 +102,8 @@ import { of } from 'rxjs';
           </span>
           <button (click)="logout()" class="btn btn-outline">Déconnexion</button>
         } @else {
-          <button (click)="goToRegister()" class="btn btn-secondary">Créer un compte</button>
-          <button (click)="login()" class="btn btn-primary">Connexion</button>
+          <button (click)="goToRegister()" class="btn btn-secondary">Créer un compte إنشاء حساب</button>
+          <button (click)="login()" class="btn btn-primary">Connexion اتصال</button>
         }
       </div>
     </nav>
