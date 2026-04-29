@@ -49,9 +49,7 @@ x-traefik-backend-labels: &traefik-backend-labels
   "traefik.http.routers.hscode-backend-http.service": "hscode-backend"
   "traefik.http.routers.hscode-backend-http.priority": "10"
   # --- Service pointant vers le conteneur backend ---
-  "traefik.http.services.hscode-backend.loadbalancer.server.port": "${BACKEND_INTERNAL_PORT:-8081}"
-
-    ########### KEYCLOAK #############
+  "traefik.http.services.hscode-backend.loadbalancer.server.port": "${BACKEND_INTERNAL_PORT:-8081}" ########### KEYCLOAK #############
   #Labels pour exposer Keycloak via Traefik
 x-traefik-keycloak-labels: &traefik-keycloak-labels
   traefik.enable: "true"
@@ -127,13 +125,13 @@ services:
     container_name: "${PROJECT_NAME:-app}-app-db"
     environment:
       <<: *common-app-bd-vars
-#    ports:
-#      - "${DB_HOST_PORT:-5432}:5432"
+    #    ports:
+    #      - "${DB_HOST_PORT:-5432}:5432"
     volumes:
       - app-database-data:/var/lib/postgresql/data
       - ./sql/sql:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD", "pg_isready", "-h", "localhost", "-U", "${POSTGRES_USER}", "-d", "${POSTGRES_DB}"]
+      test: [ "CMD", "pg_isready", "-h", "localhost", "-U", "${POSTGRES_USER}", "-d", "${POSTGRES_DB}" ]
       interval: 10s
       timeout: 10s
       retries: 10
@@ -149,12 +147,12 @@ services:
     container_name: "${PROJECT_NAME:-app}-keycloak-db"
     environment:
       <<: *common-bd-keycloak-vars
-#    ports:
-#      - "${KEYCLOAK_DB_PORT:-5433}:5432"  # Port différent pour éviter les conflits
+    #    ports:
+    #      - "${KEYCLOAK_DB_PORT:-5433}:5432"  # Port différent pour éviter les conflits
     volumes:
       - keycloak-database-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "pg_isready", "-h", "localhost", "-U", "${KEYCLOAK_DB_USER}", "-d", "${KEYCLOAK_DB}"]
+      test: [ "CMD", "pg_isready", "-h", "localhost", "-U", "${KEYCLOAK_DB_USER}", "-d", "${KEYCLOAK_DB}" ]
       interval: 10s
       timeout: 10s
       retries: 10
@@ -205,7 +203,7 @@ services:
     restart: unless-stopped
     # --- ON DESACTIVE COMPLETEMENT LE HEALTHCHECK POUR LE TEST ---
     # healthcheck:
-#      test: [ "CMD-SHELL", "curl -f http://localhost:8080/health || exit 1" ]
+    #      test: [ "CMD-SHELL", "curl -f http://localhost:8080/health || exit 1" ]
     #   test: ["CMD-SHELL", "ss -tln | grep 8080 || exit 1"]
     #   interval: 30s
     #   timeout: 10s
@@ -231,15 +229,15 @@ services:
         condition: service_started
       rabbitmq:
         condition: service_healthy
-#    ports:
-#      - "${BACKEND_INTERNAL_PORT:-8081}:8081"
+    #    ports:
+    #      - "${BACKEND_INTERNAL_PORT:-8081}:8081"
     environment:
       # Configuration Spring Boot
       BACKEND_INTERNAL_PORT: "${BACKEND_INTERNAL_PORT:-8081}"
       SPRING_PROFILES_ACTIVE: "${SPRING_PROFILES_ACTIVE:-prod}"
       # Configuration Database APPLICATION
-      DB_SERVICE_NAME: "app-db"                    # ← Nom du service de base de données
-      POSTGRES_PORT: "${POSTGRES_PORT}"             # ← Port PostgreSQL (par défaut: 5432 géré par Spring)
+      DB_SERVICE_NAME: "app-db" # ← Nom du service de base de données
+      POSTGRES_PORT: "${POSTGRES_PORT}" # ← Port PostgreSQL (par défaut: 5432 géré par Spring)
       <<: *common-app-bd-vars
       # Configuration Keycloak
       KEYCLOAK_REALM: "${KEYCLOAK_REALM}"
@@ -336,11 +334,11 @@ services:
       RABBITMQ_DEFAULT_USER: "${RABBITMQ_USER:-admin}"
       RABBITMQ_DEFAULT_PASS: "${RABBITMQ_PASSWORD:-admin}"
     ports:
-      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"  # Management UI (optionnel)
+      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672" # Management UI (optionnel)
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      test: [ "CMD", "rabbitmq-diagnostics", "-q", "ping" ]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -359,7 +357,7 @@ services:
     volumes:
       - redis-data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -409,7 +407,7 @@ services:
       backend:
         condition: service_started
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8082/actuator/health"]
+      test: [ "CMD", "wget", "-q", "--spider", "http://localhost:8082/actuator/health" ]
       interval: 30s
       timeout: 10s
       retries: 3

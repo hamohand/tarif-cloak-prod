@@ -27,6 +27,9 @@ import { of } from 'rxjs';
             <span class="brand-country-code">{{ countryCode }}</span>
           }
         </a>
+        <span class="env-badge" [class.env-prod]="isBetaMode" [class.env-staging]="!isBetaMode">
+          {{ isBetaMode ? 'PROD' : 'STAGING' }}
+        </span>
       </div>
 
       <button class="hamburger" (click)="toggleMobileMenu()" [class.active]="mobileMenuOpen()">
@@ -250,6 +253,31 @@ import { of } from 'rxjs';
     }
   `,
   styles: [`
+    /* ═══ ENVIRONMENT BADGE ═══ */
+    .env-badge {
+      font-size: 0.6rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      text-transform: uppercase;
+      margin-left: 0.5rem;
+      vertical-align: middle;
+    }
+    .env-prod {
+      background: #22c55e;
+      color: white;
+    }
+    .env-staging {
+      background: #ef4444;
+      color: white;
+      animation: staging-pulse 2s infinite;
+    }
+    @keyframes staging-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+
     /* ═══ NAVBAR — Neumorphism ═══ */
     .navbar {
       display: flex;
