@@ -38,7 +38,7 @@ interface GroupedP4 {
         <input
           type="text"
           [(ngModel)]="searchTerm"
-          placeholder="Entrez un terme ou une expression de recherche (accepte plusieurs langues)"
+          placeholder="Entrez une désignation ou une description (accepte plusieurs langues)"
           class="search-input"
           (keydown.enter)="search()"
         />

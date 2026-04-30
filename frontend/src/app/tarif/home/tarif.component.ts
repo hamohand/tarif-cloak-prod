@@ -16,10 +16,10 @@ import { CommonModule } from '@angular/common';
 
       <!-- Navigation : 4 onglets fixes -->
       <nav class="main-nav">
-        <a routerLink="search"            routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}">HS-code</a>
-        <a routerLink="decode"            routerLinkActive="active">Décoder un code HS</a>
+        <a routerLink="search"            routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}">HScode-06</a>
+        <a routerLink="decode"            routerLinkActive="active">Vérifier un code HS</a>
         <a routerLink="search-position10" routerLinkActive="active">Position-10</a>
-        <a routerLink="decode-p10"        routerLinkActive="active">Décoder un code P10</a>
+        <a routerLink="decode-p10"        routerLinkActive="active">Vérifier un code P10</a>
       </nav>
 
       <main>

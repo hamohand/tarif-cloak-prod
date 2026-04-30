@@ -40,13 +40,13 @@ import { of } from 'rxjs';
         @if (isAuthenticated$ | async) {
           @if (isOrganizationAccount$ | async) {
             @if (canMakeRequests$ | async) {
-              <a routerLink="/" class="nav-link hscode-link" (click)="closeMobileMenu()">Recherche Codes</a>
+              <a routerLink="/" class="nav-link hscode-link" (click)="closeMobileMenu()">Positions tarifaires</a>
             } @else {
               <button class="nav-link hscode-link-blocked" (click)="openRenewalModal(); closeMobileMenu()">Positions tarifaires ⚠️</button>
             }
           } @else if (isCollaboratorAccount$ | async) {
             @if (canMakeRequests$ | async) {
-              <a routerLink="/" class="nav-link hscode-link" (click)="closeMobileMenu()">Recherche Codes</a>
+              <a routerLink="/" class="nav-link hscode-link" (click)="closeMobileMenu()">Positions tarifaires</a>
             }
           } @else {
             <a routerLink="/" class="nav-link" (click)="closeMobileMenu()">Accueil إستقبال</a>
