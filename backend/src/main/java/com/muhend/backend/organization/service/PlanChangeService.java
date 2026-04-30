@@ -208,19 +208,13 @@ public class PlanChangeService {
     }
 
     /**
-     * Réinitialise le plan actuel (principalement pour les comptes Invités/Essai).
-     * Ne peut être effectué qu'une seule fois par organisation (trialRenewCount).
+     * Réinitialise le plan actuel (comptes Invités/Essai ou clients prod).
      */
     @Transactional
     public OrganizationDto resetPlan(Long organizationId) {
         Organization organization = organizationRepository.findById(organizationId)
                 .orElseThrow(
                         () -> new IllegalArgumentException("Organisation non trouvée avec l'ID: " + organizationId));
-
-        if (organization.getTrialRenewCount() != null && organization.getTrialRenewCount() >= 1) {
-            throw new IllegalStateException(
-                    "Le plan de l'organisation " + organizationId + " a déjà été renouvelé une fois.");
-        }
 
         LocalDateTime now = LocalDateTime.now();
         LocalDate today = LocalDate.now();

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminService, Organization, OrganizationUser, CreateOrganizationRequest, UpdateOrganizationRequest, UpdateQuotaRequest, AddUserToOrganizationRequest } from '../../../core/services/admin.service';
 import { NotificationService } from '../../../core/services/notification.service';
+import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-organizations',
@@ -113,10 +114,11 @@ import { NotificationService } from '../../../core/services/notification.service
                   <td>
                     <button class="btn btn-sm btn-secondary" (click)="toggleEdit(org)">✏️</button>
                     <button class="btn btn-sm btn-info" (click)="toggleUsers(org.id)">👥</button>
-                    @if ((org.trialRenewCount ?? 0) < 1) {
+                    @if (betaMode) {
                       <button class="btn btn-sm btn-primary" (click)="resetOrganizationPlan(org)" title="Réinitialiser le plan">🔄</button>
-                    } @else {
-                      <span class="badge badge-renewed" title="Déjà renouvelé une fois">✅ Renouvelé</span>
+                      @if ((org.trialRenewCount ?? 0) > 0) {
+                        <span class="badge badge-count" title="Nombre de réinitialisations">{{ org.trialRenewCount }}x</span>
+                      }
                     }
                     @if (org.enabled === false) {
                       <button class="btn btn-sm btn-success" (click)="enableOrganization(org)" title="Réactiver">✅</button>
@@ -153,10 +155,11 @@ import { NotificationService } from '../../../core/services/notification.service
                 <div class="org-actions">
                   <button class="btn btn-sm btn-secondary" (click)="toggleEdit(org)">✏️ Modifier</button>
                   <button class="btn btn-sm btn-secondary" (click)="toggleUsers(org.id)">👥 Utilisateurs</button>
-                  @if ((org.trialRenewCount ?? 0) < 1) {
+                  @if (betaMode) {
                     <button class="btn btn-sm btn-secondary" (click)="resetOrganizationPlan(org)">🔄 Réinitialiser</button>
-                  } @else {
-                    <span class="badge badge-renewed">✅ Déjà renouvelé</span>
+                    @if ((org.trialRenewCount ?? 0) > 0) {
+                      <span class="badge badge-count">{{ org.trialRenewCount }}x</span>
+                    }
                   }
                   @if (org.enabled === false) {
                     <button class="btn btn-sm btn-success" (click)="enableOrganization(org)">✅ Réactiver</button>
@@ -869,6 +872,18 @@ import { NotificationService } from '../../../core/services/notification.service
       box-shadow: var(--neu-extruded-sm);
     }
 
+    .badge-count {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 20px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      background: var(--neu-bg);
+      color: var(--neu-text-muted);
+      box-shadow: var(--neu-inset-sm);
+      vertical-align: middle;
+    }
+
     .org-disabled {
       opacity: 0.7;
       border-left: 5px solid var(--neu-accent-danger);
@@ -917,6 +932,8 @@ import { NotificationService } from '../../../core/services/notification.service
 export class OrganizationsComponent implements OnInit {
   private adminService = inject(AdminService);
   private notificationService = inject(NotificationService);
+
+  readonly betaMode = environment.betaMode ?? false;
 
   organizations: Organization[] = [];
   filteredOrganizations: Organization[] = [];
