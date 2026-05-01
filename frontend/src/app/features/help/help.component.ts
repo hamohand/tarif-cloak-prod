@@ -20,7 +20,7 @@ import { CommonModule } from '@angular/common';
         <ol>
           <li>Bouton 'Commencer gratuitement'.</li>
           <li>Créer votre compte : Remplissez les champs requis.</li>
-          <li>Rechercher un article...</li>
+          <li>Rechercher un produit...</li>
         </ol>
       </section>
 

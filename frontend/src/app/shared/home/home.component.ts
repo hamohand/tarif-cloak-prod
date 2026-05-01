@@ -98,7 +98,7 @@ import { environment } from '../../../environments/environment';
                 </svg>
               </div>
               <h3>Recherche par Listes</h3>
-              <p>Traitez plusieurs produits simultanément — jusqu'à 1 000 articles en traitement asynchrone.</p>
+              <p>Traitez plusieurs produits simultanément — jusqu'à 1 000 produits en traitement asynchrone.</p>
             </div>
 
             <div class="api-feature">
@@ -238,10 +238,10 @@ import { environment } from '../../../environments/environment';
               <div class="request-icon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
               </div>
-              <h3>Recherche d'un article</h3>
+              <h3>Recherche d'un produit</h3>
               <p>Recherchez le code HS d'un produit spécifique en quelques secondes.</p>
               <a [routerLink]="['/recherche/search']" class="cta-button secondary">
-                Rechercher un article
+                Rechercher un produit
               </a>
             </div>
 
@@ -265,7 +265,7 @@ import { environment } from '../../../environments/environment';
             <div class="feature-card request-card">
               <div class="request-icon">⚡</div>
               <h3>Recherche par lots</h3>
-              <p>Soumettez jusqu'à 1000 articles en une seule fois. Traitement asynchrone avec 50% de réduction.</p>
+              <p>Soumettez jusqu'à 1000 produits en une seule fois. Traitement asynchrone avec 50% de réduction.</p>
               <a [routerLink]="['/recherche/batch-search']" class="cta-button secondary">
                 Rechercher par lots
               </a>
