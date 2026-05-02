@@ -62,9 +62,12 @@ public class DecodeP10Controller {
         Chapitre chapitre = chapitreRepository.findByCode(chapCode)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Chapitre introuvable pour le code : " + chapCode));
-        Section section = sectionRepository.findByCode(chapitre.getSection())
+        String sectionCode = chapitre.getSection().trim();
+        if (sectionCode.length() == 1) sectionCode = "0" + sectionCode;
+        String finalSectionCode = sectionCode;
+        Section section = sectionRepository.findByCode(sectionCode)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "Section introuvable pour : " + chapitre.getSection()));
+                        "Section introuvable pour : " + finalSectionCode));
 
         DecodeResult.CodeItem sectionItem  = new DecodeResult.CodeItem(section.getCode(), section.getDescription());
         DecodeResult.CodeItem chapitreItem = new DecodeResult.CodeItem(chapitre.getCode(), chapitre.getDescription());

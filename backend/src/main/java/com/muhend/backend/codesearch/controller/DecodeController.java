@@ -70,10 +70,12 @@ public class DecodeController {
                         "Chapitre introuvable pour le code : " + chapCode));
 
         // --- Section ---
-        String sectionCode = chapitre.getSection();
+        String sectionCode = chapitre.getSection().trim();
+        if (sectionCode.length() == 1) sectionCode = "0" + sectionCode;
+        String finalSectionCode = sectionCode;
         Section section = sectionRepository.findByCode(sectionCode)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "Section introuvable pour le code : " + sectionCode));
+                        "Section introuvable pour le code : " + finalSectionCode));
 
         DecodeResult.CodeItem sectionItem = new DecodeResult.CodeItem(section.getCode(), section.getDescription());
         DecodeResult.CodeItem chapitreItem = new DecodeResult.CodeItem(chapitre.getCode(), chapitre.getDescription());
