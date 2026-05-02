@@ -1,0 +1,40 @@
+# ===============================================================
+# DOCKER COMPOSE - TRAEFIK v3 (Reverse Proxy + TLS)
+# Lancement : docker compose -f docker-compose-traefik.yml up -d
+# ===============================================================
+
+services:
+  traefik:
+    image: traefik:v3.6
+    container_name: traefik
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik-letsencrypt:/letsencrypt
+    command:
+      - --log.level=INFO
+      - --api.insecure=true
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      - --entrypoints.websecure.address=:443
+      - --certificatesresolvers.myresolver.acme.email=hamohand@gmail.com
+      - --certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json
+      - --certificatesresolvers.myresolver.acme.tlschallenge=true
+    networks:
+      - webproxy
+
+networks:
+  webproxy:
+    external: true
+
+volumes:
+  traefik-letsencrypt:
+    name: reverse-proxy_traefik-letsencrypt
+    external: true
