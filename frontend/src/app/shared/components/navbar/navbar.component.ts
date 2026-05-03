@@ -510,6 +510,7 @@ import { of } from 'rxjs';
     }
 
     .btn-primary:active {
+      background: var(--neu-accent-hover, #5A52D5);
       transform: translateY(0.5px);
       box-shadow: var(--neu-inset-sm);
     }
@@ -526,6 +527,7 @@ import { of } from 'rxjs';
     }
 
     .btn-outline:active, .btn-secondary:active {
+      background: var(--neu-active-bg, #D9D7F2);
       transform: translateY(0.5px);
       box-shadow: var(--neu-inset-sm);
     }
@@ -625,6 +627,7 @@ import { of } from 'rxjs';
 
     .admin-nav-link:active,
     .admin-nav-link.router-link-active {
+      background: var(--neu-active-bg, #D9D7F2);
       box-shadow: var(--neu-inset-sm);
       color: var(--neu-accent-secondary, #2DD4BF);
     }
@@ -691,6 +694,7 @@ import { of } from 'rxjs';
     }
 
     .org-nav-link.router-link-active {
+      background: var(--neu-active-bg, #D9D7F2);
       box-shadow: var(--neu-inset, inset 6px 6px 10px rgba(163,177,198,0.6), inset -6px -6px 10px rgba(255,255,255,0.5));
       color: var(--neu-accent-secondary, #2DD4BF);
       font-weight: 600;

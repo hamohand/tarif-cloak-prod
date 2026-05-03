@@ -129,6 +129,7 @@ import { CommonModule } from '@angular/common';
 
     /* Carte active = celle qui contient un lien .active */
     .mode-card:has(a.active) {
+      background: #E8E6F8;
       box-shadow: inset 6px 6px 10px rgba(163,177,198,0.6), inset -6px -6px 10px rgba(255,255,255,0.5);
     }
 
@@ -170,6 +171,7 @@ import { CommonModule } from '@angular/common';
     }
 
     .mode-links a.active {
+      background: var(--neu-active-bg, #D9D7F2);
       box-shadow: inset 4px 4px 8px rgba(163,177,198,0.6), inset -4px -4px 8px rgba(255,255,255,0.5);
       color: var(--neu-accent-secondary, #2DD4BF);
       font-weight: 700;
