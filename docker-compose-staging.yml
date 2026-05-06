@@ -134,6 +134,7 @@ services:
       CHARGILY_API_URL: "${CHARGILY_API_URL:-https://pay.chargily.net/test/api/v2}"
       BASE_REQUEST_PRICE: "${BASE_REQUEST_PRICE:-0.01}"
       DEFAULT_PLAN_NAME: "${DEFAULT_PLAN_NAME:-Essai gratuit}"
+      JAVA_TOOL_OPTIONS: "-Xms128m -Xmx512m"
     labels:
       traefik.enable: "true"
       traefik.docker.network: "webproxy"
@@ -178,6 +179,7 @@ services:
       ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY}"
       AI_PROVIDER: "${AI_PROVIDER:-openai}"
       OLLAMA_BASE_URL: "${OLLAMA_BASE_URL:-http://host.docker.internal:11434}"
+      JAVA_TOOL_OPTIONS: "-Xms128m -Xmx512m"
     depends_on:
       rabbitmq-staging:
         condition: service_healthy
