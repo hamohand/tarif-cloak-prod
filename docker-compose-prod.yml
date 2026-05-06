@@ -286,6 +286,7 @@ services:
       CHARGILY_WEBHOOK_SECRET: "${CHARGILY_WEBHOOK_SECRET:-}"
       CHARGILY_API_URL: "${CHARGILY_API_URL:-https://pay.chargily.net/api/v2}"
       DEFAULT_PLAN_NAME: "${DEFAULT_PLAN_NAME:-Invité}"
+      JAVA_TOOL_OPTIONS: "-Xms128m -Xmx512m"
     labels:
       <<: *traefik-backend-labels
     restart: unless-stopped
@@ -397,6 +398,7 @@ services:
       ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY}"
       AI_PROVIDER: "${AI_PROVIDER:-openai}"
       OLLAMA_BASE_URL: "${OLLAMA_BASE_URL:-http://host.docker.internal:11434}"
+      JAVA_TOOL_OPTIONS: "-Xms128m -Xmx512m"
     depends_on:
       rabbitmq:
         condition: service_healthy
