@@ -6,7 +6,7 @@
 Les utilisateurs soumettent des termes de recherche, l'IA retourne les codes HS correspondants avec hiérarchie complète et justification.
 
 **Stack principale :**
-- Frontend : Angular 18 standalone (port 4200)
+- Frontend : Angular 20 standalone (port 4200)
 - Backend : Spring Boot 3.5 / Java 21 (port 8081)
 - Search-service : Spring Boot / Java 21 (port 8082) — moteur IA
 - Auth : Keycloak 22 (port 8080)
@@ -20,7 +20,8 @@ tarif-cloak-prod/
 ├── backend/           # API REST principale (utilisateurs, pricing-plans, organisations)
 ├── frontend/          # Application Angular
 ├── search-service/    # Microservice IA (recherche HS-codes, batch API)
-├── keycloak/          # Configuration realm Keycloak
+├── keycloak/          # Configuration realm Keycloak (realm-export.json)
+├── scripts/           # Scripts de sauvegarde et maintenance VPS
 ├── docker-compose-staging.yml # Environnement de développement principal
 ├── docker-compose-prod.yml    # Environnement Invité (beta)
 └── .env               # NE PAS COMMITER — uniquement sur le VPS
@@ -83,6 +84,19 @@ docker compose -f docker-compose-staging.yml up -d --build search-service
 docker compose -f docker-compose-staging.yml logs -f backend
 docker compose -f docker-compose-staging.yml logs -f search-service
 
+# --- TESTS ---
+
+# Backend (unitaires + intégration, utilise Testcontainers PostgreSQL)
+cd backend && mvn test
+cd backend && mvn test -Dtest=NomDeLaClasse        # test unitaire unique
+cd backend && mvn test -Dtest=NomDeLaClasse#method # méthode unique
+
+# Search-service
+cd search-service && mvn test
+
+# Frontend
+cd frontend && npm test   # Karma + Jasmine, lance Chrome
+
 # --- DEVOPS & INFRASTRUCTURE ---
 
 # Sauvegarde Automatique Manuelle (App DB & Keycloak DB)
@@ -94,6 +108,73 @@ cd /root/backups-hscode
 ls -t app-db*.sql.gz | head -1 | xargs zcat | docker exec -i staging-app-db sh -c 'psql -U $POSTGRES_USER -d $POSTGRES_DB'
 cd /root/tarif-cloak-prod && docker compose -f docker-compose-staging.yml restart
 ```
+
+### Conteneurs VPS
+
+| Conteneur | Rôle |
+|---|---|
+| `hscode-app-db` | PostgreSQL application (prod) |
+| `hscode-keycloak-db` | PostgreSQL Keycloak |
+| `staging-app-db` | PostgreSQL application (staging) |
+| `frontend`, `backend`, `search-service`, `keycloak` | Services applicatifs |
+
+## Migrations de base de données (Flyway)
+
+**Outil :** Flyway (`baseline-on-migrate: true`, `out-of-order: true`, `validate-on-migrate: true`)
+
+**Convention de nommage :** `V{n}__{description}.sql` — ex: `V1__create_pricing_plan_table.sql`, `V32__add_trial_renew_count.sql`
+
+**Emplacement :** `backend/src/main/resources/db/migration/`
+
+Les migrations sont appliquées automatiquement au démarrage du backend. Pour ajouter une migration, créer un nouveau fichier SQL avec le prochain numéro de version. Ne jamais modifier un fichier de migration déjà appliqué en production.
+
+La documentation des index de performance est dans `backend/src/main/resources/db/migration/README_INDEXES.md`.
+
+## Modèle de données
+
+```
+Organization
+  ├── pricingPlanId → PricingPlan (plan courant)
+  ├── ← OrganizationUser (M-1, liste des collaborateurs via keycloakUserId)
+  ├── ← UsageLog (M-1, logs de consommation IA)
+  ├── ← Invoice (M-1, factures)
+  └── ← QuotaAlert (M-1, alertes quota)
+```
+
+**Entités principales :**
+
+| Entité | Champs clés |
+|---|---|
+| `Organization` | name, email, marketVersion, keycloakUserId, monthlyQuota, pricingPlanId, monthlyPlanStartDate, monthlyPlanEndDate, trialRenewCount, enabled |
+| `OrganizationUser` | keycloakUserId, organizationId (clé composite unique) |
+| `PricingPlan` | name, marketVersion, pricePerMonth, monthlyQuota, isCustom, organizationId |
+| `UsageLog` | keycloakUserId, organizationId, endpoint, searchTerm, tokensUsed, costUsd |
+| `Invoice` | organizationId, pricingPlanId |
+| `Position10Dz` / `Position6Dz` | code, description (données HS, readonly) |
+| `PendingRegistration` | email, activityDomain, otp (inscription en attente) |
+
+## Structure des packages backend
+
+**Racine :** `backend/src/main/java/com/muhend/backend/`
+
+| Package | Contenu |
+|---|---|
+| `admin/` | Gestion admin, nettoyage utilisateurs |
+| `alert/` | Alertes quota (controller, service, model) |
+| `auth/` | Inscription, OTP, authentification |
+| `codesearch/` | Décodage P10, recherche hiérarchie HS |
+| `config/` | SecurityFilterChain, OpenAPI, CORS |
+| `email/` | Envoi emails SMTP |
+| `exception/` | `GlobalExceptionHandler` |
+| `flyway/` | Callbacks Flyway |
+| `internal/` | Endpoints internes (quota check, stats) |
+| `invoice/` | Facturation |
+| `market/` | Profils marché (`MarketProfile`) |
+| `organization/` | Gestion organisations et collaborateurs |
+| `payment/` | Intégrations Chargily / Stripe |
+| `pricing/` | Plans tarifaires |
+| `usage/` | Logs d'utilisation IA |
+| `user/` | Gestion utilisateurs Keycloak |
 
 ## Mode Beta (`BETA_MODE`)
 
@@ -111,6 +192,25 @@ Quand `BETA_MODE=true` :
 - **Réinitialisation admin** : limitée à 1 fois par organisation (`trialRenewCount`)
 
 ## Architecture IA (search-service)
+
+### Les 3 modes de recherche
+
+**Mode 1 — Recherche article unique (cascade niveau par niveau) :**
+- Endpoints : `GET /recherche/{niveau}?termeRecherche=...`
+- Niveaux : `sections` → `chapitres` → `positions4` → `positions6` → `positions10`
+- Chaque niveau appelle `AiService` → `OpenAiProvider` / `AnthropicProvider` / `OllamaProvider`
+- La justification n'est générée qu'au dernier niveau (`withJustification=true`)
+
+**Mode 2 — Recherche par liste :**
+- Route frontend : `/recherche/searchListLots`
+- Implémentation : le frontend boucle sur les endpoints unitaires du mode 1 en séquence
+
+**Mode 3 — Recherche par lots asynchrone (Batch API) :**
+- `POST /batch-search/submit` — soumettre un lot (max 1 000 items)
+- `GET /batch-search/status/{batchId}` — statut du lot
+- `GET /batch-search/results/{batchId}` — résultats
+- `POST /batch-search/cancel/{batchId}` — annuler
+- Providers : `AnthropicBatchProvider`, `OpenAiBatchProvider` (Ollama non supporté)
 
 ### Providers standard (requêtes unitaires)
 
@@ -133,13 +233,6 @@ Quand `BETA_MODE=true` :
 - Modèles partagés dans `batch/models/` : `SearchRequest`, `BatchStatus`, `BatchResult`
 - Ollama ne supporte PAS le batch
 
-### Endpoints batch
-
-- `POST /api/batch-search/submit` — soumettre un lot
-- `GET  /api/batch-search/status/{id}` — statut
-- `GET  /api/batch-search/results/{id}` — résultats
-- `POST /api/batch-search/cancel/{id}` — annuler
-
 ## Routage Traefik (production)
 
 | Service | Règle | Priorité |
@@ -153,6 +246,26 @@ Quand `BETA_MODE=true` :
 - `search-service` a priorité 20, donc ses routes doivent être précises.
 - Ne pas ajouter `/api/swagger-ui` à search-service (intercepterait le swagger du backend).
 - **Protection DDoS / Quotas API** : `search-service` utilise le middleware `search-ratelimit` (5 req/sec en moyenne) défini dans Traefik pour bloquer les requêtes abusives qui feraient exploser la facture OpenAI.
+
+## Keycloak
+
+**Realm :** `hscode-realm` — fichier exporté : `keycloak/realm-export.json`
+
+**Rôles applicatifs :**
+
+| Rôle | Droits |
+|---|---|
+| `ADMIN` | Accès complet, interface admin |
+| `ORGANIZATION` | Compte organisation, peut inviter des collaborateurs |
+| `COLLABORATOR` | Membre d'une organisation, accès restreint |
+| `USER` | Rôle de base |
+
+**Configuration Spring Boot :**
+- Validation tokens : `issuer-uri: ${KEYCLOAK_EXTERNAL_URL}/realms/${KEYCLOAK_REALM}`
+- Clés publiques : `jwk-set-uri: ${KEYCLOAK_INTERNAL_URL}/realms/.../certs`
+- Clients Keycloak déclarés : `frontend-client`, `backend-client`
+
+**Ne jamais modifier** la configuration du realm (flows, scopes, clients) sans vérifier l'impact sur staging et prod (Keycloak est partagé).
 
 ## Swagger / OpenAPI
 
@@ -188,10 +301,18 @@ ANTHROPIC_API_KEY=...
 MARKET_VERSION=DZ
 FRONTEND_DOMAIN=...
 WWW_FRONTEND_DOMAIN=...
+KEYCLOAK_DOMAIN=...
+KEYCLOAK_REALM=hscode-realm
+KEYCLOAK_ADMIN_USER=...
+KEYCLOAK_ADMIN_PASSWORD=...
 
 # Beta mode
 BETA_MODE=true                  # Injecté dans le build Angular via Dockerfile ARG
 DEFAULT_PLAN_NAME=Invité        # Plan assigné automatiquement à l'inscription (backend)
+
+# Paiement
+CHARGILY_API_KEY=...
+CHARGILY_SECRET_KEY=...
 ```
 
 Le fichier `.env.dev` sert de template — copier vers `.env` sur le VPS et adapter.
@@ -204,22 +325,7 @@ Accepte 2, 4, 6 ou 10 chiffres et retourne la hiérarchie complète (section →
 
 ### Titres hiérarchiques (codes `code=''`)
 
-Dans la table `position10_dz`, les lignes avec `code=''` sont des **titres de catégorie** préfixés par `"- "` (1 tiret = niveau 1, `"- - "` = niveau 2, etc.).
-
-**Algorithme `findTitres`** (pour un code unique, niveau POSITION10) :
-
-- Remonte les ids décroissants depuis le code P10
-- Cherche le premier titre avec `nb_tirets < n_tirets` courant
-- Si ce titre a **≤ 1 tiret → STOP total** (frontière de section, aucun titre affiché)
-- Sinon : ajoute le titre, décrémente `n_tirets`, recommence
-- Arrêt quand `n_tirets = 1`
-
-**Algorithme `buildTitresParCode`** (pour une liste de codes, niveau POSITION6) :
-
-- Étape 1 : `findTitres` pour le premier code (les titres précédant le 1er code ont des ids < MIN des codes, exclus de la requête de plage)
-- Étape 2 : parcourt `findAllWithContextByPrefix` (plage MIN..MAX ids), maintient une pile de titres
-- Titre à **1 tiret → vide la pile** (frontière de section), ne l'ajoute pas
-- Titre à **≥ 2 tirets → met à jour la pile** (remplace les niveaux ≥ niveau courant)
+Dans la table `position10_dz`, les lignes avec `code=''` sont des **titres de catégorie** préfixés par `"- "` (1 tiret = niveau 1, `"- - "` = niveau 2, etc.). L'algorithme remonte les ids pour trouver les titres parents applicables à un code donné.
 
 **Affichage frontend (delta)** : pour chaque code P10, seuls les titres qui **changent** par rapport au code précédent sont affichés (`titreDelta(current, prev)`).
 
@@ -250,10 +356,6 @@ Affiché dans la sidebar organisation via `getMyOrganization()` :
 - Vert si > 50% restants, orange entre 20–50%, rouge sous 20%
 - Masqué si `monthlyQuota == null` (plan illimité)
 - Rafraîchi toutes les 30 secondes
-
-### Les 3 modes de recherche
-
-Accessibles via onglets dans `frontend/.../tarif/home/tarif.component.ts` et cartes sur la page d'accueil.
 
 ## Facturation — Stratégie actuelle
 
@@ -340,7 +442,7 @@ CHARGILY_SECRET_KEY=...   # Clé de signature webhook
 - **Backend** : DTOs avec Lombok (`@Data @Builder`), validation Jakarta (`@NotBlank`, `@Size`)
 - **Exceptions** : `GlobalExceptionHandler` gère `IllegalArgumentException` → 400, `RuntimeException` → 500
 - **Sécurité** : double `SecurityFilterChain` (public Order 1, protégé Order 2)
-- **CSV export** : toujours ajouter BOM UTF-8 (`\uFEFF`) pour compatibilité Excel
+- **CSV export** : toujours ajouter BOM UTF-8 (`﻿`) pour compatibilité Excel
 
 ## Documentation existante
 
