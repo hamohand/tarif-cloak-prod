@@ -148,13 +148,19 @@ import { take } from 'rxjs/operators';
 
             <div class="form-group">
               <label for="organizationPassword">Mot de passe *</label>
-              <input
-                id="organizationPassword"
-                type="password"
-                formControlName="organizationPassword"
-                class="form-control"
-                [class.error]="isFieldInvalid('organizationPassword')"
-                (focus)="onPasswordFieldFirstFocus()">
+              <div class="password-wrapper">
+                <input
+                  id="organizationPassword"
+                  [type]="showPassword ? 'text' : 'password'"
+                  formControlName="organizationPassword"
+                  class="form-control"
+                  [class.error]="isFieldInvalid('organizationPassword')"
+                  (focus)="onPasswordFieldFirstFocus()">
+                <button type="button" class="password-toggle" (click)="showPassword = !showPassword" [attr.aria-label]="showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'">
+                  <svg *ngIf="!showPassword" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  <svg *ngIf="showPassword" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                </button>
+              </div>
               <div class="error-message" *ngIf="isFieldInvalid('organizationPassword')">
                 {{ getErrorMessage('organizationPassword') }}
               </div>
@@ -163,12 +169,18 @@ import { take } from 'rxjs/operators';
 
             <div class="form-group">
               <label for="organizationConfirmPassword">Confirmer le mot de passe *</label>
-              <input
-                id="organizationConfirmPassword"
-                type="password"
-                formControlName="organizationConfirmPassword"
-                class="form-control"
-                [class.error]="isFieldInvalid('organizationConfirmPassword')">
+              <div class="password-wrapper">
+                <input
+                  id="organizationConfirmPassword"
+                  [type]="showConfirmPassword ? 'text' : 'password'"
+                  formControlName="organizationConfirmPassword"
+                  class="form-control"
+                  [class.error]="isFieldInvalid('organizationConfirmPassword')">
+                <button type="button" class="password-toggle" (click)="showConfirmPassword = !showConfirmPassword" [attr.aria-label]="showConfirmPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'">
+                  <svg *ngIf="!showConfirmPassword" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  <svg *ngIf="showConfirmPassword" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                </button>
+              </div>
               <div class="error-message" *ngIf="isFieldInvalid('organizationConfirmPassword')">
                 {{ getErrorMessage('organizationConfirmPassword') }}
               </div>
@@ -521,6 +533,34 @@ import { take } from 'rxjs/operators';
       color: var(--neu-accent-hover);
     }
 
+    .password-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .password-wrapper .form-control {
+      flex: 1;
+      padding-right: 3rem;
+    }
+
+    .password-toggle {
+      position: absolute;
+      right: 0.75rem;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--neu-text-muted);
+      display: flex;
+      align-items: center;
+      padding: 0;
+      transition: color 0.2s ease;
+    }
+
+    .password-toggle:hover {
+      color: var(--neu-accent);
+    }
+
     .loading-plans {
       color: var(--neu-text-muted);
       font-size: 0.9rem;
@@ -581,6 +621,8 @@ export class RegisterComponent implements OnInit {
   isLoading = false;
   errorMessage = '';
   successMessage = '';
+  showPassword = false;
+  showConfirmPassword = false;
   pricingPlans: PricingPlan[] = [];
   loadingPlans = false;
   marketProfiles: MarketProfile[] = [];

@@ -11,5 +11,9 @@
       "c:\\Users\\hamoh\\Documents\\projets\\tarif\\tarif-micros\\docs",
       "c:\\Users\\hamoh\\Documents\\projets\\tarif\\tarif-micros\\tarif-cloak-prod\\sql\\sql"
     ]
-  }
+  },
+  "enabledMcpjsonServers": [
+    "hostinger-api"
+  ],
+  "enableAllProjectMcpServers": true
 }
