@@ -531,6 +531,7 @@ public class OpenAiBatchProvider implements BatchProvider {
     }
 
 
+    /**
      * Nettoie la réponse JSON en enlevant les marqueurs markdown si présents.
      * Les LLMs retournent parfois le JSON enveloppé dans des blocs markdown ```json
      */
