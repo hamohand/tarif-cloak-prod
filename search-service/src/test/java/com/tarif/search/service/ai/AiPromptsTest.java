@@ -101,14 +101,14 @@ class AiPromptsTest {
     @Test
     @DisplayName("getSystemMessage(true) doit contenir 'justification'")
     void getSystemMessage_avecJustification_doitContenir_motJustification() {
-        String msg = AiPrompts.getSystemMessage(true);
+        String msg = AiPrompts.getSystemMessage(true, "SECTIONS");
         assertThat(msg).containsIgnoringCase("justification");
     }
 
     @Test
     @DisplayName("getSystemMessage(false) ne doit PAS contenir 'justification' dans la clé JSON")
     void getSystemMessage_sansJustification_neDoit_PasContenir_cleJustification() {
-        String msg = AiPrompts.getSystemMessage(false);
+        String msg = AiPrompts.getSystemMessage(false, "SECTIONS");
         // Le mode simple n'expose que la clé `code`
         assertThat(msg).contains("`code`");
         assertThat(msg).doesNotContain("`justification`");
@@ -117,16 +117,18 @@ class AiPromptsTest {
     @Test
     @DisplayName("Les deux variantes du system message ne doivent pas contenir de placeholder non remplacé")
     void getSystemMessage_neDoit_PasContenir_placeholder() {
-        assertThat(AiPrompts.getSystemMessage(true))
+        assertThat(AiPrompts.getSystemMessage(true, "SECTIONS"))
                 .doesNotContain("{instruction_details}")
                 .doesNotContain("{format_example}")
                 .doesNotContain("{json_keys}")
-                .doesNotContain("{examples}");
+                .doesNotContain("{examples}")
+                .doesNotContain("{level_context}");
 
-        assertThat(AiPrompts.getSystemMessage(false))
+        assertThat(AiPrompts.getSystemMessage(false, "POSITIONS4"))
                 .doesNotContain("{instruction_details}")
                 .doesNotContain("{format_example}")
                 .doesNotContain("{json_keys}")
-                .doesNotContain("{examples}");
+                .doesNotContain("{examples}")
+                .doesNotContain("{level_context}");
     }
 }
