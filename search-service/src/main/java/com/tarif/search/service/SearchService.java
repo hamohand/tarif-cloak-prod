@@ -203,9 +203,20 @@ public class SearchService {
 
     private List<Position> ragSections() {
         List<Section> sections = sectionService.getAllSections();
-        return sections.stream()
-                .map(s -> new Position(s.getCode(), s.getDescription()))
-                .collect(Collectors.toList());
+        List<Position> rag = new ArrayList<>();
+
+        for (Section section : sections) {
+            // Injecter la note de section comme contexte légal
+            // (code null = ligne de contexte, non sélectionnable par l'IA)
+            String note = sectionService.getNote(section.getCode());
+            if (note != null && !note.isBlank()) {
+                rag.add(new Position(null, "[Note de la Section " + section.getCode() + "] " + note));
+                log.debug("Level 0 - Note section {} injectée ({} chars)", section.getCode(), note.length());
+            }
+            rag.add(new Position(section.getCode(), section.getDescription()));
+        }
+
+        return rag;
     }
 
     private List<Position> ragChapitres(List<Position> sectionsSelectionnees) {

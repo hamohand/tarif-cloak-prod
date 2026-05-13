@@ -58,7 +58,7 @@ class SearchServiceTest {
     private static final String TERME = "pommes fraîches";
 
     // Entités retournées par les services de données
-    private final Section    sectionII   = new Section(1L, "II", "Produits du règne végétal");
+    private final Section    sectionII   = new Section(1L, "II", "Produits du règne végétal", null);
     private final Chapitre   chapitre08  = new Chapitre(1L, "08", "Fruits comestibles", "II", null);
     private final Position4  pos4_0808   = new Position4(1L, "0808", "Pommes, poires et coings, frais");
     private final Position6Dz pos6_080810 = new Position6Dz(1L, "0808 10", "Pommes");

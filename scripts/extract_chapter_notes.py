@@ -2,6 +2,10 @@
 """
 extract_chapter_notes.py
 Extrait les notes de section et de chapitre depuis les PDFs du tarif douanier.
+Génère deux fichiers SQL :
+  - pg6_notes_chapitres.sql  : UPDATE chapitre SET note = ...
+  - pg7_notes_sections.sql   : UPDATE section SET note = ...
+
 Usage:
   python extract_chapter_notes.py --pdf-dir ./pdfs-chapitres --output notes.sql
   python extract_chapter_notes.py --pdf-dir ./pdfs-chapitres --apercu
@@ -58,6 +62,10 @@ def nettoyer(texte: str) -> str:
     return texte.strip()
 
 
+def echapper(t: str) -> str:
+    return t.replace("'", "''")
+
+
 # ─── Extraction ───────────────────────────────────────────────────────────────
 
 def extraire_depuis_pdf(chemin: str, debug=False) -> tuple[str, str, str]:
@@ -81,18 +89,16 @@ def extraire_depuis_pdf(chemin: str, debug=False) -> tuple[str, str, str]:
                 if est_en_tete_tableau(ligne):
                     tableau_atteint = True
                     break
-                # Filtrer les en-têtes de page répétitifs
                 if PAGE_HEADER.search(ligne):
                     continue
                 toutes_lignes.append(ligne)
 
-            # Fallback : vrai tableau pdfplumber (non-cadre)
             if not tableau_atteint:
                 vrais = [t for t in page.find_tables() if not est_tableau_cadre(t, page)]
                 if vrais:
                     tableau_atteint = True
 
-    # ── Extraire le code de section ──────────────────────────────────────────
+    # Extraire le code de section
     section_code = ""
     for ligne in toutes_lignes[:20]:
         m = SECTION_CODE.search(ligne)
@@ -100,13 +106,13 @@ def extraire_depuis_pdf(chemin: str, debug=False) -> tuple[str, str, str]:
             section_code = m.group(1).upper()
             break
 
-    # ── Trouver la frontière section/chapitre ────────────────────────────────
+    # Trouver la frontière section/chapitre
     boundary_idx = None
     for i, ligne in enumerate(toutes_lignes):
         if CHAPITRE_BOUNDARY.match(ligne.strip()):
             boundary_idx = i
             if debug:
-                print(f"    Frontière section/chapitre à la ligne {i}: '{ligne.strip()}'")
+                print(f"    Frontière section/chapitre ligne {i}: '{ligne.strip()}'")
             break
 
     if boundary_idx is not None:
@@ -129,16 +135,14 @@ def diagnostiquer(chemin: str):
             print(f"\n─── Page {i} ───")
             texte = page.extract_text()
             if not texte:
-                print("  ⚠️  Aucun texte (PDF scanné ?)")
-                continue
+                print("  ⚠️  Aucun texte"); continue
             lignes = [l for l in texte.splitlines() if l.strip()]
             print(f"  {len(lignes)} lignes")
             for l in lignes[:10]:
                 print(f"    > {l[:100]}")
             for l in lignes:
                 if est_en_tete_tableau(l):
-                    print(f"  🛑 EN-TÊTE TABLEAU : '{l.strip()}'")
-                    break
+                    print(f"  🛑 EN-TÊTE TABLEAU : '{l.strip()}'"); break
                 if CHAPITRE_BOUNDARY.match(l.strip()):
                     print(f"  📌 FRONTIÈRE section/chapitre : '{l.strip()}'")
             tables = page.find_tables()
@@ -155,25 +159,37 @@ def diagnostiquer(chemin: str):
 
 # ─── Génération SQL ───────────────────────────────────────────────────────────
 
-def echapper(t: str) -> str:
-    return t.replace("'", "''")
+def generer_sql_sections(section_notes: dict) -> str:
+    """Génère les UPDATE pour la table section (notes de section)."""
+    lignes = [
+        "-- Notes explicatives de sections — tarif douanier algérien",
+        "-- Généré par extract_chapter_notes.py",
+        "",
+        "ALTER TABLE section ADD COLUMN IF NOT EXISTS note TEXT NULL;",
+        "",
+    ]
+    for sc in sorted(section_notes):
+        lignes.append(f"-- Section {sc}")
+        lignes.append(f"UPDATE section SET note = '{echapper(section_notes[sc])}' WHERE TRIM(code) = '{sc}';")
+        lignes.append("")
+    lignes.append("SELECT code, description, LENGTH(note) AS note_chars FROM section WHERE note IS NOT NULL ORDER BY code;")
+    return "\n".join(lignes)
 
 
 def generer_sql(chapter_notes: dict, section_notes: dict, chapter_sections: dict) -> str:
+    """Génère les UPDATE pour la table chapitre (note combinée section + chapitre)."""
     lignes = [
-        "-- Notes explicatives — tarif douanier algérien",
+        "-- Notes explicatives chapitres — tarif douanier algérien",
         "-- Généré par extract_chapter_notes.py",
         "",
         "ALTER TABLE chapitre ADD COLUMN IF NOT EXISTS note TEXT NULL;",
         "",
     ]
-
     for code in sorted(chapter_notes, key=lambda x: int(x) if x.isdigit() else 0):
         sec = chapter_sections.get(code, "")
         sec_note = section_notes.get(sec, "")
         chap_note = chapter_notes[code]
 
-        # Combiner : note de section + note de chapitre
         if sec_note and chap_note:
             full = f"[Note de la Section {sec}]\n{sec_note}\n\n[Note du Chapitre {code.zfill(2)}]\n{chap_note}"
         elif sec_note:
@@ -199,7 +215,6 @@ def main():
     p.add_argument("--dump",     action="store_true", help="Écrit les .txt de chaque chapitre")
     p.add_argument("--diagnose", action="store_true", help="Diagnostic détaillé de la structure PDF")
     p.add_argument("--debug",    action="store_true")
-    p.add_argument("--max-pages", type=int, default=0)
     args = p.parse_args()
 
     if not os.path.isdir(args.pdf_dir):
@@ -215,9 +230,9 @@ def main():
         return
 
     print(f"📂 {len(pdfs)} PDF(s)\n")
-    chapter_notes   = {}  # {chapter_code: note_text}
-    section_notes   = {}  # {section_code: note_text}
-    chapter_sections = {} # {chapter_code: section_code}
+    chapter_notes    = {}  # {chapter_code: note_text}
+    section_notes    = {}  # {section_code: note_text}
+    chapter_sections = {}  # {chapter_code: section_code}
     erreurs = []
 
     for nom in pdfs:
@@ -235,7 +250,6 @@ def main():
 
             chapter_sections[code] = sc
 
-            # Mémoriser la note de section (du 1er chapitre qui la contient)
             if sn and sc and sc not in section_notes:
                 section_notes[sc] = sn
                 print(f"✅  Section {sc} ({len(sn)} chars) + Chapitre ({len(cn)} chars)")
@@ -277,10 +291,25 @@ def main():
     if args.apercu:
         print("Mode aperçu : SQL non généré."); return
 
+    # ── SQL chapitres ──────────────────────────────────────────────────────────
     sql = generer_sql(chapter_notes, section_notes, chapter_sections)
     open(args.output, "w", encoding="utf-8").write(sql)
-    print(f"\n📝 SQL généré : {args.output}")
-    print(f"   psql -U <user> -d <db> -f {args.output}")
+    print(f"\n📝 SQL chapitres : {args.output}")
+
+    # ── SQL sections ───────────────────────────────────────────────────────────
+    if section_notes:
+        base = os.path.splitext(args.output)[0]
+        output_sections = base.replace("pg6", "pg7").replace("chapitres", "sections") + ".sql"
+        if output_sections == args.output:
+            output_sections = base + "_sections.sql"
+        sql_sec = generer_sql_sections(section_notes)
+        open(output_sections, "w", encoding="utf-8").write(sql_sec)
+        print(f"📝 SQL sections  : {output_sections}")
+
+    print(f"\n   Appliquer :")
+    print(f"   scp {args.output} user@vps:/tmp/")
+    print(f"   docker cp /tmp/<fichier> staging-app-db:/tmp/")
+    print(f"   docker exec staging-app-db psql -U $POSTGRES_USER -d $POSTGRES_DB -f /tmp/<fichier>")
 
 
 if __name__ == "__main__":

@@ -32,6 +32,16 @@ public class SectionService {
                 .orElse(null);
     }
 
+    /**
+     * Retourne la note explicative de la section (extrait du tarif DGD).
+     * Retourne null si aucune note n'a été saisie pour cette section.
+     */
+    public String getNote(String code) {
+        return sectionRepository.findByCode(code.trim())
+                .map(Section::getNote)
+                .orElse(null);
+    }
+
     public boolean existsByCode(String code) {
         return sectionRepository.findByCode(code).isPresent();
     }

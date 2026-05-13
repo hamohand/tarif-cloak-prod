@@ -21,4 +21,8 @@ public class Section {
 
     @Column(nullable = false, length = 1024)
     private String description;
+
+    /** Note explicative de la section (extrait du tarif douanier DGD). Nullable. */
+    @Column(name = "note", columnDefinition = "TEXT")
+    private String note;
 }
