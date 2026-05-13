@@ -113,6 +113,9 @@ export class AuthService {
             window.history.replaceState({}, document.title, window.location.pathname);
           }
           
+          // Activer le rafraîchissement silencieux (refresh_token flow) pour éviter les déconnexions
+          this.oauthService.setupAutomaticSilentRefresh();
+          
           // Démarrer la vérification périodique de l'expiration du token
           this.startTokenCheck();
           this.updateAccountContext(initialToken);
@@ -204,6 +207,7 @@ export class AuthService {
         const isValid = this.oauthService.hasValidAccessToken();
         this.isAuthenticatedSubject.next(isValid);
         if (isValid) {
+          this.oauthService.setupAutomaticSilentRefresh();
           this.startTokenCheck();
           const sessionToken = this.oauthService.getAccessToken();
           if (sessionToken) {
