@@ -34,6 +34,16 @@ node_modules/
 .env
 .env.*
 tarif-cloak-prod
+# ========================
+# Données tarifaires (PDFs sources — trop volumineux pour git)
+# ========================
+pdfs-chapitres/
+*.pdf
+
+# Fichiers temporaires d'extraction
+pdfs-chapitres/*.txt
+
+# SQL d'initialisation (transféré via scp)
 /sql
 
 # Dans search-service/.gitignore
