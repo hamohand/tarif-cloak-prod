@@ -77,9 +77,9 @@ public class AnthropicBatchProvider implements BatchProvider {
                     : "search-" + i;
 
                 // Construction du prompt avec le RAG
-                String prompt = buildSearchPrompt(
-                    searchRequest.getSearchTerm(),
-                    searchRequest.getRagContext()
+                String prompt = AiPrompts.buildUserPrompt(
+                    searchRequest.getRagContext() != null ? searchRequest.getRagContext() : "",
+                    searchRequest.getSearchTerm()
                 );
 
                 Map<String, Object> request = new HashMap<>();
@@ -356,29 +356,7 @@ public class AnthropicBatchProvider implements BatchProvider {
         }
     }
 
-    /**
-     * Construit le prompt de recherche avec le contexte RAG.
-     */
-    private String buildSearchPrompt(String searchTerm, String ragContext) {
-        StringBuilder prompt = new StringBuilder();
-        prompt.append("En utilisant la liste suivante : \n\n");
 
-        if (ragContext != null && !ragContext.isEmpty()) {
-            prompt.append(ragContext);
-        } else {
-            prompt.append("[Contexte non fourni]");
-        }
-
-        prompt.append("\n\n")
-              .append("Recherchez tous les items qui contiennent la catégorie qui correspond à : \"")
-              .append(searchTerm)
-              .append("\".\n")
-              .append("L'aspect qui nous intéresse est la valeur du code.");
-
-        return prompt.toString();
-    }
-
-    /**
      * Nettoie la réponse JSON en enlevant les marqueurs markdown si présents.
      * Claude retourne parfois le JSON enveloppé dans des blocs markdown ```json
      *

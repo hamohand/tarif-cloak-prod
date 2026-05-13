@@ -55,19 +55,8 @@ public class AiService {
         }
     }
 
-    private String construirePrompt(StringBuilder ragString, String termeRecherche) {
-        return "Produit recherché : \"" + termeRecherche + "\"\n\n" +
-                "Voici la liste complète des codes douaniers à analyser :\n" +
-                "<codes_douaniers>\n" +
-                ragString + "\n" +
-                "</codes_douaniers>\n\n" +
-                "À partir de cette liste, identifiez tous les codes dont la description correspond au produit \"" +
-                termeRecherche + "\".\n\n" +
-                "Répondez uniquement avec le tableau JSON, sans aucun texte avant ou après.";
-    }
-
     private String obtenirReponseJsonDeIA(String titre, StringBuilder ragString, String termeRecherche, boolean withJustification) {
-        String prompt = construirePrompt(ragString, termeRecherche);
+        String prompt = AiPrompts.buildUserPrompt(ragString.toString(), termeRecherche);
         return getActiveProvider().demanderAiAide(titre, prompt, withJustification);
     }
 

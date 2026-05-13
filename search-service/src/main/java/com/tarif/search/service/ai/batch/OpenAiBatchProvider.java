@@ -272,10 +272,9 @@ public class OpenAiBatchProvider implements BatchProvider {
                 ? request.getCustomId()
                 : "search-" + i;
 
-            // Construction du prompt avec le RAG
-            String prompt = buildSearchPrompt(
-                request.getSearchTerm(),
-                request.getRagContext()
+            String prompt = AiPrompts.buildUserPrompt(
+                request.getRagContext() != null ? request.getRagContext() : "",
+                request.getSearchTerm()
             );
 
             Map<String, Object> batchRequest = new LinkedHashMap<>();
@@ -531,30 +530,7 @@ public class OpenAiBatchProvider implements BatchProvider {
         };
     }
 
-    /**
-     * Construit le prompt de recherche avec le contexte RAG.
-     * Identique à la logique d'AnthropicBatchProvider pour la cohérence.
-     */
-    private String buildSearchPrompt(String searchTerm, String ragContext) {
-        StringBuilder prompt = new StringBuilder();
-        prompt.append("En utilisant la liste suivante : \n\n");
 
-        if (ragContext != null && !ragContext.isEmpty()) {
-            prompt.append(ragContext);
-        } else {
-            prompt.append("[Contexte non fourni]");
-        }
-
-        prompt.append("\n\n")
-              .append("Recherchez tous les items qui contiennent la catégorie qui correspond à : \"")
-              .append(searchTerm)
-              .append("\".\n")
-              .append("L'aspect qui nous intéresse est la valeur du code.");
-
-        return prompt.toString();
-    }
-
-    /**
      * Nettoie la réponse JSON en enlevant les marqueurs markdown si présents.
      * Les LLMs retournent parfois le JSON enveloppé dans des blocs markdown ```json
      */

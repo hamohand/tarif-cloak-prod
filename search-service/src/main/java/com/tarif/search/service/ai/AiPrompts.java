@@ -25,6 +25,25 @@ public class AiPrompts {
         }
     }
 
+    /**
+     * Construit le prompt utilisateur de manière uniforme pour les modes standard ET batch.
+     * Point d'entrée unique pour garantir la cohérence des résultats quelle que soit la voie d'appel.
+     *
+     * @param ragContext  Le contexte RAG déjà formaté (codes douaniers à analyser)
+     * @param searchTerm  Le terme de recherche (produit)
+     * @return Le prompt utilisateur complet
+     */
+    public static String buildUserPrompt(String ragContext, String searchTerm) {
+        return "Produit recherché : \"" + searchTerm + "\"\n\n" +
+               "Voici la liste complète des codes douaniers à analyser :\n" +
+               "<codes_douaniers>\n" +
+               ragContext + "\n" +
+               "</codes_douaniers>\n\n" +
+               "À partir de cette liste, identifiez tous les codes dont la description correspond au produit \"" +
+               searchTerm + "\".\n\n" +
+               "Répondez uniquement avec le tableau JSON, sans aucun texte avant ou après.";
+    }
+
     private static final String SYSTEM_MESSAGE_TEMPLATE = """
             Extraction intelligente de codes douaniers / Intelligent customs code extraction
 
