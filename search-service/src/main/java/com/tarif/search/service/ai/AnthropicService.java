@@ -25,7 +25,6 @@ public class AnthropicService implements AiProvider {
     private final String apiKey;
     private final String model;
     private final String apiUrl;
-    private final int maxTokens = 4096;
     private final float temperature = 0.1F;
 
     private static final ThreadLocal<UsageInfo> currentUsage = new ThreadLocal<>();
@@ -43,7 +42,7 @@ public class AnthropicService implements AiProvider {
     }
 
     @Override
-    public String demanderAiAide(String titre, String question, boolean withJustification) {
+    public String demanderAiAide(String titre, String question, boolean withJustification, String niveau) {
         if (apiKey == null || apiKey.isBlank()) {
             log.error("Clé API Anthropic non configurée");
             return "";
@@ -57,10 +56,11 @@ public class AnthropicService implements AiProvider {
 
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("model", model);
-        requestBody.put("system", AiPrompts.getSystemMessage(withJustification));
+        requestBody.put("system", AiPrompts.getSystemMessage(withJustification, niveau));
         requestBody.put("messages", new Object[]{
                 Map.of("role", "user", "content", question)
         });
+        int maxTokens = AiPrompts.getMaxTokensForLevel(withJustification);
         requestBody.put("max_tokens", maxTokens);
         requestBody.put("temperature", temperature);
 

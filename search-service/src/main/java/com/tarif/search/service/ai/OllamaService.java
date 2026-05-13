@@ -42,12 +42,12 @@ public class OllamaService implements AiProvider {
     }
 
     @Override
-    public String demanderAiAide(String titre, String question, boolean withJustification) {
+    public String demanderAiAide(String titre, String question, boolean withJustification, String niveau) {
 
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.add("Content-Type", "application/json");
 
-        String systemMessage = AiPrompts.getSystemMessage(withJustification);
+        String systemMessage = AiPrompts.getSystemMessage(withJustification, niveau);
         String fullPrompt = systemMessage + "\n\nUser: " + question;
 
         Map<String, Object> requestBody = new HashMap<>();

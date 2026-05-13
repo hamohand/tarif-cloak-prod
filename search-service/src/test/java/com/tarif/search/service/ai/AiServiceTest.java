@@ -47,7 +47,7 @@ class AiServiceTest {
     void promptEtReponse_avecProviderOpenai_doitAppelerOpenAiService() {
         // given
         String reponseJson = "[{\"code\":\"0808 10\",\"justification\":\"Pommes\"}]";
-        when(openAiService.demanderAiAide(anyString(), anyString(), anyBoolean()))
+        when(openAiService.demanderAiAide(anyString(), anyString(), anyBoolean(), anyString()))
                 .thenReturn(reponseJson);
 
         List<Position> positions = listeDeTest();
@@ -56,7 +56,7 @@ class AiServiceTest {
         List<Position> result = aiService.promptEtReponse("POSITIONS6", "pommes fraîches", positions, true);
 
         // then
-        verify(openAiService, times(1)).demanderAiAide(anyString(), anyString(), eq(true));
+        verify(openAiService, times(1)).demanderAiAide(anyString(), anyString(), eq(true), anyString());
         verifyNoInteractions(anthropicService, ollamaService);
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getCode()).isEqualTo("0808 10");
@@ -67,14 +67,14 @@ class AiServiceTest {
     void promptEtReponse_avecProviderAnthropic_doitAppelerAnthropicService() {
         // given
         aiService = new AiService(openAiService, anthropicService, ollamaService, "anthropic");
-        when(anthropicService.demanderAiAide(anyString(), anyString(), anyBoolean()))
+        when(anthropicService.demanderAiAide(anyString(), anyString(), anyBoolean(), anyString()))
                 .thenReturn("[{\"code\":\"08\"}]");
 
         // when
         aiService.promptEtReponse("SECTIONS", "fruit", listeDeTest(), false);
 
         // then
-        verify(anthropicService, times(1)).demanderAiAide(anyString(), anyString(), eq(false));
+        verify(anthropicService, times(1)).demanderAiAide(anyString(), anyString(), eq(false), anyString());
         verifyNoInteractions(openAiService, ollamaService);
     }
 
@@ -83,14 +83,14 @@ class AiServiceTest {
     void promptEtReponse_avecProviderOllama_doitAppelerOllamaService() {
         // given
         aiService = new AiService(openAiService, anthropicService, ollamaService, "ollama");
-        when(ollamaService.demanderAiAide(anyString(), anyString(), anyBoolean()))
+        when(ollamaService.demanderAiAide(anyString(), anyString(), anyBoolean(), anyString()))
                 .thenReturn("[{\"code\":\"08\"}]");
 
         // when
         aiService.promptEtReponse("SECTIONS", "fruit", listeDeTest(), false);
 
         // then
-        verify(ollamaService, times(1)).demanderAiAide(anyString(), anyString(), eq(false));
+        verify(ollamaService, times(1)).demanderAiAide(anyString(), anyString(), eq(false), anyString());
         verifyNoInteractions(openAiService, anthropicService);
     }
 
@@ -99,14 +99,14 @@ class AiServiceTest {
     void promptEtReponse_avecProviderInconnu_doitFallbackSurOpenAi() {
         // given
         aiService = new AiService(openAiService, anthropicService, ollamaService, "unknown-provider");
-        when(openAiService.demanderAiAide(anyString(), anyString(), anyBoolean()))
+        when(openAiService.demanderAiAide(anyString(), anyString(), anyBoolean(), anyString()))
                 .thenReturn("[{\"code\":\"08\"}]");
 
         // when
         aiService.promptEtReponse("SECTIONS", "fruit", listeDeTest(), false);
 
         // then
-        verify(openAiService, times(1)).demanderAiAide(anyString(), anyString(), anyBoolean());
+        verify(openAiService, times(1)).demanderAiAide(anyString(), anyString(), anyBoolean(), anyString());
     }
 
     // ─── Réponse IA invalide ─────────────────────────────────────────────────
@@ -115,7 +115,7 @@ class AiServiceTest {
     @DisplayName("Réponse IA non-JSON → liste vide retournée sans exception")
     void promptEtReponse_avecReponseNonJson_doitRetournerListeVide() {
         // given
-        when(openAiService.demanderAiAide(anyString(), anyString(), anyBoolean()))
+        when(openAiService.demanderAiAide(anyString(), anyString(), anyBoolean(), anyString()))
                 .thenReturn("Désolé, je ne comprends pas votre demande.");
 
         // when / then — cleanJsonString lève RuntimeException, capturée en liste vide
@@ -128,7 +128,7 @@ class AiServiceTest {
     @DisplayName("Réponse IA = tableau vide [] → liste vide retournée")
     void promptEtReponse_avecTableauVide_doitRetournerListeVide() throws Exception {
         // given
-        when(openAiService.demanderAiAide(anyString(), anyString(), anyBoolean()))
+        when(openAiService.demanderAiAide(anyString(), anyString(), anyBoolean(), anyString()))
                 .thenReturn("[]");
 
         // when
@@ -145,7 +145,7 @@ class AiServiceTest {
     void promptEtReponse_doitEnvoyer_termeDeRechercheAuProvider() {
         // given
         String terme = "pommes fraîches";
-        when(openAiService.demanderAiAide(anyString(), anyString(), anyBoolean()))
+        when(openAiService.demanderAiAide(anyString(), anyString(), anyBoolean(), anyString()))
                 .thenAnswer(inv -> {
                     String prompt = inv.getArgument(1);
                     // Assertion dans la lambda : le terme doit être dans le prompt
@@ -157,7 +157,7 @@ class AiServiceTest {
         aiService.promptEtReponse("POSITIONS6", terme, listeDeTest(), false);
 
         // then — verify que demanderAiAide a bien été appelé
-        verify(openAiService).demanderAiAide(anyString(), anyString(), anyBoolean());
+        verify(openAiService).demanderAiAide(anyString(), anyString(), anyBoolean(), anyString());
     }
 
     // ─── formatterListeReponsesPourAffichage ─────────────────────────────────

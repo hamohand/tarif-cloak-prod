@@ -29,7 +29,6 @@ public class OpenAiService implements AiProvider {
     private final double baseRequestPrice;
     private final double priceInputPerMillion;
     private final double priceOutputPerMillion;
-    private final int maxTokens = 1500;
     private final float temperature = 0.0F;
 
     private static final ThreadLocal<UsageInfo> currentUsage = new ThreadLocal<>();
@@ -56,7 +55,7 @@ public class OpenAiService implements AiProvider {
     }
 
     @Override
-    public String demanderAiAide(String titre, String question, boolean withJustification) {
+    public String demanderAiAide(String titre, String question, boolean withJustification, String niveau) {
         if (apiKey == null || apiKey.isBlank()) {
             log.error("Clé API OpenAI non configurée");
             return "";
@@ -70,9 +69,10 @@ public class OpenAiService implements AiProvider {
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("model", model);
         requestBody.put("messages", new Object[]{
-                Map.of("role", "system", "content", AiPrompts.getSystemMessage(withJustification)),
+                Map.of("role", "system", "content", AiPrompts.getSystemMessage(withJustification, niveau)),
                 Map.of("role", "user", "content", question)
         });
+        int maxTokens = AiPrompts.getMaxTokensForLevel(withJustification);
         requestBody.put("max_tokens", maxTokens);
         requestBody.put("temperature", temperature);
 

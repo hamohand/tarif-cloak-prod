@@ -20,6 +20,20 @@ try:
 except ImportError:
     print("pip install pdfplumber"); sys.exit(1)
 
+# ─── Conversion chiffres romains → code section (format base : '01', '02'...) ─
+
+ROMAIN_VERS_ARABE = {
+    'I': 1, 'II': 2, 'III': 3, 'IV': 4, 'V': 5,
+    'VI': 6, 'VII': 7, 'VIII': 8, 'IX': 9, 'X': 10,
+    'XI': 11, 'XII': 12, 'XIII': 13, 'XIV': 14, 'XV': 15,
+    'XVI': 16, 'XVII': 17, 'XVIII': 18, 'XIX': 19, 'XX': 20, 'XXI': 21,
+}
+
+def section_code_db(romain: str) -> str:
+    """Convertit 'I' → '01', 'XIV' → '14', etc. Si non trouvé, retourne tel quel."""
+    arabe = ROMAIN_VERS_ARABE.get(romain.upper())
+    return str(arabe).zfill(2) if arabe else romain
+
 # ─── Marqueurs ────────────────────────────────────────────────────────────────
 
 TABLE_HEADER_MARKERS = [
@@ -160,7 +174,7 @@ def diagnostiquer(chemin: str):
 # ─── Génération SQL ───────────────────────────────────────────────────────────
 
 def generer_sql_sections(section_notes: dict) -> str:
-    """Génère les UPDATE pour la table section (notes de section)."""
+    """Génère les UPDATE pour la table section (codes convertis en format base '01', '02'...)."""
     lignes = [
         "-- Notes explicatives de sections — tarif douanier algérien",
         "-- Généré par extract_chapter_notes.py",
@@ -168,9 +182,10 @@ def generer_sql_sections(section_notes: dict) -> str:
         "ALTER TABLE section ADD COLUMN IF NOT EXISTS note TEXT NULL;",
         "",
     ]
-    for sc in sorted(section_notes):
-        lignes.append(f"-- Section {sc}")
-        lignes.append(f"UPDATE section SET note = '{echapper(section_notes[sc])}' WHERE TRIM(code) = '{sc}';")
+    for sc in sorted(section_notes, key=lambda x: ROMAIN_VERS_ARABE.get(x.upper(), 99)):
+        code_db = section_code_db(sc)
+        lignes.append(f"-- Section {sc} → code DB '{code_db}'")
+        lignes.append(f"UPDATE section SET note = '{echapper(section_notes[sc])}' WHERE TRIM(code) = '{code_db}';")
         lignes.append("")
     lignes.append("SELECT code, description, LENGTH(note) AS note_chars FROM section WHERE note IS NOT NULL ORDER BY code;")
     return "\n".join(lignes)

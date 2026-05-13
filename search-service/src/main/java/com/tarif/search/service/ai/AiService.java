@@ -57,7 +57,7 @@ public class AiService {
 
     private String obtenirReponseJsonDeIA(String titre, StringBuilder ragString, String termeRecherche, boolean withJustification) {
         String prompt = AiPrompts.buildUserPrompt(ragString.toString(), termeRecherche);
-        return getActiveProvider().demanderAiAide(titre, prompt, withJustification);
+        return getActiveProvider().demanderAiAide(titre, prompt, withJustification, titre);
     }
 
     private AiProvider getActiveProvider() {
@@ -84,9 +84,23 @@ public class AiService {
         StringBuilder stringRAG = new StringBuilder("RAG pour la recherche des : " + titre + "\n\n");
         for (Position position : positions) {
             if (position.getCode() == null || position.getCode().isBlank()) {
-                // Titre de catégorie (ligne de contexte hiérarchique, sans code à sélectionner)
-                String label = position.getDescription().replaceAll("^[- ]+", "").trim();
-                stringRAG.append("[Catégorie : ").append(label).append("]\n");
+                // Note explicative (section ou chapitre) — balisage XML structuré
+                String desc = position.getDescription();
+                if (desc.startsWith("[Note de la Section")) {
+                    String code = desc.substring(desc.indexOf("Section") + 8, desc.indexOf("]"));
+                    String note = desc.substring(desc.indexOf("]") + 2);
+                    stringRAG.append("<note_section code=\"").append(code.trim()).append("\">\n")
+                             .append(note).append("\n</note_section>\n");
+                } else if (desc.startsWith("[Note du chapitre")) {
+                    String code = desc.substring(desc.indexOf("chapitre") + 9, desc.indexOf("]"));
+                    String note = desc.substring(desc.indexOf("]") + 2);
+                    stringRAG.append("<note_chapitre code=\"").append(code.trim()).append("\">\n")
+                             .append(note).append("\n</note_chapitre>\n");
+                } else {
+                    // Autres lignes de contexte génériques
+                    String label = desc.replaceAll("^[- ]+", "").trim();
+                    stringRAG.append("[Catégorie : ").append(label).append("]\n");
+                }
             } else {
                 stringRAG.append(formatterPosition(position.getCode(), position.getDescription(), null));
             }

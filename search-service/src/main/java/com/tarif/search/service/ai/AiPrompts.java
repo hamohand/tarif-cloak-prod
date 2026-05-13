@@ -9,20 +9,67 @@ public class AiPrompts {
 
     public DefTheme defTheme = DefTheme.getThemeDescrip();
 
-    public static String getSystemMessage(boolean withJustification) {
+    /**
+     * Retourne le max_tokens adapté au niveau de classification.
+     * Niveaux intermédiaires (codes uniquement) → 500 suffit.
+     * Dernier niveau (avec justification) → 2000 pour ne pas tronquer.
+     */
+    public static int getMaxTokensForLevel(boolean withJustification) {
+        return withJustification ? 2000 : 500;
+    }
+
+    public static String getSystemMessage(boolean withJustification, String niveau) {
+        String template;
         if (withJustification) {
-            return SYSTEM_MESSAGE_TEMPLATE
+            template = SYSTEM_MESSAGE_TEMPLATE
                     .replace("{instruction_details}", INSTRUCTION_DETAILS_JUSTIFIED)
                     .replace("{format_example}", FORMAT_EXAMPLE_JUSTIFIED)
                     .replace("{json_keys}", JSON_KEYS_JUSTIFIED)
                     .replace("{examples}", EXAMPLES_JUSTIFIED);
         } else {
-            return SYSTEM_MESSAGE_TEMPLATE
+            template = SYSTEM_MESSAGE_TEMPLATE
                     .replace("{instruction_details}", INSTRUCTION_DETAILS_SIMPLE)
                     .replace("{format_example}", FORMAT_EXAMPLE_SIMPLE)
                     .replace("{json_keys}", JSON_KEYS_SIMPLE)
                     .replace("{examples}", EXAMPLES_SIMPLE);
         }
+        return template.replace("{level_context}", getLevelContext(niveau));
+    }
+
+    /**
+     * Instruction contextuelle adaptée au niveau de la cascade.
+     * Sections/Chapitres : inclusif (ne pas rater la bonne branche).
+     * Positions 4-10 : précis (les notes légales aident à discriminer).
+     */
+    private static String getLevelContext(String niveau) {
+        if (niveau == null) return "";
+        return switch (niveau) {
+            case "SECTIONS" -> """
+                    [CONTEXTE NIVEAU] Vous analysez les SECTIONS (niveau le plus large).
+                    Il n'y a que 21 sections. Soyez INCLUSIF : sélectionnez toutes les sections
+                    thématiquement proches du produit. Il vaut mieux en sélectionner 2-3 que d'en manquer une.
+                    Les balises <note_section> contiennent les définitions légales de chaque section.
+                    """;
+            case "CHAPITRES" -> """
+                    [CONTEXTE NIVEAU] Vous analysez les CHAPITRES d'une section.
+                    Restez inclusif : sélectionnez tous les chapitres pouvant contenir le produit.
+                    """;
+            case "POSITIONS4" -> """
+                    [CONTEXTE NIVEAU] Vous analysez les POSITIONS à 4 chiffres.
+                    Les balises <note_chapitre> contiennent les règles légales d'inclusion/exclusion.
+                    Respectez ces règles pour discriminer entre les positions.
+                    """;
+            case "POSITIONS6" -> """
+                    [CONTEXTE NIVEAU] Vous analysez les SOUS-POSITIONS à 6 chiffres.
+                    Soyez précis : le produit doit correspondre spécifiquement à la description.
+                    """;
+            case "POSITIONS10" -> """
+                    [CONTEXTE NIVEAU] Vous analysez les POSITIONS TARIFAIRES NATIONALES à 10 chiffres.
+                    C'est le niveau le plus fin. Sélectionnez le(s) code(s) qui décri(ven)t exactement le produit.
+                    Appliquez strictement les critères numériques (poids, dimensions, cylindrée, etc.).
+                    """;
+            default -> "";
+        };
     }
 
     /**
@@ -55,6 +102,8 @@ public class AiPrompts {
                Tâche :
                À partir de la liste de codes douaniers (codes SH/HS) fournie dans le message utilisateur, identifie les codes dont la description correspond au produit recherché, en tenant compte de son type, matériau, usage et technologie.
 
+               {level_context}
+
                Instructions :
                - Traduis mentalement le produit recherché en français si nécessaire pour le comparer aux descriptions.
                - Analyse sémantiquement la description du produit.
@@ -70,6 +119,7 @@ public class AiPrompts {
                    Si plusieurs codes sont pertinents, indique-les tous.
                    Évite les codes clairement hors sujet, mais garde les codes dont le domaine thématique est proche.
                    Les justifications doivent toujours être en français.
+                   Les balises <note_section> et <note_chapitre> contiennent des définitions légales. Utilise-les pour identifier les inclusions, exclusions et regroupements de produits. Ne sélectionne JAMAIS ces balises comme des codes.
 
                PARSER NUMÉRIQUE — Format français :
                    Tu es un parser numérique spécialisé dans les formats français.
