@@ -451,7 +451,19 @@ export class SearchComponent implements OnInit {
           return;
         }
 
-        const decodeObservables = results.map((r: any) => {
+        // Filtrer les résultats sans code valide (évite les appels decode?code= vides)
+        const validResults = results.filter((r: any) => {
+          const code = (r.code || '').replace(/\s/g, '');
+          return code.length > 0;
+        });
+
+        if (validResults.length === 0) {
+          this.error = 'L\'IA n\'a retourné aucun code valide. Veuillez reformuler votre recherche.';
+          this.isLoading = false;
+          return;
+        }
+
+        const decodeObservables = validResults.map((r: any) => {
           const aiCode = (r.code || '').replace(/\s/g, '');
           const justification: string | null = r.justification ?? null;
           // Pour positions10 : décoder le code6 parent pour avoir tous les P10 sous lui
