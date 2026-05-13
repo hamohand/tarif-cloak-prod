@@ -251,14 +251,9 @@ import { environment } from '../../../environments/environment';
               </div>
               <h3>Recherche par liste</h3>
               <p>Traitez une liste de produits en une seule fois.</p>
-              <a class="cta-button secondary">
-               Bientôt disponible
-              </a>
-              <!--
               <a [routerLink]="['/recherche/searchListLots']" class="cta-button secondary">
                 Rechercher par liste
               </a>
-              -->
             </div>
 
             <!--
