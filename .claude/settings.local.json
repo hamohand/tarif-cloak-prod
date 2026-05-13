@@ -4,7 +4,18 @@
       "Bash(npm install:*)",
       "WebFetch(domain:www.douane.gov.dz)",
       "WebFetch(domain:taxation-customs.ec.europa.eu)",
-      "Bash(docker compose -f docker-compose-prod.yml up -d --build frontend)"
+      "Bash(docker compose -f docker-compose-prod.yml up -d --build frontend)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:github.com)",
+      "WebSearch",
+      "Bash(curl -s \"https://raw.githubusercontent.com/datasets/harmonized-system/main/data/harmonized-system.csv\")",
+      "Bash(grep \",6$\")",
+      "Read(//tmp/**)",
+      "Bash(grep -E \"00$\" /tmp/hs_missing.txt)",
+      "Bash(grep -vE \"00$\" /tmp/hs_missing.txt)",
+      "Bash(sed 's/^[^,]*,//')",
+      "Bash(sed 's/,[0-9]*,[0-9]*$//')",
+      "Bash(python3 *)"
     ],
     "additionalDirectories": [
       "c:\\Users\\hamoh\\Documents\\projets\\tarif\\tarif-micros\\search-service\\src\\main\\java\\com\\tarif\\search\\repository",
@@ -12,8 +23,8 @@
       "c:\\Users\\hamoh\\Documents\\projets\\tarif\\tarif-micros\\tarif-cloak-prod\\sql\\sql"
     ]
   },
+  "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
     "hostinger-api"
-  ],
-  "enableAllProjectMcpServers": true
+  ]
 }
