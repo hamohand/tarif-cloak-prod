@@ -34,6 +34,7 @@ import java.util.*;
 @Slf4j
 public class OpenAiBatchProvider implements BatchProvider {
 
+    private final RestTemplate restTemplate;
     private final String apiKey;
     private final String model;
     private final String baseUrl;
@@ -42,9 +43,11 @@ public class OpenAiBatchProvider implements BatchProvider {
     private final float temperature = 0.0F;
 
     public OpenAiBatchProvider(
+            RestTemplate restTemplate,
             @Value("${ai.openai.api-key:}") String apiKey,
             @Value("${ai.openai.model:gpt-4o-mini}") String model,
             @Value("${ai.openai.base-url:https://api.openai.com/v1}") String baseUrl) {
+        this.restTemplate = restTemplate;
         this.apiKey = apiKey;
         this.model = model;
         this.baseUrl = baseUrl;
@@ -117,7 +120,7 @@ public class OpenAiBatchProvider implements BatchProvider {
             headers.setBearerAuth(apiKey);
 
             HttpEntity<Void> entity = new HttpEntity<>(headers);
-            RestTemplate restTemplate = com.tarif.search.config.RestTemplateFactory.get();
+
 
             ResponseEntity<String> response = restTemplate.exchange(
                 url, HttpMethod.GET, entity, String.class);
@@ -232,7 +235,7 @@ public class OpenAiBatchProvider implements BatchProvider {
             headers.setBearerAuth(apiKey);
 
             HttpEntity<Void> entity = new HttpEntity<>(headers);
-            RestTemplate restTemplate = com.tarif.search.config.RestTemplateFactory.get();
+
 
             ResponseEntity<String> response = restTemplate.exchange(
                 url, HttpMethod.POST, entity, String.class);
@@ -332,7 +335,7 @@ public class OpenAiBatchProvider implements BatchProvider {
             HttpEntity<MultiValueMap<String, Object>> requestEntity =
                 new HttpEntity<>(body, headers);
 
-            RestTemplate restTemplate = com.tarif.search.config.RestTemplateFactory.get();
+
             ResponseEntity<String> response = restTemplate.postForEntity(
                 url, requestEntity, String.class);
 
@@ -372,7 +375,7 @@ public class OpenAiBatchProvider implements BatchProvider {
             String body = objectMapper.writeValueAsString(requestBody);
             HttpEntity<String> entity = new HttpEntity<>(body, headers);
 
-            RestTemplate restTemplate = com.tarif.search.config.RestTemplateFactory.get();
+
             ResponseEntity<String> response = restTemplate.postForEntity(
                 url, entity, String.class);
 
@@ -409,7 +412,7 @@ public class OpenAiBatchProvider implements BatchProvider {
             headers.setBearerAuth(apiKey);
 
             HttpEntity<Void> entity = new HttpEntity<>(headers);
-            RestTemplate restTemplate = com.tarif.search.config.RestTemplateFactory.get();
+
 
             ResponseEntity<String> response = restTemplate.exchange(
                 url, HttpMethod.GET, entity, String.class);

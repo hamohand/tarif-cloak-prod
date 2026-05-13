@@ -23,6 +23,7 @@ import java.util.Map;
 public class OllamaService implements AiProvider {
 
     private final AiPrompts aiPrompts;
+    private final RestTemplate restTemplate;
     private final String baseUrl;
     private final String model;
 
@@ -30,9 +31,11 @@ public class OllamaService implements AiProvider {
 
     public OllamaService(
             AiPrompts aiPrompts,
+            RestTemplate restTemplate,
             @Value("${ai.ollama.base-url:http://localhost:11434}") String baseUrl,
             @Value("${ai.ollama.model:llama3}") String model) {
         this.aiPrompts = aiPrompts;
+        this.restTemplate = restTemplate;
         this.baseUrl = baseUrl;
         this.model = model;
         log.info("OllamaService initialisé avec le modèle: {} sur {}", model, baseUrl);
@@ -40,7 +43,7 @@ public class OllamaService implements AiProvider {
 
     @Override
     public String demanderAiAide(String titre, String question, boolean withJustification) {
-        RestTemplate restTemplate = com.tarif.search.config.RestTemplateFactory.get();
+
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.add("Content-Type", "application/json");
 

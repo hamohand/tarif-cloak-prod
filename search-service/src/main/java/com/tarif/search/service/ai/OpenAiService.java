@@ -22,19 +22,21 @@ import lombok.extern.slf4j.Slf4j;
 public class OpenAiService implements AiProvider {
 
     private final AiPrompts aiPrompts;
+    private final RestTemplate restTemplate;
     private final String apiKey;
     private final String apiUrl;
     private final String model;
     private final double baseRequestPrice;
     private final double priceInputPerMillion;
     private final double priceOutputPerMillion;
-    private final int maxTokens = 500;
+    private final int maxTokens = 1500;
     private final float temperature = 0.0F;
 
     private static final ThreadLocal<UsageInfo> currentUsage = new ThreadLocal<>();
 
     public OpenAiService(
             AiPrompts aiPrompts,
+            RestTemplate restTemplate,
             @Value("${ai.openai.api-key:}") String apiKey,
             @Value("${ai.openai.base-url:https://api.openai.com/v1}") String baseUrl,
             @Value("${ai.openai.model:gpt-4.1-mini}") String model,
@@ -42,6 +44,7 @@ public class OpenAiService implements AiProvider {
             @Value("${ai.openai.price-input-per-million:0.40}") double priceInputPerMillion,
             @Value("${ai.openai.price-output-per-million:1.60}") double priceOutputPerMillion) {
         this.aiPrompts = aiPrompts;
+        this.restTemplate = restTemplate;
         this.apiKey = apiKey;
         this.apiUrl = baseUrl + "/chat/completions";
         this.model = model;
@@ -59,7 +62,7 @@ public class OpenAiService implements AiProvider {
             return "";
         }
 
-        RestTemplate restTemplate = com.tarif.search.config.RestTemplateFactory.get();
+
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.add("Authorization", "Bearer " + apiKey);
         httpHeaders.add("Content-Type", "application/json");

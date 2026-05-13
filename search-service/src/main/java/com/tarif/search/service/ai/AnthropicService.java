@@ -21,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class AnthropicService implements AiProvider {
 
+    private final RestTemplate restTemplate;
     private final String apiKey;
     private final String model;
     private final String apiUrl;
@@ -30,9 +31,11 @@ public class AnthropicService implements AiProvider {
     private static final ThreadLocal<UsageInfo> currentUsage = new ThreadLocal<>();
 
     public AnthropicService(
+            RestTemplate restTemplate,
             @Value("${ai.anthropic.api-key:}") String apiKey,
             @Value("${ai.anthropic.model:claude-haiku-4-5-20251001}") String model, // au lieu de claude-sonnet-4-5-20250929 trop cher
             @Value("${ai.anthropic.base-url:https://api.anthropic.com/v1}") String baseUrl) {
+        this.restTemplate = restTemplate;
         this.apiKey = apiKey;
         this.model = model;
         this.apiUrl = baseUrl + "/messages";
@@ -46,7 +49,7 @@ public class AnthropicService implements AiProvider {
             return "";
         }
 
-        RestTemplate restTemplate = com.tarif.search.config.RestTemplateFactory.get();
+
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.add("x-api-key", apiKey);
         httpHeaders.add("Content-Type", "application/json");

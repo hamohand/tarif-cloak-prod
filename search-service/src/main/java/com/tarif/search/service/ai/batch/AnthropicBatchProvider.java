@@ -27,6 +27,7 @@ import java.util.*;
 @Slf4j
 public class AnthropicBatchProvider implements BatchProvider {
 
+    private final RestTemplate restTemplate;
     private final String apiKey;
     private final String model;
     private final String batchApiUrl;
@@ -35,9 +36,11 @@ public class AnthropicBatchProvider implements BatchProvider {
     private final float temperature = 0.1F;
 
     public AnthropicBatchProvider(
+            RestTemplate restTemplate,
             @Value("${ai.anthropic.api-key:}") String apiKey,
             @Value("${ai.anthropic.model:claude-sonnet-4-5-20250929}") String model,
             @Value("${ai.anthropic.base-url:https://api.anthropic.com/v1}") String baseUrl) {
+        this.restTemplate = restTemplate;
         this.apiKey = apiKey;
         this.model = model;
         this.batchApiUrl = baseUrl + "/messages/batches";
@@ -106,7 +109,7 @@ public class AnthropicBatchProvider implements BatchProvider {
             String body = objectMapper.writeValueAsString(batchRequest);
             HttpEntity<String> entity = new HttpEntity<>(body, headers);
 
-            RestTemplate restTemplate = com.tarif.search.config.RestTemplateFactory.get();
+
             ResponseEntity<String> response = restTemplate.exchange(
                 batchApiUrl,
                 HttpMethod.POST,
@@ -149,7 +152,7 @@ public class AnthropicBatchProvider implements BatchProvider {
             headers.add("anthropic-version", "2023-06-01");
 
             HttpEntity<String> entity = new HttpEntity<>(headers);
-            RestTemplate restTemplate = com.tarif.search.config.RestTemplateFactory.get();
+
 
             ResponseEntity<String> response = restTemplate.exchange(
                 batchApiUrl + "/" + batchId,
@@ -234,7 +237,7 @@ public class AnthropicBatchProvider implements BatchProvider {
             headers.add("anthropic-version", "2023-06-01");
 
             HttpEntity<String> entity = new HttpEntity<>(headers);
-            RestTemplate restTemplate = com.tarif.search.config.RestTemplateFactory.get();
+
 
             ResponseEntity<String> response = restTemplate.exchange(
                 resultsUrl,
@@ -330,7 +333,7 @@ public class AnthropicBatchProvider implements BatchProvider {
             headers.add("anthropic-version", "2023-06-01");
 
             HttpEntity<String> entity = new HttpEntity<>(headers);
-            RestTemplate restTemplate = com.tarif.search.config.RestTemplateFactory.get();
+
 
             ResponseEntity<String> response = restTemplate.exchange(
                 batchApiUrl + "/" + batchId + "/cancel",
