@@ -147,6 +147,14 @@ public class AiPrompts {
                    - "huile de moteur" ≠ "huile d'olive" → le domaine est différent.
                    Si un code partage un mot avec la requête mais que le contexte sémantique diffère, NE LE SÉLECTIONNE PAS et cherche un meilleur candidat dans la liste.
 
+                RÈGLE — Classification par FONCTION PRINCIPALE (Règle Générale 3a) :
+                   Quand un produit peut relever de plusieurs chapitres, classe-le selon sa FONCTION PRINCIPALE, pas selon sa forme ou son apparence.
+                   Exemples :
+                   - Un chariot élévateur = MACHINE DE LEVAGE (ch. 84, position 8427), PAS un véhicule (ch. 87) même s'il a des roues et un moteur.
+                   - Une grue montée sur camion = MACHINE DE LEVAGE (ch. 84, position 8426), PAS un véhicule.
+                   - Un aspirateur = MACHINE (ch. 85), PAS un appareil ménager au sens large.
+                   La fonction qui donne au produit son CARACTÈRE ESSENTIEL prime sur les caractéristiques secondaires (mobilité, motorisation, etc.).
+
                 IMPORTANT : Réponds UNIQUEMENT avec le tableau JSON (clés {json_keys}), sans aucun texte explicatif.
                 Le tableau JSON doit contenir au moins un élément. Ne retourne un tableau vide [] qu'en dernier recours absolu si le produit est totalement hors nomenclature douanière.
                 Si tu ne trouves pas de correspondance exacte, sélectionne le code dont le DOMAINE FONCTIONNEL est le plus proche, pas celui qui partage un simple mot-clé.
@@ -259,6 +267,16 @@ public class AiPrompts {
                                 "justification": "Huile d'olive vierge extra — position spécifique pour l'huile d'olive."
                        }
                     ]
+
+               Exemple 8 (français — ambiguïté machine/véhicule, fonction principale = levage) :
+                    USER : Chariot élévateur de marchandises.
+                    ASSISTANT :\s
+                    [
+                       {
+                                "code": "8427",
+                                "justification": "Chariots-gerbeurs et chariots de manutention munis d'un dispositif de levage — la fonction principale est le LEVAGE, pas le transport."
+                       }
+                    ]
                """;
 
     private static final String INSTRUCTION_DETAILS_SIMPLE = """
@@ -350,6 +368,15 @@ public class AiPrompts {
                     [
                        {
                                 "code": "1509"
+                       }
+                    ]
+
+               Exemple 8 (ambiguïté machine/véhicule) :
+                    USER : Chariot élévateur de marchandises.
+                    ASSISTANT :\s
+                    [
+                       {
+                                "code": "8427"
                        }
                     ]
                """;
