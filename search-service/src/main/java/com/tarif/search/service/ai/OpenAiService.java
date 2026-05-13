@@ -75,6 +75,7 @@ public class OpenAiService implements AiProvider {
         int maxTokens = AiPrompts.getMaxTokensForLevel(withJustification);
         requestBody.put("max_tokens", maxTokens);
         requestBody.put("temperature", temperature);
+        requestBody.put("response_format", Map.of("type", "json_object"));
 
         ObjectMapper objectMapper = new ObjectMapper();
         String body;

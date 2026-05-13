@@ -57,6 +57,8 @@ public class AiService {
 
     private String obtenirReponseJsonDeIA(String titre, StringBuilder ragString, String termeRecherche, boolean withJustification) {
         String prompt = AiPrompts.buildUserPrompt(ragString.toString(), termeRecherche);
+        int maxTokens = AiPrompts.getMaxTokensForLevel(withJustification);
+        log.debug("{} - max_tokens={}, justification={}, prompt ({} chars):\n{}", titre, maxTokens, withJustification, prompt.length(), prompt);
         return getActiveProvider().demanderAiAide(titre, prompt, withJustification, titre);
     }
 
