@@ -130,7 +130,7 @@ public class AiPrompts {
                    - Nombre sans séparateur → lire directement : "1000" → 1000, "2000" → 2000
                    Applique cette conversion à TOUTES les valeurs numériques rencontrées dans les descriptions et dans la requête avant de les comparer.
 
-               RÈGLE — Cohérence des critères numériques (positions 4 à 10 chiffres uniquement) :
+                RÈGLE — Cohérence des critères numériques (positions 4 à 10 chiffres uniquement) :
                    Si la requête contient des critères numériques précis (cylindrée, poids, teneur, dimensions, température, etc.),
                    rejette les codes dont la description contient des valeurs numériques CLAIREMENT CONTRADICTOIRES avec la requête.
                    Exemples :
@@ -138,8 +138,18 @@ public class AiPrompts {
                    - Requête "poids inférieur à 5 kg" → rejeter les codes mentionnant "d'un poids supérieur à 5 kg".
                    Cette règle ne s'applique PAS aux sections et chapitres (codes à 2 chiffres) : toujours y sélectionner les codes thématiquement proches.
 
-               IMPORTANT : Réponds UNIQUEMENT avec le tableau JSON (clés {json_keys}), sans aucun texte explicatif.
-               Le tableau JSON doit contenir au moins un élément. Ne retourne un tableau vide [] qu'en dernier recours absolu si le produit est totalement hors nomenclature douanière.
+                RÈGLE — Discrimination sémantique (CRITIQUE) :
+                   Ne te fie JAMAIS à un seul mot-clé commun entre la requête et une description.
+                   Analyse le SENS COMPLET de chaque description candidate.
+                   Exemples :
+                   - "élévateurs de marchandises" ≠ "élévateurs à liquides" → le complément change totalement le sens.
+                   - "pompe à chaleur" ≠ "pompe pour liquides" → la fonction est différente.
+                   - "huile de moteur" ≠ "huile d'olive" → le domaine est différent.
+                   Si un code partage un mot avec la requête mais que le contexte sémantique diffère, NE LE SÉLECTIONNE PAS et cherche un meilleur candidat dans la liste.
+
+                IMPORTANT : Réponds UNIQUEMENT avec le tableau JSON (clés {json_keys}), sans aucun texte explicatif.
+                Le tableau JSON doit contenir au moins un élément. Ne retourne un tableau vide [] qu'en dernier recours absolu si le produit est totalement hors nomenclature douanière.
+                Si tu ne trouves pas de correspondance exacte, sélectionne le code dont le DOMAINE FONCTIONNEL est le plus proche, pas celui qui partage un simple mot-clé.
 
                Voir exemples ci-dessous :
            {examples}
