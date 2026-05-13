@@ -32,6 +32,16 @@ public class ChapitreService {
                 .orElse(null);
     }
 
+    /**
+     * Retourne la note explicative du chapitre (extrait du tarif DGD).
+     * Retourne null si aucune note n'a été saisie pour ce chapitre.
+     */
+    public String getNote(String code) {
+        return chapitreRepository.findByCode(code)
+                .map(Chapitre::getNote)
+                .orElse(null);
+    }
+
     public List<Chapitre> getChapitresBySection(String sectionCode) {
         return chapitreRepository.findBySection(sectionCode);
     }

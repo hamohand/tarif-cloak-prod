@@ -222,13 +222,25 @@ public class SearchService {
     }
 
     private List<Position> ragPositions4(List<Position> chapitresSelectionnes) {
-        return chapitresSelectionnes.stream()
-                .flatMap(p -> {
-                    String prefix = p.getCode() + "%";
-                    return position4Service.getPosition4sByPrefix(prefix).stream();
-                })
-                .map(pos -> new Position(pos.getCode(), pos.getDescription()))
-                .collect(Collectors.toList());
+        List<Position> rag = new ArrayList<>();
+
+        for (Position chapitre : chapitresSelectionnes) {
+            // Injecter la note explicative du chapitre comme contexte légal
+            // (code null = ligne de contexte, non sélectionnable par l'IA)
+            String note = chapitreService.getNote(chapitre.getCode());
+            if (note != null && !note.isBlank()) {
+                String contexte = "[Note du chapitre " + chapitre.getCode() + "] " + note;
+                rag.add(new Position(null, contexte));
+                log.debug("Level 2 - Note du chapitre {} injectée ({} chars)", chapitre.getCode(), note.length());
+            }
+
+            // Ajouter les positions 4 chiffres du chapitre
+            position4Service.getPosition4sByPrefix(chapitre.getCode() + "%").stream()
+                    .map(pos -> new Position(pos.getCode(), pos.getDescription()))
+                    .forEach(rag::add);
+        }
+
+        return rag;
     }
 
     private List<Position> ragPositions6(List<Position> positions4Selectionnees) {

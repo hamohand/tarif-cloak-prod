@@ -24,4 +24,8 @@ public class Chapitre {
 
     @Column(name = "section")
     private String section;
+
+    /** Note explicative du chapitre (extrait du tarif douanier DGD). Nullable. */
+    @Column(name = "note", columnDefinition = "TEXT")
+    private String note;
 }
