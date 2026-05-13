@@ -285,7 +285,7 @@ public class OpenAiBatchProvider implements BatchProvider {
             Map<String, Object> body = new LinkedHashMap<>();
             body.put("model", model);
             body.put("messages", List.of(
-                Map.of("role", "system", "content", AiPrompts.getSystemMessage(true)),
+                Map.of("role", "system", "content", AiPrompts.getSystemMessage(true, null)),
                 Map.of("role", "user", "content", prompt)
             ));
             body.put("max_tokens", maxTokens);

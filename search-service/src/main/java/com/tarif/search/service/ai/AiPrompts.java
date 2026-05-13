@@ -172,7 +172,7 @@ public class AiPrompts {
     private static final String JSON_KEYS_JUSTIFIED = "`code` et `justification`";
 
     private static final String EXAMPLES_JUSTIFIED = """
-               Exemple 1 (français) :
+               Exemple 1 (français — fruit simple) :
                     USER : Pommes.
                     ASSISTANT :\s
                     [
@@ -182,13 +182,13 @@ public class AiPrompts {
                        }
                    ]
 
-               Exemple 2 (français) :
+               Exemple 2 (français — textile, matière dominante) :
                     USER : T-shirt à manches courtes, en coton 100%, destiné aux hommes.
                     ASSISTANT :\s
                     [
                        {
                                 "code": "6109 10",
-                                "justification": "Code pour les t-shirts en coton."
+                                "justification": "T-shirts en bonneterie de coton."
                        },
                        {
                                 "code": "6109 90",
@@ -203,6 +203,50 @@ public class AiPrompts {
                        {
                                 "code": "0207",
                                 "justification": "Viandes et abats comestibles de volailles, congelés."
+                       }
+                    ]
+
+               Exemple 4 (français — produit chimique à double usage, ambiguïté chimie/pharmacie) :
+                    USER : Acide citrique en poudre, qualité alimentaire.
+                    ASSISTANT :\s
+                    [
+                       {
+                                "code": "2918",
+                                "justification": "Acides carboxyliques à fonction alcool — l'acide citrique relève du 2918.14, même en qualité alimentaire."
+                       }
+                    ]
+
+               Exemple 5 (français — machine composite, ambiguïté mécanique/électronique) :
+                    USER : Imprimante 3D industrielle à dépôt de fil fondu, avec contrôle numérique.
+                    ASSISTANT :\s
+                    [
+                       {
+                                "code": "8477",
+                                "justification": "Machines pour le travail du caoutchouc ou des matières plastiques — l'impression 3D par dépôt de matière plastique fondue relève de ce chapitre."
+                       },
+                       {
+                                "code": "8485",
+                                "justification": "Machines pour la fabrication additive — position spécifique introduite pour l'impression 3D."
+                       }
+                    ]
+
+               Exemple 6 (français — véhicule avec critère numérique) :
+                    USER : Voiture diesel, cylindrée 2500 cm3, neuve.
+                    ASSISTANT :\s
+                    [
+                       {
+                                "code": "8703 32",
+                                "justification": "Véhicules à moteur diesel, cylindrée > 1500 cm3 mais ≤ 2500 cm3."
+                       }
+                    ]
+
+               Exemple 7 (arabe → justification en français) :
+                    USER : زيت زيتون بكر ممتاز
+                    ASSISTANT :\s
+                    [
+                       {
+                                "code": "1509",
+                                "justification": "Huile d'olive vierge extra — position spécifique pour l'huile d'olive."
                        }
                     ]
                """;
@@ -257,6 +301,45 @@ public class AiPrompts {
                     [
                        {
                                 "code": "0207"
+                       }
+                    ]
+
+               Exemple 4 (produit chimique) :
+                    USER : Acide citrique en poudre, qualité alimentaire.
+                    ASSISTANT :\s
+                    [
+                       {
+                                "code": "2918"
+                       }
+                    ]
+
+               Exemple 5 (machine composite) :
+                    USER : Imprimante 3D industrielle à dépôt de fil fondu.
+                    ASSISTANT :\s
+                    [
+                       {
+                                "code": "8477"
+                       },
+                       {
+                                "code": "8485"
+                       }
+                    ]
+
+               Exemple 6 (véhicule avec critère numérique) :
+                    USER : Voiture diesel, cylindrée 2500 cm3, neuve.
+                    ASSISTANT :\s
+                    [
+                       {
+                                "code": "8703 32"
+                       }
+                    ]
+
+               Exemple 7 (arabe) :
+                    USER : زيت زيتون بكر ممتاز
+                    ASSISTANT :\s
+                    [
+                       {
+                                "code": "1509"
                        }
                     ]
                """;

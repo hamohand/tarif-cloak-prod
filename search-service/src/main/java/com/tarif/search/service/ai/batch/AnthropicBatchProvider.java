@@ -89,7 +89,7 @@ public class AnthropicBatchProvider implements BatchProvider {
                 params.put("model", model);
                 params.put("max_tokens", maxTokens);
                 params.put("temperature", temperature);
-                params.put("system", AiPrompts.getSystemMessage(true));
+                params.put("system", AiPrompts.getSystemMessage(true, null));
                 params.put("messages", List.of(
                     Map.of("role", "user", "content", prompt)
                 ));
