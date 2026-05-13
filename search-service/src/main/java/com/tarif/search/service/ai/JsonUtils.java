@@ -21,10 +21,33 @@ public class JsonUtils {
 
     public static List<Position> conversionReponseIaToList(String cleanedJson) throws JsonProcessingException {
         String jsonPourListe = cleanedJson.trim();
-        if (jsonPourListe.startsWith("{")) {
-            jsonPourListe = "[" + jsonPourListe + "]";
+
+        // Cas 1 : tableau direct [...]
+        if (jsonPourListe.startsWith("[")) {
+            return objectMapper.readValue(jsonPourListe, new TypeReference<List<Position>>() {});
         }
-        return objectMapper.readValue(jsonPourListe, new TypeReference<List<Position>>() {});
+
+        // Cas 2 : objet contenant un tableau (ex: {"codes": [...]} ou {"results": [...]})
+        // → fréquent quand response_format=json_object est activé
+        if (jsonPourListe.startsWith("{")) {
+            var tree = objectMapper.readTree(jsonPourListe);
+            // Chercher la première valeur qui est un tableau
+            var fields = tree.fields();
+            while (fields.hasNext()) {
+                var field = fields.next();
+                if (field.getValue().isArray()) {
+                    return objectMapper.readValue(
+                            field.getValue().toString(),
+                            new TypeReference<List<Position>>() {}
+                    );
+                }
+            }
+            // Aucun tableau trouvé → traiter l'objet racine comme un seul élément
+            Position single = objectMapper.readValue(jsonPourListe, Position.class);
+            return List.of(single);
+        }
+
+        throw new RuntimeException("Format JSON inattendu : " + jsonPourListe.substring(0, Math.min(100, jsonPourListe.length())));
     }
 
     public static String cleanJsonString(String jsonResponse) {
