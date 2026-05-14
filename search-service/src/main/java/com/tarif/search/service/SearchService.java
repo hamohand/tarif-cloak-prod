@@ -41,7 +41,7 @@ public class SearchService {
 
         // Level 0 : Sections — 3 tentatives car c'est le point d'entrée critique
         ragNiveau = ragSections();
-        log.debug("Level 0 (Sections) - RAG size: {}", ragNiveau.size());
+        log.info("[DIAG] Level 0 (Sections) - RAG size: {}", ragNiveau.size());
 
         positions = executeWithRetry(SearchLevel.SECTIONS.toString(), termeRecherche, ragNiveau, 3, maxLevel == SearchLevel.SECTIONS);
 
@@ -64,7 +64,7 @@ public class SearchService {
         // Level 1 : Chapitres
         reponseListLevel.clear();
         ragNiveau = ragChapitres(positions);
-        log.debug("Level 1 (Chapitres) - RAG size: {}", ragNiveau.size());
+        log.info("[DIAG] Level 1 (Chapitres) - RAG size: {} - sections choisies: {}", ragNiveau.size(), positions.stream().map(p -> p.getCode()+":"+p.getDescription()).toList());
 
         positions = executeWithRetry(SearchLevel.CHAPITRES.toString(), termeRecherche, ragNiveau, tentativesMax, maxLevel == SearchLevel.CHAPITRES);
 
@@ -87,7 +87,7 @@ public class SearchService {
         // Level 2 : Positions 4
         reponseListLevel.clear();
         ragNiveau = ragPositions4(positions);
-        log.debug("Level 2 (Positions4) - RAG size: {}", ragNiveau.size());
+        log.info("[DIAG] Level 2 (Positions4) - RAG size: {} - chapitres choisis: {}", ragNiveau.size(), positions.stream().map(p -> p.getCode()+":"+p.getDescription()).toList());
 
         positions = executeWithRetry(SearchLevel.POSITIONS4.toString(), termeRecherche, ragNiveau, tentativesMax, maxLevel == SearchLevel.POSITIONS4);
         List<Position> positionsLevel2 = positions;
@@ -111,7 +111,7 @@ public class SearchService {
         // Level 3 : Positions 6
         reponseListLevel.clear();
         ragNiveau = ragPositions6(positions);
-        log.debug("Level 3 (Positions6) - RAG size: {}", ragNiveau.size());
+        log.info("[DIAG] Level 3 (Positions6) - RAG size: {} - pos4 choisies: {}", ragNiveau.size(), positions.stream().map(p -> p.getCode()).toList());
 
         positions = executeWithRetry(SearchLevel.POSITIONS6.toString(), termeRecherche, ragNiveau, tentativesMax, maxLevel == SearchLevel.POSITIONS6);
 
@@ -164,13 +164,13 @@ public class SearchService {
 
         while (tentatives < maxTentatives) {
             tentatives++;
-            log.debug("{} - Tentative {}/{}", niveau, tentatives, maxTentatives);
+            log.info("[DIAG] {} - Tentative {}/{}", niveau, tentatives, maxTentatives);
             try {
                 List<Position> result = aiService.promptEtReponse(niveau, terme, rag, withJustification);
                 if (!result.isEmpty()) {
                     return result;
                 }
-                log.debug("{} - Réponse vide (tentative {})", niveau, tentatives);
+                log.info("[DIAG] {} - Réponse vide (tentative {})", niveau, tentatives);
             } catch (Exception e) {
                 lastException = e;
                 log.warn("{} - Erreur technique tentative {}/{}: {}", niveau, tentatives, maxTentatives, e.getMessage());
