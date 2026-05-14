@@ -217,21 +217,16 @@ export class SearchListLotsComponent {
                     return article.code || ''; // Retourne le code original si le JSON est invalide
                 }
 
-                // Extrait le code du premier résultat, s'il est disponible
-                if (Array.isArray(results) && results.length > 0 && results[0].code) {
-                    //return results[0].code;
-                    for (let i = 0; i < results.length; i++) {
-                        if (results[i].code) {
-                            if (i == 0) { // éviter la virgule au début
-                                this.reponse = results[i].code;
-                                continue;
-                            }
-                            this.reponse = this.reponse + ", " + results[i].code;
-                            return this.reponse;
-                        }
+                // Extraction de tous les codes valides et combinaison avec virgule
+                if (Array.isArray(results) && results.length > 0) {
+                    const codes = results
+                        .map(r => r.code)
+                        .filter(c => c && c.trim() !== '');
+                    
+                    if (codes.length > 0) {
+                        return codes.join(", ");
                     }
                 }
-
 
                 return article.code || ''; // Retourne le code original si aucun résultat n'est trouvé
             }),
