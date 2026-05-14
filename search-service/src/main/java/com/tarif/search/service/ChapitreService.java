@@ -43,7 +43,16 @@ public class ChapitreService {
     }
 
     public List<Chapitre> getChapitresBySection(String sectionCode) {
-        return chapitreRepository.findBySection(sectionCode);
+        // La table section stocke "07" (zero-padded) mais la table chapitre stocke "7"
+        // On essaie les deux formats pour gérer le décalage
+        List<Chapitre> result = chapitreRepository.findBySection(sectionCode);
+        if (result.isEmpty() && sectionCode != null) {
+            String stripped = sectionCode.replaceFirst("^0+", "");
+            if (!stripped.equals(sectionCode)) {
+                result = chapitreRepository.findBySection(stripped);
+            }
+        }
+        return result;
     }
 
     public boolean existsByCode(String code) {
