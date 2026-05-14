@@ -90,14 +90,18 @@ public class SearchService {
         log.info("[DIAG] Level 2 (Positions4) - RAG size: {} - chapitres choisis: {}", ragNiveau.size(), positions.stream().map(p -> p.getCode()+":"+p.getDescription()).toList());
 
         positions = executeWithRetry(SearchLevel.POSITIONS4.toString(), termeRecherche, ragNiveau, tentativesMax, maxLevel == SearchLevel.POSITIONS4);
-        List<Position> positionsLevel2 = positions;
 
         if (positions == null || positions.isEmpty()) {
             log.info("Level 2 - Aucun résultat, arrêt cascade");
             return new ArrayList<>();
         }
 
+        // Fix : si l'IA retourne un code chapitre (≤2 chiffres) au lieu de codes position4,
+        // on l'expande en toutes les positions4 de ce chapitre
+        positions = expandChapterCodesToPosition4(positions);
+
         enrichWithDescriptions(positions, SearchLevel.POSITIONS4);
+        List<Position> positionsLevel2 = new ArrayList<>(positions);
         reponseListLevel.addAll(positions);
 
         if (aiPrompts.getDefTheme().isWithCascade()) {
@@ -112,6 +116,13 @@ public class SearchService {
         reponseListLevel.clear();
         ragNiveau = ragPositions6(positions);
         log.info("[DIAG] Level 3 (Positions6) - RAG size: {} - pos4 choisies: {}", ragNiveau.size(), positions.stream().map(p -> p.getCode()).toList());
+
+        // Protection : si le RAG est trop volumineux (terme trop générique),
+        // on retourne les résultats Level 2 plutôt que de risquer un timeout IA
+        if (ragNiveau.size() > 80) {
+            log.info("Level 3 - RAG trop volumineux ({} items), retour des résultats Level 2", ragNiveau.size());
+            return aiPrompts.getDefTheme().isWithCascade() ? reponseList : reponseListLevel.isEmpty() ? new ArrayList<>(positionsLevel2) : reponseListLevel;
+        }
 
         positions = executeWithRetry(SearchLevel.POSITIONS6.toString(), termeRecherche, ragNiveau, tentativesMax, maxLevel == SearchLevel.POSITIONS6);
 
@@ -200,6 +211,38 @@ public class SearchService {
             position.setDescription(description);
         }
     }
+
+    /**
+     * Si l'IA retourne un code chapitre (≤2 chiffres) au Level 2 au lieu de codes position4,
+     * on l'expande en toutes les positions4 réelles de ce chapitre.
+     * Cela arrive quand le terme de recherche est trop générique (ex: "matières plastiques").
+     */
+    private List<Position> expandChapterCodesToPosition4(List<Position> positions) {
+        List<Position> expanded = new ArrayList<>();
+        boolean hadExpansion = false;
+
+        for (Position p : positions) {
+            String code = p.getCode() != null ? p.getCode().trim().replaceAll("\\s", "") : "";
+            if (code.length() <= 2 && !code.isEmpty()) {
+                // C'est un code chapitre, pas un code position4 → expandre
+                List<Position> pos4List = position4Service.getPosition4sByPrefix(code + "%").stream()
+                        .map(pos -> new Position(pos.getCode(), pos.getDescription()))
+                        .toList();
+                if (!pos4List.isEmpty()) {
+                    log.info("[DIAG] Level 2 - Code chapitre '{}' expandé en {} positions4", code, pos4List.size());
+                    expanded.addAll(pos4List);
+                    hadExpansion = true;
+                } else {
+                    expanded.add(p); // garder tel quel si aucune expansion trouvée
+                }
+            } else {
+                expanded.add(p);
+            }
+        }
+
+        return hadExpansion ? expanded : positions;
+    }
+
 
     private List<Position> ragSections() {
         List<Section> sections = sectionService.getAllSections();
