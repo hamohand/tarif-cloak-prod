@@ -1,4 +1,5 @@
 import {Component, inject} from '@angular/core';
+import {CommonModule} from '@angular/common';
 import {Article} from "../shared/model/articles";
 import {SearchService} from "../services/search.service";
 import * as Papa from "papaparse";
@@ -21,7 +22,7 @@ import {OAuthService} from 'angular-oauth2-oidc';
 @Component({
   selector: 'app-search-list-lots',
   standalone: true,
-    imports: [],
+    imports: [CommonModule],
   templateUrl: './search-list-lots.component.html',
   styleUrl: './search-list-lots.component.css'
 })

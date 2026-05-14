@@ -256,7 +256,7 @@ import { environment } from '../../../environments/environment';
               </a>
             </div>
 
-            <!--
+            
             <div class="feature-card request-card">
               <div class="request-icon">⚡</div>
               <h3>Recherche par lots</h3>
@@ -265,7 +265,7 @@ import { environment } from '../../../environments/environment';
                 Rechercher par lots
               </a>
             </div>
-            -->
+            
 
           </div>
         }
@@ -807,7 +807,7 @@ export class HomeComponent {
     this.isOrganizationAccount$,
     this.isCollaboratorAccount$
   ]).pipe(
-    map(([isAuthenticated, isOrganization, isCollaborator]) => 
+    map(([isAuthenticated, isOrganization, isCollaborator]) =>
       isAuthenticated && (isOrganization || isCollaborator)
     )
   );
