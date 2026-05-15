@@ -1,6 +1,6 @@
 <div class="search-container">
   <div class="header-section">
-    <h2>Recherche par liste (Batch)</h2>
+    <h2>Recherche par liste</h2>
     <p>Traitez automatiquement plusieurs articles à partir d'un fichier pour obtenir leurs codes douaniers.</p>
   </div>
 
@@ -212,7 +212,11 @@
         <div class="action-bar centered mt-4">
           <button class="cta-button primary" (click)="saveAndDownload()">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Télécharger le fichier TSV
+            Télécharger (sélection)
+          </button>
+          <button class="cta-button secondary-dl" (click)="saveAndDownloadAll()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Télécharger toutes les réponses
           </button>
           <button class="btn-secondary" (click)="lesarticles = []; fileName = ''; isSearchComplete = false; isSaved = false; completedCount = 0;">Nouveau fichier</button>
         </div>

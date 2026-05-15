@@ -213,6 +213,34 @@ export class SearchListLotsComponent {
         );
     }
 
+    saveAndDownloadAll(): void {
+        if (!this.lesarticles?.length) return;
+
+        const data: {article: string, code: string, description: string}[] = [];
+        for (const art of this.lesarticles) {
+            if (art.options && art.options.length > 1) {
+                for (const opt of art.options) {
+                    data.push({ article: art.article, code: opt.code, description: opt.description });
+                }
+            } else {
+                data.push({ article: art.article, code: art.code, description: art.description });
+            }
+        }
+
+        const tsvContent = Papa.unparse(data, { delimiter: "\t", header: true });
+        const blob = new Blob([tsvContent], { type: 'text/tab-separated-values;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        const baseFileName = this.fileName.substring(0, this.fileName.lastIndexOf('.')) || this.fileName;
+        link.setAttribute("href", url);
+        link.setAttribute("download", `resultat-all-${baseFileName}.tsv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        this.isSaved = true;
+    }
+
     selectOption(index: number, opt: {code: string, description: string}): void {
         this.lesarticles[index].code = opt.code;
         this.lesarticles[index].description = opt.description;
