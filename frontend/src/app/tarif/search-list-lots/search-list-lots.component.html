@@ -150,30 +150,51 @@
           <p>Tous les articles ont été analysés et les codes ont été générés.</p>
         </div>
 
+        @if(selectionCount > 0) {
+          <div class="selection-notice">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <span><strong>{{ selectionCount }} article{{ selectionCount > 1 ? 's ont' : ' a' }} plusieurs codes possibles.</strong> Sélectionnez le bon code avant de télécharger.</span>
+          </div>
+        }
+
         <div class="preview-section">
           <button class="btn-ghost" (click)="toggleAfficheResultat()">
-            {{ showMoreResultat ? 'Masquer les résultats' : 'Voir un aperçu des résultats' }}
+            {{ showMoreResultat ? 'Masquer les résultats' : 'Voir / valider les résultats' }}
           </button>
-          
+
           @if(showMoreResultat) {
-            <div class="table-container neumorphic-inset">
+            <div class="table-container neumorphic-inset results-scroll">
               <table class="data-table">
                 <thead>
                   <tr>
                     <th>Article</th>
-                    <th>Code (Généré)</th>
+                    <th>Code HS</th>
+                    <th>Description</th>
                   </tr>
                 </thead>
                 <tbody>
-                  @for (e of lesarticles.slice(0, 10); track e) {
+                  @for (art of lesarticles; track art; let i = $index) {
                     <tr>
-                      <td>{{ e.article }}</td>
-                      <td><strong>{{ e.code }}</strong></td>
-                    </tr>
-                  }
-                  @if(lesarticles.length > 10) {
-                    <tr>
-                      <td colspan="2" class="text-center italic">... et {{ lesarticles.length - 10 }} autres articles</td>
+                      <td>{{ art.article }}</td>
+                      @if (art.options && art.options.length > 1) {
+                        <td colspan="2">
+                          <div class="radio-group">
+                            @for (opt of art.options; track opt.code) {
+                              <label class="radio-option" [class.selected]="art.code === opt.code">
+                                <input type="radio"
+                                       [name]="'art-' + i"
+                                       [checked]="art.code === opt.code"
+                                       (change)="selectOption(i, opt)">
+                                <strong>{{ opt.code }}</strong>
+                                <span>{{ opt.description }}</span>
+                              </label>
+                            }
+                          </div>
+                        </td>
+                      } @else {
+                        <td><strong>{{ art.code }}</strong></td>
+                        <td>{{ art.description }}</td>
+                      }
                     </tr>
                   }
                 </tbody>
@@ -195,7 +216,7 @@
             ✅ Le fichier a été téléchargé sous le nom <strong>{{ 'resultat-' + fileName.split('.')[0] + '.tsv' }}</strong>.
           </div>
         }
-        
+
         @if(error) {
           <div class="error-alert mt-4">{{ error }}</div>
         }

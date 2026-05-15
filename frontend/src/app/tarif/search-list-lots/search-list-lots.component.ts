@@ -14,7 +14,6 @@ import {
     map,
     Observable,
     of,
-    reduce,
     tap
 } from "rxjs";
 import {OAuthService} from 'angular-oauth2-oidc';
@@ -150,22 +149,23 @@ export class SearchListLotsComponent {
             bufferCount(this.BATCH_SIZE),
 
             // 2. Traite chaque paquet l'un après l'autre
-            //concatMap((batchOfArticles: any[], index: number) => {
             concatMap((batchOfArticles: Article[], index: number) => {
-                    console.log(`Traitement du paquet n°${index + 1} (${batchOfArticles.length} articles)...`);
+                console.log(`Traitement du paquet n°${index + 1} (${batchOfArticles.length} articles)...`);
 
-                // Crée les requêtes pour le paquet en cours
+                // Chaque observable mute directement l'article (référence vers lesarticles[i])
                 const searchRequests$ = batchOfArticles.map(article =>
                     this.createArticleSearchObservable(article).pipe(
-                        tap(() => this.completedCount++)
+                        tap((results: {code: string, description: string}[]) => {
+                            article.code = results[0]?.code || '';
+                            article.description = results[0]?.description || '';
+                            article.options = results.length > 1 ? results : undefined;
+                            this.completedCount++;
+                        })
                     )
                 );
 
-                // Exécute les requêtes du paquet en parallèle et, une fois terminées,
-                // attend 61 secondes avant de laisser concatMap passer au paquet suivant.
                 return forkJoin(searchRequests$).pipe(
                     tap(() => {
-                        // Ce log est important pour savoir que le système est en pause
                         if ((index + 1) * this.BATCH_SIZE < this.totalCount) {
                             console.log(`Paquet n°${index + 1} traité. Pause de 61 secondes avant le prochain...`);
                         }
@@ -174,28 +174,14 @@ export class SearchListLotsComponent {
                 );
             }),
 
-            // 3. Rassemble les résultats de tous les paquets
-            reduce(
-                (acc: {code: string, description: string}[], batchResults: {code: string, description: string}[]) =>
-                    acc.concat(batchResults),
-                [] as {code: string, description: string}[]
-            ),
-
-            // 4. Se déclenche quand TOUT est terminé
+            // 3. Se déclenche quand TOUT est terminé
             finalize(() => {
                 this.isLoading = false;
                 this.isSearchComplete = true;
+                console.log("Traitement de tous les paquets terminé.", this.lesarticles);
             })
         ).subscribe({
-            next: (allResults: {code: string, description: string}[]) => {
-                allResults.forEach((result, index) => {
-                    if (this.lesarticles[index]) {
-                        this.lesarticles[index].code = result.code;
-                        this.lesarticles[index].description = result.description;
-                    }
-                });
-                console.log("Traitement de tous les paquets terminé.", this.lesarticles);
-            },
+            next: () => {},
             error: (err: any) => {
                 this.error = err?.message || 'Une erreur majeure est survenue pendant le traitement des paquets.';
                 console.error(err);
@@ -203,31 +189,37 @@ export class SearchListLotsComponent {
         });
     }
 
-    private createArticleSearchObservable(article: Article): Observable<{code: string, description: string}> {
+    private createArticleSearchObservable(article: Article): Observable<{code: string, description: string}[]> {
         if (!article.article || !article.article.trim()) {
-            return of({code: article.code || '', description: article.description || ''}).pipe(delay(0));
+            return of([{code: article.code || '', description: article.description || ''}]).pipe(delay(0));
         }
         return this.searchService.searchCodes(article.article).pipe(
             map((results: any[]) => {
                 if (Array.isArray(results) && results.length > 0) {
-                    const valid = results.filter(r => r.code && r.code.trim() !== '');
-                    if (valid.length > 0) {
-                        return {
-                            code: valid.map((r: any) => r.code).join(", "),
-                            description: valid.map((r: any) => r.description || '').join(", ")
-                        };
-                    }
+                    const valid = results
+                        .filter(r => r.code && r.code.trim() !== '')
+                        .map(r => ({code: r.code as string, description: (r.description || '') as string}));
+                    if (valid.length > 0) return valid;
                 }
-                return {code: article.code || '', description: article.description || ''};
+                return [{code: article.code || '', description: article.description || ''}];
             }),
             catchError((err: any) => {
                 console.error(err);
                 if (!this.error) {
                     this.error = 'Certaines requêtes ont échoué. Les codes originaux sont conservés.';
                 }
-                return of({code: article.code || '', description: article.description || ''});
+                return of([{code: article.code || '', description: article.description || ''}]);
             })
         );
+    }
+
+    selectOption(index: number, opt: {code: string, description: string}): void {
+        this.lesarticles[index].code = opt.code;
+        this.lesarticles[index].description = opt.description;
+    }
+
+    get selectionCount(): number {
+        return this.lesarticles.filter(a => a.options && a.options.length > 1).length;
     }
 
     saveAndDownload(): void {
@@ -235,7 +227,8 @@ export class SearchListLotsComponent {
             return;
         }
 
-        const tsvContent = Papa.unparse(this.lesarticles, {
+        const data = this.lesarticles.map(({ article, code, description }) => ({ article, code, description }));
+        const tsvContent = Papa.unparse(data, {
             delimiter: "\t",
             header: true,
         });

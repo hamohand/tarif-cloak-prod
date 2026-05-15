@@ -3,6 +3,7 @@ export class Article {
     article: string;
     code: string;
     description: string;
+    options?: {code: string, description: string}[];
 
     constructor(code: string, article: string, description: string){
         this.article = article;
