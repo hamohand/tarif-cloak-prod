@@ -245,6 +245,7 @@ import { environment } from '../../../environments/environment';
               </a>
             </div>
 
+            @if (!isBetaMode) {
             <div class="feature-card request-card">
               <div class="request-icon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
@@ -256,7 +257,6 @@ import { environment } from '../../../environments/environment';
               </a>
             </div>
 
-            
             <div class="feature-card request-card">
               <div class="request-icon">⚡</div>
               <h3>Recherche par lots</h3>
@@ -265,7 +265,8 @@ import { environment } from '../../../environments/environment';
                 Rechercher par lots
               </a>
             </div>
-            
+            }
+
 
           </div>
         }
