@@ -249,6 +249,31 @@ export class SearchListLotsComponent {
         this.isSaved = true;
     }
 
+  // ---- TEST TEMPORAIRE — à supprimer après validation ----
+  loadTestData(): void {
+    this.lesarticles = [
+      { article: 'câble électrique', code: '8544.42', description: 'Conducteurs électriques pour tension ≤ 1000V', options: [
+          { code: '8544.42', description: 'Conducteurs électriques pour tension ≤ 1000V' },
+          { code: '8544.49', description: 'Autres conducteurs électriques' },
+          { code: '7312.10', description: 'Torons et câbles en acier inoxydable' }
+      ]},
+      { article: 'huile', code: '1509.10', description: "Huile d'olive vierge", options: [
+          { code: '1509.10', description: "Huile d'olive vierge" },
+          { code: '2710.19', description: 'Huiles minérales légères' }
+      ]},
+      { article: 'sel', code: '2501.00', description: 'Sel, y compris le sel préparé pour la table' },
+      { article: 'voitures diesel', code: '8703.23', description: 'Véhicules à moteur diesel, cylindrée > 1500 cm³' },
+    ] as Article[];
+    this.fileName = 'test-demo.tsv';
+    this.totalCount = this.lesarticles.length;
+    this.completedCount = this.lesarticles.length;
+    this.isSearchComplete = true;
+    this.isLoading = false;
+    this.error = null;
+    this.isSaved = false;
+  }
+  // ---- FIN TEST ----
+
   // En savoir plus ...
   showMore: boolean = false;
   showMoreDonnees: boolean = false;

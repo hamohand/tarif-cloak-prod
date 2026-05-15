@@ -58,6 +58,12 @@
         @if(error) {
           <div class="error-alert mt-4">{{ error }}</div>
         }
+
+        <!-- TEST TEMPORAIRE — à supprimer après validation -->
+        <div class="test-bar">
+          <button class="btn-ghost btn-test" (click)="loadTestData()">🧪 Charger données de test</button>
+        </div>
+        <!-- FIN TEST -->
       </div>
     }
 

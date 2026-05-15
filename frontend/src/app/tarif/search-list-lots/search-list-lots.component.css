@@ -296,6 +296,25 @@
   overflow-y: auto;
 }
 
+/* ---- TEST TEMPORAIRE ---- */
+.test-bar {
+  margin-top: 1.5rem;
+  text-align: center;
+  border-top: 1px dashed rgba(163,177,198,0.4);
+  padding-top: 1rem;
+}
+
+.btn-test {
+  font-size: 0.8rem;
+  color: var(--neu-text-muted, #6B7280);
+  opacity: 0.6;
+}
+
+.btn-test:hover {
+  opacity: 1;
+}
+/* ---- FIN TEST ---- */
+
 /* ---- Notice sélection multiple ---- */
 .selection-notice {
   display: flex;
