@@ -175,8 +175,11 @@ export class SearchListLotsComponent {
             }),
 
             // 3. Rassemble les résultats de tous les paquets
-            //reduce((acc: string | any[], batchResults: any) => acc.concat(batchResults), [] as string[]),
-            reduce((acc: string[], batchResults: string[]) => acc.concat(batchResults), [] as string[]),
+            reduce(
+                (acc: {code: string, description: string}[], batchResults: {code: string, description: string}[]) =>
+                    acc.concat(batchResults),
+                [] as {code: string, description: string}[]
+            ),
 
             // 4. Se déclenche quand TOUT est terminé
             finalize(() => {
@@ -184,10 +187,11 @@ export class SearchListLotsComponent {
                 this.isSearchComplete = true;
             })
         ).subscribe({
-            next: (allResults: string[]) => {
-                allResults.forEach((code, index) => {
+            next: (allResults: {code: string, description: string}[]) => {
+                allResults.forEach((result, index) => {
                     if (this.lesarticles[index]) {
-                        this.lesarticles[index].code = code;
+                        this.lesarticles[index].code = result.code;
+                        this.lesarticles[index].description = result.description;
                     }
                 });
                 console.log("Traitement de tous les paquets terminé.", this.lesarticles);
@@ -199,43 +203,29 @@ export class SearchListLotsComponent {
         });
     }
 
-    // fichier résultat
-    private createArticleSearchObservable(article: Article): Observable<string> {
+    private createArticleSearchObservable(article: Article): Observable<{code: string, description: string}> {
         if (!article.article || !article.article.trim()) {
-            return of(article.code || '').pipe(delay(0));
+            return of({code: article.code || '', description: article.description || ''}).pipe(delay(0));
         }
-        // seule la valeur de 'code' est extraite et utilisée pour chaque article `code`
         return this.searchService.searchCodes(article.article).pipe(
-
-            map((response: any) => {
-                let results;
-                try {
-                    // On s'assure que les résultats sont bien un objet/tableau et non une chaîne JSON
-                    results = typeof response === 'string' ? JSON.parse(response) : response;
-                } catch (e) {
-                    console.error(e);
-                    return article.code || ''; // Retourne le code original si le JSON est invalide
-                }
-
-                // Extraction de tous les codes valides et combinaison avec virgule
+            map((results: any[]) => {
                 if (Array.isArray(results) && results.length > 0) {
-                    const codes = results
-                        .map(r => r.code)
-                        .filter(c => c && c.trim() !== '');
-                    
-                    if (codes.length > 0) {
-                        return codes.join(", ");
+                    const valid = results.filter(r => r.code && r.code.trim() !== '');
+                    if (valid.length > 0) {
+                        return {
+                            code: valid.map((r: any) => r.code).join(", "),
+                            description: valid.map((r: any) => r.description || '').join(", ")
+                        };
                     }
                 }
-
-                return article.code || ''; // Retourne le code original si aucun résultat n'est trouvé
+                return {code: article.code || '', description: article.description || ''};
             }),
             catchError((err: any) => {
                 console.error(err);
                 if (!this.error) {
                     this.error = 'Certaines requêtes ont échoué. Les codes originaux sont conservés.';
                 }
-                return of(article.code || '');
+                return of({code: article.code || '', description: article.description || ''});
             })
         );
     }
