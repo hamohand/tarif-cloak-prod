@@ -63,10 +63,11 @@ export class PricingPlanService {
   }
 
   /**
-   * Filtre les plans en production pour ne garder que le plan 'Invité' / 'Bêta Testeur'
+   * En mode beta uniquement, ne garder que le plan 'Invité' / 'Bêta Testeur'.
+   * En staging (betaMode=false), tous les plans actifs du MARKET_VERSION sont retournés.
    */
   private filterPlansForProduction(plans: PricingPlan[]): PricingPlan[] {
-    if (environment.production) {
+    if (environment.betaMode) {
       const invitePlan = plans.find(p => p.name === 'Invité' || p.name === 'Bêta Testeur');
       if (invitePlan) {
         return [invitePlan];

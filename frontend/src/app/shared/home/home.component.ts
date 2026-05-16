@@ -17,11 +17,11 @@ import { environment } from '../../../environments/environment';
       <section class="hero" [class.hero-compact]="isAuthenticated$ | async">
         <div class="hero-glow"></div>
         <h1>TCI</h1>
-        <p class="hero-subtitle">Code tarifaire du commerce international - رمز سعر التجارة الدولية
-        <br>Recherche multilingue - Multilingual search - 多语言搜索 - بحث متعدد اللغات
+        <p class="hero-subtitle">Tarif du commerce international -  سعر التجارة الدولية </p>
+        <p class="hero-subtitle">Recherche multilingue - Multilingual search - 多语言搜索 - بحث متعدد اللغات
         </p>
         <ng-container *ngIf="!(isAuthenticated$ | async)">
-          <p class="hero-desc">TCI analyse vos produits et retourne la position tarifaire la plus pertinente — avec explication détaillée.
+          <p class="hero-desc">TCI analyse vos produits et retourne les positions tarifaires les plus pertinentes — avec explication détaillée.
           <br>Un code de nomenclature inconnu devient lisible en un instant : section, chapitre, position, sous-position.</p>
         </ng-container>
         <div class="hero-cta" *ngIf="!(isAuthenticated$ | async)">
@@ -39,7 +39,7 @@ import { environment } from '../../../environments/environment';
               Guide d'utilisation
             </a>
           </div>
-          <a routerLink="/auth/login" class="cta-button primary">Commencer gratuitement</a>
+          <a *ngIf="isBetaMode" routerLink="/auth/login" class="cta-button primary">Commencer gratuitement</a>
           <a *ngIf="!isBetaMode" routerLink="/pricing" class="cta-button ghost">Voir les tarifs</a>
         </div>
       </section>
