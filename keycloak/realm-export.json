@@ -455,17 +455,17 @@
   "webAuthnPolicyPasswordlessAvoidSameAuthenticatorRegister": false,
   "webAuthnPolicyPasswordlessAcceptableAaguids": [],
   "users": [
-      {
-          "username": "moh",
-          "enabled": true,
-          "email": "hamohand@gmail.com",
-          "credentials": [
-              {
-                  "type": "password",
-                  "value": "mohmoh00"
-              }
-          ]
-      },
+    {
+      "username": "moh",
+      "enabled": true,
+      "email": "hamohand@gmail.com",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "mohmoh00"
+        }
+      ]
+    },
     {
       "createdTimestamp": 1760410149717,
       "username": "service-account-backend-client",
@@ -788,14 +788,16 @@
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
       "redirectUris": [
-          "https://hscode.enclume-numerique.com/*",
-          "https://www.hscode.enclume-numerique.com/*",
-          "http://localhost:4200/*"
+        "https://hscode.enclume-numerique.com/*",
+        "https://www.hscode.enclume-numerique.com/*",
+        "http://localhost:4200/*",
+        "https://tarif.enclume-numerique.com/*"
       ],
       "webOrigins": [
-          "https://hscode.enclume-numerique.com",
-          "https://www.hscode.enclume-numerique.com",
-          "http://localhost:4200"
+        "https://hscode.enclume-numerique.com",
+        "https://www.hscode.enclume-numerique.com",
+        "http://localhost:4200",
+        "https://tarif.enclume-numerique.com"
       ],
       "notBefore": 0,
       "bearerOnly": false,

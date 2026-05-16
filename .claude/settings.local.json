@@ -15,7 +15,8 @@
       "Bash(grep -vE \"00$\" /tmp/hs_missing.txt)",
       "Bash(sed 's/^[^,]*,//')",
       "Bash(sed 's/,[0-9]*,[0-9]*$//')",
-      "Bash(python3 *)"
+      "Bash(python3 *)",
+      "Bash(python *)"
     ],
     "additionalDirectories": [
       "c:\\Users\\hamoh\\Documents\\projets\\tarif\\tarif-micros\\search-service\\src\\main\\java\\com\\tarif\\search\\repository",

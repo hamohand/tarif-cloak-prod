@@ -54,9 +54,9 @@ import { of } from 'rxjs';
         } @else {
           <a routerLink="/" class="nav-link" (click)="closeMobileMenu()">Accueil إستقبال</a>
         }
-        @if (!(isCollaboratorAccount$ | async) && !isBetaMode) {
+        @if (!isBetaMode) {
           <a routerLink="/pricing" class="nav-link pricing-link" (click)="closeMobileMenu()">
-            💳 Tarifs
+            Tarifs
           </a>
         }
         <button class="nav-link contact-btn" (click)="toggleContactPopup(); closeMobileMenu()">
