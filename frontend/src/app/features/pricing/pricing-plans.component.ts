@@ -282,7 +282,8 @@ import { of } from 'rxjs';
     }
 
     .pricing-plan-card {
-      background: var(--neu-card-violet, linear-gradient(145deg, #EAE8F8, #DDDAF0));
+      background: linear-gradient(145deg, #EDE9FE, #DDD6FE);
+      border-top: 4px solid #7C3AED;
       border-radius: var(--neu-radius-container);
       padding: 2rem;
       box-shadow: var(--neu-extruded);
@@ -292,10 +293,24 @@ import { of } from 'rxjs';
       height: auto;
     }
 
+    .pricing-plan-card:nth-child(4n+2) {
+      background: linear-gradient(145deg, #CFFAFE, #A5F3FC);
+      border-top-color: #0891B2;
+    }
+
+    .pricing-plan-card:nth-child(4n+3) {
+      background: linear-gradient(145deg, #DCFCE7, #BBF7D0);
+      border-top-color: #059669;
+    }
+
+    .pricing-plan-card:nth-child(4n+4) {
+      background: linear-gradient(145deg, #FEF9C3, #FDE68A);
+      border-top-color: #D97706;
+    }
+
     .pricing-plan-card:hover {
-      transform: translateY(-2px);
+      transform: translateY(-4px);
       box-shadow: var(--neu-extruded-hover);
-      background: var(--neu-card-violet-hover, linear-gradient(145deg, #EFECFB, #E2E0F4));
     }
 
     .pricing-plan-card h3 {
@@ -399,14 +414,17 @@ import { of } from 'rxjs';
     }
 
     .btn-primary {
-      background: var(--neu-accent);
+      background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
       color: white;
-      box-shadow: var(--neu-extruded-sm);
+      box-shadow: 0 4px 14px rgba(79, 70, 229, 0.5);
+      font-weight: 700;
+      letter-spacing: 0.02em;
     }
 
     .btn-primary:hover {
-      transform: translateY(-1px);
-      box-shadow: var(--neu-extruded-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(79, 70, 229, 0.55);
+      background: linear-gradient(135deg, #4338CA 0%, #6D28D9 100%);
     }
 
     .pricing-footer {

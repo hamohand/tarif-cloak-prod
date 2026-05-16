@@ -56,7 +56,7 @@ import { of } from 'rxjs';
         }
         @if (!isBetaMode) {
           <a routerLink="/pricing" class="nav-link pricing-link" (click)="closeMobileMenu()">
-            Tarifs
+            Plans-prix
           </a>
         }
         <button class="nav-link contact-btn" (click)="toggleContactPopup(); closeMobileMenu()">
