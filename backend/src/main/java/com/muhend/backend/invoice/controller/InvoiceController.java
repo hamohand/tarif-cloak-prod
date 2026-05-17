@@ -80,12 +80,11 @@ public class InvoiceController {
             List<InvoiceDto> invoices = invoiceService.getInvoicesByOrganization(organizationId);
             return ResponseEntity.ok(invoices);
         } catch (UserNotAssociatedException e) {
-            log.error("Utilisateur {} non associé à une organisation", userId);
-            // L'exception sera gérée par le GlobalExceptionHandler qui retournera un 403
+            log.warn("Utilisateur {} non associé à une organisation (staging sans org)", userId);
             throw e;
         }
     }
-    
+
     /**
      * Récupère une facture par son ID (pour l'utilisateur connecté).
      * Marque automatiquement la facture comme consultée.
@@ -119,7 +118,7 @@ public class InvoiceController {
             
             return ResponseEntity.ok(invoice);
         } catch (UserNotAssociatedException e) {
-            log.error("Utilisateur {} non associé à une organisation", userId);
+            log.warn("Utilisateur {} non associé à une organisation (staging sans org)", userId);
             throw e;
         }
     }
@@ -146,7 +145,7 @@ public class InvoiceController {
             long count = invoiceService.countNewInvoices(organizationId);
             return ResponseEntity.ok(Map.of("count", count));
         } catch (UserNotAssociatedException e) {
-            log.error("Utilisateur {} non associé à une organisation", userId);
+            log.warn("Utilisateur {} non associé à une organisation (staging sans org)", userId);
             throw e;
         }
     }
@@ -173,7 +172,7 @@ public class InvoiceController {
             long count = invoiceService.countOverdueInvoices(organizationId);
             return ResponseEntity.ok(Map.of("count", count));
         } catch (UserNotAssociatedException e) {
-            log.error("Utilisateur {} non associé à une organisation", userId);
+            log.warn("Utilisateur {} non associé à une organisation (staging sans org)", userId);
             throw e;
         }
     }
@@ -208,7 +207,7 @@ public class InvoiceController {
             invoice = invoiceService.markInvoiceAsViewed(id);
             return ResponseEntity.ok(invoice);
         } catch (UserNotAssociatedException e) {
-            log.error("Utilisateur {} non associé à une organisation", userId);
+            log.warn("Utilisateur {} non associé à une organisation (staging sans org)", userId);
             throw e;
         }
     }
@@ -362,7 +361,7 @@ public class InvoiceController {
             
             return generatePdfResponse(invoice);
         } catch (UserNotAssociatedException e) {
-            log.error("Utilisateur {} non associé à une organisation", userId);
+            log.warn("Utilisateur {} non associé à une organisation (staging sans org)", userId);
             throw e;
         }
     }
