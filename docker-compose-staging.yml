@@ -13,28 +13,6 @@ name: tarif-cloak-staging
 services:
 
   # ===============================================================
-  # BASE DE DONNÉES STAGING (isolée de la prod)
-  # ===============================================================
-  app-db-staging:
-    image: "postgres:${POSTGRES_IMAGE_TAG:-16}"
-    container_name: "staging-app-db"
-    environment:
-      POSTGRES_DB: "${POSTGRES_DB}"
-      POSTGRES_USER: "${POSTGRES_USER}"
-      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
-    volumes:
-      - staging-app-data:/var/lib/postgresql/data
-      - ./sql/sql:/docker-entrypoint-initdb.d
-    healthcheck:
-      test: [ "CMD", "pg_isready", "-h", "localhost", "-U", "${POSTGRES_USER}", "-d", "${POSTGRES_DB}" ]
-      interval: 10s
-      timeout: 10s
-      retries: 10
-    restart: unless-stopped
-    networks:
-      - staging-internal
-
-  # ===============================================================
   # RABBITMQ STAGING
   # ===============================================================
   rabbitmq-staging:
@@ -82,14 +60,12 @@ services:
       dockerfile: Dockerfile
     container_name: "staging-backend"
     depends_on:
-      app-db-staging:
-        condition: service_healthy
       rabbitmq-staging:
         condition: service_healthy
     environment:
       BACKEND_INTERNAL_PORT: "8081"
       SPRING_PROFILES_ACTIVE: "${SPRING_PROFILES_ACTIVE:-prod}"
-      DB_SERVICE_NAME: "app-db-staging"
+      DB_SERVICE_NAME: "hscode-app-db"
       POSTGRES_PORT: "${POSTGRES_PORT:-5432}"
       POSTGRES_DB: "${POSTGRES_DB}"
       POSTGRES_USER: "${POSTGRES_USER}"
@@ -150,6 +126,7 @@ services:
     networks:
       - staging-internal
       - webproxy
+      - tarif-cloak-prod_default
 
   # ===============================================================
   # SEARCH-SERVICE STAGING
@@ -161,7 +138,7 @@ services:
     container_name: "staging-search-service"
     environment:
       SPRING_PROFILES_ACTIVE: "${SPRING_PROFILES_ACTIVE:-prod}"
-      DATABASE_URL: "jdbc:postgresql://app-db-staging:${POSTGRES_PORT:-5432}/${POSTGRES_DB}"
+      DATABASE_URL: "jdbc:postgresql://hscode-app-db:${POSTGRES_PORT:-5432}/${POSTGRES_DB}"
       DATABASE_USERNAME: "${POSTGRES_USER}"
       DATABASE_PASSWORD: "${POSTGRES_PASSWORD}"
       RABBITMQ_HOST: "rabbitmq-staging"
@@ -184,8 +161,6 @@ services:
       rabbitmq-staging:
         condition: service_healthy
       redis-staging:
-        condition: service_healthy
-      app-db-staging:
         condition: service_healthy
       backend-staging:
         condition: service_started
@@ -210,6 +185,7 @@ services:
     networks:
       - staging-internal
       - webproxy
+      - tarif-cloak-prod_default
 
   # ===============================================================
   # FRONTEND STAGING
@@ -246,8 +222,6 @@ services:
 # VOLUMES STAGING
 # ===============================================================
 volumes:
-  staging-app-data:
-    name: "staging-app-data"
   staging-rabbitmq-data:
     name: "staging-rabbitmq-data"
     external: true
@@ -262,3 +236,6 @@ networks:
   webproxy:
     external: true
   staging-internal:
+  tarif-cloak-prod_default:
+    external: true
+    name: tarif-cloak-prod_default
