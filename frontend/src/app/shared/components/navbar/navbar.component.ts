@@ -189,7 +189,7 @@ import { of } from 'rxjs';
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/></svg>
             <span>Crédits</span>
           </a>
-          @if (orgQuota !== null) {
+          @if (orgQuota !== null && isBetaMode) {
             <div class="credits-counter" [class.credits-low]="creditsRatio <= 0.2" [class.credits-medium]="creditsRatio > 0.2 && creditsRatio <= 0.5">
               <div class="credits-label">
                 <span>Crédits restants</span>

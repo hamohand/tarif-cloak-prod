@@ -67,11 +67,9 @@ export class PricingPlanService {
    * En staging (betaMode=false), tous les plans actifs du MARKET_VERSION sont retournés.
    */
   private filterPlansForProduction(plans: PricingPlan[]): PricingPlan[] {
-    if (environment.betaMode) {
-      const invitePlan = plans.find(p => p.name === 'Invité' || p.name === 'Bêta Testeur');
-      if (invitePlan) {
-        return [invitePlan];
-      }
+    const invitePlan = plans.find(p => p.name === 'Invité' || p.name === 'Bêta Testeur');
+    if (invitePlan) {
+      return [invitePlan];
     }
     return plans;
   }
