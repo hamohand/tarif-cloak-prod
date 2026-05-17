@@ -33,25 +33,26 @@
     @if(lesarticles.length === 0) {
       <div class="step-content">
         <h3>Importez votre fichier de données</h3>
-        <p class="subtitle">Votre fichier doit contenir au moins une colonne nommée <strong>'article'</strong>.</p>
-        
+        <p class="subtitle">Un produit par ligne, une seule colonne — aucun en-tête requis.</p>
+
         <div class="upload-area">
            <label for="file-upload" class="upload-label">
              <div class="upload-icon">
                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
              </div>
              <span>Cliquez pour sélectionner un fichier</span>
-             <span class="file-formats">.xls, .xlsx, .ods, .csv, .tsv acceptés</span>
+             <span class="file-formats">.txt, .xls, .xlsx, .ods, .csv, .tsv acceptés</span>
            </label>
-           <input id="file-upload" type="file" (change)="onFileSelected($event)" accept=".csv, .tsv, .xls, .xlsx, .ods" hidden />
+           <input id="file-upload" type="file" (change)="onFileSelected($event)" accept=".txt, .csv, .tsv, .xls, .xlsx, .ods" hidden />
         </div>
-        
+
         <div class="info-box">
           <div class="info-icon">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
           </div>
           <div class="info-text">
-            <strong>Format attendu :</strong> Une colonne <code>article</code> contenant la description. Une colonne <code>code</code> vide (optionnelle) qui sera remplie automatiquement.
+            <strong>Format simple :</strong> une description par ligne, sans en-tête.<br>
+            <strong>Format avancé :</strong> tableur avec une colonne nommée <code>article</code> (et optionnellement <code>code</code>).
           </div>
         </div>
 

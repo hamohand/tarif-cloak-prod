@@ -72,8 +72,8 @@ export class SearchListLotsComponent {
                     this.isLoading = false;
                 }
             });
-            // Pour les fichiers .csv et .tsv, on les lit directement et on les traite comme du TSV.
-        } else if (fileName.endsWith('.csv') || fileName.endsWith('.tsv')) {
+            // Pour les fichiers .csv, .tsv et .txt, on les lit directement.
+        } else if (fileName.endsWith('.csv') || fileName.endsWith('.tsv') || fileName.endsWith('.txt')) {
             const reader = new FileReader();
             reader.onload = () => {
                 const fileContent = reader.result as string;
@@ -85,41 +85,49 @@ export class SearchListLotsComponent {
             };
             reader.readAsText(file, 'UTF-8');
         } else {
-            this.error = "Format de fichier non supporté. Veuillez sélectionner un fichier .csv, .tsv, .xls, .xlsx, ou .ods.";
+            this.error = "Format de fichier non supporté. Veuillez sélectionner un fichier .txt, .csv, .tsv, .xls, .xlsx, ou .ods.";
             this.isLoading = false;
         }
     }
 
     private parseCsvData(csvContent: string): void {
-        Papa.parse<Article>(csvContent, {
+        Papa.parse<any>(csvContent, {
             header: true,
             skipEmptyLines: true,
-            delimiter: "\t", // On utilise TOUJOURS la tabulation comme délimiteur
+            delimiter: "\t",
             transformHeader: (header: string) => {
                 const normalizedHeader = header.toLowerCase().trim();
-                // Si l'en-tête est 'articles', on le normalise en 'article'
-                if (normalizedHeader === 'articles') {
-                    return 'article';
-                }
+                if (normalizedHeader === 'articles') return 'article';
                 return normalizedHeader;
             },
-            complete: (results: { errors: any[]; data: Article[]; }) => {
-                if (results.errors.length > 0) {
-                    this.error = `Erreur d'analyse TSV : ${results.errors.map(e => e.message).join(', ')}`;
-                } else {
-                    this.lesarticles = results.data;
-                    console.log("results: ", results);
-                    console.log("les articles : "+this.lesarticles);
+            complete: (results: { errors: any[]; data: any[]; }) => {
+                const hasArticleColumn = results.data.length > 0 && 'article' in results.data[0];
+                if (hasArticleColumn) {
+                    this.lesarticles = (results.data as Article[]).filter(a => a.article?.trim());
                     this.totalCount = this.lesarticles.length;
-                    console.log("Nombre d'articles : "+this.lesarticles.length);
+                    this.isLoading = false;
+                } else {
+                    // Format simplifié : une ligne = un article, pas d'en-tête requis
+                    this.parsePlainText(csvContent);
                 }
-                this.isLoading = false;
             },
             error: (err: any) => {
-                this.error = `Erreur de lecture des données CSV : ${err.message}`;
+                this.error = `Erreur de lecture : ${err.message}`;
                 this.isLoading = false;
             }
         });
+    }
+
+    private parsePlainText(content: string): void {
+        const lines = content.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+        if (lines.length === 0) {
+            this.error = "Le fichier est vide ou ne contient aucun article.";
+            this.isLoading = false;
+            return;
+        }
+        this.lesarticles = lines.map(line => ({ article: line, code: '', description: '' }));
+        this.totalCount = this.lesarticles.length;
+        this.isLoading = false;
     }
 
     /**
