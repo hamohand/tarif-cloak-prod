@@ -72,6 +72,8 @@ export class PricingPlanService {
       if (invitePlan) {
         return [invitePlan];
       }
+    } else {
+      return plans.filter(p => p.name !== 'Invité' && p.name !== 'Bêta Testeur');
     }
     return plans;
   }
