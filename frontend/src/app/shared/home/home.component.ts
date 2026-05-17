@@ -18,6 +18,7 @@ import { environment } from '../../../environments/environment';
         <div class="hero-glow"></div>
         <h1>TCI</h1>
         <p class="hero-subtitle">Tarif du commerce international -  سعر التجارة الدولية </p>
+        <p class="hero-subtitle">Positions tarifaires - Nomenclature</p>
         <p class="hero-subtitle">Recherche multilingue - Multilingual search - 多语言搜索 - بحث متعدد اللغات
         </p>
         <ng-container *ngIf="!(isAuthenticated$ | async)">
@@ -341,6 +342,14 @@ import { environment } from '../../../environments/environment';
       font-size: 1.3rem;
       color: var(--neu-accent-secondary, #2DD4BF);
       font-weight: 600;
+      margin-bottom: 1rem;
+    }
+
+    .hero-subtitle2 {
+      font-family: var(--font-display, 'Plus Jakarta Sans', sans-serif);
+      font-size: 1.3rem;
+      color: var(--neu-accent-secondary, #2DD4BF);
+      font-weight: 500;
       margin-bottom: 1rem;
     }
 

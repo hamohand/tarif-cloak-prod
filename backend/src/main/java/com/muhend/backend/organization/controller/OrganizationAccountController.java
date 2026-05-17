@@ -128,6 +128,10 @@ public class OrganizationAccountController {
             }
             
             return ResponseEntity.ok(status);
+        } catch (com.muhend.backend.organization.exception.UserNotAssociatedException e) {
+            log.warn("Utilisateur {} non associé à une organisation lors du status check", userId);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "ORGANIZATION_NOT_FOUND", "message", "Aucune organisation trouvée pour cet utilisateur"));
         } catch (Exception e) {
             log.error("Erreur lors de la récupération de l'état de l'organisation: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
