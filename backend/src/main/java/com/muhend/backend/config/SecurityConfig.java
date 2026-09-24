@@ -40,7 +40,7 @@ public class SecurityConfig {
     @Order(1)
     public SecurityFilterChain publicSecurityFilterChain(HttpSecurity http) throws Exception {
         http
-            .securityMatcher("/auth/**", "/public/**", "/webhooks/**", "/swagger-ui/**", "/v3/api-docs/**", "/health/**")
+            .securityMatcher("/auth/**", "/public/**", "/webhooks/**", "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**", "/v3/api-docs", "/health/**")
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(authorize -> authorize
