@@ -3,7 +3,7 @@
   max-width: 100%;
   width: 100%;
   margin: 0 auto;
-  background: var(--neu-bg);
+  background: var(--neu-bg-dark);
   min-height: calc(100vh - var(--navbar-height));
   color: var(--neu-text-primary);
   box-sizing: border-box;

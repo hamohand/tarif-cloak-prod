@@ -278,16 +278,17 @@ import { of } from 'rxjs';
       50% { opacity: 0.6; }
     }
 
-    /* ═══ NAVBAR — Neumorphism ═══ */
+    /* ═══ NAVBAR — Dark Pro ═══ */
     .navbar {
       display: flex;
       justify-content: space-between;
       align-items: center;
       padding: 0 2rem;
-      height: var(--navbar-height, 72px);
-      background: var(--neu-bg, #E0E5EC);
-      color: var(--neu-text-primary, #3D4852);
-      box-shadow: 0 4px 12px rgba(163,177,198,0.5), 0 -2px 8px rgba(255,255,255,0.4);
+      height: var(--navbar-height, 64px);
+      background: var(--neu-bg, #070B14);
+      color: var(--neu-text-primary, #CBD5E1);
+      border-bottom: 1px solid rgba(245, 158, 11, 0.18);
+      box-shadow: 0 2px 16px rgba(0,0,0,0.6);
       position: sticky;
       top: 0;
       z-index: 1000;
@@ -394,14 +395,17 @@ import { of } from 'rxjs';
 
     .hscode-link {
       font-weight: 700;
-      color: var(--neu-accent-secondary, #2DD4BF);
-      background: var(--neu-bg, #E0E5EC);
-      box-shadow: var(--neu-extruded-sm, 5px 5px 10px rgba(163,177,198,0.6), -5px -5px 10px rgba(255,255,255,0.5));
-      border-radius: var(--neu-radius-button, 16px);
+      color: var(--neu-accent, #F59E0B);
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      border-radius: var(--neu-radius-button, 8px);
     }
 
     .hscode-link:hover {
-      box-shadow: var(--neu-extruded-hover, 12px 12px 20px rgba(163,177,198,0.7), -12px -12px 20px rgba(255,255,255,0.6));
+      background: rgba(245, 158, 11, 0.18);
+      border-color: rgba(245, 158, 11, 0.5);
+      box-shadow: 0 0 14px rgba(245, 158, 11, 0.2);
+      transform: translateY(-1px);
     }
 
     .hscode-link-blocked {
@@ -498,19 +502,20 @@ import { of } from 'rxjs';
     }
 
     .btn-primary {
-      background: var(--neu-accent, #6C63FF);
-      color: white;
-      box-shadow: var(--neu-extruded-sm, 5px 5px 10px rgba(163,177,198,0.6), -5px -5px 10px rgba(255,255,255,0.5));
+      background: var(--neu-accent, #F59E0B);
+      color: #070B14;
+      font-weight: 700;
+      box-shadow: 0 0 16px rgba(245, 158, 11, 0.3), var(--neu-extruded-sm);
     }
 
     .btn-primary:hover {
       transform: translateY(-1px);
-      box-shadow: var(--neu-extruded-hover, 12px 12px 20px rgba(163,177,198,0.7), -12px -12px 20px rgba(255,255,255,0.6));
-      background: var(--neu-accent-hover, #5A52D5);
+      background: var(--neu-accent-hover, #D97706);
+      box-shadow: 0 0 24px rgba(245, 158, 11, 0.45), var(--neu-extruded-hover);
     }
 
     .btn-primary:active {
-      background: var(--neu-accent-hover, #5A52D5);
+      background: var(--neu-accent-hover, #D97706);
       transform: translateY(0.5px);
       box-shadow: var(--neu-inset-sm);
     }
@@ -534,11 +539,11 @@ import { of } from 'rxjs';
 
     /* ═══ TRIAL EXPIRED BANNER ═══ */
     .trial-expired-banner {
-      background: var(--neu-bg-dark, #D1D9E6);
-      color: var(--neu-text-primary, #3D4852);
+      background: rgba(239, 68, 68, 0.08);
+      border-bottom: 1px solid rgba(239, 68, 68, 0.25);
+      color: var(--neu-text-primary, #CBD5E1);
       padding: 0.75rem 2rem;
       text-align: center;
-      box-shadow: var(--neu-inset, inset 6px 6px 10px rgba(163,177,198,0.6), inset -6px -6px 10px rgba(255,255,255,0.5));
       z-index: 997;
       position: relative;
     }
@@ -594,8 +599,9 @@ import { of } from 'rxjs';
       justify-content: center;
       align-items: center;
       padding: 0.5rem 2rem;
-      background: var(--neu-bg, #E0E5EC);
-      box-shadow: 0 3px 8px rgba(163,177,198,0.4);
+      background: var(--neu-bg-dark, #0D1421);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
       position: relative;
       z-index: 999;
     }
@@ -640,11 +646,12 @@ import { of } from 'rxjs';
       width: var(--sidebar-width, 240px);
       height: 100vh;
       padding: 1rem 0;
-      background: var(--neu-bg, #E0E5EC);
-      box-shadow: 6px 0 16px rgba(163,177,198,0.5), -2px 0 8px rgba(255,255,255,0.3);
+      background: var(--neu-bg-dark, #0D1421);
+      border-right: 1px solid rgba(245, 158, 11, 0.12);
+      box-shadow: 4px 0 24px rgba(0,0,0,0.5);
       z-index: 998;
       overflow-y: auto;
-      padding-top: calc(var(--navbar-height, 72px) + 12px);
+      padding-top: calc(var(--navbar-height, 64px) + 12px);
       box-sizing: border-box;
     }
 
@@ -694,9 +701,11 @@ import { of } from 'rxjs';
     }
 
     .org-nav-link.router-link-active {
-      background: var(--neu-active-bg, #D9D7F2);
-      box-shadow: var(--neu-inset, inset 6px 6px 10px rgba(163,177,198,0.6), inset -6px -6px 10px rgba(255,255,255,0.5));
-      color: var(--neu-accent-secondary, #2DD4BF);
+      background: rgba(245, 158, 11, 0.1);
+      border-left: 3px solid var(--neu-accent, #F59E0B);
+      padding-left: calc(1rem - 3px);
+      box-shadow: none;
+      color: var(--neu-accent, #F59E0B);
       font-weight: 600;
     }
 
@@ -721,7 +730,7 @@ import { of } from 'rxjs';
     .renewal-modal-overlay, .contact-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(61, 72, 82, 0.35);
+      background: rgba(0, 0, 0, 0.75);
       backdrop-filter: blur(8px);
       z-index: 9999;
       display: flex;
@@ -731,19 +740,19 @@ import { of } from 'rxjs';
     }
 
     .renewal-modal, .contact-popup {
-      background: var(--neu-bg, #E0E5EC);
-      border-radius: var(--neu-radius-container, 32px);
-      box-shadow: var(--neu-extruded-hover, 12px 12px 20px rgba(163,177,198,0.7), -12px -12px 20px rgba(255,255,255,0.6));
+      background: var(--neu-card-bg, #111827);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: var(--neu-radius-container, 14px);
+      box-shadow: 0 16px 48px rgba(0,0,0,0.8);
       padding: 2rem;
       max-width: 420px;
       width: 90%;
       text-align: center;
-      color: var(--neu-text-primary, #3D4852);
+      color: var(--neu-text-primary, #CBD5E1);
       position: relative;
-      border: none;
     }
 
-    .renewal-modal h3 { margin-bottom: 0.75rem; font-size: 1.25rem; color: var(--neu-accent-danger, #E53E3E); font-family: var(--font-display); }
+    .renewal-modal h3 { margin-bottom: 0.75rem; font-size: 1.25rem; color: var(--neu-accent, #F59E0B); font-family: var(--font-display); }
     .renewal-modal p { color: var(--neu-text-muted, #6B7280); margin-bottom: 1.5rem; }
 
     .renewal-modal-actions {
@@ -813,17 +822,18 @@ import { of } from 'rxjs';
       .nav-links {
         display: none;
         position: fixed;
-        top: var(--navbar-height, 60px);
+        top: var(--navbar-height, 56px);
         left: 0;
         right: 0;
         bottom: 0;
-        background: var(--neu-bg, #E0E5EC);
+        background: var(--neu-bg, #070B14);
+        border-top: 1px solid rgba(245, 158, 11, 0.15);
         flex-direction: column;
         padding: 1.5rem;
         gap: 0.5rem;
         z-index: 1001;
         overflow-y: auto;
-        box-shadow: 0 8px 24px rgba(163,177,198,0.6);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.7);
       }
 
       .nav-links.mobile-open { display: flex; }

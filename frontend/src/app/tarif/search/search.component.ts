@@ -154,17 +154,16 @@ interface GroupedP4 {
     .search-form {
       display: flex;
       margin-bottom: 30px;
-      background: var(--neu-bg, #E0E5EC);
-      box-shadow: var(--neu-inset, inset 6px 6px 10px rgba(163,177,198,0.6), inset -6px -6px 10px rgba(255,255,255,0.5));
-      border-radius: var(--neu-radius-inner, 12px);
+      background: var(--neu-bg-dark, #0D1421);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--neu-radius-inner, 8px);
       overflow: hidden;
-      border: none;
-      transition: box-shadow 0.3s ease;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
     }
 
     .search-form:focus-within {
-      box-shadow: var(--neu-inset-deep, inset 8px 8px 14px rgba(163,177,198,0.7), inset -8px -8px 14px rgba(255,255,255,0.6)),
-                  0 0 0 3px rgba(108,99,255,0.25);
+      border-color: var(--neu-accent, #F59E0B);
+      box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.18);
     }
 
     .search-input {
@@ -183,35 +182,37 @@ interface GroupedP4 {
     .search-button {
       padding: 16px 32px;
       min-height: 44px;
-      font-size: 16px;
-      background: var(--neu-accent-secondary, #2DD4BF);
-      color: var(--neu-text-heading, #5b626e);
+      font-size: 15px;
+      font-family: var(--font-display, 'Space Grotesk', sans-serif);
+      background: var(--neu-accent, #F59E0B);
+      color: #070B14;
       border: none;
-      font-weight: 600;
-      border-radius: var(--neu-radius-inner, 12px);
-      box-shadow: var(--neu-extruded-sm, 5px 5px 10px rgba(163,177,198,0.6), -5px -5px 10px rgba(255,255,255,0.5));
-      transition: box-shadow 0.3s ease, transform 0.15s ease;
+      font-weight: 700;
+      border-radius: 0 var(--neu-radius-inner, 8px) var(--neu-radius-inner, 8px) 0;
+      box-shadow: 0 0 16px rgba(245, 158, 11, 0.3);
+      transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
       cursor: pointer;
+      white-space: nowrap;
     }
 
     .search-button:hover:not(:disabled) {
-      box-shadow: var(--neu-extruded, 9px 9px 16px rgba(163,177,198,0.6), -9px -9px 16px rgba(255,255,255,0.5));
+      background: var(--neu-accent-hover, #D97706);
+      box-shadow: 0 0 24px rgba(245, 158, 11, 0.45);
       transform: translateY(-1px);
     }
 
     .search-button:active:not(:disabled) {
-      background: var(--neu-accent-secondary-dark, #14B8A6);
-      box-shadow: inset 3px 3px 6px rgba(0,0,0,0.15), inset -3px -3px 6px rgba(255,255,255,0.2);
+      background: var(--neu-accent-hover, #D97706);
       transform: translateY(1px);
-      color: #fff;
+      box-shadow: none;
     }
 
     .search-button:disabled {
-      background: var(--neu-bg, #E0E5EC);
-      color: var(--neu-text-muted, #6B7280);
-      box-shadow: var(--neu-extruded-sm, 5px 5px 10px rgba(163,177,198,0.6), -5px -5px 10px rgba(255,255,255,0.5));
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--neu-text-muted, #64748B);
+      box-shadow: none;
       cursor: not-allowed;
-      opacity: 0.7;
+      opacity: 0.5;
     }
 
     .loading {
@@ -230,11 +231,11 @@ interface GroupedP4 {
 
     .error {
       margin: 30px 0;
-      color: #c0392b;
-      background: var(--neu-bg, #E0E5EC);
+      color: var(--neu-accent-danger, #EF4444);
+      background: rgba(239, 68, 68, 0.08);
+      border: 1px solid rgba(239, 68, 68, 0.25);
       padding: 16px 20px;
-      border-radius: var(--neu-radius-inner, 12px);
-      box-shadow: var(--neu-inset, inset 6px 6px 10px rgba(163,177,198,0.6), inset -6px -6px 10px rgba(255,255,255,0.5));
+      border-radius: var(--neu-radius-inner, 8px);
     }
 
     .results {
@@ -263,16 +264,18 @@ interface GroupedP4 {
     }
 
     .result-card {
-      margin-bottom: 32px;
-      padding: 24px;
-      background: var(--neu-card-bg, linear-gradient(145deg, #E8ECF2, #D8DDE4));
-      border-radius: var(--neu-radius-container, 32px);
-      box-shadow: var(--neu-extruded, 9px 9px 16px rgba(163,177,198,0.6), -9px -9px 16px rgba(255,255,255,0.5));
-      transition: background 0.3s ease;
+      margin-bottom: 24px;
+      padding: 20px 24px;
+      background: var(--neu-card-bg, #111827);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: var(--neu-radius-container, 14px);
+      box-shadow: var(--neu-extruded);
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
     }
 
     .result-card:hover {
-      background: var(--neu-card-bg-hover, linear-gradient(145deg, #EDF0F5, #DCE1E8));
+      border-color: rgba(245, 158, 11, 0.2);
+      box-shadow: var(--neu-extruded-hover);
     }
 
     .level {
@@ -286,9 +289,9 @@ interface GroupedP4 {
     }
 
     .level-position4 {
-      background: var(--neu-bg, #E0E5EC);
-      box-shadow: var(--neu-inset, inset 6px 6px 10px rgba(163,177,198,0.6), inset -6px -6px 10px rgba(255,255,255,0.5));
-      border-left: 4px solid var(--neu-accent, #6C63FF);
+      background: var(--neu-bg-dark, #0D1421);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-left: 3px solid var(--neu-accent, #F59E0B);
     }
 
     .level-label {
@@ -300,10 +303,10 @@ interface GroupedP4 {
     }
 
     .level-code {
-      font-family: 'Courier New', monospace;
-      font-weight: 700;
+      font-family: var(--font-mono, 'JetBrains Mono', monospace);
+      font-weight: 600;
       font-size: 1rem;
-      color: var(--neu-text-heading, #2D3748);
+      color: var(--neu-accent, #F59E0B);
       min-width: 60px;
     }
 
@@ -331,40 +334,43 @@ interface GroupedP4 {
     }
 
     th {
-      padding: 11px 16px;
+      padding: 10px 16px;
       text-align: left;
-      background: var(--neu-bg, #E0E5EC);
+      background: rgba(255, 255, 255, 0.03);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
       font-weight: 600;
-      color: var(--neu-text-heading, #2D3748);
+      font-family: var(--font-display, 'Space Grotesk', sans-serif);
+      color: var(--neu-text-muted, #64748B);
       text-transform: uppercase;
-      font-size: 0.8rem;
-      letter-spacing: 0.5px;
+      font-size: 0.72rem;
+      letter-spacing: 0.8px;
     }
 
     td {
       padding: 11px 16px;
       text-align: left;
-      background: var(--neu-bg, #E0E5EC);
-      box-shadow: var(--neu-extruded-sm, 5px 5px 10px rgba(163,177,198,0.6), -5px -5px 10px rgba(255,255,255,0.5));
+      background: transparent;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
     }
 
-    td:first-child { border-radius: var(--neu-radius-inner, 12px) 0 0 var(--neu-radius-inner, 12px); }
-    td:last-child { border-radius: 0 var(--neu-radius-inner, 12px) var(--neu-radius-inner, 12px) 0; }
+    td:first-child { border-radius: 0; }
+    td:last-child { border-radius: 0; }
 
-    tbody tr:hover td { opacity: 0.85; }
+    tbody tr:hover td { background: rgba(245, 158, 11, 0.04); }
     tbody tr.highlighted td {
-      box-shadow: var(--neu-inset, inset 6px 6px 10px rgba(163,177,198,0.6), inset -6px -6px 10px rgba(255,255,255,0.5));
+      background: rgba(245, 158, 11, 0.06);
+      border-left: 2px solid var(--neu-accent, #F59E0B);
     }
 
     .code-cell {
-      font-family: 'Courier New', monospace;
+      font-family: var(--font-mono, 'JetBrains Mono', monospace);
       font-weight: 600;
-      color: var(--neu-accent-secondary, #38B2AC);
-      font-size: 0.95rem;
+      color: var(--neu-accent-secondary, #3B82F6);
+      font-size: 0.9rem;
       white-space: nowrap;
     }
 
-    .code-cell.p10 { color: var(--neu-accent, #6C63FF); }
+    .code-cell.p10 { color: var(--neu-accent, #F59E0B); }
 
     .justif {
       font-style: italic;
@@ -373,20 +379,20 @@ interface GroupedP4 {
     }
 
     .titre-row td {
-      background: var(--neu-bg, #E0E5EC);
-      box-shadow: none;
+      background: transparent;
+      border-bottom: none;
       padding: 4px 16px 2px;
     }
-    .titre-row:hover td { opacity: 1; }
+    .titre-row:hover td { background: transparent; }
 
     .titres-cell { padding: 6px 16px 2px !important; }
 
     .titre-p10 {
       font-style: italic;
-      color: var(--neu-text-muted, #6B7280);
-      font-size: 0.88rem;
-      padding: 2px 0 1px 8px;
-      border-left: 3px solid var(--neu-accent, #6C63FF);
+      color: var(--neu-text-muted, #64748B);
+      font-size: 0.85rem;
+      padding: 2px 0 1px 10px;
+      border-left: 2px solid rgba(245, 158, 11, 0.4);
     }
 
     @media (max-width: 768px) {
