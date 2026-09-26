@@ -99,6 +99,7 @@ public class ChapitreController {
                     existingChapitre.setCode(chapitreDetails.getCode());
                     existingChapitre.setDescription(chapitreDetails.getDescription());
                     existingChapitre.setSection(chapitreDetails.getSection());
+                    existingChapitre.setNote(chapitreDetails.getNote());
                     Chapitre updatedChapitre = chapitreRepository.save(existingChapitre);
                     return ResponseEntity.ok(updatedChapitre);
                 })

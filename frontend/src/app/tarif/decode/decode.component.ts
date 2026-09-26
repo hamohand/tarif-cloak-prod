@@ -45,17 +45,27 @@ import { OAuthService } from 'angular-oauth2-oidc';
 
           <div class="hierarchy">
             <!-- Section -->
-            <div class="level level-section">
+            <div class="level level-section" [class.has-note]="result.section.note">
               <span class="level-label">Section</span>
               <span class="level-code">{{ result.section.code }}</span>
-              <span class="level-desc">{{ result.section.description }}</span>
+              <div class="level-content">
+                <span class="level-desc">{{ result.section.description }}</span>
+                @if (result.section.note) {
+                  <p class="level-note">{{ result.section.note }}</p>
+                }
+              </div>
             </div>
 
             <!-- Chapitre -->
-            <div class="level level-chapitre">
+            <div class="level level-chapitre" [class.has-note]="result.chapitre.note">
               <span class="level-label">Chapitre</span>
               <span class="level-code">{{ result.chapitre.code }}</span>
-              <span class="level-desc">{{ result.chapitre.description }}</span>
+              <div class="level-content">
+                <span class="level-desc">{{ result.chapitre.description }}</span>
+                @if (result.chapitre.note) {
+                  <p class="level-note">{{ result.chapitre.note }}</p>
+                }
+              </div>
             </div>
 
             <!-- Position 4 (si disponible) -->
@@ -249,7 +259,7 @@ import { OAuthService } from 'angular-oauth2-oidc';
 
     .level {
       display: flex;
-      align-items: baseline;
+      align-items: flex-start;
       gap: 12px;
       padding: 14px 18px;
       border-radius: var(--neu-radius-inner, 12px);
@@ -293,10 +303,26 @@ import { OAuthService } from 'angular-oauth2-oidc';
       min-width: 60px;
     }
 
+    .level-content {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
     .level-desc {
       color: var(--neu-text-primary, #3D4852);
       font-size: 0.95rem;
       line-height: 1.4;
+    }
+
+    .level-note {
+      margin: 0;
+      color: var(--neu-text-muted, #6B7280);
+      font-size: 0.82rem;
+      line-height: 1.5;
+      font-style: italic;
+      border-left: 2px solid var(--neu-accent, #6C63FF);
+      padding-left: 8px;
     }
 
     .subpositions h4 {

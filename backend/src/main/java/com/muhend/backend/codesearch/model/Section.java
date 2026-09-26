@@ -19,4 +19,7 @@ public class Section {
 
     @Column(nullable = false, length = 1024) // Limitation définie ici
     private String description;
+
+    @Column(columnDefinition = "TEXT")
+    private String note;
 }

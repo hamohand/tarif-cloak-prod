@@ -7,6 +7,7 @@ import { environment } from '../../../environments/environment';
 export interface DecodeCodeItem {
   code: string;
   description: string;
+  note?: string;
 }
 
 export interface DecodeResult {

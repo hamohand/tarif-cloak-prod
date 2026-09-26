@@ -77,8 +77,8 @@ public class DecodeController {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Section introuvable pour le code : " + finalSectionCode));
 
-        DecodeResult.CodeItem sectionItem = new DecodeResult.CodeItem(section.getCode(), section.getDescription());
-        DecodeResult.CodeItem chapitreItem = new DecodeResult.CodeItem(chapitre.getCode(), chapitre.getDescription());
+        DecodeResult.CodeItem sectionItem = new DecodeResult.CodeItem(section.getCode(), section.getDescription(), section.getNote());
+        DecodeResult.CodeItem chapitreItem = new DecodeResult.CodeItem(chapitre.getCode(), chapitre.getDescription(), chapitre.getNote());
 
         // --- Niveau CHAPITRE (2 chiffres) ---
         if (len == 2) {

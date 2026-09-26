@@ -25,10 +25,21 @@ public class DecodeResult {
     private java.util.Map<String, List<String>> titresParPosition10; // titres par code P10 (niveau POSITION6)
 
     @Data
-    @AllArgsConstructor
     @NoArgsConstructor
     public static class CodeItem {
         private String code;
         private String description;
+        private String note;
+
+        public CodeItem(String code, String description) {
+            this.code = code;
+            this.description = description;
+        }
+
+        public CodeItem(String code, String description, String note) {
+            this.code = code;
+            this.description = description;
+            this.note = note;
+        }
     }
 }

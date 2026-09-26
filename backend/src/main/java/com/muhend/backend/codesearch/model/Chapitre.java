@@ -23,4 +23,7 @@ public class Chapitre {
     private String description;
 
     private String section; // Champ pour stocker le numéro de la section
+
+    @Column(columnDefinition = "TEXT")
+    private String note;
 }
