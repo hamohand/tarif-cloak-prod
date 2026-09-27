@@ -16,32 +16,52 @@ import { environment } from '../../../environments/environment';
       <!-- Hero Section -->
       <section class="hero" [class.hero-compact]="isAuthenticated$ | async">
         <div class="hero-glow"></div>
-        <h1>TCI</h1>
-        <p class="hero-subtitle">Tarif du commerce international -  سعر التجارة الدولية </p>
-        <p class="hero-subtitle">Positions tarifaires - Nomenclature</p>
-        <p class="hero-subtitle">Recherche multilingue - Multilingual search - 多语言搜索 - بحث متعدد اللغات
-        </p>
+
+        <div class="hero-eyebrow">
+          <span class="eyebrow-chip">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;flex-shrink:0"><path d="M12 2a10 10 0 100 20A10 10 0 0012 2z"/><path d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg>
+            IA · Nomenclature Douanière · SH
+          </span>
+        </div>
+
+        <h1 class="hero-title">
+          <span class="hero-acronym">TCI</span>
+          <span class="hero-fullname">
+            <span class="hero-name-fr">Tarif du Commerce International</span>
+            <span class="hero-name-sep">—</span>
+            <span class="hero-name-ar">سعر التجارة الدولية</span>
+          </span>
+        </h1>
+
+        <div class="hero-langs">
+          <span class="lang-chip">Français</span>
+          <span class="lang-chip">English</span>
+          <span class="lang-chip">عربي</span>
+          <span class="lang-chip">中文</span>
+          <span class="lang-chip lang-chip-more">+ autres langues</span>
+        </div>
+
         <ng-container *ngIf="!(isAuthenticated$ | async)">
-          <p class="hero-desc">TCI analyse vos produits et retourne les positions tarifaires les plus pertinentes — avec explication détaillée.
-          <br>Un code de nomenclature inconnu devient lisible en un instant : section, chapitre, position, sous-position.</p>
+          <p class="hero-desc">TCI analyse vos produits et retourne les positions tarifaires les plus pertinentes — avec explication détaillée.<br>
+          Un code de nomenclature inconnu devient lisible en un instant : section, chapitre, position, sous-position.</p>
         </ng-container>
+
         <div class="hero-cta" *ngIf="!(isAuthenticated$ | async)">
-          <div class="hero-cta-top">
-            @if (isBetaMode) {
-              <div class="trial-offer-badge">
-                <svg class="trial-offer-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12v9H4v-9"/><path d="M22 7H2v5h20V7z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg>
-                <div class="trial-offer-text">
-                  <strong>Offre Invité</strong> — 500 crédits / 30 jours
-                </div>
-              </div>
-            }
-            <a routerLink="/aide" class="cta-button ghost guide-btn">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/><path d="M12 6v6M12 15h.01"/></svg>
-              Guide d'utilisation
-            </a>
-          </div>
-          <a *ngIf="isBetaMode" routerLink="/auth/login" class="cta-button primary">Commencer gratuitement</a>
+          <a *ngIf="isBetaMode" routerLink="/auth/login" class="cta-button primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;flex-shrink:0"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            Commencer gratuitement
+          </a>
+          @if (isBetaMode) {
+            <div class="trial-offer-badge">
+              <svg class="trial-offer-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12v9H4v-9"/><path d="M22 7H2v5h20V7z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg>
+              <span>Offre Invité — <strong>500 crédits · 30 jours</strong></span>
+            </div>
+          }
           <a *ngIf="!isBetaMode" routerLink="/pricing" class="cta-button ghost">Voir les tarifs</a>
+          <a routerLink="/aide" class="cta-button ghost guide-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;flex-shrink:0"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/><path d="M12 6v6M12 15h.01"/></svg>
+            Guide
+          </a>
         </div>
       </section>
 
@@ -303,168 +323,258 @@ import { environment } from '../../../environments/environment';
     /* ═══ Hero Section ═══ */
     .hero {
       position: relative;
-      padding: 1.5rem 2rem 2.5rem;
-      margin-bottom: 2rem;
+      padding: 3.5rem 2rem 3rem;
+      margin-bottom: 1.5rem;
+      text-align: center;
+    }
+
+    .hero::after {
+      content: '';
+      display: block;
+      width: 80px;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(245,158,11,0.5), transparent);
+      margin: 2.5rem auto 0;
     }
 
     .hero.hero-compact {
-      padding: 1.25rem 2rem 0.75rem;
+      padding: 1.5rem 2rem 1rem;
       margin-bottom: 0;
     }
-
-    .hero.hero-compact h1 { font-size: 1.8rem; margin-bottom: 0.25rem; }
-    .hero.hero-compact .hero-subtitle { font-size: 1rem; margin-bottom: 0; }
+    .hero.hero-compact::after { display: none; }
+    .hero.hero-compact .hero-eyebrow { display: none; }
+    .hero.hero-compact .hero-langs { display: none; }
     .hero.hero-compact .hero-glow { display: none; }
+    .hero.hero-compact .hero-acronym { font-size: 2rem; }
+    .hero.hero-compact .hero-name-fr { font-size: 0.95rem; }
+    .hero.hero-compact .hero-name-sep,
+    .hero.hero-compact .hero-name-ar { display: none; }
+    .hero.hero-compact .hero-title { gap: 0.2rem; margin-bottom: 0; }
 
     .hero-glow {
       position: absolute;
-      top: 50%;
+      top: 40%;
       left: 50%;
       transform: translate(-50%, -50%);
-      width: 400px;
+      width: 600px;
       height: 400px;
-      background: radial-gradient(circle, rgba(108, 99, 255, 0.08) 0%, transparent 70%);
+      background: radial-gradient(ellipse, rgba(245, 158, 11, 0.07) 0%, transparent 65%);
       pointer-events: none;
+      z-index: 0;
     }
 
-    .hero h1 {
-      color: var(--neu-text-heading, #2D3748);
-      font-family: var(--font-display, 'Plus Jakarta Sans', sans-serif);
-      font-size: 3.5rem;
-      font-weight: 800;
-      margin-bottom: 0.75rem;
-      letter-spacing: -0.03em;
+    /* ─── Eyebrow ─── */
+    .hero-eyebrow {
       position: relative;
+      z-index: 1;
+      margin-bottom: 1.5rem;
     }
 
-    .hero-subtitle {
-      font-family: var(--font-display, 'Plus Jakarta Sans', sans-serif);
-      font-size: 1.3rem;
-      color: var(--neu-accent-secondary, #2DD4BF);
-      font-weight: 600;
-      margin-bottom: 1rem;
+    .eyebrow-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.35rem 1rem;
+      border-radius: var(--neu-radius-pill);
+      background: rgba(245, 158, 11, 0.08);
+      border: 1px solid rgba(245, 158, 11, 0.28);
+      color: var(--neu-accent, #F59E0B);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      font-family: var(--font-display);
     }
 
-    .hero-subtitle2 {
-      font-family: var(--font-display, 'Plus Jakarta Sans', sans-serif);
-      font-size: 1.3rem;
-      color: var(--neu-accent-secondary, #2DD4BF);
-      font-weight: 500;
-      margin-bottom: 1rem;
-    }
-
-    .hero-desc {
-      font-size: 1.05rem;
-      color: var(--neu-text-muted, #6B7280);
-      max-width: 600px;
-      margin: 0 auto 2rem;
-      line-height: 1.7;
-    }
-
-    .hero-cta {
+    /* ─── Title ─── */
+    .hero-title {
+      position: relative;
+      z-index: 1;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 1rem;
-      justify-content: center;
-      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin: 0 0 1.5rem;
     }
 
-    .hero-cta-top {
+    .hero-acronym {
+      font-family: var(--font-display, 'Space Grotesk', sans-serif);
+      font-size: 5.5rem;
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -0.04em;
+      background: linear-gradient(135deg, #D97706 0%, #F59E0B 35%, #FCD34D 60%, #F59E0B 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-fullname {
       display: flex;
       align-items: center;
-      gap: 0.75rem;
+      gap: 0.65rem;
       flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .hero-name-fr {
+      font-family: var(--font-display, 'Space Grotesk', sans-serif);
+      font-size: 1.2rem;
+      font-weight: 500;
+      color: var(--neu-text-heading, #F1F5F9);
+      letter-spacing: -0.01em;
+    }
+
+    .hero-name-sep {
+      color: rgba(245, 158, 11, 0.35);
+      font-size: 1.1rem;
+    }
+
+    .hero-name-ar {
+      font-size: 1.15rem;
+      font-weight: 400;
+      color: var(--neu-text-muted, #64748B);
+      direction: rtl;
+    }
+
+    /* ─── Language chips ─── */
+    .hero-langs {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-bottom: 1.75rem;
+    }
+
+    .lang-chip {
+      padding: 0.25rem 0.8rem;
+      border-radius: var(--neu-radius-pill);
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--neu-text-muted, #64748B);
+      font-size: 0.75rem;
+      font-weight: 500;
+      transition: border-color 0.2s ease, color 0.2s ease;
+    }
+
+    .lang-chip:hover {
+      border-color: rgba(245, 158, 11, 0.3);
+      color: var(--neu-accent, #F59E0B);
+    }
+
+    .lang-chip-more {
+      color: rgba(100, 116, 139, 0.6);
+      border-style: dashed;
+    }
+
+    /* ─── Description ─── */
+    .hero-desc {
+      position: relative;
+      z-index: 1;
+      font-size: 1rem;
+      color: var(--neu-text-muted, #64748B);
+      max-width: 560px;
+      margin: 0 auto 2rem;
+      line-height: 1.75;
+    }
+
+    /* ─── CTA ─── */
+    .hero-cta {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.75rem;
       justify-content: center;
     }
 
     .guide-btn {
       display: inline-flex;
       align-items: center;
-      gap: 0.5rem;
-    }
-
-    .guide-btn svg {
-      width: 18px;
-      height: 18px;
-      flex-shrink: 0;
+      gap: 0.45rem;
     }
 
     .trial-offer-badge {
-      display: flex;
+      display: inline-flex;
       align-items: center;
-      gap: 0.6rem;
-      background: var(--neu-bg, #E0E5EC);
-      box-shadow: var(--neu-inset, inset 6px 6px 10px rgba(163,177,198,0.6), inset -6px -6px 10px rgba(255,255,255,0.5));
-      border-radius: var(--neu-radius-button, 16px);
-      padding: 0.75rem 1.25rem;
-      font-size: 0.95rem;
-      color: var(--neu-accent-secondary, #38B2AC);
-      border: none;
+      gap: 0.55rem;
+      padding: 0.5rem 1rem;
+      border-radius: var(--neu-radius-pill);
+      background: rgba(245, 158, 11, 0.07);
+      border: 1px solid rgba(245, 158, 11, 0.2);
+      color: var(--neu-text-muted, #64748B);
+      font-size: 0.82rem;
     }
-    .trial-offer-svg { width: 20px; height: 20px; flex-shrink: 0; }
-    .trial-offer-text strong { display: block; margin-bottom: 0.1rem; color: var(--neu-text-heading, #2D3748); }
+    .trial-offer-svg { width: 16px; height: 16px; flex-shrink: 0; color: var(--neu-accent, #F59E0B); }
+    .trial-offer-badge strong { color: var(--neu-accent, #F59E0B); font-weight: 600; }
 
     /* ═══ CTA Buttons ═══ */
     .cta-button {
-      padding: 0.9rem 2rem;
-      font-size: 1rem;
+      padding: 0.75rem 1.75rem;
+      font-size: 0.95rem;
       border: none;
-      border-radius: var(--neu-radius-button, 16px);
+      border-radius: var(--neu-radius-button, 8px);
       cursor: pointer;
       text-decoration: none;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      font-family: var(--font-display, 'Plus Jakarta Sans', sans-serif);
+      gap: 0.5rem;
+      font-family: var(--font-display, 'Space Grotesk', sans-serif);
       font-weight: 600;
-      transition: all var(--neu-transition, 0.3s ease-out);
+      transition: all var(--neu-transition, 0.2s ease);
       min-height: var(--touch-target, 44px);
     }
 
     .cta-button.primary {
-      background: var(--neu-accent, #6C63FF);
-      color: white;
-      box-shadow: var(--neu-extruded-sm, 5px 5px 10px rgba(163,177,198,0.6), -5px -5px 10px rgba(255,255,255,0.5));
+      background: var(--neu-accent, #F59E0B);
+      color: #070B14;
+      font-weight: 700;
+      box-shadow: 0 0 20px rgba(245, 158, 11, 0.35);
     }
 
     .cta-button.primary:hover {
       transform: translateY(-2px);
-      box-shadow: var(--neu-extruded-hover, 12px 12px 20px rgba(163,177,198,0.7), -12px -12px 20px rgba(255,255,255,0.6));
-      background: var(--neu-accent-hover, #5A52D5);
+      background: var(--neu-accent-hover, #D97706);
+      box-shadow: 0 0 32px rgba(245, 158, 11, 0.5);
     }
 
     .cta-button.primary:active {
       transform: translateY(0.5px);
-      box-shadow: var(--neu-inset-sm);
+      box-shadow: none;
     }
 
     .cta-button.ghost {
-      background: var(--neu-bg, #E0E5EC);
-      color: var(--neu-accent-secondary, #2DD4BF);
-      box-shadow: var(--neu-extruded-sm, 5px 5px 10px rgba(163,177,198,0.6), -5px -5px 10px rgba(255,255,255,0.5));
+      background: transparent;
+      color: var(--neu-text-primary, #CBD5E1);
+      border: 1px solid rgba(255, 255, 255, 0.14);
     }
 
     .cta-button.ghost:hover {
       transform: translateY(-1px);
-      box-shadow: var(--neu-extruded-hover);
+      border-color: rgba(245, 158, 11, 0.4);
+      color: var(--neu-accent, #F59E0B);
     }
 
     .cta-button.ghost:active {
-      box-shadow: var(--neu-inset-sm);
+      transform: translateY(0.5px);
     }
 
     .cta-button.secondary {
-      background: var(--neu-accent, #6C63FF);
-      color: white;
-      font-weight: 700;
-      box-shadow: var(--neu-extruded-sm);
+      background: rgba(245, 158, 11, 0.12);
+      color: var(--neu-accent, #F59E0B);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      font-weight: 600;
     }
 
     .cta-button.secondary:hover {
       transform: translateY(-2px);
-      box-shadow: var(--neu-extruded-hover);
-      background: var(--neu-accent-hover, #5A52D5);
+      background: rgba(245, 158, 11, 0.2);
+      border-color: rgba(245, 158, 11, 0.5);
+      box-shadow: 0 0 16px rgba(245, 158, 11, 0.15);
     }
 
     /* ═══ Features grid ═══ */
@@ -777,10 +887,12 @@ import { environment } from '../../../environments/environment';
     @media (max-width: 768px) {
       .home-container { padding: 1rem; overflow-x: hidden; }
       .hero { padding: 2.5rem 1rem 2rem; }
-      .hero-glow { width: 250px; height: 250px; }
-      .hero h1 { font-size: 2.2rem; }
-      .hero-subtitle { font-size: 1.05rem; }
-      .hero-desc { font-size: 1.0rem; }
+      .hero-glow { width: 280px; height: 280px; }
+      .hero-acronym { font-size: 3.8rem; }
+      .hero-name-fr { font-size: 1rem; }
+      .hero-name-ar { font-size: 0.95rem; }
+      .hero-fullname { gap: 0.4rem; }
+      .hero-desc { font-size: 0.95rem; }
 
       .feature-card { width: 100%; min-width: unset; }
       .request-card { min-width: unset; max-width: 100%; width: 100%; }
@@ -798,7 +910,7 @@ import { environment } from '../../../environments/environment';
     @media (min-width: 769px) and (max-width: 1024px) {
       .api-features-grid { grid-template-columns: repeat(2, 1fr); }
       .examples-grid { grid-template-columns: repeat(2, 1fr); }
-      .hero h1 { font-size: 2.8rem; }
+      .hero-acronym { font-size: 4.5rem; }
     }
   `]
 })
