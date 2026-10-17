@@ -76,14 +76,17 @@ Keycloak est partagé entre staging et prod. Ne jamais modifier la configuration
 ```bash
 # Développement (Staging) — Le développement en local (localhost) est ABANDONNÉ.
 # Le staging sur le VPS sert d'environnement de dev et de test principal.
-docker compose --env-file .env.staging -f docker-compose-staging.yml up -d --build
+# Chemin sur le VPS : ~/tarif/tarif-prod
+./scripts/deploy.sh staging                    # tous les services (--build)
+./scripts/deploy.sh staging backend-staging    # un seul service
+./scripts/deploy.sh staging --dry-run          # simulation
 
-# Production Invité (sur VPS)
-docker compose -f docker-compose-prod.yml up -d --build
-
-# Rebuild d'un seul service (exemple Staging)
-docker compose --env-file .env.staging -f docker-compose-staging.yml up -d --build backend-staging
-docker compose --env-file .env.staging -f docker-compose-staging.yml up -d --build search-service-staging
+# Production Invité (sur VPS) : confirmation + sauvegarde des BDD avant déploiement
+./scripts/deploy.sh prod
+./scripts/deploy.sh prod backend               # un seul service
+# Équivalents manuels :
+#   docker compose -f docker-compose-prod.yml up -d --build
+#   docker compose --env-file .env.staging -f docker-compose-staging.yml up -d --build
 
 # Logs (exemple Staging)
 docker compose --env-file .env.staging -f docker-compose-staging.yml logs -f backend-staging
