@@ -34,11 +34,16 @@ tarif-cloak-prod/
 | | **Staging** | **Invité (Beta)** |
 | --- | --- | --- |
 | Compose | `docker-compose-staging.yml` | `docker-compose-prod.yml` |
+| Env file | `.env.staging` (gabarit : `.env.staging.example`) | `.env` |
 | Domaine | `tarif.enclume-numerique.com` | `hscode.enclume-numerique.com` |
-| BDD | Isolée (`staging-app-data`) | Prod |
+| BDD | **Isolée** (`staging-app-db`, volume `staging-app-data`) | Prod (`hscode-app-db`) |
 | Keycloak | **Partagé** (Keycloak prod) | Keycloak prod |
+| Emails | Capturés par Mailpit (UI `127.0.0.1:8025`), aucun envoi réel | SMTP réel |
+| Paiement | API de test Chargily uniquement | — (non utilisé en beta) |
 | `BETA_MODE` | false | true |
 | Usage | Développement continu | Beta-testeurs (Mars–Mai 2026) |
+
+**Le staging ne doit JAMAIS se connecter à `hscode-app-db`** (l'ancienne configuration à BDD partagée a été abandonnée : les migrations Flyway et les tests touchaient les données des beta-testeurs).
 
 **Règle absolue :** le staging est réservé au développement. Les beta-testeurs n'y ont pas accès et n'en connaissent pas l'URL.
 
@@ -71,18 +76,18 @@ Keycloak est partagé entre staging et prod. Ne jamais modifier la configuration
 ```bash
 # Développement (Staging) — Le développement en local (localhost) est ABANDONNÉ.
 # Le staging sur le VPS sert d'environnement de dev et de test principal.
-docker compose -f docker-compose-staging.yml up -d --build
+docker compose --env-file .env.staging -f docker-compose-staging.yml up -d --build
 
 # Production Invité (sur VPS)
 docker compose -f docker-compose-prod.yml up -d --build
 
 # Rebuild d'un seul service (exemple Staging)
-docker compose -f docker-compose-staging.yml up -d --build backend
-docker compose -f docker-compose-staging.yml up -d --build search-service
+docker compose --env-file .env.staging -f docker-compose-staging.yml up -d --build backend-staging
+docker compose --env-file .env.staging -f docker-compose-staging.yml up -d --build search-service-staging
 
 # Logs (exemple Staging)
-docker compose -f docker-compose-staging.yml logs -f backend
-docker compose -f docker-compose-staging.yml logs -f search-service
+docker compose --env-file .env.staging -f docker-compose-staging.yml logs -f backend-staging
+docker compose --env-file .env.staging -f docker-compose-staging.yml logs -f search-service-staging
 
 # --- TESTS ---
 
@@ -103,10 +108,8 @@ cd frontend && npm test   # Karma + Jasmine, lance Chrome
 # Un cronjob doit exécuter ce script tous les jours à 3h du matin
 ./scripts/backup-prod-dbs.sh
 
-# Cloner la Production vers le Staging (Sync Parfait)
-cd /root/backups-hscode
-ls -t app-db*.sql.gz | head -1 | xargs zcat | docker exec -i staging-app-db sh -c 'psql -U $POSTGRES_USER -d $POSTGRES_DB'
-cd /root/tarif-cloak-prod && docker compose -f docker-compose-staging.yml restart
+# Cloner la Production vers le Staging (lecture seule côté prod, cible forcée staging-*)
+./scripts/clone-prod-to-staging.sh
 ```
 
 ### Conteneurs VPS
@@ -115,8 +118,10 @@ cd /root/tarif-cloak-prod && docker compose -f docker-compose-staging.yml restar
 |---|---|
 | `hscode-app-db` | PostgreSQL application (prod) |
 | `hscode-keycloak-db` | PostgreSQL Keycloak |
-| `staging-app-db` | PostgreSQL application (staging) |
-| `frontend`, `backend`, `search-service`, `keycloak` | Services applicatifs |
+| `staging-app-db` | PostgreSQL application (staging, isolée) |
+| `staging-mailpit` | Capture des emails du staging |
+| `frontend`, `backend`, `search-service`, `keycloak` | Services applicatifs (prod) |
+| `staging-frontend`, `staging-backend`, `staging-search-service` | Services applicatifs (staging) |
 
 ## Migrations de base de données (Flyway)
 
