@@ -38,6 +38,13 @@ if [[ "${1:-}" != "--yes" ]]; then
   [[ "$CONFIRM" == "staging" ]] || { echo "Annulé."; exit 1; }
 fi
 
+# Arrêt des services staging (connexions + migrations Flyway) pendant la restauration
+cd "$COMPOSE_DIR"
+docker compose --env-file "$ENV_FILE" -f docker-compose-staging.yml stop backend-staging search-service-staging
+
+# Repartir d'un schéma vierge : évite les conflits d'objets/contraintes avec l'ancien contenu staging
+docker exec -i "$TARGET_CONTAINER" sh -c 'psql -q -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"'
+
 # Le dump contient des 'ALTER ... OWNER TO <role prod>' : le rôle staging est différent,
 # on retire ces lignes. Les identifiants sont ceux du conteneur cible (POSTGRES_* internes).
 zcat "$LATEST" \
@@ -45,7 +52,6 @@ zcat "$LATEST" \
   | docker exec -i "$TARGET_CONTAINER" sh -c 'psql -q -v ON_ERROR_STOP=0 -U "$POSTGRES_USER" -d "$POSTGRES_DB"' \
   2>&1 | grep -vE '^(NOTICE|DETAIL|HINT)' | head -30 || true
 
-echo "Recréation des services staging pour prise en compte des données..."
-cd "$COMPOSE_DIR"
-docker compose --env-file "$ENV_FILE" -f docker-compose-staging.yml up -d --force-recreate backend-staging search-service-staging
+echo "Redémarrage des services staging..."
+docker compose --env-file "$ENV_FILE" -f docker-compose-staging.yml up -d backend-staging search-service-staging
 echo "Terminé."
