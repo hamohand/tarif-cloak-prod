@@ -94,7 +94,7 @@ x-common-rabbitmq-vars: &common-rabbitmq-vars
   RABBITMQ_HOST: "hscode-rabbitmq"
   RABBITMQ_PORT: "5672"
   RABBITMQ_USERNAME: "${RABBITMQ_USER:-admin}"
-  RABBITMQ_PASSWORD: "${RABBITMQ_PASSWORD:-admin}"
+  RABBITMQ_PASSWORD: "${RABBITMQ_PASSWORD:?RABBITMQ_PASSWORD doit être défini dans .env}"
 
 # Labels Traefik pour le search-service (priorité plus haute que backend pour /api/recherche et /api/batch-search)
 x-traefik-search-labels: &traefik-search-labels
@@ -174,7 +174,7 @@ services:
       KC_DB_PASSWORD: "${KEYCLOAK_DB_PASSWORD}"
       # Credentials Admin
       KEYCLOAK_ADMIN: "${KEYCLOAK_ADMIN_USER:-admin}"
-      KEYCLOAK_ADMIN_PASSWORD: "${KEYCLOAK_ADMIN_PASSWORD:-admin}"
+      KEYCLOAK_ADMIN_PASSWORD: "${KEYCLOAK_ADMIN_PASSWORD:?KEYCLOAK_ADMIN_PASSWORD doit être défini dans .env}"
       # Configuration Réseau pour un reverse proxy
       KC_PROXY: "edge"
       KC_HOSTNAME: "${KC_HOSTNAME:-${KEYCLOAK_DOMAIN}}"
@@ -201,14 +201,14 @@ services:
       keycloak-db:
         condition: service_healthy
     restart: unless-stopped
-    # --- ON DESACTIVE COMPLETEMENT LE HEALTHCHECK POUR LE TEST ---
-    # healthcheck:
-    #      test: [ "CMD-SHELL", "curl -f http://localhost:8080/health || exit 1" ]
-    #   test: ["CMD-SHELL", "ss -tln | grep 8080 || exit 1"]
-    #   interval: 30s
-    #   timeout: 10s
-    #   retries: 5
-    #   start_period: 120s
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - "exec 3<>/dev/tcp/localhost/8080 && echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && cat <&3 | grep -q '\"status\": \"UP\"'"
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
     networks:
       - default
       # Connecter Keycloak au réseau de Traefik
@@ -226,7 +226,7 @@ services:
       app-db:
         condition: service_healthy
       keycloak:
-        condition: service_started
+        condition: service_healthy
       rabbitmq:
         condition: service_healthy
     #    ports:
@@ -279,7 +279,7 @@ services:
       RABBITMQ_HOST: "hscode-rabbitmq"
       RABBITMQ_PORT: "5672"
       RABBITMQ_USERNAME: "${RABBITMQ_USER:-admin}"
-      RABBITMQ_PASSWORD: "${RABBITMQ_PASSWORD:-admin}"
+      RABBITMQ_PASSWORD: "${RABBITMQ_PASSWORD:?RABBITMQ_PASSWORD doit être défini dans .env}"
       # Configuration Paiement
       PAYMENT_PROVIDER: "${PAYMENT_PROVIDER:-stripe}"
       CHARGILY_SECRET_KEY: "${CHARGILY_SECRET_KEY:-}"
@@ -333,9 +333,9 @@ services:
     container_name: "${PROJECT_NAME:-app}-rabbitmq"
     environment:
       RABBITMQ_DEFAULT_USER: "${RABBITMQ_USER:-admin}"
-      RABBITMQ_DEFAULT_PASS: "${RABBITMQ_PASSWORD:-admin}"
+      RABBITMQ_DEFAULT_PASS: "${RABBITMQ_PASSWORD:?RABBITMQ_PASSWORD doit être défini dans .env}"
     ports:
-      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672" # Management UI (optionnel)
+      - "127.0.0.1:${RABBITMQ_MANAGEMENT_PORT:-15672}:15672" # Management UI (local uniquement, accès via tunnel SSH)
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
     healthcheck:
