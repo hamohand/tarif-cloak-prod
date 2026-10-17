@@ -3,11 +3,16 @@
 # Copie la dernière sauvegarde de la BDD de PRODUCTION vers la BDD de STAGING.
 # Lecture seule côté prod (on ne lit que les fichiers de sauvegarde).
 # Refuse de s'exécuter si la cible n'est pas le conteneur staging.
+#
+# Usage : ./scripts/clone-prod-to-staging.sh [--yes]
+#   --yes : ne pas demander de confirmation (usage non interactif)
 set -euo pipefail
 
+# Répertoire du projet = parent du dossier scripts/ (fonctionne quel que soit le chemin)
+COMPOSE_DIR="${COMPOSE_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 BACKUP_DIR="${BACKUP_DIR:-/root/backups-hscode}"
 TARGET_CONTAINER="${TARGET_CONTAINER:-staging-app-db}"
-COMPOSE_DIR="${COMPOSE_DIR:-/root/tarif-cloak-prod}"
+ENV_FILE="${ENV_FILE:-.env.staging}"
 
 # --- Garde-fou : ne jamais viser la prod ---
 if [[ "$TARGET_CONTAINER" != staging-* ]]; then
@@ -24,16 +29,23 @@ if [[ -z "$LATEST" ]]; then
   echo "ERREUR : aucune sauvegarde app-db-*.sql.gz dans $BACKUP_DIR" >&2
   exit 1
 fi
+gzip -t "$LATEST"
 
 echo "Source : $LATEST"
 echo "Cible  : $TARGET_CONTAINER (les données staging seront ÉCRASÉES)"
-read -r -p "Confirmer ? (tapez 'staging') : " CONFIRM
-[[ "$CONFIRM" == "staging" ]] || { echo "Annulé."; exit 1; }
+if [[ "${1:-}" != "--yes" ]]; then
+  read -r -p "Confirmer ? (tapez 'staging') : " CONFIRM
+  [[ "$CONFIRM" == "staging" ]] || { echo "Annulé."; exit 1; }
+fi
 
-# Les identifiants sont ceux du conteneur cible (variables POSTGRES_* internes)
-zcat "$LATEST" | docker exec -i "$TARGET_CONTAINER" sh -c 'psql -v ON_ERROR_STOP=0 -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
+# Le dump contient des 'ALTER ... OWNER TO <role prod>' : le rôle staging est différent,
+# on retire ces lignes. Les identifiants sont ceux du conteneur cible (POSTGRES_* internes).
+zcat "$LATEST" \
+  | sed -E '/^ALTER .* OWNER TO /d' \
+  | docker exec -i "$TARGET_CONTAINER" sh -c 'psql -q -v ON_ERROR_STOP=0 -U "$POSTGRES_USER" -d "$POSTGRES_DB"' \
+  2>&1 | grep -vE '^(NOTICE|DETAIL|HINT)' | head -30 || true
 
-echo "Redémarrage de la stack staging..."
+echo "Recréation des services staging pour prise en compte des données..."
 cd "$COMPOSE_DIR"
-docker compose --env-file .env.staging -f docker-compose-staging.yml restart backend-staging search-service-staging
+docker compose --env-file "$ENV_FILE" -f docker-compose-staging.yml up -d --force-recreate backend-staging search-service-staging
 echo "Terminé."
