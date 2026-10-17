@@ -1,0 +1,123 @@
+name: CI
+
+# Vérifications automatiques à chaque push (toutes branches) et à la demande.
+# Ne déploie rien : la CI valide, le déploiement reste manuel sur le VPS.
+on:
+  push:
+    branches: [ "**" ]
+  workflow_dispatch:
+
+# Annule l'exécution précédente d'une même branche si un nouveau push arrive
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+
+  # ---------------------------------------------------------------
+  # Détection de secrets (mots de passe, clés API) dans les commits poussés
+  # ---------------------------------------------------------------
+  secrets-scan:
+    name: Scan des secrets (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ---------------------------------------------------------------
+  # Syntaxe des fichiers docker-compose (valeurs factices, rien n'est démarré)
+  # ---------------------------------------------------------------
+  compose-validate:
+    name: Validation docker-compose
+    runs-on: ubuntu-latest
+    env:
+      # Variables obligatoires (syntaxe ":?") avec des valeurs factices
+      RABBITMQ_PASSWORD: ci-dummy
+      KEYCLOAK_ADMIN_PASSWORD: ci-dummy
+      STAGING_POSTGRES_USER: ci-dummy
+      STAGING_POSTGRES_PASSWORD: ci-dummy
+      STAGING_DOMAIN: staging.example.com
+      FRONTEND_DOMAIN: app.example.com
+      WWW_FRONTEND_DOMAIN: www.app.example.com
+      KEYCLOAK_DOMAIN: auth.example.com
+    steps:
+      - uses: actions/checkout@v4
+      - name: docker-compose-prod.yml
+        run: docker compose -f docker-compose-prod.yml config -q
+      - name: docker-compose-staging.yml
+        run: docker compose -f docker-compose-staging.yml config -q
+
+  # ---------------------------------------------------------------
+  # Backend Spring Boot (Java 21) — tests unitaires + intégration (Testcontainers)
+  # ---------------------------------------------------------------
+  backend:
+    name: Backend (mvn test)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - run: mvn -B -ntp test
+
+  # ---------------------------------------------------------------
+  # Search-service Spring Boot (Java 21)
+  # ---------------------------------------------------------------
+  search-service:
+    name: Search-service (mvn test)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: search-service
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - run: mvn -B -ntp test
+
+  # ---------------------------------------------------------------
+  # Frontend Angular 20 — build de production (+ tests Karma non bloquants)
+  # ---------------------------------------------------------------
+  frontend:
+    name: Frontend (build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    env:
+      # Variables lues par generate-env.js (valeurs factices : seul le build est vérifié)
+      KEYCLOAK_EXTERNAL_URL: https://auth.example.com
+      KEYCLOAK_REALM: hscode-realm
+      KEYCLOAK_FRONTEND_CLIENT: frontend-client
+      API_URL: /api
+      MARKET_VERSION: DZ
+      BETA_MODE: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      # Tests Karma : non bloquants tant qu'ils n'ont pas été validés en CI.
+      # Retirer "continue-on-error" une fois la première exécution verte.
+      - name: Tests (Karma, ChromeHeadless)
+        continue-on-error: true
+        run: npx ng test --watch=false --browsers=ChromeHeadless
