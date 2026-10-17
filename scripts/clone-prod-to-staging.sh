@@ -43,7 +43,7 @@ cd "$COMPOSE_DIR"
 docker compose --env-file "$ENV_FILE" -f docker-compose-staging.yml stop backend-staging search-service-staging
 
 # Repartir d'un schéma vierge : évite les conflits d'objets/contraintes avec l'ancien contenu staging
-docker exec -i "$TARGET_CONTAINER" sh -c 'psql -q -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"'
+docker exec -i "$TARGET_CONTAINER" sh -c 'psql -q -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"' </dev/null
 
 # Le dump contient des 'ALTER ... OWNER TO <role prod>' : le rôle staging est différent,
 # on retire ces lignes. Les identifiants sont ceux du conteneur cible (POSTGRES_* internes).
