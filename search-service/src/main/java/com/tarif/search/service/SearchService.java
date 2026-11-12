@@ -131,6 +131,8 @@ public class SearchService {
             positions = positionsLevel2;
         }
 
+        positions = expandPosition4CodesToPosition6(positions);
+
         enrichWithDescriptions(positions, SearchLevel.POSITIONS6);
         reponseListLevel.addAll(positions);
         List<Position> positionsLevel3 = new ArrayList<>(reponseListLevel);
@@ -243,6 +245,37 @@ public class SearchService {
         return hadExpansion ? expanded : positions;
     }
 
+    /**
+     * Si l'IA (ou le fallback Level 2) retourne un code à 4 chiffres au Level 3,
+     * on le remplace par la ou les positions à 6 chiffres correspondantes (ex: 1206 -> 120600).
+     */
+    private List<Position> expandPosition4CodesToPosition6(List<Position> positions) {
+        List<Position> expanded = new ArrayList<>();
+        boolean hadExpansion = false;
+
+        for (Position p : positions) {
+            String code = p.getCode() != null ? p.getCode().trim().replaceAll("\\s", "") : "";
+            if (code.length() == 4) {
+                List<Position> pos6List = position6DzService.getPosition6DzsByPrefix(code + "%").stream()
+                        .filter(pos -> pos.getCode() != null && pos.getCode().length() == 6)
+                        .map(pos -> new Position(pos.getCode(), pos.getDescription(), p.getJustification()))
+                        .toList();
+                if (!pos6List.isEmpty()) {
+                    log.info("[DIAG] Level 3 - Code position4 '{}' expandé en {} positions6", code, pos6List.size());
+                    expanded.addAll(pos6List);
+                    hadExpansion = true;
+                } else {
+                    expanded.add(new Position(code + "00", p.getDescription(), p.getJustification()));
+                    hadExpansion = true;
+                }
+            } else {
+                expanded.add(p);
+            }
+        }
+
+        return hadExpansion ? expanded : positions;
+    }
+
 
     private List<Position> ragSections() {
         List<Section> sections = sectionService.getAllSections();
@@ -298,22 +331,34 @@ public class SearchService {
     }
 
     private List<Position> ragPositions6(List<Position> positions4Selectionnees) {
-        return positions4Selectionnees.stream()
-                .flatMap(p -> {
-                    String prefix = p.getCode() + "%";
-                    return position6DzService.getPosition6DzsByPrefix(prefix).stream();
-                })
-                .map(pos -> new Position(pos.getCode(), pos.getDescription()))
-                .collect(Collectors.toList());
+        List<Position> rag = new ArrayList<>();
+        for (Position p : positions4Selectionnees) {
+            if (p.getDescription() != null && !p.getDescription().isBlank()) {
+                rag.add(new Position(null, "Position " + p.getCode() + " - " + p.getDescription()));
+            }
+            String prefix = p.getCode() + "%";
+            position6DzService.getPosition6DzsByPrefix(prefix).stream()
+                    .filter(pos -> pos.getCode() != null && pos.getCode().length() == 6)
+                    .map(pos -> new Position(pos.getCode(), pos.getDescription()))
+                    .forEach(rag::add);
+        }
+        return rag;
     }
 
     private List<Position> ragPositions10(List<Position> positions6Selectionnees) {
-        return positions6Selectionnees.stream()
-                .flatMap(p -> {
-                    String prefix = p.getCode() + "%";
-                    return position10DzService.getPosition10DzsWithContextByPrefix(prefix).stream();
-                })
-                .map(pos -> new Position(pos.getCode(), pos.getDescription()))
-                .collect(Collectors.toList());
+        List<Position> rag = new ArrayList<>();
+        for (Position p : positions6Selectionnees) {
+            String prefix = p.getCode() + "%";
+            var p10List = position10DzService.getPosition10DzsWithContextByPrefix(prefix);
+            if (!p10List.isEmpty()) {
+                if (p.getDescription() != null && !p.getDescription().isBlank()) {
+                    rag.add(new Position(null, "Sous-position " + p.getCode() + " - " + p.getDescription()));
+                }
+                p10List.stream()
+                        .map(pos -> new Position(pos.getCode(), pos.getDescription()))
+                        .forEach(rag::add);
+            }
+        }
+        return rag;
     }
 }

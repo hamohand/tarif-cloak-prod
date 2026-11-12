@@ -109,6 +109,7 @@ public class DecodeController {
         if (len == 4) {
             List<DecodeResult.CodeItem> positions6 = position6DzRepository.findAllByPrefix(pos4Code + "%")
                     .stream()
+                    .filter(p6 -> p6.getCode() != null && p6.getCode().length() == 6)
                     .map(p6 -> new DecodeResult.CodeItem(p6.getCode(), p6.getDescription()))
                     .collect(Collectors.toList());
 
@@ -125,8 +126,14 @@ public class DecodeController {
         // --- Niveau POSITION6 (6 chiffres) ---
         String pos6DbCode = normalized.substring(0, 6);
         Position6Dz position6 = position6DzRepository.findByCode(pos6DbCode)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "Code HS introuvable : " + pos6DbCode));
+                .or(() -> pos6DbCode.endsWith("00") ? position6DzRepository.findByCode(pos4Code) : java.util.Optional.empty())
+                .orElseGet(() -> {
+                    if (pos6DbCode.endsWith("00")) {
+                        return new Position6Dz(null, pos6DbCode, position4.getDescription());
+                    }
+                    throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                            "Code HS introuvable : " + pos6DbCode);
+                });
 
         return ResponseEntity.ok(DecodeResult.builder()
                 .codeRecherche(code)
@@ -134,7 +141,7 @@ public class DecodeController {
                 .section(sectionItem)
                 .chapitre(chapitreItem)
                 .position4(position4Item)
-                .positions6(Collections.singletonList(new DecodeResult.CodeItem(position6.getCode(), position6.getDescription())))
+                .positions6(Collections.singletonList(new DecodeResult.CodeItem(pos6DbCode, position6.getDescription())))
                 .build());
     }
 
