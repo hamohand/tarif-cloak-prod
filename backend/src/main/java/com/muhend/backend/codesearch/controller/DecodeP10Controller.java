@@ -89,17 +89,46 @@ public class DecodeP10Controller {
                         "Position4 introuvable pour : " + pos4Code));
         DecodeResult.CodeItem position4Item = new DecodeResult.CodeItem(position4.getCode(), position4.getDescription());
 
-        // Niveau POSITION4 (4 chiffres)
+        // Niveau POSITION4 (4 chiffres) — tous les codes HS6 et tous les P10 de la position
         if (len == 4) {
-            List<DecodeResult.CodeItem> positions6 = position6DzRepository.findAllByPrefix(pos4Code + "%")
-                    .stream()
-                    .filter(p -> p.getCode() != null && p.getCode().length() == 6)
+            List<DecodeResult.CodeItem> positions6 = new ArrayList<>(
+                    position6DzRepository.findAllByPrefix(pos4Code + "%")
+                            .stream()
+                            .filter(p -> p.getCode() != null && p.getCode().length() == 6)
+                            .map(p -> new DecodeResult.CodeItem(p.getCode(), p.getDescription()))
+                            .toList());
+
+            List<Position10Dz> allP10 = position10DzRepository.findAllByPrefixWithId(pos4Code + "%");
+            java.util.Set<String> knownP6 = positions6.stream()
+                    .map(DecodeResult.CodeItem::getCode)
+                    .collect(Collectors.toCollection(java.util.LinkedHashSet::new));
+            for (Position10Dz p10 : allP10) {
+                if (p10.getCode() != null && p10.getCode().length() >= 6) {
+                    String p6PrefixCode = p10.getCode().substring(0, 6);
+                    if (knownP6.add(p6PrefixCode)) {
+                        positions6.add(new DecodeResult.CodeItem(p6PrefixCode, position4.getDescription()));
+                    }
+                }
+            }
+            if (positions6.isEmpty()) {
+                positions6.add(new DecodeResult.CodeItem(pos4Code + "00", position4.getDescription()));
+            }
+
+            List<DecodeResult.CodeItem> positions10 = allP10.stream()
                     .map(p -> new DecodeResult.CodeItem(p.getCode(), p.getDescription()))
                     .collect(Collectors.toList());
+            Map<String, List<String>> titresParCode = new LinkedHashMap<>();
+            for (DecodeResult.CodeItem p6Item : positions6) {
+                titresParCode.putAll(buildTitresParCode(p6Item.getCode() + "%"));
+            }
+
             return ResponseEntity.ok(DecodeResult.builder()
                     .codeRecherche(code).niveau("POSITION4")
                     .section(sectionItem).chapitre(chapitreItem).position4(position4Item)
-                    .positions6(positions6).build());
+                    .positions6(positions6)
+                    .positions10(positions10)
+                    .titresParPosition10(titresParCode)
+                    .build());
         }
 
         String pos6Code = normalized.substring(0, 6);
@@ -171,18 +200,24 @@ public class DecodeP10Controller {
             if (row.getCode() == null || row.getCode().isEmpty()) {
                 if (!pastFirst) continue; // titres avant le 1er code déjà gérés
                 int level = countDashes(row.getDescription());
-                if (level <= 1) {
-                    titleStack.clear(); // STOP : frontière de section, réinitialiser la pile
+                if (level == 0) continue; // ignorer les artefacts sans tiret (ex: sauts de page PDF)
+                if (level == 1) {
+                    titleStack.clear(); // STOP : frontière de sous-position à 1 tiret, réinitialiser la pile
                     continue;
                 }
-                while (titleStack.size() >= level) {
+                while (!titleStack.isEmpty() && countDashes(titleStack.get(titleStack.size() - 1)) >= level) {
                     titleStack.remove(titleStack.size() - 1);
                 }
                 titleStack.add(row.getDescription());
             } else {
+                if (row.getCode().length() != 10) continue;
                 if (!pastFirst) {
                     pastFirst = true; // 1er code déjà traité en étape 1
                     continue;
+                }
+                int codeDashes = countDashes(row.getDescription());
+                while (!titleStack.isEmpty() && countDashes(titleStack.get(titleStack.size() - 1)) >= codeDashes) {
+                    titleStack.remove(titleStack.size() - 1);
                 }
                 result.put(row.getCode(), new ArrayList<>(titleStack));
             }
@@ -196,7 +231,7 @@ public class DecodeP10Controller {
      * cherche récursivement les titres avec de moins en moins de tirets
      * jusqu'à n_tirets = 1.
      *
-     * @return liste de titres du plus général (1 tiret) au plus spécifique
+     * @return liste de titres du plus général (> 1 tiret) au plus spécifique
      */
     private List<String> findTitres(long startId, int nTirets) {
         List<String> titres = new ArrayList<>();
@@ -209,10 +244,11 @@ public class DecodeP10Controller {
             Object[] row = rows.get(0);
             long foundId = ((Number) row[0]).longValue();
             String desc  = (String) row[1];
-            if (countDashes(desc) <= 1) break; // STOP : titre à 1 tiret = frontière de section
+            int foundDashes = countDashes(desc);
+            if (foundDashes <= 1) break; // STOP : titre à 1 tiret = frontière de sous-position SH6
             titres.add(0, desc);
             currentId = foundId;
-            nTirets--;
+            nTirets = foundDashes;
         }
 
         return titres;

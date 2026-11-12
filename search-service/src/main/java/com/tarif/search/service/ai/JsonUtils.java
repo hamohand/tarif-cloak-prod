@@ -27,24 +27,32 @@ public class JsonUtils {
             return objectMapper.readValue(jsonPourListe, new TypeReference<List<Position>>() {});
         }
 
-        // Cas 2 : objet contenant un tableau (ex: {"codes": [...]} ou {"results": [...]})
-        // → fréquent quand response_format=json_object est activé
+        // Cas 2 : objet contenant un tableau (ex: {"items": [...]}, {"codes": [...]}, {"results": [...]})
         if (jsonPourListe.startsWith("{")) {
             var tree = objectMapper.readTree(jsonPourListe);
-            // Chercher la première valeur qui est un tableau
+            // Chercher en priorité "items", puis toute valeur qui est un tableau
+            if (tree.has("items") && tree.get("items").isArray()) {
+                return objectMapper.convertValue(
+                        tree.get("items"),
+                        new TypeReference<List<Position>>() {}
+                );
+            }
             var fields = tree.fields();
             while (fields.hasNext()) {
                 var field = fields.next();
                 if (field.getValue().isArray()) {
-                    return objectMapper.readValue(
-                            field.getValue().toString(),
+                    return objectMapper.convertValue(
+                            field.getValue(),
                             new TypeReference<List<Position>>() {}
                     );
                 }
             }
-            // Aucun tableau trouvé → traiter l'objet racine comme un seul élément
-            Position single = objectMapper.readValue(jsonPourListe, Position.class);
-            return List.of(single);
+            // Aucun tableau trouvé → traiter l'objet racine comme un seul élément uniquement s'il porte un champ "code"
+            if (tree.has("code") && !tree.path("code").asText("").isBlank()) {
+                Position single = objectMapper.treeToValue(tree, Position.class);
+                return List.of(single);
+            }
+            return java.util.Collections.emptyList();
         }
 
         throw new RuntimeException("Format JSON inattendu : " + jsonPourListe.substring(0, Math.min(100, jsonPourListe.length())));

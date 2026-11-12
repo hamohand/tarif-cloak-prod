@@ -25,6 +25,7 @@ interface GroupedP6 {
 interface GroupedP4 {
   code: string;
   description: string;
+  justification: string | null;
   codes6: GroupedP6[];
 }
 
@@ -76,6 +77,9 @@ interface GroupedP4 {
                 <span class="level-code">{{ g4.code }}</span>
                 <span class="level-desc">{{ g4.description }}</span>
               </div>
+              @if (g4.justification) {
+                <div class="position-justif">{{ g4.justification }}</div>
+              }
 
               <!-- Pour chaque code6 sous ce code4 -->
               @for (p6 of g4.codes6; track p6.code) {
@@ -85,14 +89,14 @@ interface GroupedP4 {
                     <tr>
                       <th>Code</th>
                       <th>Description</th>
-                      @if (endpoint === 'positions6') { <th>Justification</th> }
+                      @if (endpoint === 'positions6' || p6.justification) { <th>Justification</th> }
                     </tr>
                   </thead>
                   <tbody>
                     <tr>
                       <td class="code-cell">{{ p6.code }}</td>
                       <td>{{ p6.description }}</td>
-                      @if (endpoint === 'positions6' && p6.justification) {
+                      @if (endpoint === 'positions6' || p6.justification) {
                         <td class="justif">{{ p6.justification }}</td>
                       }
                     </tr>
@@ -107,14 +111,14 @@ interface GroupedP4 {
                       <tr>
                         <th>Code P10</th>
                         <th>Description</th>
-                        <th>Justification</th>
+                        @if (hasP10Justification(p6)) { <th>Justification</th> }
                       </tr>
                     </thead>
                     <tbody>
                       @for (p10 of p6.codes10; track p10.code) {
                         @if (p10.titres && p10.titres.length > 0) {
                           <tr class="titre-row">
-                            <td colspan="3" class="titres-cell">
+                            <td [attr.colspan]="hasP10Justification(p6) ? 3 : 2" class="titres-cell">
                               @for (titre of p10.titres; track titre) {
                                 <div class="titre-p10">{{ titre }}</div>
                               }
@@ -124,7 +128,9 @@ interface GroupedP4 {
                         <tr [class.highlighted]="p10.justification">
                           <td class="code-cell p10">{{ p10.code }}</td>
                           <td>{{ p10.description }}</td>
-                          <td class="justif">{{ p10.justification }}</td>
+                          @if (hasP10Justification(p6)) {
+                            <td class="justif">{{ p10.justification }}</td>
+                          }
                         </tr>
                       }
                     </tbody>
@@ -316,6 +322,13 @@ interface GroupedP4 {
       line-height: 1.4;
     }
 
+    .position-justif {
+      font-style: italic;
+      color: var(--neu-text-muted, #6B7280);
+      font-size: 0.85rem;
+      margin: -6px 0 12px 18px;
+    }
+
     h4 {
       color: var(--neu-text-heading, #2D3748);
       font-family: var(--font-display, 'Plus Jakarta Sans', sans-serif);
@@ -459,7 +472,7 @@ export class SearchComponent implements OnInit {
 
         // Filtrer les résultats sans code valide (évite les appels decode?code= vides)
         const validResults = results.filter((r: any) => {
-          const code = (r.code || '').replace(/\s/g, '');
+          const code = (r.code || '').replace(/[^0-9]/g, '');
           return code.length > 0;
         });
 
@@ -470,12 +483,16 @@ export class SearchComponent implements OnInit {
         }
 
         const decodeObservables = validResults.map((r: any) => {
-          const aiCode = (r.code || '').replace(/\s/g, '');
+          const rawDigits = (r.code || '').replace(/[^0-9]/g, '');
+          const aiCode = this.endpoint === 'positions6' && rawDigits.length > 6
+            ? rawDigits.substring(0, 6)
+            : (rawDigits.length > 6 && rawDigits.length !== 10 ? rawDigits.substring(0, 6) : rawDigits);
           const justification: string | null = r.justification ?? null;
-          // Pour positions10 : décoder le code6 parent pour avoir tous les P10 sous lui
-          const codeToDecode = this.endpoint === 'positions10' && aiCode.length >= 6
-            ? aiCode.substring(0, 6)
-            : aiCode;
+          // Décoder au niveau exact retourné (4, 6 ou 10 chiffres) :
+          // - 4 chiffres -> toute la Position (tous ses codes HS6 et tous leurs codes P10)
+          // - 6 chiffres -> toute la Sous-position HS6 (tous ses codes P10)
+          // - 10 chiffres -> uniquement le code P10 précis trouvé
+          const codeToDecode = aiCode;
 
           const decode$ = this.endpoint === 'positions10'
             ? this.searchService.decodeP10Code(codeToDecode, true)
@@ -519,6 +536,10 @@ export class SearchComponent implements OnInit {
     });
   }
 
+  hasP10Justification(p6: GroupedP6): boolean {
+    return p6.codes10.some(c => !!c.justification);
+  }
+
   /** Construit la structure groupée : P4 → P6 → P10, sans doublons. */
   private buildGrouped(items: SearchResultItem[]): GroupedP4[] {
     const mapP4 = new Map<string, GroupedP4>();
@@ -529,13 +550,23 @@ export class SearchComponent implements OnInit {
       const p4 = item.decoded.position4;
       if (!p4) continue;
 
+      const p4Clean = p4.code.replace(/[^0-9]/g, '');
       if (!mapP4.has(p4.code)) {
-        mapP4.set(p4.code, { code: p4.code, description: p4.description, codes6: [] });
+        mapP4.set(p4.code, {
+          code: p4.code,
+          description: p4.description,
+          justification: null,
+          codes6: []
+        });
       }
       const group4 = mapP4.get(p4.code)!;
+      if (this.endpoint === 'positions10' && item.aiCode === p4Clean && item.justification && !group4.justification) {
+        group4.justification = item.justification;
+      }
 
       for (const p6 of (item.decoded.positions6 || [])) {
-        let group6 = group4.codes6.find(g => g.code === p6.code);
+        const p6Clean = p6.code.replace(/[^0-9]/g, '');
+        let group6 = group4.codes6.find(g => g.code.replace(/[^0-9]/g, '') === p6Clean);
         if (!group6) {
           const newGroup6: GroupedP6 = {
             code: p6.code,
@@ -548,17 +579,26 @@ export class SearchComponent implements OnInit {
         }
 
         if (this.endpoint === 'positions6') {
-          if (!group6!.justification) group6!.justification = item.justification;
+          if (!group6.justification) group6.justification = item.justification;
         } else {
-          for (const p10 of (item.decoded.positions10 || [])) {
-            const p10Code = p10.code.replace(/\s/g, '');
-            const existing = group6!.codes10.find(g => g.code === p10.code);
+          if (item.aiCode === p6Clean && item.justification && !group6.justification) {
+            group6.justification = item.justification;
+          }
+
+          const p10ForGroup6 = (item.decoded.positions10 || []).filter(
+            p10 => p10.code.replace(/[^0-9]/g, '').startsWith(p6Clean)
+          );
+
+          for (const p10 of p10ForGroup6) {
+            const p10Code = p10.code.replace(/[^0-9]/g, '');
+            const existing = group6.codes10.find(g => g.code.replace(/[^0-9]/g, '') === p10Code);
             if (!existing) {
-              const allTitres = item.decoded.titresParPosition10?.[p10.code] ?? [];
-              const prevTitres = prevTitlesMap.get(group6!.code) ?? [];
+              const allTitres = item.decoded.titresParPosition10?.[p10.code]
+                ?? (item.decoded.niveau === 'POSITION10' ? (item.decoded.titresPosition10 ?? []) : []);
+              const prevTitres = prevTitlesMap.get(p6Clean) ?? [];
               const delta = this.titreDelta(allTitres, prevTitres);
-              prevTitlesMap.set(group6!.code, allTitres);
-              group6!.codes10.push({
+              prevTitlesMap.set(p6Clean, allTitres);
+              group6.codes10.push({
                 code: p10.code,
                 description: p10.description,
                 justification: p10Code === item.aiCode ? item.justification : null,

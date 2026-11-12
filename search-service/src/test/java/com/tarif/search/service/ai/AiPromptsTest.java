@@ -50,11 +50,12 @@ class AiPromptsTest {
     }
 
     @Test
-    @DisplayName("Le prompt doit exiger une réponse JSON uniquement")
+    @DisplayName("Le prompt doit exiger une réponse JSON uniquement au format {\"items\": [...]}")
     void buildUserPrompt_doitDemander_reponseJsonUniquement() {
         String prompt = AiPrompts.buildUserPrompt(RAG_POMMES, "smartphone");
 
-        assertThat(prompt).containsIgnoringCase("tableau JSON");
+        assertThat(prompt).containsIgnoringCase("objet JSON");
+        assertThat(prompt).contains("\"items\"");
         assertThat(prompt).containsIgnoringCase("sans aucun texte avant ou après");
     }
 

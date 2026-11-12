@@ -53,6 +53,11 @@ public class OllamaService implements AiProvider {
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("model", model);
         requestBody.put("prompt", fullPrompt);
+        requestBody.put("format", "json");
+        requestBody.put("options", Map.of(
+                "temperature", 0.1,
+                "num_predict", AiPrompts.getMaxTokensForLevel(withJustification)
+        ));
         requestBody.put("stream", false);
 
         ObjectMapper objectMapper = new ObjectMapper();

@@ -20,14 +20,28 @@ public interface Position10DzRepository extends JpaRepository<Position10Dz, Long
     List<Position10Dz> findAllByPrefix(@Param("prefix") String prefix);
 
     /**
-     * Récupère tous les codes du préfixe ET les titres (code='') intercalés,
-     * dans l'ordre d'id, pour fournir le contexte hiérarchique à l'IA.
+     * Récupère tous les codes du préfixe ET les titres hiérarchiques (code='', commençant par '-')
+     * y compris ceux situés juste avant le premier code du préfixe, dans l'ordre d'id.
      */
     @Query(value = """
-        SELECT * FROM position10_dz
-        WHERE id >= (SELECT MIN(id) FROM position10_dz WHERE code LIKE :prefix AND code != '')
-          AND id <= (SELECT MAX(id) FROM position10_dz WHERE code LIKE :prefix AND code != '')
-        ORDER BY id ASC
+        WITH bounds AS (
+            SELECT MIN(id) AS min_id, MAX(id) AS max_id
+            FROM position10_dz
+            WHERE code LIKE :prefix AND code != ''
+        ),
+        prev_code AS (
+            SELECT COALESCE(MAX(p.id), 0) AS prev_id
+            FROM position10_dz p, bounds b
+            WHERE b.min_id IS NOT NULL
+              AND p.code != ''
+              AND p.id < b.min_id
+        )
+        SELECT p.* FROM position10_dz p, bounds b, prev_code pc
+        WHERE b.min_id IS NOT NULL
+          AND p.id > pc.prev_id
+          AND p.id <= b.max_id
+          AND (p.code != '' OR p.description LIKE '-%')
+        ORDER BY p.id ASC
         """, nativeQuery = true)
     List<Position10Dz> findAllWithContextByPrefix(@Param("prefix") String prefix);
 }

@@ -61,15 +61,15 @@ class SearchServiceTest {
     private final Section    sectionII   = new Section(1L, "II", "Produits du règne végétal", null);
     private final Chapitre   chapitre08  = new Chapitre(1L, "08", "Fruits comestibles", "II", null);
     private final Position4  pos4_0808   = new Position4(1L, "0808", "Pommes, poires et coings, frais");
-    private final Position6Dz pos6_080810 = new Position6Dz(1L, "0808 10", "Pommes");
-    private final Position10Dz pos10      = new Position10Dz(1L, "0808 10 10", "Variétés de table");
+    private final Position6Dz pos6_080810 = new Position6Dz(1L, "080810", "Pommes");
+    private final Position10Dz pos10      = new Position10Dz(1L, "0808101000", "Variétés de table");
 
-    // Réponses IA (positions sélectionnées)
+    // Réponses IA (positions sélectionnées — même avec espaces, elles sont normalisées)
     private final List<Position> ia_sections   = List.of(new Position("II", null));
     private final List<Position> ia_chapitres  = List.of(new Position("08", null));
     private final List<Position> ia_positions4 = List.of(new Position("0808", null));
     private final List<Position> ia_positions6 = List.of(new Position("0808 10", null));
-    private final List<Position> ia_positions10 = List.of(new Position("0808 10 10", null));
+    private final List<Position> ia_positions10 = List.of(new Position("0808 10 10 00", null));
 
     @BeforeEach
     void setUp() {
@@ -198,7 +198,7 @@ class SearchServiceTest {
 
             // then
             assertThat(result).isNotEmpty();
-            assertThat(result.get(0).getCode()).isEqualTo("0808 10");
+            assertThat(result.get(0).getCode()).isEqualTo("080810");
             verifyNoInteractions(position10DzService);
         }
     }
@@ -212,8 +212,8 @@ class SearchServiceTest {
     class FallbackTest {
 
         @Test
-        @DisplayName("Level 3 vide → le Level 2 (Position4) est retourné en fallback")
-        void search_positions6Vide_doitRetournerPositions4EnFallback() {
+        @DisplayName("Level 3 vide → le Level 2 (Position4) est expandé en Position6 correspondante")
+        void search_positions6Vide_doitRetournerPositions4ExpandeesEnFallback() {
             // given
             configurerJusquauNiveau2();
             when(position6DzService.getPosition6DzsByPrefix("0808%")).thenReturn(List.of(pos6_080810));
@@ -226,9 +226,9 @@ class SearchServiceTest {
             // when
             List<Position> result = searchService.search(TERME, SearchService.SearchLevel.POSITIONS10);
 
-            // then — fallback sur Level 2 : le code "0808" doit apparaître
+            // then — fallback Level 2 expandé en 6 chiffres : "080810"
             assertThat(result).isNotEmpty();
-            assertThat(result).anyMatch(p -> "0808".equals(p.getCode()));
+            assertThat(result).anyMatch(p -> "080810".equals(p.getCode()));
         }
 
         @Test
@@ -236,7 +236,7 @@ class SearchServiceTest {
         void search_positions10Vide_doitRetournerPositions6EnFallback() {
             // given
             configurerJusquauNiveau3();
-            when(position10DzService.getPosition10DzsWithContextByPrefix("0808 10%"))
+            when(position10DzService.getPosition10DzsWithContextByPrefix("080810%"))
                     .thenReturn(List.of(pos10)); // RAG présent
             when(aiService.promptEtReponse(eq("POSITIONS10"), any(), any(), anyBoolean()))
                     .thenReturn(Collections.emptyList()); // mais IA ne trouve rien
@@ -244,9 +244,9 @@ class SearchServiceTest {
             // when
             List<Position> result = searchService.search(TERME, SearchService.SearchLevel.POSITIONS10);
 
-            // then — fallback sur Level 3 : le code "0808 10" doit apparaître
+            // then — fallback sur Level 3 : le code normalisé "080810" doit apparaître
             assertThat(result).isNotEmpty();
-            assertThat(result).anyMatch(p -> "0808 10".equals(p.getCode()));
+            assertThat(result).anyMatch(p -> "080810".equals(p.getCode()));
         }
     }
 
@@ -372,7 +372,7 @@ class SearchServiceTest {
     class CascadeComplèteTest {
 
         @Test
-        @DisplayName("Cascade nominale → retourne le code à 10 chiffres (0808 10 10)")
+        @DisplayName("Cascade nominale → retourne le code à 10 chiffres normalisé (0808101000)")
         void search_cascadeComplete_doitRetournerPosition10() {
             // given
             configurerJusquauNiveau4();
@@ -382,7 +382,7 @@ class SearchServiceTest {
 
             // then
             assertThat(result).isNotEmpty();
-            assertThat(result.get(0).getCode()).isEqualTo("0808 10 10");
+            assertThat(result.get(0).getCode()).isEqualTo("0808101000");
         }
 
         @Test
@@ -407,7 +407,7 @@ class SearchServiceTest {
         void search_ragNiveau4Vide_doitSkipperLAppelIaPositions10() {
             // given — niveau 3 réussi mais pas de Position10 pour ce préfixe
             configurerJusquauNiveau3();
-            when(position10DzService.getPosition10DzsWithContextByPrefix("0808 10%"))
+            when(position10DzService.getPosition10DzsWithContextByPrefix("080810%"))
                     .thenReturn(Collections.emptyList());
 
             // when
@@ -415,6 +415,53 @@ class SearchServiceTest {
 
             // then — l'IA pour POSITIONS10 ne doit pas être appelée
             verify(aiService, never()).promptEtReponse(eq("POSITIONS10"), any(), any(), anyBoolean());
+        }
+
+        @Test
+        @DisplayName("Terme égal à l'intitulé d'une Position4 (ex: 1806) → retourne 1806 en P10 et les 5 codes HS6 en P6")
+        void search_intituleExactPosition4_doitRetournerBrancheComplete() {
+            when(aiPrompts.getDefTheme()).thenReturn(DefTheme.builder().withDescription(true).build());
+            String terme1806 = "Chocolat et autres préparations alimentaires contenant du cacao";
+            Section sec04 = new Section(4L, "04", "Produits des industries alimentaires", null);
+            Chapitre chap18 = new Chapitre(18L, "18", "Cacao et ses préparations", "04", null);
+            Position4 pos1806 = new Position4(1806L, "1806", "Chocolat et autres préparations alimentaires contenant du cacao:");
+
+            when(sectionService.getAllSections()).thenReturn(List.of(sec04));
+            when(sectionService.getDescription("04")).thenReturn(sec04.getDescription());
+            when(chapitreService.getChapitresBySection("04")).thenReturn(List.of(chap18));
+            when(chapitreService.getDescription("18")).thenReturn(chap18.getDescription());
+            when(position4Service.getPosition4sByPrefix("18%")).thenReturn(List.of(pos1806));
+            when(position4Service.getDescription("1806")).thenReturn(pos1806.getDescription());
+
+            when(aiService.promptEtReponse(eq("SECTIONS"), any(), any(), anyBoolean()))
+                    .thenReturn(List.of(new Position("04", null)));
+            when(aiService.promptEtReponse(eq("CHAPITRES"), any(), any(), anyBoolean()))
+                    .thenReturn(List.of(new Position("18", null)));
+            when(aiService.promptEtReponse(eq("POSITIONS4"), any(), any(), anyBoolean()))
+                    .thenReturn(List.of(new Position("1806", null)));
+
+            // 1. En mode POSITIONS10 : retourne directement "1806" sans appeler Level 3 ni Level 4
+            List<Position> resP10 = searchService.search(terme1806, SearchService.SearchLevel.POSITIONS10);
+            assertThat(resP10).extracting(Position::getCode).containsExactly("1806");
+            verify(aiService, never()).promptEtReponse(eq("POSITIONS6"), any(), any(), anyBoolean());
+            verify(aiService, never()).promptEtReponse(eq("POSITIONS10"), any(), any(), anyBoolean());
+
+            // 2. En mode POSITIONS6 : retourne les 5 sous-positions SH6 de 1806
+            List<Position6Dz> hs6List = List.of(
+                    new Position6Dz(1L, "180610", "Poudre de cacao sucrée"),
+                    new Position6Dz(2L, "180620", "Autres préparations > 2 kg"),
+                    new Position6Dz(3L, "180631", "Tablettes fourrées"),
+                    new Position6Dz(4L, "180632", "Tablettes non fourrées"),
+                    new Position6Dz(5L, "180690", "Autres")
+            );
+            when(position6DzService.getPosition6DzsByPrefix("1806%")).thenReturn(hs6List);
+            for (Position6Dz p6 : hs6List) {
+                when(position6DzService.getDescription(p6.getCode())).thenReturn(p6.getDescription());
+            }
+
+            List<Position> resP6 = searchService.search(terme1806, SearchService.SearchLevel.POSITIONS6);
+            assertThat(resP6).extracting(Position::getCode)
+                    .containsExactly("180610", "180620", "180631", "180632", "180690");
         }
     }
 
@@ -451,7 +498,7 @@ class SearchServiceTest {
     /** Configure les mocks jusqu'au Level 4 (Positions10) inclus. */
     private void configurerJusquauNiveau4() {
         configurerJusquauNiveau3();
-        when(position10DzService.getPosition10DzsWithContextByPrefix("0808 10%"))
+        when(position10DzService.getPosition10DzsWithContextByPrefix("080810%"))
                 .thenReturn(List.of(pos10));
         when(aiService.promptEtReponse(eq("POSITIONS10"), any(), any(), anyBoolean()))
                 .thenReturn(ia_positions10);

@@ -96,6 +96,7 @@ import { OAuthService } from 'angular-oauth2-oidc';
                 </div>
               }
               <h4>
+                @if (result.niveau === 'POSITION4') { Codes P10 sous cette position }
                 @if (result.niveau === 'POSITION6') { Codes P10 sous ce code HS }
                 @if (result.niveau === 'POSITION10') { Code P10 complet }
               </h4>
@@ -103,7 +104,7 @@ import { OAuthService } from 'angular-oauth2-oidc';
                 <thead><tr><th>Code P10</th><th>Description</th></tr></thead>
                 <tbody>
                   @for (item of result.positions10; track item.code; let i = $index) {
-                    @if (result.niveau === 'POSITION6') {
+                    @if (result.niveau === 'POSITION6' || result.niveau === 'POSITION4') {
                       @let delta = getTitreDelta(i);
                       @if (delta.length > 0) {
                         <tr class="titre-row">
@@ -414,13 +415,14 @@ export class DecodeP10Component implements OnInit {
     this.result = this.state.decodeP10Result;
   }
 
-  /** Retourne les titres ayant changé par rapport au code P10 précédent (pour POSITION6). */
+  /** Retourne les titres ayant changé par rapport au code P10 précédent (pour POSITION4 / POSITION6). */
   getTitreDelta(index: number): string[] {
     if (!this.result?.titresParPosition10 || !this.result.positions10) return [];
     const code = this.result.positions10[index].code;
     const current = this.result.titresParPosition10[code] ?? [];
     if (index === 0) return current;
     const prevCode = this.result.positions10[index - 1].code;
+    if (prevCode.substring(0, 6) !== code.substring(0, 6)) return current;
     const prev = this.result.titresParPosition10[prevCode] ?? [];
     let i = 0;
     while (i < Math.min(current.length, prev.length) && current[i] === prev[i]) i++;

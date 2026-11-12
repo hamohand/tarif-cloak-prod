@@ -141,4 +141,30 @@ class JsonUtilsTest {
         assertThat(positions.get(0).getCode()).isEqualTo("0808");
         assertThat(positions.get(0).getJustification()).isNull();
     }
+
+    @Test
+    @DisplayName("Objet JSON {\"items\": [...]} (format multi-modèles) est converti correctement")
+    void conversionReponseIaToList_avecObjetItems_doitParserTousLesElements() throws JsonProcessingException {
+        String json = """
+                {
+                  "items": [
+                    {"code": "180610", "justification": "Poudre de cacao sucrée", "extraField": "ignored"},
+                    {"code": "180690", "justification": "Autres préparations"}
+                  ]
+                }
+                """;
+
+        List<Position> positions = JsonUtils.conversionReponseIaToList(json);
+
+        assertThat(positions).hasSize(2);
+        assertThat(positions.get(0).getCode()).isEqualTo("180610");
+        assertThat(positions.get(1).getCode()).isEqualTo("180690");
+    }
+
+    @Test
+    @DisplayName("Objet JSON vide ou erreur IA sans champ 'code' retourne une liste vide")
+    void conversionReponseIaToList_avecObjetSansCode_retourneListeVide() throws JsonProcessingException {
+        assertThat(JsonUtils.conversionReponseIaToList("{}")).isEmpty();
+        assertThat(JsonUtils.conversionReponseIaToList("{\"error\": \"aucun résultat\"}")).isEmpty();
+    }
 }

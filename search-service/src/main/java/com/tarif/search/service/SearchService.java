@@ -112,6 +112,36 @@ public class SearchService {
             return aiPrompts.getDefTheme().isWithCascade() ? reponseList : reponseListLevel;
         }
 
+        // Correspondance directe avec l'intitulé d'une Position à 4 chiffres (indépendant du modèle IA) :
+        // Ex: "Chocolat et autres préparations alimentaires contenant du cacao" -> Position 1806 entière
+        String normQuery = normalizeForExactMatch(termeRecherche);
+        if (!normQuery.isEmpty()) {
+            List<Position> exactP4 = positionsLevel2.stream()
+                    .filter(p -> p.getDescription() != null && normalizeForExactMatch(p.getDescription()).equals(normQuery))
+                    .map(p -> new Position(
+                            p.getCode(),
+                            p.getDescription(),
+                            "Correspond à l'intitulé de la position " + p.getCode() + " : " + p.getDescription()))
+                    .toList();
+            if (!exactP4.isEmpty()) {
+                log.info("[DIAG] Correspondance directe avec l'intitulé Position4 : {}", exactP4.stream().map(Position::getCode).toList());
+                if (maxLevel == SearchLevel.POSITIONS6) {
+                    List<Position> expanded6 = new ArrayList<>(expandPosition4CodesToPosition6(exactP4));
+                    enrichWithDescriptions(expanded6, SearchLevel.POSITIONS6);
+                    if (aiPrompts.getDefTheme().isWithCascade()) {
+                        reponseList.addAll(expanded6);
+                        return reponseList;
+                    }
+                    return expanded6;
+                }
+                if (aiPrompts.getDefTheme().isWithCascade()) {
+                    reponseList.addAll(exactP4);
+                    return reponseList;
+                }
+                return new ArrayList<>(exactP4);
+            }
+        }
+
         // Level 3 : Positions 6
         reponseListLevel.clear();
         ragNiveau = ragPositions6(positions);
@@ -147,8 +177,35 @@ public class SearchService {
 
         // Level 4 : Positions 10
         reponseListLevel.clear();
-        ragNiveau = ragPositions10(positions);
-        log.debug("Level 4 (Positions10) - RAG size: {}", ragNiveau.size());
+
+        // Si le terme correspond exactement à l'intitulé d'une sous-position SH6 comportant plusieurs P10
+        // (sans correspondre à un P10 spécifique), on conserve directement le code SH6 pour restituer toute sa branche.
+        List<Position> directP6Matches = new ArrayList<>();
+        List<Position> p6ForLevel4 = new ArrayList<>();
+        for (Position p6 : positions) {
+            var p10Rows = position10DzService.getPosition10DzsWithContextByPrefix(p6.getCode() + "%");
+            long p10Count = p10Rows.stream().filter(r -> r.getCode() != null && r.getCode().length() == 10).count();
+            boolean exactP6Desc = !normQuery.isEmpty()
+                    && p6.getDescription() != null
+                    && normalizeForExactMatch(p6.getDescription()).equals(normQuery);
+            boolean exactChildP10Desc = !normQuery.isEmpty() && p10Rows.stream()
+                    .filter(r -> r.getCode() != null && r.getCode().length() == 10 && r.getDescription() != null)
+                    .anyMatch(r -> normalizeForExactMatch(r.getDescription()).equals(normQuery));
+
+            if (exactP6Desc && p10Count > 1 && !exactChildP10Desc) {
+                log.info("[DIAG] Correspondance directe avec l'intitulé Position6 '{}' ({} codes P10)", p6.getCode(), p10Count);
+                directP6Matches.add(new Position(
+                        p6.getCode(),
+                        p6.getDescription(),
+                        "Correspond à la sous-position SH " + p6.getCode() + " : " + p6.getDescription()));
+            } else {
+                p6ForLevel4.add(p6);
+            }
+        }
+
+        reponseListLevel.addAll(directP6Matches);
+        ragNiveau = ragPositions10(p6ForLevel4);
+        log.info("[DIAG] Level 4 (Positions10) - RAG size: {}", ragNiveau.size());
 
         if (!ragNiveau.isEmpty()) {
             positions = executeWithRetry(SearchLevel.POSITIONS10.toString(), termeRecherche, ragNiveau, tentativesMax, true);
@@ -156,11 +213,11 @@ public class SearchService {
             if (positions != null && !positions.isEmpty()) {
                 enrichWithDescriptions(positions, SearchLevel.POSITIONS10);
                 reponseListLevel.addAll(positions);
-
-                if (aiPrompts.getDefTheme().isWithCascade()) {
-                    reponseList.addAll(reponseListLevel);
-                }
             }
+        }
+
+        if (!reponseListLevel.isEmpty() && aiPrompts.getDefTheme().isWithCascade()) {
+            reponseList.addAll(reponseListLevel);
         }
 
         if (reponseListLevel.isEmpty()) {
@@ -179,7 +236,8 @@ public class SearchService {
             tentatives++;
             log.info("[DIAG] {} - Tentative {}/{}", niveau, tentatives, maxTentatives);
             try {
-                List<Position> result = aiService.promptEtReponse(niveau, terme, rag, withJustification);
+                List<Position> rawResult = aiService.promptEtReponse(niveau, terme, rag, withJustification);
+                List<Position> result = sanitizePositions(rawResult, niveau);
                 if (!result.isEmpty()) {
                     return result;
                 }
@@ -196,6 +254,48 @@ public class SearchService {
         return new ArrayList<>();
     }
 
+    private List<Position> sanitizePositions(List<Position> raw, String niveau) {
+        if (raw == null || raw.isEmpty()) return new ArrayList<>();
+        List<Position> cleaned = new ArrayList<>();
+        java.util.Set<String> seenCodes = new java.util.LinkedHashSet<>();
+        boolean padTwoDigits = "SECTIONS".equals(niveau) || "CHAPITRES".equals(niveau);
+
+        for (Position p : raw) {
+            if (p == null || p.getCode() == null) continue;
+            String digits = p.getCode().replaceAll("[^0-9]", "");
+            if (digits.isEmpty()) {
+                String trimmed = p.getCode().trim();
+                if ("SECTIONS".equals(niveau) && !trimmed.isEmpty() && seenCodes.add(trimmed)) {
+                    cleaned.add(new Position(trimmed, p.getDescription(), p.getJustification()));
+                }
+                continue;
+            }
+            if (padTwoDigits && digits.length() == 1) {
+                digits = "0" + digits;
+            } else if ("POSITIONS6".equals(niveau) && digits.length() > 6) {
+                digits = digits.substring(0, 6);
+            } else if ("POSITIONS10".equals(niveau) && digits.length() > 6 && digits.length() != 10) {
+                digits = (digits.length() == 8 && position10DzService.existsByCode(digits + "00"))
+                        ? digits + "00"
+                        : digits.substring(0, 6);
+            }
+            if (seenCodes.add(digits)) {
+                cleaned.add(new Position(digits, p.getDescription(), p.getJustification()));
+            }
+        }
+        return cleaned;
+    }
+
+    private String normalizeForExactMatch(String text) {
+        if (text == null) return "";
+        return java.text.Normalizer.normalize(text, java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{M}+", "")
+                .replaceAll("\\(\\d+\\)", " ")
+                .replaceAll("[^\\p{L}\\p{N}]+", " ")
+                .trim()
+                .toLowerCase(java.util.Locale.ROOT);
+    }
+
     private void enrichWithDescriptions(List<Position> positions, SearchLevel level) {
         if (!aiPrompts.getDefTheme().isWithDescription()) {
             return;
@@ -203,12 +303,17 @@ public class SearchService {
 
         for (Position position : positions) {
             String code = position.getCode();
+            if (code == null) continue;
             String description = switch (level) {
                 case SECTIONS -> sectionService.getDescription(code.trim());
                 case CHAPITRES -> chapitreService.getDescription(code);
                 case POSITIONS4 -> position4Service.getDescription(code);
                 case POSITIONS6 -> position6DzService.getDescription(code);
-                case POSITIONS10 -> position10DzService.getDescription(code);
+                case POSITIONS10 -> switch (code.length()) {
+                    case 4 -> position4Service.getDescription(code);
+                    case 6 -> position6DzService.getDescription(code);
+                    default -> position10DzService.getDescription(code);
+                };
             };
             position.setDescription(description);
         }
@@ -257,8 +362,8 @@ public class SearchService {
             String code = p.getCode() != null ? p.getCode().trim().replaceAll("\\s", "") : "";
             if (code.length() == 4) {
                 List<Position> pos6List = position6DzService.getPosition6DzsByPrefix(code + "%").stream()
-                        .filter(pos -> pos.getCode() != null && pos.getCode().length() == 6)
-                        .map(pos -> new Position(pos.getCode(), pos.getDescription(), p.getJustification()))
+                        .filter(pos -> pos.getCode() != null && pos.getCode().replaceAll("\\s", "").length() == 6)
+                        .map(pos -> new Position(pos.getCode().replaceAll("\\s", ""), pos.getDescription(), p.getJustification()))
                         .toList();
                 if (!pos6List.isEmpty()) {
                     log.info("[DIAG] Level 3 - Code position4 '{}' expandé en {} positions6", code, pos6List.size());
@@ -338,8 +443,8 @@ public class SearchService {
             }
             String prefix = p.getCode() + "%";
             position6DzService.getPosition6DzsByPrefix(prefix).stream()
-                    .filter(pos -> pos.getCode() != null && pos.getCode().length() == 6)
-                    .map(pos -> new Position(pos.getCode(), pos.getDescription()))
+                    .filter(pos -> pos.getCode() != null && pos.getCode().replaceAll("\\s", "").length() == 6)
+                    .map(pos -> new Position(pos.getCode().replaceAll("\\s", ""), pos.getDescription()))
                     .forEach(rag::add);
         }
         return rag;
@@ -347,14 +452,25 @@ public class SearchService {
 
     private List<Position> ragPositions10(List<Position> positions6Selectionnees) {
         List<Position> rag = new ArrayList<>();
+        java.util.Set<String> emittedPos4 = new java.util.HashSet<>();
         for (Position p : positions6Selectionnees) {
-            String prefix = p.getCode() + "%";
+            String code6 = p.getCode();
+            if (code6 == null || code6.length() < 4) continue;
+            String prefix = code6 + "%";
             var p10List = position10DzService.getPosition10DzsWithContextByPrefix(prefix);
             if (!p10List.isEmpty()) {
+                String pos4Code = code6.substring(0, 4);
+                if (emittedPos4.add(pos4Code)) {
+                    String pos4Desc = position4Service.getDescription(pos4Code);
+                    if (pos4Desc != null && !pos4Desc.isBlank()) {
+                        rag.add(new Position(null, "Position " + pos4Code + " - " + pos4Desc));
+                    }
+                }
                 if (p.getDescription() != null && !p.getDescription().isBlank()) {
-                    rag.add(new Position(null, "Sous-position " + p.getCode() + " - " + p.getDescription()));
+                    rag.add(new Position(null, "Sous-position SH6 " + code6 + " - " + p.getDescription()));
                 }
                 p10List.stream()
+                        .filter(pos -> pos.getCode() == null || pos.getCode().isEmpty() || pos.getCode().replaceAll("\\s", "").length() != 4)
                         .map(pos -> new Position(pos.getCode(), pos.getDescription()))
                         .forEach(rag::add);
             }

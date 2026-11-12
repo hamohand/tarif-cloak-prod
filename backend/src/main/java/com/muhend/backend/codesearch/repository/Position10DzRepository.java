@@ -14,21 +14,23 @@ public interface Position10DzRepository extends JpaRepository<Position10Dz, Long
 
     Optional<Position10Dz> findByCode(String code);
 
-    @Query("SELECT a FROM Position10Dz a WHERE a.code LIKE :prefix AND a.code != ''")
+    @Query("SELECT a FROM Position10Dz a WHERE a.code LIKE :prefix AND LENGTH(a.code) = 10")
     List<Position10Dz> findAllByPrefix(@Param("prefix") String prefix);
 
-    @Query("SELECT a FROM Position10Dz a WHERE a.code LIKE :prefix AND a.code != '' ORDER BY a.id ASC")
+    @Query("SELECT a FROM Position10Dz a WHERE a.code LIKE :prefix AND LENGTH(a.code) = 10 ORDER BY a.id ASC")
     List<Position10Dz> findAllByPrefixWithId(@Param("prefix") String prefix);
 
     /**
-     * Trouve le premier titre (code='') avant une position donnée
-     * dont le nombre de tirets est strictement inférieur à nTirets.
+     * Trouve le premier titre hiérarchique (code='', commençant par '-') avant une position donnée
+     * au sein de la même Position4, dont le nombre de tirets est strictement inférieur à nTirets.
      * Formule PostgreSQL : (char_length - char_length(ltrim)) / 2 = nb de "- " en préfixe.
      */
     @Query(value = """
         SELECT id, description FROM position10_dz
         WHERE code = ''
+          AND description LIKE '-%'
           AND id < :beforeId
+          AND id > COALESCE((SELECT MAX(id) FROM position10_dz WHERE char_length(code) = 4 AND id < :beforeId), 0)
           AND (char_length(description) - char_length(ltrim(description, '- '))) / 2 < :nTirets
         ORDER BY id DESC LIMIT 1
         """, nativeQuery = true)
@@ -37,13 +39,14 @@ public interface Position10DzRepository extends JpaRepository<Position10Dz, Long
             @Param("nTirets") int nTirets);
 
     /**
-     * Retourne tous les codes ET les titres (code='') dans l'ordre id,
-     * pour la plage couvrant le préfixe donné.
+     * Retourne tous les codes P10 (10 chiffres) ET les titres hiérarchiques (code='' et '-' en préfixe)
+     * dans l'ordre id, pour la plage couvrant le préfixe donné.
      */
     @Query(value = """
         SELECT * FROM position10_dz
-        WHERE id >= (SELECT MIN(id) FROM position10_dz WHERE code LIKE :prefix AND code != '')
-          AND id <= (SELECT MAX(id) FROM position10_dz WHERE code LIKE :prefix AND code != '')
+        WHERE id >= (SELECT MIN(id) FROM position10_dz WHERE code LIKE :prefix AND char_length(code) = 10)
+          AND id <= (SELECT MAX(id) FROM position10_dz WHERE code LIKE :prefix AND char_length(code) = 10)
+          AND (char_length(code) = 10 OR (code = '' AND description LIKE '-%'))
         ORDER BY id ASC
         """, nativeQuery = true)
     List<Position10Dz> findAllWithContextByPrefix(@Param("prefix") String prefix);
