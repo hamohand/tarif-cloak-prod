@@ -105,6 +105,18 @@ public class PricingPlanController {
         return ResponseEntity.ok(plans);
     }
 
+    @GetMapping("/all")
+    @Operation(
+        summary = "Récupérer tous les plans tarifaires sans condition",
+        description = "Retourne la liste complète de tous les plans tarifaires (actifs, inactifs, custom, tous marchés), triés par ordre d'affichage."
+    )
+    public ResponseEntity<List<PricingPlanDto>> getAllPricingPlans() {
+        log.info("📥 Requête GET /pricing-plans/all");
+        List<PricingPlanDto> plans = pricingPlanService.getAllPricingPlans();
+        log.info("📤 Réponse: {} plan(s) retourné(s) (sans condition)", plans.size());
+        return ResponseEntity.ok(plans);
+    }
+
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(
