@@ -11,11 +11,11 @@ public class AiPrompts {
 
     /**
      * Retourne le max_tokens adapté au niveau de classification.
-     * Niveaux intermédiaires (codes uniquement) → 1000.
-     * Dernier niveau (avec justification) → 4096 pour ne pas tronquer les listes multi-branches.
+     * Niveaux intermédiaires (codes uniquement) → 400.
+     * Dernier niveau (justification factuelle courte) → 1500.
      */
     public static int getMaxTokensForLevel(boolean withJustification) {
-        return withJustification ? 4096 : 1000;
+        return withJustification ? 1500 : 400;
     }
 
     public static String getSystemMessage(boolean withJustification, String niveau) {
@@ -173,14 +173,14 @@ public class AiPrompts {
     private static final String INSTRUCTION_DETAILS_JUSTIFIED = """
 
                     -- Le code douanier (à 2, 4, 6, 8 ou 10 chiffres selon la granularité appropriée).
-                    -- Une brève justification expliquant pourquoi ce code est pertinent.""";
+                    -- Une justification factuelle très concise (15 mots maximum, style direct sans répéter "Correspond au produit car...").""";
 
     private static final String FORMAT_EXAMPLE_JUSTIFIED = """
                    {
                        "items": [
                            {
                                "code": "...",
-                               "justification": "Correspond au produit car..."
+                               "justification": "Critère douanier déterminant (nature, usage ou seuil)."
                            }
                        ]
                    }
@@ -189,11 +189,11 @@ public class AiPrompts {
                        "items": [
                            {
                                "code": "...",
-                               "justification": "Correspond au produit car..."
+                               "justification": "Critère douanier déterminant (nature, usage ou seuil)."
                            },
                            {
                                "code": "...",
-                               "justification": "Correspond au produit car..."
+                               "justification": "Critère douanier déterminant (nature, usage ou seuil)."
                            }
                        ]
                    }""";

@@ -30,112 +30,108 @@ import { RegulatoryData } from '../../services/search.service';
         <button
           type="button"
           class="hs6-btn"
-          *ngIf="hs6Prefix"
+          *ngIf="hs6Prefix && showCompareAction"
           (click)="emitHs6Match()"
           title="Comparer côte à côte les positions DZ et UE partageant ce HS6">
-          ⇄ Comparer DZ ↔ UE ({{ hs6Prefix }})
+          ⇄ DZ ↔ UE ({{ hs6Prefix }})
         </button>
       </header>
 
-      <!-- Hiérarchie officielle (Position 4 + titres à tirets) -->
-      @if (position4 || (titles && titles.length > 0)) {
-        <div class="hierarchy-chain">
-          @if (position4) {
-            <div class="chain-pos4">
-              <span class="chain-tag">{{ position4.code }}</span>
-              <span class="chain-text">{{ position4.description }}</span>
-            </div>
-          }
-          @if (titles && titles.length > 0) {
-            <ul class="chain-titles">
-              @for (t of titles; track $index) {
-                <li>{{ t }}</li>
+      <!-- Contexte hiérarchique compact + Désignation officielle -->
+      <div class="card-body">
+        @if ((showPosition4 && position4) || cleanTitles.length > 0) {
+          <div class="breadcrumb-trail">
+            @if (showPosition4 && position4) {
+              <span class="crumb-pos4">
+                <span class="chain-tag">{{ position4.code }}</span>
+                <span>{{ position4.description }}</span>
+              </span>
+            }
+            @for (t of cleanTitles; track $index) {
+              @if ((showPosition4 && position4) || $index > 0) {
+                <span class="crumb-sep" aria-hidden="true">›</span>
               }
-            </ul>
-          }
-        </div>
-      }
+              <span class="crumb-item">{{ t }}</span>
+            }
+          </div>
+        }
 
-      <!-- Désignation officielle -->
-      <div class="official-desc">
-        <span class="desc-kicker">Désignation officielle</span>
-        <p>{{ description || '—' }}</p>
+        <p class="official-designation">{{ cleanDescription }}</p>
+
+        @if (justification) {
+          <p class="ai-note">
+            <span class="ai-pill">IA</span>
+            <span>{{ justification }}</span>
+          </p>
+        }
       </div>
 
-      <!-- Justification IA si présente -->
-      @if (justification) {
-        <div class="ai-justification">
-          <span class="ai-tag">Analyse IA</span>
-          <p>{{ justification }}</p>
-        </div>
-      }
-
-      <!-- Données réglementaires officielles -->
+      <!-- Ruban réglementaire compact -->
       @if (hasRegulatoryData) {
         @if (normalizedZone === 'EU') {
-          <section class="reg-grid reg-grid-eu" aria-label="Données réglementaires Union Européenne">
-            <div class="reg-cell">
-              <span class="reg-label" [title]="getGlossaryTip('DD')">Droit pays tiers (TDC)</span>
-              <strong class="reg-val eu-accent">{{ formatDuty(regulatoryData?.dd) }}</strong>
-            </div>
-            <div class="reg-cell">
-              <span class="reg-label">Unité supplémentaire</span>
-              <strong class="reg-val">
+          <footer class="reg-strip" aria-label="Données réglementaires Union Européenne">
+            <span class="reg-pill">
+              <span class="reg-k" [title]="getGlossaryTip('DD')">TDC</span>
+              <strong class="reg-v eu-accent">{{ formatDuty(regulatoryData?.dd) }}</strong>
+            </span>
+            <span class="reg-pill">
+              <span class="reg-k">Unité</span>
+              <strong class="reg-v">
                 {{ displayScalar(regulatoryData?.uqn) }}
                 @if (regulatoryData?.uqn && getGlossaryShort(regulatoryData!.uqn!)) {
-                  <small class="reg-sub">{{ getGlossaryShort(regulatoryData!.uqn!) }}</small>
+                  <small class="reg-hint">({{ getGlossaryShort(regulatoryData!.uqn!) }})</small>
                 }
               </strong>
-            </div>
-            <div class="reg-cell">
-              <span class="reg-label">TVA import</span>
-              <strong class="reg-val muted">Nationale (État membre)</strong>
-            </div>
-          </section>
+            </span>
+            <span class="reg-pill">
+              <span class="reg-k">TVA</span>
+              <span class="reg-v muted">État membre</span>
+            </span>
+          </footer>
         } @else {
-          <section class="reg-grid" aria-label="Données réglementaires douanières">
-            <div class="reg-cell">
-              <span class="reg-label" [title]="getGlossaryTip('DD')">Droits (DD)</span>
-              <strong class="reg-val accent">{{ formatDuty(regulatoryData?.dd) }}</strong>
-            </div>
-            <div class="reg-cell">
-              <span class="reg-label" [title]="getGlossaryTip('TVA')">TVA</span>
-              <strong class="reg-val">{{ formatDuty(regulatoryData?.tva) }}</strong>
-            </div>
-            <div class="reg-cell">
-              <span class="reg-label">Autres taxes</span>
-              <strong class="reg-val">{{ displayScalar(regulatoryData?.autres) }}</strong>
-            </div>
-            <div class="reg-cell">
-              <span class="reg-label">UQN</span>
-              <strong class="reg-val">
+          <footer class="reg-strip" aria-label="Données réglementaires douanières">
+            <span class="reg-pill">
+              <span class="reg-k" [title]="getGlossaryTip('DD')">DD</span>
+              <strong class="reg-v accent">{{ formatDuty(regulatoryData?.dd) }}</strong>
+            </span>
+            <span class="reg-pill">
+              <span class="reg-k" [title]="getGlossaryTip('TVA')">TVA</span>
+              <strong class="reg-v">{{ formatDuty(regulatoryData?.tva) }}</strong>
+            </span>
+            @if (hasAutresTaxes) {
+              <span class="reg-pill">
+                <span class="reg-k">Autres</span>
+                <strong class="reg-v">{{ regulatoryData?.autres }}</strong>
+              </span>
+            }
+            <span class="reg-pill">
+              <span class="reg-k">UQN</span>
+              <strong class="reg-v">
                 {{ displayScalar(regulatoryData?.uqn) }}
                 @if (regulatoryData?.uqn && getGlossaryShort(regulatoryData!.uqn!)) {
-                  <small class="reg-sub">{{ getGlossaryShort(regulatoryData!.uqn!) }}</small>
+                  <small class="reg-hint">({{ getGlossaryShort(regulatoryData!.uqn!) }})</small>
                 }
               </strong>
-            </div>
-            <div class="reg-cell">
-              <span class="reg-label" [title]="getGlossaryTip('GU')">Guichet (GU)</span>
-              <strong class="reg-val">{{ displayScalar(regulatoryData?.gu) }}</strong>
-            </div>
-          </section>
+            </span>
+            <span class="reg-pill">
+              <span class="reg-k" [title]="getGlossaryTip('GU')">GU</span>
+              <strong class="reg-v">{{ displayScalar(regulatoryData?.gu) }}</strong>
+            </span>
 
-          @if (fapList.length > 0) {
-            <section class="fap-section">
-              <span class="fap-title">Formalités Administratives Particulières (FAP)</span>
-              <div class="fap-chips">
+            @if (fapList.length > 0) {
+              <div class="fap-inline">
+                <span class="fap-label">FAP :</span>
                 @for (sigle of fapList; track sigle) {
                   <span class="fap-chip" [title]="getGlossaryTip(sigle)">
                     <strong>{{ sigle }}</strong>
                     @if (getGlossaryShort(sigle)) {
-                      <span class="fap-meaning">— {{ getGlossaryShort(sigle) }}</span>
+                      <span class="fap-meaning">· {{ getGlossaryShort(sigle) }}</span>
                     }
                   </span>
                 }
               </div>
-            </section>
-          }
+            }
+          </footer>
         }
       } @else if (enriched === false && normalizedZone === 'DZ' && code.length >= 8) {
         <div class="reg-pending">
@@ -148,18 +144,18 @@ import { RegulatoryData } from '../../services/search.service';
     .customs-card {
       background: #111827;
       border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 14px;
-      padding: 18px 20px;
+      border-radius: 12px;
+      padding: 14px 16px;
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: 10px;
       text-align: left;
       transition: border-color 0.2s ease, box-shadow 0.2s ease;
     }
 
     .customs-card.highlighted {
       border-color: rgba(245, 158, 11, 0.45);
-      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(245, 158, 11, 0.15);
+      box-shadow: 0 6px 22px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(245, 158, 11, 0.14);
     }
 
     .card-header {
@@ -167,7 +163,7 @@ import { RegulatoryData } from '../../services/search.service';
       justify-content: space-between;
       align-items: center;
       flex-wrap: wrap;
-      gap: 10px;
+      gap: 8px;
     }
 
     .code-group {
@@ -178,9 +174,9 @@ import { RegulatoryData } from '../../services/search.service';
     }
 
     .zone-badge {
-      padding: 3px 9px;
+      padding: 2px 8px;
       border-radius: 6px;
-      font-size: 0.72rem;
+      font-size: 0.7rem;
       font-weight: 700;
       letter-spacing: 0.04em;
       background: rgba(16, 185, 129, 0.14);
@@ -196,36 +192,36 @@ import { RegulatoryData } from '../../services/search.service';
 
     .formatted-code {
       font-family: var(--font-mono, 'JetBrains Mono', monospace);
-      font-size: 1.18rem;
+      font-size: 1.08rem;
       font-weight: 700;
       color: #F59E0B;
       letter-spacing: 0.03em;
     }
 
     .check-badge {
-      padding: 2px 8px;
-      border-radius: 6px;
-      font-size: 0.75rem;
+      padding: 2px 7px;
+      border-radius: 5px;
+      font-size: 0.72rem;
       font-weight: 700;
       font-family: var(--font-mono, 'JetBrains Mono', monospace);
       background: rgba(245, 158, 11, 0.14);
       color: #FCD34D;
-      border: 1px solid rgba(245, 158, 11, 0.32);
+      border: 1px solid rgba(245, 158, 11, 0.3);
     }
 
     .copy-btn, .hs6-btn {
-      padding: 5px 11px;
-      border-radius: 8px;
-      font-size: 0.78rem;
+      padding: 4px 10px;
+      border-radius: 7px;
+      font-size: 0.76rem;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.15s ease;
     }
 
     .copy-btn {
-      background: rgba(255, 255, 255, 0.05);
-      color: #E2E8F0;
-      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.04);
+      color: #CBD5E1;
+      border: 1px solid rgba(255, 255, 255, 0.11);
     }
 
     .copy-btn:hover {
@@ -237,195 +233,174 @@ import { RegulatoryData } from '../../services/search.service';
     .hs6-btn {
       background: rgba(59, 130, 246, 0.12);
       color: #93C5FD;
-      border: 1px solid rgba(59, 130, 246, 0.3);
+      border: 1px solid rgba(59, 130, 246, 0.28);
     }
 
     .hs6-btn:hover {
       background: rgba(59, 130, 246, 0.22);
-      border-color: rgba(59, 130, 246, 0.55);
+      border-color: rgba(59, 130, 246, 0.52);
       color: #DBEAFE;
     }
 
-    .hierarchy-chain {
-      background: #0D1421;
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      border-left: 3px solid rgba(245, 158, 11, 0.5);
-      border-radius: 8px;
-      padding: 10px 14px;
+    .card-body {
       display: flex;
       flex-direction: column;
       gap: 6px;
     }
 
-    .chain-pos4 {
+    .breadcrumb-trail {
       display: flex;
+      flex-wrap: wrap;
       align-items: baseline;
-      gap: 8px;
-      font-size: 0.85rem;
-      color: #CBD5E1;
+      gap: 5px;
+      font-size: 0.8rem;
+      color: #94A3B8;
+      line-height: 1.35;
+    }
+
+    .crumb-pos4 {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 5px;
     }
 
     .chain-tag {
       font-family: var(--font-mono, 'JetBrains Mono', monospace);
       color: #F59E0B;
       font-weight: 700;
-      font-size: 0.82rem;
+      font-size: 0.78rem;
     }
 
-    .chain-titles {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
-    }
-
-    .chain-titles li {
-      font-size: 0.83rem;
-      color: #94A3B8;
-      line-height: 1.35;
-    }
-
-    .official-desc .desc-kicker {
-      display: block;
-      font-size: 0.7rem;
+    .crumb-sep {
+      color: #475569;
       font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.07em;
-      color: #64748B;
-      margin-bottom: 4px;
     }
 
-    .official-desc p {
+    .official-designation {
       margin: 0;
-      font-size: 1rem;
+      font-size: 0.98rem;
       font-weight: 600;
       color: #F8FAFC;
-      line-height: 1.45;
+      line-height: 1.42;
     }
 
-    .ai-justification {
-      background: rgba(59, 130, 246, 0.08);
-      border: 1px solid rgba(59, 130, 246, 0.22);
-      border-radius: 8px;
-      padding: 10px 14px;
-    }
-
-    .ai-tag {
-      display: inline-block;
-      font-size: 0.68rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: #60A5FA;
-      margin-bottom: 4px;
-    }
-
-    .ai-justification p {
-      margin: 0;
-      font-size: 0.88rem;
-      color: #CBD5E1;
-      line-height: 1.45;
-    }
-
-    .reg-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-      gap: 10px;
-    }
-
-    .reg-cell {
-      background: #0D1421;
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      border-radius: 8px;
-      padding: 10px 12px;
+    .ai-note {
+      margin: 2px 0 0;
       display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .reg-label {
-      font-size: 0.7rem;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: #94A3B8;
-      font-weight: 600;
-    }
-
-    .reg-val {
-      font-family: var(--font-mono, 'JetBrains Mono', monospace);
-      font-size: 0.95rem;
-      color: #F8FAFC;
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .reg-val.accent {
-      color: #F59E0B;
-    }
-
-    .reg-val.eu-accent {
-      color: #60A5FA;
-    }
-
-    .reg-val.muted {
-      font-family: var(--font-sans, system-ui, sans-serif);
-      font-size: 0.82rem;
-      font-weight: 500;
-      color: #94A3B8;
-    }
-
-    .reg-sub {
-      font-family: var(--font-sans, system-ui, sans-serif);
-      font-size: 0.72rem;
-      font-weight: 500;
-      color: #94A3B8;
-    }
-
-    .fap-section {
-      display: flex;
-      flex-direction: column;
+      align-items: baseline;
       gap: 8px;
+      font-size: 0.83rem;
+      color: #CBD5E1;
+      line-height: 1.4;
+      font-style: italic;
     }
 
-    .fap-title {
-      font-size: 0.72rem;
+    .ai-pill {
+      flex-shrink: 0;
+      font-style: normal;
+      font-family: var(--font-mono, 'JetBrains Mono', monospace);
+      font-size: 0.66rem;
       font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: #94A3B8;
+      letter-spacing: 0.05em;
+      padding: 1px 6px;
+      border-radius: 4px;
+      background: rgba(59, 130, 246, 0.18);
+      border: 1px solid rgba(59, 130, 246, 0.35);
+      color: #93C5FD;
     }
 
-    .fap-chips {
+    .reg-strip {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
+      align-items: center;
+      gap: 7px 10px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .reg-pill {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 6px;
+      padding: 4px 9px;
+      border-radius: 7px;
+      background: #0D1421;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .reg-k {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #94A3B8;
+      font-weight: 600;
+    }
+
+    .reg-v {
+      font-family: var(--font-mono, 'JetBrains Mono', monospace);
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #F8FAFC;
+    }
+
+    .reg-v.accent { color: #F59E0B; }
+    .reg-v.eu-accent { color: #60A5FA; }
+
+    .reg-v.muted {
+      font-family: var(--font-sans, 'Inter', sans-serif);
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: #94A3B8;
+    }
+
+    .reg-hint {
+      font-family: var(--font-sans, 'Inter', sans-serif);
+      font-size: 0.72rem;
+      font-weight: 400;
+      color: #94A3B8;
+    }
+
+    .fap-inline {
+      display: inline-flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .fap-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #94A3B8;
     }
 
     .fap-chip {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      padding: 5px 10px;
-      border-radius: 8px;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: 6px;
       background: rgba(245, 158, 11, 0.1);
       border: 1px solid rgba(245, 158, 11, 0.28);
-      font-size: 0.8rem;
+      font-size: 0.76rem;
       color: #FCD34D;
     }
 
     .fap-meaning {
       color: #CBD5E1;
       font-weight: 400;
+      max-width: 240px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .reg-pending {
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       color: #64748B;
       font-style: italic;
-      padding-top: 4px;
+      padding-top: 2px;
     }
   `]
 })
@@ -442,6 +417,8 @@ export class CustomsCardComponent {
   @Input() glossary?: Record<string, string> | null;
   @Input() enriched: boolean = false;
   @Input() highlight: boolean = false;
+  @Input() showPosition4: boolean = true;
+  @Input() showCompareAction: boolean = true;
 
   @Output() hs6MatchRequest = new EventEmitter<{ hs6: string; zone: string; sourceCode: string }>();
 
@@ -449,6 +426,22 @@ export class CustomsCardComponent {
 
   get normalizedZone(): string {
     return (this.zone || 'DZ').trim().toUpperCase();
+  }
+
+  get cleanTitles(): string[] {
+    return (this.titles || [])
+      .map(t => (t || '').replace(/^[-–—\s]+/, '').replace(/\s*:\s*$/, '').trim())
+      .filter(t => t.length > 0 && !/^d[ée]signation des produits$/i.test(t));
+  }
+
+  get cleanDescription(): string {
+    const cleaned = (this.description || '').replace(/^[-–—\s]+/, '').trim();
+    return cleaned || this.description || '—';
+  }
+
+  get hasAutresTaxes(): boolean {
+    const val = this.regulatoryData?.autres?.trim();
+    return !!val && val !== '-' && val !== '—';
   }
 
   get displayCode(): string {

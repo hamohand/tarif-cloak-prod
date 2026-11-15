@@ -2,7 +2,7 @@ import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule, AsyncPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { combineLatest, forkJoin, of } from 'rxjs';
+import { combineLatest, defer, forkJoin, of } from 'rxjs';
 import { catchError, distinctUntilChanged, map, retry, switchMap, take } from 'rxjs/operators';
 import { AuthService } from '../../core/services/auth.service';
 import { OrganizationAccountService } from '../../core/services/organization-account.service';
@@ -32,81 +32,72 @@ interface TryCardItem {
   imports: [CommonModule, FormsModule, RouterLink, AsyncPipe, CustomsCardComponent],
   template: `
     <div class="home-container">
-      <!-- Hero Section -->
+      <!-- En-tête principal unifié (visiteurs + utilisateurs connectés) -->
       <section class="hero" [class.hero-compact]="isAuthenticated$ | async">
         <div class="hero-glow"></div>
 
-        <div class="hero-eyebrow">
-          <span class="eyebrow-chip">
-            <span class="official-dot"></span>
-            100 % Nomenclature Officielle — Zéro code inventé
-          </span>
+        <div class="hero-kicker">
+          <span class="kicker-badge">TCI</span>
+          <span>Tarif du Commerce International</span>
+          <span class="kicker-sep" aria-hidden="true">·</span>
+          <span class="kicker-ar">تعريفة التجارة الدولية</span>
         </div>
 
-        <h1 class="hero-title">
-          <span class="hero-acronym">TCI</span>
-          <span class="hero-fullname">
-            <span class="hero-name-fr">Tarif du Commerce International</span>
-            <span class="hero-name-sep">—</span>
-            <span class="hero-name-ar">تعريفة التجارة الدولية</span>
+        <h1 class="hero-main-title">
+          Nomenclature Douanière &amp; Recherche Tarifaire
+          <span class="hero-zones">
+            <span class="zone-pill dz">DZ · P10</span>
+            <span class="zone-pill eu">UE · NC8</span>
           </span>
         </h1>
 
-        <div class="hero-langs">
-          <span class="lang-chip">Français</span>
-          <span class="lang-chip">English</span>
-          <span class="lang-chip">عربي</span>
-          <span class="lang-chip">中文</span>
-          <span class="lang-chip lang-chip-more">+ recherche par arbre officiel DGD / EUR-Lex / OMD</span>
-        </div>
+        <p class="hero-subtitle">
+          Tarif officiel Algérie (DGD) et Union Européenne (NC 2026) — recherche multilingue assistée, décodage SQL gratuit et comparateur HS6.
+        </p>
 
         @if (!(isAuthenticated$ | async)) {
-          <p class="hero-desc">
-            Décrivez un produit en langage naturel ou saisissez un code douanier : TCI retrouve la position officielle
-            exacte à 10 chiffres (Algérie · P10) ou 8 chiffres (UE · NC8), ses droits et taxes, son unité et ses formalités.
-          </p>
-
-          <!-- Widget d'essai immédiat sans inscription -->
+          <!-- Widget d'essai immédiat avec barre compacte unique -->
           <div class="try-widget">
-            <div class="try-zone-bar" role="group" aria-label="Zone tarifaire">
-              <span class="try-zone-label">Nomenclature :</span>
-              <button
-                type="button"
-                class="try-zone-btn"
-                [class.active]="tryZone === 'DZ'"
-                (click)="setTryZone('DZ')">
-                Algérie · P10
-              </button>
-              <button
-                type="button"
-                class="try-zone-btn eu"
-                [class.active]="tryZone === 'EU'"
-                (click)="setTryZone('EU')">
-                Europe · NC8 (2026)
-              </button>
-            </div>
+            <div class="try-toolbar">
+              <div class="try-zone-group" role="group" aria-label="Zone tarifaire">
+                <button
+                  type="button"
+                  class="try-zone-btn"
+                  [class.active]="tryZone === 'DZ'"
+                  (click)="setTryZone('DZ')">
+                  Algérie · P10
+                </button>
+                <button
+                  type="button"
+                  class="try-zone-btn eu"
+                  [class.active]="tryZone === 'EU'"
+                  (click)="setTryZone('EU')">
+                  Europe · NC8 (2026)
+                </button>
+              </div>
 
-            <div class="try-tabs" role="tablist">
-              <button
-                type="button"
-                role="tab"
-                [attr.aria-selected]="tryTab === 'ai'"
-                class="try-tab"
-                [class.active]="tryTab === 'ai'"
-                (click)="switchTryTab('ai')">
-                Décrire un produit
-                <span class="tab-badge amber">IA · {{ getTrialBadgeText(guestTrialsRemaining$ | async) }}</span>
-              </button>
-              <button
-                type="button"
-                role="tab"
-                [attr.aria-selected]="tryTab === 'decode'"
-                class="try-tab"
-                [class.active]="tryTab === 'decode'"
-                (click)="switchTryTab('decode')">
-                Décoder un code
-                <span class="tab-badge green">SQL · Gratuit illimité</span>
-              </button>
+              <div class="try-tabs" role="tablist">
+                <button
+                  type="button"
+                  role="tab"
+                  [attr.aria-selected]="tryTab === 'ai'"
+                  class="try-tab"
+                  [class.active]="tryTab === 'ai'"
+                  (click)="switchTryTab('ai')">
+                  Décrire un produit
+                  <span class="tab-badge amber">IA · {{ getTrialBadgeText(guestTrialsRemaining$ | async) }}</span>
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  [attr.aria-selected]="tryTab === 'decode'"
+                  class="try-tab"
+                  [class.active]="tryTab === 'decode'"
+                  (click)="switchTryTab('decode')">
+                  Décoder un code
+                  <span class="tab-badge green">SQL · Gratuit</span>
+                </button>
+              </div>
             </div>
 
             @if (tryTab === 'ai') {
@@ -151,12 +142,12 @@ interface TryCardItem {
                     class="try-submit blue"
                     (click)="runTryDecode()"
                     [disabled]="tryLoading || !tryDecodeInput.trim()">
-                    {{ tryLoading ? 'Décodage...' : 'Décoder le code' }}
+                    {{ tryLoading ? 'Décodage...' : 'Décoder' }}
                   </button>
                 </div>
 
                 <div class="try-examples">
-                  <span class="examples-label">Codes d'exemple :</span>
+                  <span class="examples-label">Codes :</span>
                   @for (c of decodeExamples; track c) {
                     <button type="button" class="try-chip mono" (click)="pickDecodeExample(c)">{{ c }}</button>
                   }
@@ -177,10 +168,10 @@ interface TryCardItem {
 
             @if (tryDecodeHierarchy && !tryLoading) {
               <div class="try-hierarchy">
-                <span><strong>Section {{ tryDecodeHierarchy.section.code }}</strong> : {{ tryDecodeHierarchy.section.description }}</span>
-                <span><strong>Chapitre {{ tryDecodeHierarchy.chapitre.code }}</strong> : {{ tryDecodeHierarchy.chapitre.description }}</span>
+                <span><strong>Section {{ tryDecodeHierarchy.section.code }}</strong> · {{ tryDecodeHierarchy.section.description }}</span>
+                <span><strong>Chapitre {{ tryDecodeHierarchy.chapitre.code }}</strong> · {{ tryDecodeHierarchy.chapitre.description }}</span>
                 @if (tryDecodeHierarchy.position4) {
-                  <span><strong>Pos. {{ tryDecodeHierarchy.position4.code }}</strong> : {{ tryDecodeHierarchy.position4.description }}</span>
+                  <span><strong>Pos. {{ tryDecodeHierarchy.position4.code }}</strong> · {{ tryDecodeHierarchy.position4.description }}</span>
                 }
               </div>
             }
@@ -196,6 +187,7 @@ interface TryCardItem {
                     [description]="card.description"
                     [titles]="card.titles"
                     [position4]="card.position4"
+                    [showPosition4]="!tryDecodeHierarchy?.position4"
                     [justification]="card.justification"
                     [regulatoryData]="card.regulatoryData"
                     [glossary]="card.glossary"
@@ -210,82 +202,49 @@ interface TryCardItem {
 
           <div class="hero-cta">
             <a routerLink="/recherche/decode-p10" class="cta-button secondary">
-              Ouvrir le décodeur complet (Gratuit)
+              Ouvrir l'espace complet &amp; Comparateur DZ ↔ UE
             </a>
             <a *ngIf="isBetaMode" routerLink="/auth/register" class="cta-button primary">
               Créer un compte gratuit (500 crédits)
             </a>
             <a *ngIf="!isBetaMode" routerLink="/pricing" class="cta-button ghost">Voir les tarifs</a>
-            <a routerLink="/aide" class="cta-button ghost guide-btn">Guide</a>
           </div>
         }
       </section>
 
-      <!-- Présentation de la plateforme (visiteurs non connectés) -->
+      <!-- Présentation synthétique en 3 piliers (visiteurs non connectés) -->
       @if (!(isAuthenticated$ | async)) {
-        <section class="api-presentation">
-          <div class="api-header">
-            <h2>Recherche algorithmique sur nomenclature officielle</h2>
-            <p class="api-subtitle">
-              Aucun intitulé inventé : parcours hiérarchique guidé de la Section jusqu'à la sous-position à 10 chiffres
+        <section class="pillars-section">
+          <div class="pillars-header">
+            <h2>Qualification rigoureuse sur nomenclature officielle</h2>
+            <p class="pillars-subtitle">
+              Aucun intitulé inventé : parcours hiérarchique complet de la Section jusqu'aux sous-positions P10 et NC8.
             </p>
           </div>
 
-          <div class="api-content">
-            <div class="api-features-grid">
-              <div class="api-feature">
-                <div class="api-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <path d="M9 12l2 2 4-4"/>
-                    <circle cx="12" cy="12" r="9"/>
-                  </svg>
-                </div>
-                <h3>100 % Officiel</h3>
-                <p>Chaque code, clé de contrôle, intitulé à tirets, DD, TVA, UQN et FAP provient des tables douanières officielles.</p>
-              </div>
+          <div class="pillars-grid">
+            <article class="pillar-card">
+              <div class="pillar-num">01</div>
+              <h3>Nomenclature 100 % Officielle</h3>
+              <p>Chaque code, clé de contrôle, intitulé à tirets, DD, TVA, UQN, FAP et taux TDC provient des tables officielles DGD et EUR-Lex 2026.</p>
+            </article>
 
-              <div class="api-feature">
-                <div class="api-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <rect x="9" y="2" width="6" height="4" rx="1"/>
-                    <rect x="2" y="10" width="6" height="4" rx="1"/>
-                    <rect x="16" y="10" width="6" height="4" rx="1"/>
-                    <rect x="9" y="18" width="6" height="4" rx="1"/>
-                    <path d="M12 6v4M5 14v4h4M19 14v4h-4"/>
-                  </svg>
-                </div>
-                <h3>Recherche en Arbre</h3>
-                <p>Cascade chirurgicale Section → Chapitre → Position 4 → HS6 → Position 10 avec justification de la correspondance.</p>
-              </div>
+            <article class="pillar-card">
+              <div class="pillar-num">02</div>
+              <h3>Qualification Hiérarchique IA</h3>
+              <p>Analyse en arbre Section → Chapitre → Position 4 → HS6 → P10/NC8 en français, anglais ou arabe avec critère douanier factuel.</p>
+            </article>
 
-              <div class="api-feature">
-                <div class="api-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3"/>
-                    <path d="M16 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3"/>
-                    <path d="M12 8v8M9 11l3-3 3 3"/>
-                  </svg>
-                </div>
-                <h3>Décodage SQL Gratuit</h3>
-                <p>Entrez un code à 2, 4, 6, 8 ou 10 chiffres et obtenez instantanément son arbre hiérarchique et ses exigences, sans crédit.</p>
-              </div>
-
-              <div class="api-feature">
-                <div class="api-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <circle cx="12" cy="12" r="9"/>
-                    <path d="M12 3a14.5 14.5 0 0 1 0 18M12 3a14.5 14.5 0 0 0 0 18M3 12h18"/>
-                  </svg>
-                </div>
-                <h3>Passerelle Multi-Zones</h3>
-                <p>Pivot universel sur le HS à 6 chiffres pour préparer le passage vers le tarif européen NC8 / TARIC.</p>
-              </div>
-            </div>
+            <article class="pillar-card">
+              <div class="pillar-num">03</div>
+              <h3>Décodage &amp; Comparateur DZ ↔ UE</h3>
+              <p>Décodage SQL instantané (2 à 10 chiffres) et alignement côte à côte Algérie ↔ Europe sur le pivot universel HS6, gratuits sans crédit.</p>
+            </article>
           </div>
         </section>
       }
 
-      <!-- Section utilisateurs connectés -->
+      <!-- Espace de travail (utilisateurs connectés) -->
       <section class="user-actions" *ngIf="showRequestButtons$ | async">
         @if (!(canMakeRequests$ | async)) {
           <div class="trial-expired-message">
@@ -307,49 +266,57 @@ interface TryCardItem {
             </div>
           </div>
         } @else {
-          <h4 class="section-title">Espace de travail tarifaire</h4>
-          <div class="features primary">
-            <div class="feature-card request-card">
-              <div class="request-icon">🔍</div>
-              <h3>Recherche Position-10 (IA)</h3>
-              <p>Trouvez la position douanière exacte et sa fiche réglementaire (DD, TVA, UQN, FAP) à partir d'une description.</p>
+          <div class="workspace-grid">
+            <article class="workspace-card primary-card">
+              <div class="card-tag amber">IA Multi-Zones</div>
+              <h3>Recherche Tarifaire (DZ &amp; UE)</h3>
+              <p>Qualifiez une marchandise en langage naturel vers son code exact P10 (Algérie) ou NC8 (UE 2026) et ses droits et formalités.</p>
               <a [routerLink]="['/recherche/search-position10']" class="cta-button primary">
-                Rechercher un produit
+                Ouvrir la recherche IA
               </a>
-            </div>
+            </article>
 
-            <div class="feature-card request-card">
-              <div class="request-icon">📋</div>
-              <h3>Décodeur officiel (Gratuit)</h3>
-              <p>Décodez un code à 2, 4, 6, 8 ou 10 chiffres en requête SQL directe sans consommer de crédits.</p>
-              <a [routerLink]="['/recherche/decode-p10']" class="cta-button secondary">
+            <article class="workspace-card">
+              <div class="card-tag green">SQL · Gratuit</div>
+              <h3>Décodeur Officiel par code</h3>
+              <p>Saisissez un code à 2, 4, 6, 8 ou 10 chiffres pour consulter sa hiérarchie, ses notes légales et sa fiche réglementaire.</p>
+              <button type="button" (click)="openDecoder(false)" class="cta-button secondary">
                 Décoder un code
-              </a>
-            </div>
+              </button>
+            </article>
+
+            <article class="workspace-card">
+              <div class="card-tag blue">HS6 · Gratuit</div>
+              <h3>Comparateur DZ ↔ UE</h3>
+              <p>Alignez côte à côte les sous-positions officielles Algérie (DGD · P10) et Union Européenne (NC8) sous un même code HS6.</p>
+              <button type="button" (click)="openDecoder(true)" class="cta-button secondary">
+                ⇄ Comparer DZ ↔ UE
+              </button>
+            </article>
 
             @if (!isBetaMode) {
-              <div class="feature-card request-card">
-                <div class="request-icon">📑</div>
-                <h3>Recherche par liste</h3>
-                <p>Importez un fichier CSV ou Excel pour qualifier une liste d'articles.</p>
+              <article class="workspace-card">
+                <div class="card-tag">Import Fichier</div>
+                <h3>Recherche par liste CSV/Excel</h3>
+                <p>Importez un tableau d'articles pour qualifier plusieurs lignes tarifaires en une opération.</p>
                 <a [routerLink]="['/recherche/searchListLots']" class="cta-button secondary">
-                  Rechercher par liste
+                  Importer une liste
                 </a>
-              </div>
+              </article>
 
-              <div class="feature-card request-card">
-                <div class="request-icon">⚡</div>
-                <h3>Recherche par lots</h3>
-                <p>Soumettez jusqu'à 1 000 produits en traitement asynchrone (-50 %).</p>
+              <article class="workspace-card">
+                <div class="card-tag">Asynchrone -50 %</div>
+                <h3>Traitement par lots</h3>
+                <p>Soumettez jusqu'à 1 000 désignations en lot asynchrone à coût réduit de moitié.</p>
                 <a [routerLink]="['/recherche/batch-search']" class="cta-button secondary">
-                  Rechercher par lots
+                  Lancer un lot
                 </a>
-              </div>
+              </article>
             }
           </div>
         }
 
-        <div class="features primary" *ngIf="(isOrganizationAccount$ | async) && !isBetaMode">
+        <div class="org-callout" *ngIf="(isOrganizationAccount$ | async) && !isBetaMode">
           <div class="feature-card advise">
             <h3>Gestion d'organisation</h3>
             <p>Utilisez l'espace <strong>Mon organisation</strong> pour inviter vos collaborateurs et suivre les statistiques globales.</p>
@@ -369,188 +336,171 @@ interface TryCardItem {
   styles: [`
     .home-container {
       text-align: center;
-      padding: 1.5rem 1.25rem 3rem;
-      max-width: 1180px;
+      padding: 1.5rem 1.25rem 2.75rem;
+      max-width: 1140px;
       margin: 0 auto;
       color: #E2E8F0;
     }
 
     .hero {
       position: relative;
-      padding: 2.5rem 1rem 2rem;
+      padding: 1.5rem 0.5rem 1.25rem;
       margin-bottom: 1.5rem;
     }
 
     .hero.hero-compact {
-      padding: 1.25rem 1rem 0.75rem;
-      margin-bottom: 0;
+      padding: 1rem 0.5rem 1.25rem;
+      margin-bottom: 0.5rem;
     }
-
-    .hero.hero-compact .hero-eyebrow,
-    .hero.hero-compact .hero-langs,
-    .hero.hero-compact .hero-glow,
-    .hero.hero-compact .hero-name-sep,
-    .hero.hero-compact .hero-name-ar {
-      display: none;
-    }
-
-    .hero.hero-compact .hero-acronym { font-size: 2.1rem; }
-    .hero.hero-compact .hero-name-fr { font-size: 0.95rem; }
 
     .hero-glow {
       position: absolute;
-      top: 25%;
+      top: 18%;
       left: 50%;
       transform: translate(-50%, -50%);
-      width: 560px;
-      height: 340px;
+      width: 520px;
+      height: 280px;
       background: radial-gradient(ellipse, rgba(245, 158, 11, 0.08) 0%, transparent 65%);
       pointer-events: none;
       z-index: 0;
     }
 
-    .hero-eyebrow {
+    .hero-kicker {
       position: relative;
       z-index: 1;
-      margin-bottom: 1.25rem;
-    }
-
-    .eyebrow-chip {
       display: inline-flex;
       align-items: center;
-      gap: 0.5rem;
-      padding: 0.4rem 1rem;
-      border-radius: 999px;
-      background: rgba(16, 185, 129, 0.1);
-      border: 1px solid rgba(16, 185, 129, 0.32);
-      color: #34D399;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.55rem;
+      font-family: var(--font-sans, 'Inter', sans-serif);
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #94A3B8;
+      margin-bottom: 0.75rem;
+    }
+
+    .kicker-badge {
+      font-family: var(--font-mono, 'JetBrains Mono', monospace);
+      font-size: 0.76rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 5px;
+      background: rgba(245, 158, 11, 0.14);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      color: #FCD34D;
+    }
+
+    .kicker-sep { color: rgba(255, 255, 255, 0.25); }
+    .kicker-ar { font-weight: 500; text-transform: none; letter-spacing: 0; color: #94A3B8; direction: rtl; }
+
+    .hero-main-title {
+      position: relative;
+      z-index: 1;
+      margin: 0 auto 0.7rem;
+      font-family: var(--font-serif, 'Source Serif 4', Georgia, serif);
+      font-size: clamp(1.85rem, 3.6vw, 2.75rem);
+      font-weight: 700;
+      line-height: 1.15;
+      letter-spacing: -0.015em;
+      color: #F8FAFC;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+    }
+
+    .hero.hero-compact .hero-main-title {
+      font-size: clamp(1.65rem, 3vw, 2.25rem);
+    }
+
+    .hero-zones {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      vertical-align: middle;
+    }
+
+    .zone-pill {
+      font-family: var(--font-mono, 'JetBrains Mono', monospace);
       font-size: 0.76rem;
       font-weight: 700;
       letter-spacing: 0.04em;
-      text-transform: uppercase;
-    }
-
-    .official-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: #10B981;
-      box-shadow: 0 0 8px rgba(16, 185, 129, 0.8);
-    }
-
-    .hero-title {
-      position: relative;
-      z-index: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 0.45rem;
-      margin: 0 0 1.25rem;
-    }
-
-    .hero-acronym {
-      font-family: var(--font-display, 'Space Grotesk', sans-serif);
-      font-size: 4.75rem;
-      font-weight: 800;
-      line-height: 1;
-      letter-spacing: -0.04em;
-      background: linear-gradient(135deg, #D97706 0%, #F59E0B 40%, #FCD34D 65%, #F59E0B 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-
-    .hero-fullname {
-      display: flex;
-      align-items: center;
-      gap: 0.65rem;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-
-    .hero-name-fr {
-      font-family: var(--font-display, 'Space Grotesk', sans-serif);
-      font-size: 1.15rem;
-      font-weight: 600;
-      color: #F8FAFC;
-    }
-
-    .hero-name-sep { color: rgba(245, 158, 11, 0.45); }
-    .hero-name-ar { font-size: 1.1rem; color: #94A3B8; direction: rtl; }
-
-    .hero-langs {
-      position: relative;
-      z-index: 1;
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 0.5rem;
-      margin-bottom: 1.25rem;
-    }
-
-    .lang-chip {
-      padding: 0.25rem 0.8rem;
+      padding: 4px 10px;
       border-radius: 999px;
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.09);
-      color: #94A3B8;
-      font-size: 0.76rem;
-      font-weight: 500;
     }
 
-    .hero-desc {
+    .zone-pill.dz {
+      background: rgba(245, 158, 11, 0.14);
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      color: #FCD34D;
+    }
+
+    .zone-pill.eu {
+      background: rgba(59, 130, 246, 0.14);
+      border: 1px solid rgba(59, 130, 246, 0.4);
+      color: #93C5FD;
+    }
+
+    .hero-subtitle {
       position: relative;
       z-index: 1;
-      font-size: 1rem;
-      color: #CBD5E1;
-      max-width: 660px;
-      margin: 0 auto 1.75rem;
-      line-height: 1.65;
+      font-family: var(--font-sans, 'Inter', sans-serif);
+      font-size: 0.98rem;
+      font-weight: 400;
+      color: #94A3B8;
+      max-width: 700px;
+      margin: 0 auto 1.5rem;
+      line-height: 1.55;
     }
 
-    /* ═══ Try Widget ═══ */
+    /* ═══ Try Widget (barre unifiée) ═══ */
     .try-widget {
       position: relative;
       z-index: 1;
       max-width: 880px;
-      margin: 0 auto 1.75rem;
+      margin: 0 auto 1.35rem;
       background: #111827;
       border: 1px solid rgba(245, 158, 11, 0.28);
-      border-radius: 18px;
-      padding: 18px 20px;
-      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.4);
+      border-radius: 16px;
+      padding: 16px 18px;
+      box-shadow: 0 14px 36px rgba(0, 0, 0, 0.38);
       text-align: left;
     }
 
-    .try-zone-bar {
+    .try-toolbar {
       display: flex;
       align-items: center;
+      justify-content: space-between;
       flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 12px;
+      gap: 10px;
+      margin-bottom: 14px;
       padding-bottom: 12px;
       border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     }
 
-    .try-zone-label {
-      font-size: 0.78rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: #64748B;
-      margin-right: 4px;
+    .try-zone-group {
+      display: inline-flex;
+      gap: 4px;
+      padding: 3px;
+      background: #0D1421;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
     }
 
     .try-zone-btn {
-      padding: 5px 12px;
-      border-radius: 999px;
-      background: #0D1421;
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 6px 12px;
+      border-radius: 7px;
+      background: transparent;
+      border: 1px solid transparent;
       color: #94A3B8;
       font-size: 0.8rem;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: all 0.15s ease;
     }
 
     .try-zone-btn:hover { color: #F8FAFC; }
@@ -570,25 +520,22 @@ interface TryCardItem {
     .try-tabs {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
-      margin-bottom: 16px;
+      gap: 8px;
     }
 
     .try-tab {
-      flex: 1 1 240px;
-      padding: 10px 14px;
-      border-radius: 10px;
+      padding: 7px 12px;
+      border-radius: 9px;
       background: #0D1421;
       border: 1px solid rgba(255, 255, 255, 0.08);
       color: #CBD5E1;
       font-weight: 600;
-      font-size: 0.9rem;
-      display: flex;
+      font-size: 0.84rem;
+      display: inline-flex;
       align-items: center;
-      justify-content: space-between;
       gap: 8px;
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: all 0.15s ease;
     }
 
     .try-tab.active {
@@ -598,30 +545,23 @@ interface TryCardItem {
     }
 
     .tab-badge {
-      font-size: 0.72rem;
+      font-size: 0.7rem;
       font-weight: 700;
-      padding: 2px 8px;
+      padding: 2px 7px;
       border-radius: 999px;
       white-space: nowrap;
     }
 
-    .tab-badge.amber {
-      background: rgba(245, 158, 11, 0.2);
-      color: #FCD34D;
-    }
-
-    .tab-badge.green {
-      background: rgba(16, 185, 129, 0.18);
-      color: #34D399;
-    }
+    .tab-badge.amber { background: rgba(245, 158, 11, 0.2); color: #FCD34D; }
+    .tab-badge.green { background: rgba(16, 185, 129, 0.18); color: #34D399; }
 
     .try-input-row {
       display: flex;
       background: #0D1421;
       border: 1px solid rgba(255, 255, 255, 0.14);
-      border-radius: 12px;
+      border-radius: 11px;
       overflow: hidden;
-      margin-bottom: 12px;
+      margin-bottom: 10px;
     }
 
     .try-input-row:focus-within {
@@ -631,85 +571,64 @@ interface TryCardItem {
 
     .try-input {
       flex: 1;
-      padding: 14px 16px;
+      padding: 13px 15px;
       min-height: 46px;
       background: transparent;
       border: none;
       outline: none;
       color: #F8FAFC;
-      font-size: 0.96rem;
+      font-size: 0.95rem;
     }
 
-    .try-input.mono {
-      font-family: var(--font-mono, 'JetBrains Mono', monospace);
-    }
-
+    .try-input.mono { font-family: var(--font-mono, 'JetBrains Mono', monospace); }
     .try-input::placeholder { color: #64748B; }
 
     .try-submit {
-      padding: 12px 22px;
+      padding: 12px 20px;
       min-height: 46px;
       background: #F59E0B;
       color: #070B14;
       border: none;
       font-weight: 700;
-      font-size: 0.92rem;
+      font-size: 0.9rem;
       cursor: pointer;
       white-space: nowrap;
     }
 
-    .try-submit.blue {
-      background: #3B82F6;
-      color: #F8FAFC;
-    }
-
+    .try-submit.blue { background: #3B82F6; color: #F8FAFC; }
     .try-submit:disabled { opacity: 0.45; cursor: not-allowed; }
 
     .try-examples {
       display: flex;
       align-items: center;
       flex-wrap: wrap;
-      gap: 8px;
+      gap: 7px;
     }
 
-    .examples-label {
-      font-size: 0.8rem;
-      color: #94A3B8;
-      font-weight: 600;
-    }
+    .examples-label { font-size: 0.78rem; color: #94A3B8; font-weight: 600; }
 
     .try-chip {
-      padding: 5px 11px;
+      padding: 4px 10px;
       border-radius: 999px;
       background: #0D1421;
       border: 1px solid rgba(255, 255, 255, 0.1);
       color: #CBD5E1;
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       cursor: pointer;
       transition: border-color 0.15s ease, color 0.15s ease;
     }
 
-    .try-chip.mono {
-      font-family: var(--font-mono, 'JetBrains Mono', monospace);
-    }
-
-    .try-chip:hover {
-      border-color: rgba(245, 158, 11, 0.5);
-      color: #FCD34D;
-    }
+    .try-chip.mono { font-family: var(--font-mono, 'JetBrains Mono', monospace); }
+    .try-chip:hover { border-color: rgba(245, 158, 11, 0.5); color: #FCD34D; }
 
     .try-status {
-      margin-top: 14px;
-      padding: 12px 14px;
+      margin-top: 12px;
+      padding: 11px 14px;
       border-radius: 10px;
-      font-size: 0.9rem;
+      font-size: 0.88rem;
     }
 
-    .try-status.loading {
-      background: rgba(245, 158, 11, 0.08);
-      color: #FCD34D;
-    }
-
+    .try-status.loading { background: rgba(245, 158, 11, 0.08); color: #FCD34D; }
     .try-status.error {
       background: rgba(239, 68, 68, 0.1);
       border: 1px solid rgba(239, 68, 68, 0.3);
@@ -721,30 +640,26 @@ interface TryCardItem {
       gap: 10px;
     }
 
-    .inline-cta {
-      color: #FCD34D;
-      font-weight: 700;
-      text-decoration: none;
-    }
+    .inline-cta { color: #FCD34D; font-weight: 700; text-decoration: none; }
 
     .try-hierarchy {
-      margin-top: 14px;
-      padding: 10px 14px;
+      margin-top: 12px;
+      padding: 9px 13px;
       background: #0D1421;
       border: 1px solid rgba(255, 255, 255, 0.07);
-      border-radius: 10px;
+      border-radius: 9px;
       display: flex;
       flex-direction: column;
-      gap: 4px;
-      font-size: 0.85rem;
+      gap: 3px;
+      font-size: 0.83rem;
       color: #CBD5E1;
     }
 
     .try-results {
-      margin-top: 14px;
+      margin-top: 12px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
     }
 
     .hero-cta {
@@ -758,28 +673,23 @@ interface TryCardItem {
     }
 
     .cta-button {
-      padding: 0.72rem 1.5rem;
-      font-size: 0.92rem;
+      padding: 0.65rem 1.25rem;
+      font-size: 0.88rem;
       border: none;
-      border-radius: 10px;
+      border-radius: 9px;
       cursor: pointer;
       text-decoration: none;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 0.5rem;
-      font-family: var(--font-display, 'Space Grotesk', sans-serif);
+      gap: 0.45rem;
+      font-family: var(--font-sans, 'Inter', sans-serif);
       font-weight: 600;
       transition: all 0.2s ease;
-      min-height: 44px;
+      min-height: 40px;
     }
 
-    .cta-button.primary {
-      background: #F59E0B;
-      color: #070B14;
-      font-weight: 700;
-    }
-
+    .cta-button.primary { background: #F59E0B; color: #070B14; font-weight: 700; }
     .cta-button.primary:hover { background: #D97706; }
 
     .cta-button.secondary {
@@ -796,170 +706,165 @@ interface TryCardItem {
       border: 1px solid rgba(255, 255, 255, 0.14);
     }
 
-    .cta-button.ghost:hover {
-      border-color: rgba(245, 158, 11, 0.45);
-      color: #FCD34D;
+    .cta-button.ghost:hover { border-color: rgba(245, 158, 11, 0.45); color: #FCD34D; }
+
+    /* ═══ 3 Piliers (visiteurs) ═══ */
+    .pillars-section {
+      padding: 1.5rem 0 1.25rem;
     }
 
-    /* ═══ Features & Cards (Thème Sombre Unifié) ═══ */
-    .api-presentation {
-      padding: 2rem 0 2.5rem;
-      max-width: 1160px;
-      margin: 0 auto;
-    }
-
-    .api-header { margin-bottom: 2rem; }
-    .api-header h2 {
+    .pillars-header { margin-bottom: 1.5rem; }
+    .pillars-header h2 {
+      font-family: var(--font-serif, 'Source Serif 4', Georgia, serif);
+      font-size: 1.55rem;
+      font-weight: 600;
       color: #F8FAFC;
-      font-family: var(--font-display, 'Space Grotesk', sans-serif);
-      font-size: 1.75rem;
-      margin: 0 0 0.5rem;
+      margin: 0 0 0.4rem;
     }
-    .api-subtitle { color: #94A3B8; font-size: 0.98rem; margin: 0; }
 
-    .api-features-grid {
+    .pillars-subtitle {
+      font-family: var(--font-sans, 'Inter', sans-serif);
+      font-size: 0.92rem;
+      font-weight: 400;
+      color: #94A3B8;
+      margin: 0;
+    }
+
+    .pillars-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 1.25rem;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1.15rem;
+      text-align: left;
     }
 
-    .api-feature {
+    .pillar-card {
       background: #111827;
       border: 1px solid rgba(255, 255, 255, 0.08);
-      padding: 1.6rem;
-      border-radius: 16px;
-      text-align: center;
+      border-radius: 14px;
+      padding: 1.35rem;
       transition: border-color 0.2s ease, transform 0.2s ease;
     }
 
-    .api-feature:hover {
-      transform: translateY(-3px);
+    .pillar-card:hover {
+      transform: translateY(-2px);
       border-color: rgba(245, 158, 11, 0.32);
     }
 
-    .api-icon {
-      width: 48px;
-      height: 48px;
-      margin: 0 auto 0.9rem;
+    .pillar-num {
+      font-family: var(--font-mono, 'JetBrains Mono', monospace);
+      font-size: 0.78rem;
+      font-weight: 700;
       color: #F59E0B;
-      background: #0D1421;
-      border: 1px solid rgba(245, 158, 11, 0.25);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 12px;
-      padding: 10px;
+      margin-bottom: 0.5rem;
     }
 
-    .api-icon svg { width: 100%; height: 100%; }
-
-    .api-feature h3 {
-      color: #F8FAFC;
+    .pillar-card h3 {
       font-family: var(--font-display, 'Space Grotesk', sans-serif);
-      font-size: 1.05rem;
-      margin: 0 0 0.5rem;
+      font-size: 1.02rem;
+      color: #F8FAFC;
+      margin: 0 0 0.45rem;
     }
 
-    .api-feature p {
+    .pillar-card p {
       color: #94A3B8;
-      font-size: 0.88rem;
+      font-size: 0.87rem;
       line-height: 1.55;
       margin: 0;
     }
 
-    /* ═══ Authenticated Section ═══ */
-    .user-actions { margin: 1rem 0 2rem; }
-    .section-title {
-      color: #F8FAFC;
-      font-family: var(--font-display, 'Space Grotesk', sans-serif);
-      font-size: 1.25rem;
-      margin-bottom: 1.25rem;
+    /* ═══ Workspace (utilisateurs connectés) ═══ */
+    .user-actions { margin: 0.5rem 0 2rem; }
+
+    .workspace-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.15rem;
+      text-align: left;
+      margin-bottom: 1.5rem;
     }
 
-    .features {
-      display: flex;
-      justify-content: center;
-      gap: 1.25rem;
-      flex-wrap: wrap;
-      margin-bottom: 1.75rem;
-    }
-
-    .request-card {
+    .workspace-card {
       background: #111827;
       border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 16px;
-      padding: 1.5rem;
-      min-width: 240px;
-      max-width: 280px;
+      border-radius: 14px;
+      padding: 1.35rem;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      gap: 0.7rem;
-      text-align: center;
+      align-items: flex-start;
+      gap: 0.65rem;
     }
 
-    .request-card h3 { color: #F8FAFC; font-size: 1.02rem; margin: 0; }
-    .request-card p { color: #94A3B8; font-size: 0.86rem; line-height: 1.45; margin: 0 0 0.5rem; }
-    .request-card a { margin-top: auto; }
-
-    .request-icon {
-      width: 48px;
-      height: 48px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 12px;
-      background: #0D1421;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      font-size: 1.35rem;
+    .workspace-card.primary-card {
+      border-color: rgba(245, 158, 11, 0.35);
+      background: linear-gradient(155deg, rgba(17, 24, 39, 1), rgba(13, 20, 33, 1));
     }
+
+    .card-tag {
+      font-family: var(--font-mono, 'JetBrains Mono', monospace);
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 2px 8px;
+      border-radius: 5px;
+      background: rgba(255, 255, 255, 0.06);
+      color: #94A3B8;
+    }
+
+    .card-tag.amber { background: rgba(245, 158, 11, 0.16); color: #FCD34D; }
+    .card-tag.green { background: rgba(16, 185, 129, 0.16); color: #34D399; }
+    .card-tag.blue { background: rgba(59, 130, 246, 0.16); color: #93C5FD; }
+
+    .workspace-card h3 { color: #F8FAFC; font-size: 1.04rem; margin: 0; }
+    .workspace-card p { color: #94A3B8; font-size: 0.87rem; line-height: 1.5; margin: 0 0 0.4rem; }
+    .workspace-card .cta-button { margin-top: auto; }
+
+    .org-callout { display: flex; justify-content: center; }
 
     .feature-card.advise {
       background: #111827;
       border: 1px solid rgba(59, 130, 246, 0.28);
-      border-radius: 16px;
-      padding: 1.5rem;
+      border-radius: 14px;
+      padding: 1.35rem;
       max-width: 520px;
       width: 100%;
       text-align: left;
       display: flex;
       flex-direction: column;
-      gap: 0.75rem;
+      align-items: flex-start;
+      gap: 0.65rem;
     }
 
     .feature-card.advise h3 { color: #60A5FA; margin: 0; }
-    .feature-card.advise p { color: #94A3B8; margin: 0; font-size: 0.9rem; }
+    .feature-card.advise p { color: #94A3B8; margin: 0; font-size: 0.88rem; }
 
     .trial-expired-message {
       margin: 1.5rem auto;
-      padding: 1.5rem;
+      padding: 1.35rem;
       background: #111827;
       border: 1px solid rgba(245, 158, 11, 0.35);
-      border-radius: 16px;
+      border-radius: 14px;
       max-width: 780px;
     }
 
-    .message-content h4 { margin: 0 0 0.75rem; color: #F59E0B; font-size: 1.2rem; }
-    .message-content p { margin: 0; color: #CBD5E1; font-size: 0.95rem; line-height: 1.6; }
+    .message-content h4 { margin: 0 0 0.6rem; color: #F59E0B; font-size: 1.15rem; }
+    .message-content p { margin: 0; color: #CBD5E1; font-size: 0.92rem; line-height: 1.6; }
     .message-content a { color: #FCD34D; font-weight: 700; }
 
     .home-footer {
-      margin-top: 2.5rem;
-      padding-top: 1.5rem;
+      margin-top: 2rem;
+      padding-top: 1.25rem;
       border-top: 1px solid rgba(255, 255, 255, 0.06);
     }
 
-    .home-footer p {
-      margin: 0;
-      font-size: 0.85rem;
-      color: #64748B;
-      line-height: 1.65;
+    .home-footer p { margin: 0; font-size: 0.82rem; color: #64748B; line-height: 1.6; }
+
+    @media (max-width: 820px) {
+      .pillars-grid { grid-template-columns: 1fr; }
     }
 
     @media (max-width: 720px) {
-      .hero-acronym { font-size: 3.3rem; }
       .try-input-row { flex-direction: column; }
-      .request-card { max-width: 100%; width: 100%; }
     }
   `]
 })
@@ -1093,6 +998,11 @@ export class HomeComponent implements OnInit {
     this.runTryDecode();
   }
 
+  openDecoder(compareMode: boolean): void {
+    this.state.compareMode = compareMode;
+    this.router.navigate(['/recherche/decode-p10']);
+  }
+
   runTryAi(): void {
     const term = this.tryAiTerm.trim();
     if (!term) return;
@@ -1104,7 +1014,7 @@ export class HomeComponent implements OnInit {
 
     this.searchService.searchCodes(term, 'positions10', this.tryZone).subscribe({
       next: (results) => {
-        const valid = (results || []).filter(r => ((r.code || '').replace(/\s/g, '')).length > 0);
+        const valid = (results || []).filter(r => ((r.code || '').replace(/[^0-9]/g, '')).length > 0);
         if (valid.length === 0) {
           this.tryError = 'Aucune position trouvée pour cette description. Essayez un autre terme.';
           this.tryLoading = false;
@@ -1112,9 +1022,9 @@ export class HomeComponent implements OnInit {
         }
 
         const calls$ = valid.map(r => {
-          const aiCode = (r.code || '').replace(/\s/g, '');
+          const aiCode = (r.code || '').replace(/[^0-9]/g, '');
           const codeForDecode = aiCode.length >= 6 ? aiCode.substring(0, 6) : aiCode;
-          return this.searchService.decodeP10Code(codeForDecode, this.tryZone).pipe(
+          return defer(() => this.searchService.decodeP10Code(codeForDecode, this.tryZone)).pipe(
             retry(1),
             catchError(() => of(null)),
             map(decoded => ({ decoded, aiCode, justification: r.justification ?? null }))
@@ -1127,7 +1037,7 @@ export class HomeComponent implements OnInit {
             for (const entry of entries) {
               if (!entry.decoded) continue;
               const list = entry.decoded.positions10 || [];
-              const exact = list.find(p => p.code.replace(/\s/g, '') === entry.aiCode);
+              const exact = list.find(p => p.code.replace(/[^0-9]/g, '') === entry.aiCode);
               const targets = exact ? [exact] : list.slice(0, 2);
 
               if (targets.length === 0 && entry.decoded.positions6?.[0]) {
@@ -1146,6 +1056,7 @@ export class HomeComponent implements OnInit {
 
               for (const item of targets) {
                 if (cards.some(c => c.code === item.code)) continue;
+                const itemDigits = item.code.replace(/[^0-9]/g, '');
                 cards.push({
                   code: item.code,
                   formattedCode: item.formattedCode,
@@ -1154,11 +1065,11 @@ export class HomeComponent implements OnInit {
                   description: item.description,
                   titles: entry.decoded.titresParPosition10?.[item.code] ?? [],
                   position4: entry.decoded.position4,
-                  justification: item.code.replace(/\s/g, '') === entry.aiCode ? entry.justification : null,
+                  justification: itemDigits === entry.aiCode ? entry.justification : null,
                   regulatoryData: item.regulatoryData,
                   glossary: entry.decoded.glossary,
                   enriched: !!item.enriched,
-                  highlight: item.code.replace(/\s/g, '') === entry.aiCode
+                  highlight: itemDigits === entry.aiCode
                 });
               }
             }

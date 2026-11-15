@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { OAuthService } from 'angular-oauth2-oidc';
-import { forkJoin, of, Subscription } from 'rxjs';
+import { defer, forkJoin, of, Subscription } from 'rxjs';
 import { catchError, map, retry, switchMap } from 'rxjs/operators';
 import { RegulatoryData, SearchService } from '../services/search.service';
 import { SearchResultItem, SearchStateService, TariffZone } from '../services/search-state.service';
@@ -49,7 +49,7 @@ interface GroupedP4 {
           <div class="guest-banner-info">
             <span class="guest-pill">Essai gratuit sans inscription</span>
             @if ((guestTrialsRemaining$ | async); as rem) {
-              <span>Il vous reste <strong>{{ rem }}</strong> recherche{{ rem > 1 ? 's' : '' }} IA aujourd'hui (décodage par code toujours illimité et gratuit).</span>
+              <span>Il vous reste <strong>{{ rem }}</strong> recherche{{ rem > 1 ? 's' : '' }} IA aujourd'hui (décodage SQL toujours illimité).</span>
             } @else if ((guestTrialsRemaining$ | async) === 0) {
               <span>Vos 2 essais IA du jour sont utilisés. Le décodage SQL reste gratuit et illimité.</span>
             } @else {
@@ -88,7 +88,7 @@ interface GroupedP4 {
       </div>
 
       @if (isLoading) {
-        <div class="loading">Analyse de la nomenclature officielle en cours...</div>
+        <div class="loading">{{ loadingStageLabel }}</div>
       }
 
       @if (error) {
@@ -126,6 +126,7 @@ interface GroupedP4 {
                     [zone]="zone"
                     [description]="p6.description"
                     [position4]="{ code: g4.code, description: g4.description }"
+                    [showPosition4]="false"
                     [justification]="p6.justification"
                     [highlight]="true"
                     (hs6MatchRequest)="onHs6Match($event)">
@@ -152,6 +153,7 @@ interface GroupedP4 {
                         [description]="p10.description"
                         [titles]="p10.fullTitres"
                         [position4]="{ code: g4.code, description: g4.description }"
+                        [showPosition4]="false"
                         [justification]="p10.justification"
                         [regulatoryData]="p10.regulatoryData"
                         [glossary]="p10.glossary || p6.glossary"
@@ -233,14 +235,14 @@ interface GroupedP4 {
   `,
   styles: [`
     .search-container {
-      padding: 20px 8px;
-      max-width: 960px;
+      padding: 4px 0 16px;
+      max-width: 980px;
       margin: 0 auto;
-      animation: fadeIn 0.35s ease;
+      animation: fadeIn 0.25s ease;
     }
 
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
+      from { opacity: 0; transform: translateY(6px); }
       to { opacity: 1; transform: translateY(0); }
     }
 
@@ -249,48 +251,48 @@ interface GroupedP4 {
       justify-content: space-between;
       align-items: center;
       flex-wrap: wrap;
-      gap: 12px;
-      padding: 12px 16px;
-      margin-bottom: 18px;
-      border-radius: 12px;
+      gap: 10px;
+      padding: 10px 14px;
+      margin-bottom: 14px;
+      border-radius: 10px;
       background: rgba(59, 130, 246, 0.1);
       border: 1px solid rgba(59, 130, 246, 0.28);
       color: #CBD5E1;
-      font-size: 0.88rem;
+      font-size: 0.85rem;
     }
 
     .guest-banner-info {
       display: flex;
       align-items: center;
       flex-wrap: wrap;
-      gap: 10px;
+      gap: 8px;
     }
 
     .guest-pill {
-      padding: 3px 9px;
+      padding: 2px 8px;
       border-radius: 999px;
       background: rgba(59, 130, 246, 0.22);
       color: #93C5FD;
-      font-size: 0.74rem;
+      font-size: 0.72rem;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.04em;
     }
 
     .guest-cta {
-      padding: 6px 12px;
-      border-radius: 8px;
+      padding: 5px 11px;
+      border-radius: 7px;
       background: #F59E0B;
       color: #070B14;
       font-weight: 700;
-      font-size: 0.82rem;
+      font-size: 0.8rem;
       text-decoration: none;
       white-space: nowrap;
     }
 
     .search-form {
       display: flex;
-      margin-bottom: 12px;
+      margin-bottom: 10px;
       background: #0D1421;
       border: 1px solid rgba(255, 255, 255, 0.12);
       border-radius: 12px;
@@ -305,8 +307,8 @@ interface GroupedP4 {
 
     .search-input {
       flex: 1;
-      padding: 15px 18px;
-      min-height: 48px;
+      padding: 14px 16px;
+      min-height: 46px;
       font-size: 16px;
       border: none;
       outline: none;
@@ -314,13 +316,11 @@ interface GroupedP4 {
       color: #F8FAFC;
     }
 
-    .search-input::placeholder {
-      color: #64748B;
-    }
+    .search-input::placeholder { color: #64748B; }
 
     .search-button {
-      padding: 15px 28px;
-      min-height: 48px;
+      padding: 14px 24px;
+      min-height: 46px;
       font-size: 15px;
       font-family: var(--font-display, 'Space Grotesk', sans-serif);
       background: #F59E0B;
@@ -339,46 +339,43 @@ interface GroupedP4 {
       display: flex;
       align-items: center;
       flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 24px;
+      gap: 7px;
+      margin-bottom: 18px;
     }
 
-    .quick-label {
-      font-size: 0.8rem;
-      color: #94A3B8;
-      font-weight: 600;
-    }
+    .quick-label { font-size: 0.79rem; color: #94A3B8; font-weight: 600; }
 
     .example-chip {
-      padding: 5px 12px;
+      padding: 4px 11px;
       border-radius: 999px;
       background: #111827;
       border: 1px solid rgba(255, 255, 255, 0.1);
       color: #CBD5E1;
-      font-size: 0.8rem;
+      font-size: 0.79rem;
       cursor: pointer;
       transition: border-color 0.15s ease, color 0.15s ease;
     }
 
-    .example-chip:hover {
-      border-color: rgba(245, 158, 11, 0.5);
-      color: #FCD34D;
-    }
+    .example-chip:hover { border-color: rgba(245, 158, 11, 0.5); color: #FCD34D; }
 
     .loading {
-      margin: 28px 0;
+      margin: 22px 0;
+      padding: 12px 16px;
+      border-radius: 10px;
+      background: rgba(245, 158, 11, 0.08);
+      border: 1px solid rgba(245, 158, 11, 0.25);
       text-align: center;
-      color: #F59E0B;
-      font-size: 1rem;
+      color: #FCD34D;
+      font-size: 0.92rem;
       font-weight: 600;
     }
 
     .error {
-      margin: 24px 0;
+      margin: 18px 0;
       color: #FCA5A5;
       background: rgba(239, 68, 68, 0.1);
       border: 1px solid rgba(239, 68, 68, 0.3);
-      padding: 14px 18px;
+      padding: 13px 16px;
       border-radius: 10px;
     }
 
@@ -392,45 +389,46 @@ interface GroupedP4 {
     }
 
     .results h3 {
-      margin: 0 0 18px;
+      margin: 0 0 14px;
       color: #F8FAFC;
-      font-family: var(--font-display, 'Space Grotesk', sans-serif);
-      font-size: 1.25rem;
+      font-family: var(--font-serif, 'Source Serif 4', Georgia, serif);
+      font-size: 1.3rem;
+      font-weight: 600;
     }
 
     .no-results {
       text-align: center;
       color: #94A3B8;
-      padding: 24px;
+      padding: 20px;
       background: #111827;
       border-radius: 12px;
     }
 
     .result-card {
-      margin-bottom: 24px;
-      padding: 20px;
+      margin-bottom: 18px;
+      padding: 16px;
       background: #0D1421;
       border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 16px;
+      border-radius: 14px;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 12px;
     }
 
     .level-position4 {
       display: flex;
       align-items: baseline;
       flex-wrap: wrap;
-      gap: 10px;
-      padding: 12px 16px;
+      gap: 9px;
+      padding: 10px 14px;
       background: #111827;
       border: 1px solid rgba(255, 255, 255, 0.06);
       border-left: 3px solid #F59E0B;
-      border-radius: 10px;
+      border-radius: 9px;
     }
 
     .level-label {
-      font-size: 0.72rem;
+      font-size: 0.7rem;
       font-weight: 700;
       text-transform: uppercase;
       color: #94A3B8;
@@ -439,105 +437,81 @@ interface GroupedP4 {
     .level-code {
       font-family: var(--font-mono, 'JetBrains Mono', monospace);
       font-weight: 700;
-      font-size: 1rem;
+      font-size: 0.96rem;
       color: #F59E0B;
     }
 
-    .level-desc {
-      color: #E2E8F0;
-      font-size: 0.95rem;
-    }
+    .level-desc { color: #E2E8F0; font-size: 0.92rem; }
 
     .position-justif,
     .hs6-justif {
       font-style: italic;
       color: #CBD5E1;
-      font-size: 0.86rem;
-      line-height: 1.45;
-      padding: 6px 12px;
+      font-size: 0.84rem;
+      line-height: 1.4;
+      padding: 5px 11px;
       border-left: 2px solid rgba(96, 165, 250, 0.45);
       background: rgba(17, 24, 39, 0.55);
-      border-radius: 0 8px 8px 0;
+      border-radius: 0 7px 7px 0;
     }
 
-    .position-justif {
-      border-left-color: rgba(245, 158, 11, 0.55);
-      margin-top: -6px;
-    }
-
-    .hs6-justif {
-      margin: -4px 0 4px 4px;
-    }
+    .position-justif { border-left-color: rgba(245, 158, 11, 0.55); margin-top: -4px; }
+    .hs6-justif { margin: -2px 0 2px 4px; }
 
     .hs6-subheader {
       display: flex;
       align-items: baseline;
       flex-wrap: wrap;
-      gap: 10px;
-      padding: 4px 4px 0;
+      gap: 8px;
+      padding: 2px 2px 0;
     }
 
     .hs6-tag {
       font-family: var(--font-mono, 'JetBrains Mono', monospace);
-      font-size: 0.85rem;
+      font-size: 0.82rem;
       font-weight: 700;
       color: #60A5FA;
       background: rgba(59, 130, 246, 0.14);
-      padding: 3px 9px;
-      border-radius: 6px;
+      padding: 2px 8px;
+      border-radius: 5px;
     }
 
-    .hs6-desc {
-      color: #CBD5E1;
-      font-size: 0.92rem;
-      font-weight: 500;
-    }
+    .hs6-desc { color: #CBD5E1; font-size: 0.9rem; font-weight: 500; }
 
-    .featured-stack {
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
+    .featured-stack { display: flex; flex-direction: column; gap: 10px; }
 
     .siblings-accordion {
       background: #111827;
       border: 1px solid rgba(255, 255, 255, 0.07);
-      border-radius: 12px;
-      padding: 12px 16px;
+      border-radius: 10px;
+      padding: 10px 14px;
     }
 
     .siblings-accordion summary {
       cursor: pointer;
       color: #93C5FD;
-      font-size: 0.88rem;
+      font-size: 0.85rem;
       font-weight: 600;
       user-select: none;
     }
 
-    .siblings-table-wrap {
-      margin-top: 12px;
-      overflow-x: auto;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
+    .siblings-table-wrap { margin-top: 10px; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
 
     th {
-      padding: 8px 12px;
+      padding: 7px 10px;
       text-align: left;
       color: #94A3B8;
-      font-size: 0.72rem;
+      font-size: 0.7rem;
       text-transform: uppercase;
-      letter-spacing: 0.06em;
+      letter-spacing: 0.05em;
       border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     }
 
     td {
-      padding: 10px 12px;
+      padding: 8px 10px;
       color: #CBD5E1;
-      font-size: 0.88rem;
+      font-size: 0.86rem;
       border-bottom: 1px solid rgba(255, 255, 255, 0.04);
       vertical-align: top;
     }
@@ -555,25 +529,18 @@ interface GroupedP4 {
       border-radius: 4px;
       background: rgba(245, 158, 11, 0.16);
       color: #FCD34D;
-      font-size: 0.72rem;
+      font-size: 0.7rem;
     }
 
-    .tax-cell, .fap-cell {
-      white-space: nowrap;
-      font-size: 0.82rem;
-      color: #94A3B8;
-    }
+    .tax-cell, .fap-cell { white-space: nowrap; font-size: 0.8rem; color: #94A3B8; }
 
-    .titre-row td {
-      border-bottom: none;
-      padding: 6px 12px 2px;
-    }
+    .titre-row td { border-bottom: none; padding: 5px 10px 2px; }
 
     .titre-p10 {
       font-style: italic;
       color: #94A3B8;
-      font-size: 0.82rem;
-      padding-left: 10px;
+      font-size: 0.8rem;
+      padding-left: 8px;
       border-left: 2px solid rgba(245, 158, 11, 0.45);
     }
 
@@ -590,6 +557,14 @@ export class SearchComponent implements OnInit, OnDestroy {
   error: string | null = null;
   endpoint: 'positions6' | 'positions10' = 'positions6';
   zone: TariffZone = 'DZ';
+  loadingStageIndex: number = 0;
+
+  private readonly loadingStages = [
+    '1/3 Analyse des sections et chapitres...',
+    '2/3 Vérification des positions et notes légales...',
+    '3/3 Extraction des sous-positions officielles...'
+  ];
+  private stageTimerId?: ReturnType<typeof setInterval>;
 
   private readonly exampleQueriesDz = [
     'Chevaux pur sang arabe',
@@ -604,6 +579,10 @@ export class SearchComponent implements OnInit, OnDestroy {
     'Panneaux solaires photovoltaïques',
     'Huile d’olive vierge'
   ];
+
+  get loadingStageLabel(): string {
+    return this.loadingStages[this.loadingStageIndex] || this.loadingStages[0];
+  }
 
   get exampleQueries(): string[] {
     return (this.endpoint === 'positions10' && this.zone === 'EU')
@@ -641,6 +620,7 @@ export class SearchComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.zoneSub?.unsubscribe();
+    this.stopLoadingStages();
   }
 
   formatSiblingDuty(value?: string): string {
@@ -658,6 +638,23 @@ export class SearchComponent implements OnInit, OnDestroy {
     this.search();
   }
 
+  private startLoadingStages(): void {
+    this.stopLoadingStages();
+    this.loadingStageIndex = 0;
+    this.stageTimerId = setInterval(() => {
+      if (this.loadingStageIndex < this.loadingStages.length - 1) {
+        this.loadingStageIndex++;
+      }
+    }, 2200);
+  }
+
+  private stopLoadingStages(): void {
+    if (this.stageTimerId !== undefined) {
+      clearInterval(this.stageTimerId);
+      this.stageTimerId = undefined;
+    }
+  }
+
   search(): void {
     const trimmed = this.searchTerm.trim();
     if (!trimmed) {
@@ -668,17 +665,18 @@ export class SearchComponent implements OnInit, OnDestroy {
     this.isLoading = true;
     this.error = null;
     this.groupedResults = null;
+    this.startLoadingStages();
 
     this.searchService.searchCodes(trimmed, this.endpoint, this.zone).subscribe({
       next: (results: any[]) => {
         if (!results || results.length === 0) {
           this.groupedResults = [];
+          this.stopLoadingStages();
           this.isLoading = false;
           this.saveState([]);
           return;
         }
 
-        // Filtrer les résultats sans code valide (évite les appels decode?code= vides)
         const validResults = results.filter((r: any) => {
           const code = (r.code || '').replace(/[^0-9]/g, '');
           return code.length > 0;
@@ -686,6 +684,7 @@ export class SearchComponent implements OnInit, OnDestroy {
 
         if (validResults.length === 0) {
           this.error = 'L\'IA n\'a retourné aucun code valide. Veuillez reformuler votre recherche.';
+          this.stopLoadingStages();
           this.isLoading = false;
           return;
         }
@@ -699,7 +698,7 @@ export class SearchComponent implements OnInit, OnDestroy {
           const justification: string | null = r.justification ?? null;
 
           if (this.endpoint === 'positions10' && aiCode.length === 4) {
-            return this.searchService.decodeP10Code(aiCode, this.zone).pipe(
+            return defer(() => this.searchService.decodeP10Code(aiCode, this.zone)).pipe(
               retry(1),
               catchError(() => of(null)),
               switchMap(p4Decoded => {
@@ -711,7 +710,7 @@ export class SearchComponent implements OnInit, OnDestroy {
                   return of([{ decoded: p4Decoded, justification, aiCode } as SearchResultItem]);
                 }
                 const childCalls = hs6List.map(p6 =>
-                  this.searchService.decodeP10Code(p6.code.replace(/[^0-9]/g, ''), this.zone).pipe(
+                  defer(() => this.searchService.decodeP10Code(p6.code.replace(/[^0-9]/g, ''), this.zone)).pipe(
                     retry(1),
                     catchError(() => of(null)),
                     map(p6Decoded => {
@@ -739,8 +738,8 @@ export class SearchComponent implements OnInit, OnDestroy {
             : aiCode;
 
           const decode$ = this.endpoint === 'positions10'
-            ? this.searchService.decodeP10Code(codeToDecode, this.zone)
-            : this.searchService.decodeCode(codeToDecode, this.zone);
+            ? defer(() => this.searchService.decodeP10Code(codeToDecode, this.zone))
+            : defer(() => this.searchService.decodeCode(codeToDecode, this.zone));
 
           return decode$.pipe(
             retry(1),
@@ -757,6 +756,7 @@ export class SearchComponent implements OnInit, OnDestroy {
         forkJoin(decodeObservables).subscribe({
           next: (itemLists: SearchResultItem[][]) => {
             const valid = itemLists.flat().filter(i => i != null);
+            this.stopLoadingStages();
             if (valid.length === 0) {
               this.error = 'Le décodage des codes retournés a échoué. Veuillez réessayer.';
               this.isLoading = false;
@@ -767,12 +767,14 @@ export class SearchComponent implements OnInit, OnDestroy {
             this.isLoading = false;
           },
           error: () => {
+            this.stopLoadingStages();
             this.error = 'Erreur lors du décodage des résultats. Veuillez réessayer.';
             this.isLoading = false;
           }
         });
       },
       error: (err: any) => {
+        this.stopLoadingStages();
         if ((err.status === 401 || err.status === 403) && this.oauthService.hasValidAccessToken()) {
           this.oauthService.logOut();
         }

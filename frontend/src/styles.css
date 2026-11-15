@@ -60,7 +60,9 @@
   --neu-radius-pill: 9999px;
 
   /* Typography */
+  --font-serif: 'Source Serif 4', Georgia, 'Times New Roman', serif;
   --font-display: 'Space Grotesk', 'Inter', system-ui, -apple-system, sans-serif;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
   --font-body: 'Inter', system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
 
@@ -103,11 +105,23 @@ body {
   font-family: var(--font-display);
 }
 
-h1, h2, h3, h4, h5, h6 {
+.font-serif {
+  font-family: var(--font-serif);
+}
+
+h1, h2 {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  color: var(--neu-text-heading);
+  line-height: 1.18;
+  letter-spacing: -0.015em;
+}
+
+h3, h4, h5, h6 {
   font-family: var(--font-display);
   color: var(--neu-text-heading);
-  line-height: 1.2;
-  letter-spacing: -0.02em;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
 }
 
 /* ─── Focus ring ─── */

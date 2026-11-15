@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpResponse } from '@angular/common/http';
 import { BehaviorSubject, Observable, throwError } from 'rxjs';
-import { catchError, map, tap } from 'rxjs/operators';
+import { catchError, map, shareReplay, tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 
 export interface RegulatoryData {
@@ -72,6 +72,10 @@ export class SearchService {
 
   readonly guestTrialsRemaining$ = new BehaviorSubject<number | null>(null);
 
+  private decodeCache = new Map<string, Observable<DecodeResult>>();
+  private decodeP10Cache = new Map<string, Observable<DecodeResult>>();
+  private compareCache = new Map<string, Observable<Hs6ComparisonResult>>();
+
   constructor(private http: HttpClient) { }
 
   getGuestQuota(): Observable<GuestQuotaStatus> {
@@ -86,27 +90,67 @@ export class SearchService {
   }
 
   decodeCode(code: string, zone: string = 'DZ'): Observable<DecodeResult> {
-    return this.http.get<DecodeResult>(this.decodeApiUrl, {
-      params: { code, zone }
+    const normZone = (zone || 'DZ').trim().toUpperCase();
+    const key = `${normZone}:${code.trim().replace(/\s+/g, '')}`;
+    const cached = this.decodeCache.get(key);
+    if (cached) {
+      return cached;
+    }
+
+    const req$ = this.http.get<DecodeResult>(this.decodeApiUrl, {
+      params: { code, zone: normZone }
     }).pipe(
-      catchError(err => this.handleError(err))
+      catchError(err => {
+        this.decodeCache.delete(key);
+        return this.handleError(err);
+      }),
+      shareReplay({ bufferSize: 1, refCount: false })
     );
+    this.decodeCache.set(key, req$);
+    return req$;
   }
 
   decodeP10Code(code: string, zone: string = 'DZ'): Observable<DecodeResult> {
-    return this.http.get<DecodeResult>(this.decodeP10ApiUrl, {
-      params: { code, zone }
+    const normZone = (zone || 'DZ').trim().toUpperCase();
+    const key = `${normZone}:${code.trim().replace(/\s+/g, '')}`;
+    const cached = this.decodeP10Cache.get(key);
+    if (cached) {
+      return cached;
+    }
+
+    const req$ = this.http.get<DecodeResult>(this.decodeP10ApiUrl, {
+      params: { code, zone: normZone }
     }).pipe(
-      catchError(err => this.handleError(err))
+      catchError(err => {
+        this.decodeP10Cache.delete(key);
+        return this.handleError(err);
+      }),
+      shareReplay({ bufferSize: 1, refCount: false })
     );
+    this.decodeP10Cache.set(key, req$);
+    return req$;
   }
 
   compareHs6(code: string): Observable<Hs6ComparisonResult> {
-    return this.http.get<Hs6ComparisonResult>(`${this.decodeP10ApiUrl}/compare`, {
-      params: { code: code.trim() }
+    const trimmed = code.trim();
+    const digits = trimmed.replace(/[^0-9]/g, '');
+    const key = digits.length >= 6 ? digits.slice(0, 6) : trimmed;
+    const cached = this.compareCache.get(key);
+    if (cached) {
+      return cached;
+    }
+
+    const req$ = this.http.get<Hs6ComparisonResult>(`${this.decodeP10ApiUrl}/compare`, {
+      params: { code: trimmed }
     }).pipe(
-      catchError(err => this.handleError(err))
+      catchError(err => {
+        this.compareCache.delete(key);
+        return this.handleError(err);
+      }),
+      shareReplay({ bufferSize: 1, refCount: false })
     );
+    this.compareCache.set(key, req$);
+    return req$;
   }
 
   searchCodes(

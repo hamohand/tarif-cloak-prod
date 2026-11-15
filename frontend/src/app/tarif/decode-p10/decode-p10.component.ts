@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { OAuthService } from 'angular-oauth2-oidc';
 import { Subscription } from 'rxjs';
-import { DecodeResult, Hs6ComparisonResult, SearchService } from '../services/search.service';
+import { DecodeCodeItem, DecodeResult, Hs6ComparisonResult, SearchService } from '../services/search.service';
 import { SearchStateService, TariffZone } from '../services/search-state.service';
 import { CustomsCardComponent } from '../components/customs-card/customs-card.component';
 
@@ -13,31 +13,6 @@ import { CustomsCardComponent } from '../components/customs-card/customs-card.co
   imports: [CommonModule, FormsModule, CustomsCardComponent],
   template: `
     <div class="decode-container" [class.compare-wide]="compareMode">
-      <div class="free-badge-row">
-        <span class="free-pill">Décodage SQL officiel · 100 % gratuit &amp; sans crédit</span>
-      </div>
-
-      <div class="mode-switch" role="tablist" aria-label="Mode de décodage">
-        <button
-          type="button"
-          role="tab"
-          class="mode-tab"
-          [class.active]="!compareMode"
-          [attr.aria-selected]="!compareMode"
-          (click)="setCompareMode(false)">
-          Décodage par code ({{ zone === 'EU' ? 'UE · NC8' : 'DZ · P10' }})
-        </button>
-        <button
-          type="button"
-          role="tab"
-          class="mode-tab compare-tab"
-          [class.active]="compareMode"
-          [attr.aria-selected]="compareMode"
-          (click)="setCompareMode(true)">
-          ⇄ Comparateur Algérie ↔ Europe (HS6)
-        </button>
-      </div>
-
       @if (!compareMode) {
         <div class="search-form">
           <input
@@ -58,9 +33,12 @@ import { CustomsCardComponent } from '../components/customs-card/customs-card.co
           </button>
         </div>
 
-        <p class="hint">
-          Saisissez 2 chiffres (chapitre), 4 (position), 6 (HS6 international), 8 (NC8 UE) ou 10 chiffres (P10 DZ) avec ou sans points/clé.
-        </p>
+        <div class="quick-bar">
+          <span class="examples-label">Décodage SQL gratuit (2 à 10 chiffres) · Exemples :</span>
+          @for (ex of decodeExamples; track ex) {
+            <button type="button" class="example-chip mono" (click)="quickDecode(ex)">{{ ex }}</button>
+          }
+        </div>
 
         @if (isLoading) {
           <div class="loading">Extraction officielle depuis la nomenclature...</div>
@@ -72,9 +50,19 @@ import { CustomsCardComponent } from '../components/customs-card/customs-card.co
 
         @if (result && !isLoading) {
           <div class="results">
-            <h3>
-              Hiérarchie officielle du code <span class="code-badge">{{ result.codeRecherche }}</span>
-            </h3>
+            <div class="results-head">
+              <h3>
+                Hiérarchie officielle du code <span class="code-badge">{{ result.codeRecherche }}</span>
+              </h3>
+              @if (currentHs6Prefix) {
+                <button
+                  type="button"
+                  class="compare-shortcut-btn"
+                  (click)="onHs6Match({ hs6: currentHs6Prefix, zone: result.zone || zone, sourceCode: result.codeRecherche })">
+                  ⇄ Comparer DZ ↔ UE ({{ currentHs6Prefix }})
+                </button>
+              }
+            </div>
 
             <div class="hierarchy">
               <div class="level level-section">
@@ -83,7 +71,10 @@ import { CustomsCardComponent } from '../components/customs-card/customs-card.co
                 <div class="level-content">
                   <span class="level-desc">{{ result.section.description }}</span>
                   @if (result.section.note) {
-                    <p class="level-note">{{ result.section.note }}</p>
+                    <details class="note-details">
+                      <summary>Note légale de section</summary>
+                      <p class="level-note">{{ result.section.note }}</p>
+                    </details>
                   }
                 </div>
               </div>
@@ -94,7 +85,10 @@ import { CustomsCardComponent } from '../components/customs-card/customs-card.co
                 <div class="level-content">
                   <span class="level-desc">{{ result.chapitre.description }}</span>
                   @if (result.chapitre.note) {
-                    <p class="level-note">{{ result.chapitre.note }}</p>
+                    <details class="note-details">
+                      <summary>Note légale de chapitre</summary>
+                      <p class="level-note">{{ result.chapitre.note }}</p>
+                    </details>
                   }
                 </div>
               </div>
@@ -140,24 +134,86 @@ import { CustomsCardComponent } from '../components/customs-card/customs-card.co
                   }
                 </h4>
 
-                <div class="cards-list">
-                  @for (item of result.positions10; track item.code) {
-                    <app-customs-card
-                      [code]="item.code"
-                      [formattedCode]="item.formattedCode"
-                      [checkDigit]="item.checkDigit"
-                      [zone]="result.zone || zone"
-                      [description]="item.description"
-                      [titles]="getItemTitles(item.code)"
-                      [position4]="result.position4"
-                      [regulatoryData]="item.regulatoryData"
-                      [glossary]="result.glossary"
-                      [enriched]="!!item.enriched"
-                      [highlight]="result.niveau === 'POSITION10' || result.niveau === 'POSITION8'"
-                      (hs6MatchRequest)="onHs6Match($event)">
-                    </app-customs-card>
-                  }
-                </div>
+                @if (result.niveau === 'POSITION6' && result.positions10.length > 2) {
+                  <div class="table-wrap">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>{{ (result.zone || zone) === 'EU' ? 'Code NC8' : 'Code P10' }}</th>
+                          <th>Désignation officielle</th>
+                          @if ((result.zone || zone) === 'EU') {
+                            <th>TDC</th>
+                            <th>Unité</th>
+                          } @else {
+                            <th>DD / TVA</th>
+                            <th>UQN · GU</th>
+                            <th>FAP</th>
+                          }
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (item of result.positions10; track item.code; let idx = $index) {
+                          @let deltaTitles = getDeltaTitles(idx, item.code);
+                          @if (deltaTitles.length > 0) {
+                            <tr class="titre-row">
+                              <td [attr.colspan]="(result.zone || zone) === 'EU' ? 4 : 5" class="titres-cell">
+                                {{ deltaTitles.join(' › ') }}
+                              </td>
+                            </tr>
+                          }
+                          <tr class="clickable-row" (click)="quickDecode(item.code)" title="Cliquer pour ouvrir la fiche détaillée">
+                            <td class="code-cell">
+                              {{ item.formattedCode || item.code }}
+                              @if (item.checkDigit) {
+                                <span class="mini-key">{{ item.checkDigit }}</span>
+                              }
+                            </td>
+                            <td class="desc-cell">{{ cleanDesc(item.description) }}</td>
+                            @if ((result.zone || zone) === 'EU') {
+                              <td class="tax-cell">{{ formatDuty(item.regulatoryData?.dd) }}</td>
+                              <td class="tax-cell">{{ item.regulatoryData?.uqn || '—' }}</td>
+                            } @else {
+                              <td class="tax-cell">
+                                @if (item.regulatoryData?.dd || item.regulatoryData?.tva) {
+                                  {{ formatDuty(item.regulatoryData?.dd) }} / {{ formatDuty(item.regulatoryData?.tva) }}
+                                } @else {
+                                  —
+                                }
+                              </td>
+                              <td class="tax-cell">
+                                {{ item.regulatoryData?.uqn || '—' }}
+                                @if (item.regulatoryData?.gu && item.regulatoryData?.gu !== '-') {
+                                  · GU {{ item.regulatoryData?.gu }}
+                                }
+                              </td>
+                              <td class="tax-cell">{{ item.regulatoryData?.fap?.join(', ') || '—' }}</td>
+                            }
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                } @else {
+                  <div class="cards-list">
+                    @for (item of result.positions10; track item.code) {
+                      <app-customs-card
+                        [code]="item.code"
+                        [formattedCode]="item.formattedCode"
+                        [checkDigit]="item.checkDigit"
+                        [zone]="result.zone || zone"
+                        [description]="item.description"
+                        [titles]="getItemTitles(item.code)"
+                        [position4]="result.position4"
+                        [showPosition4]="false"
+                        [regulatoryData]="item.regulatoryData"
+                        [glossary]="result.glossary"
+                        [enriched]="!!item.enriched"
+                        [highlight]="result.niveau === 'POSITION10' || result.niveau === 'POSITION8'"
+                        (hs6MatchRequest)="onHs6Match($event)">
+                      </app-customs-card>
+                    }
+                  </div>
+                }
               </div>
             }
           </div>
@@ -182,12 +238,8 @@ import { CustomsCardComponent } from '../components/customs-card/customs-card.co
           </button>
         </div>
 
-        <p class="hint">
-          Saisissez un code HS6 (6 chiffres) ou un code complet NC8 / P10 : le comparateur aligne côte à côte la nomenclature algérienne (DGD · P10) et européenne (UE 2026 · NC8) sous la même racine OMD.
-        </p>
-
-        <div class="compare-examples">
-          <span class="examples-label">Exemples rapides :</span>
+        <div class="quick-bar">
+          <span class="examples-label">Comparateur HS6 (Algérie DGD ↔ UE 2026) · Exemples :</span>
           @for (ex of compareExamples; track ex.code) {
             <button type="button" class="compare-chip" (click)="quickCompare(ex.code)">
               <span class="chip-code">{{ ex.code }}</span> {{ ex.label }}
@@ -213,17 +265,13 @@ import { CustomsCardComponent } from '../components/customs-card/customs-card.co
               <div class="level level-section">
                 <span class="level-label">Section</span>
                 <span class="level-code">{{ compareResult.section.code }}</span>
-                <div class="level-content">
-                  <span class="level-desc">{{ compareResult.section.description }}</span>
-                </div>
+                <span class="level-desc">{{ compareResult.section.description }}</span>
               </div>
 
               <div class="level level-chapitre">
                 <span class="level-label">Chapitre</span>
                 <span class="level-code">{{ compareResult.chapitre.code }}</span>
-                <div class="level-content">
-                  <span class="level-desc">{{ compareResult.chapitre.description }}</span>
-                </div>
+                <span class="level-desc">{{ compareResult.chapitre.description }}</span>
               </div>
 
               @if (compareResult.position4) {
@@ -261,6 +309,8 @@ import { CustomsCardComponent } from '../components/customs-card/customs-card.co
                         [description]="item.description"
                         [titles]="getCompareTitles(compareResult.dz!, item.code)"
                         [position4]="compareResult.position4 ?? null"
+                        [showPosition4]="false"
+                        [showCompareAction]="false"
                         [regulatoryData]="item.regulatoryData"
                         [glossary]="compareResult.dz?.glossary"
                         [enriched]="!!item.enriched"
@@ -293,6 +343,8 @@ import { CustomsCardComponent } from '../components/customs-card/customs-card.co
                         [description]="item.description"
                         [titles]="getCompareTitles(compareResult.eu!, item.code)"
                         [position4]="compareResult.position4 ?? null"
+                        [showPosition4]="false"
+                        [showCompareAction]="false"
                         [regulatoryData]="item.regulatoryData"
                         [glossary]="compareResult.eu?.glossary"
                         [enriched]="!!item.enriched"
@@ -315,71 +367,17 @@ import { CustomsCardComponent } from '../components/customs-card/customs-card.co
   `,
   styles: [`
     .decode-container {
-      padding: 20px 8px;
-      max-width: 960px;
+      padding: 4px 0 16px;
+      max-width: 980px;
       margin: 0 auto;
-      animation: fadeIn 0.35s ease;
-      transition: max-width 0.2s ease;
+      animation: fadeIn 0.25s ease;
     }
 
-    .decode-container.compare-wide {
-      max-width: 1140px;
-    }
+    .decode-container.compare-wide { max-width: 1140px; }
 
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
+      from { opacity: 0; transform: translateY(6px); }
       to { opacity: 1; transform: translateY(0); }
-    }
-
-    .free-badge-row {
-      margin-bottom: 14px;
-    }
-
-    .free-pill {
-      display: inline-block;
-      padding: 4px 12px;
-      border-radius: 999px;
-      background: rgba(16, 185, 129, 0.12);
-      border: 1px solid rgba(16, 185, 129, 0.32);
-      color: #34D399;
-      font-size: 0.78rem;
-      font-weight: 700;
-    }
-
-    .mode-switch {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-bottom: 16px;
-    }
-
-    .mode-tab {
-      padding: 9px 16px;
-      border-radius: 10px;
-      background: #0D1421;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      color: #94A3B8;
-      font-size: 0.88rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .mode-tab:hover {
-      color: #F8FAFC;
-      border-color: rgba(255, 255, 255, 0.22);
-    }
-
-    .mode-tab.active {
-      background: rgba(245, 158, 11, 0.14);
-      border-color: rgba(245, 158, 11, 0.5);
-      color: #FCD34D;
-    }
-
-    .mode-tab.compare-tab.active {
-      background: rgba(59, 130, 246, 0.15);
-      border-color: rgba(59, 130, 246, 0.5);
-      color: #93C5FD;
     }
 
     .search-form {
@@ -399,9 +397,9 @@ import { CustomsCardComponent } from '../components/customs-card/customs-card.co
 
     .search-input {
       flex: 1;
-      padding: 15px 18px;
-      min-height: 48px;
-      font-size: 18px;
+      padding: 14px 16px;
+      min-height: 46px;
+      font-size: 17px;
       font-family: var(--font-mono, 'JetBrains Mono', monospace);
       border: none;
       outline: none;
@@ -412,14 +410,14 @@ import { CustomsCardComponent } from '../components/customs-card/customs-card.co
 
     .search-input::placeholder {
       color: #64748B;
-      font-size: 15px;
+      font-size: 14px;
       letter-spacing: normal;
-      font-family: var(--font-sans, system-ui, sans-serif);
+      font-family: var(--font-sans, 'Inter', sans-serif);
     }
 
     .search-button {
-      padding: 15px 28px;
-      min-height: 48px;
+      padding: 14px 24px;
+      min-height: 46px;
       font-size: 15px;
       font-family: var(--font-display, 'Space Grotesk', sans-serif);
       background: #F59E0B;
@@ -431,170 +429,206 @@ import { CustomsCardComponent } from '../components/customs-card/customs-card.co
       transition: background 0.2s ease;
     }
 
-    .search-button.compare-submit {
-      background: #3B82F6;
-      color: #F8FAFC;
-    }
-
+    .search-button.compare-submit { background: #3B82F6; color: #F8FAFC; }
     .search-button.compare-submit:hover:not(:disabled) { background: #2563EB; }
     .search-button:hover:not(:disabled) { background: #D97706; }
     .search-button:disabled { opacity: 0.45; cursor: not-allowed; }
 
-    .hint {
-      color: #94A3B8;
-      font-size: 0.85rem;
-      margin: 0 0 16px;
-    }
-
-    .compare-examples {
+    .quick-bar {
       display: flex;
       align-items: center;
       flex-wrap: wrap;
       gap: 8px;
-      margin-bottom: 20px;
+      margin-bottom: 18px;
     }
 
-    .examples-label {
-      font-size: 0.8rem;
-      color: #64748B;
-      font-weight: 600;
-    }
+    .examples-label { font-size: 0.8rem; color: #94A3B8; font-weight: 500; }
 
-    .compare-chip {
+    .example-chip, .compare-chip {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      padding: 5px 11px;
+      padding: 4px 11px;
       border-radius: 999px;
       background: #111827;
       border: 1px solid rgba(255, 255, 255, 0.1);
       color: #CBD5E1;
-      font-size: 0.8rem;
+      font-size: 0.79rem;
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: border-color 0.15s ease, color 0.15s ease;
     }
 
-    .compare-chip:hover {
-      border-color: rgba(59, 130, 246, 0.5);
-      color: #93C5FD;
-    }
-
-    .chip-code {
+    .example-chip.mono, .chip-code {
       font-family: var(--font-mono, 'JetBrains Mono', monospace);
-      font-weight: 700;
-      color: #60A5FA;
-    }
-
-    .loading {
-      margin: 26px 0;
-      text-align: center;
-      color: #F59E0B;
       font-weight: 600;
     }
 
+    .example-chip:hover { border-color: rgba(245, 158, 11, 0.5); color: #FCD34D; }
+    .compare-chip:hover { border-color: rgba(59, 130, 246, 0.5); color: #93C5FD; }
+    .chip-code { color: #60A5FA; }
+
+    .loading { margin: 22px 0; text-align: center; color: #F59E0B; font-weight: 600; }
+
     .error {
-      margin: 18px 0;
+      margin: 16px 0;
       color: #FCA5A5;
       background: rgba(239, 68, 68, 0.1);
       border: 1px solid rgba(239, 68, 68, 0.3);
-      padding: 14px 18px;
+      padding: 13px 16px;
       border-radius: 10px;
     }
 
     .results {
       background: #0D1421;
       border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 16px;
-      padding: 20px;
+      border-radius: 14px;
+      padding: 18px;
+    }
+
+    .results-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 14px;
     }
 
     .results h3 {
-      margin: 0 0 16px;
+      margin: 0;
       color: #F8FAFC;
-      font-family: var(--font-display, 'Space Grotesk', sans-serif);
-      font-size: 1.2rem;
+      font-family: var(--font-serif, 'Source Serif 4', Georgia, serif);
+      font-size: 1.25rem;
+      font-weight: 600;
     }
+
+    .results-head + .hierarchy { margin-top: 0; }
+    .results > h3 { margin-bottom: 14px; }
 
     .code-badge {
       display: inline-block;
       margin-left: 6px;
-      padding: 3px 10px;
-      border-radius: 8px;
+      padding: 2px 9px;
+      border-radius: 7px;
       background: rgba(245, 158, 11, 0.16);
       border: 1px solid rgba(245, 158, 11, 0.35);
       color: #F59E0B;
       font-family: var(--font-mono, 'JetBrains Mono', monospace);
-      font-size: 1rem;
+      font-size: 0.95rem;
     }
+
+    .compare-shortcut-btn {
+      padding: 6px 12px;
+      border-radius: 8px;
+      background: rgba(59, 130, 246, 0.14);
+      border: 1px solid rgba(59, 130, 246, 0.35);
+      color: #93C5FD;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .compare-shortcut-btn:hover { background: rgba(59, 130, 246, 0.24); color: #DBEAFE; }
 
     .hierarchy {
       display: flex;
       flex-direction: column;
-      gap: 10px;
-      margin-bottom: 22px;
+      gap: 6px;
+      margin-bottom: 18px;
     }
 
     .level {
       display: flex;
       align-items: flex-start;
-      gap: 12px;
-      padding: 12px 16px;
-      border-radius: 10px;
+      gap: 10px;
+      padding: 9px 13px;
+      border-radius: 9px;
       background: #111827;
       border: 1px solid rgba(255, 255, 255, 0.06);
     }
 
     .level-section { border-left: 3px solid #3B82F6; }
-    .level-chapitre { border-left: 3px solid #10B981; margin-left: 14px; }
-    .level-position4 { border-left: 3px solid #F59E0B; margin-left: 28px; }
-    .level-position6 { border-left: 3px solid #A78BFA; margin-left: 42px; }
+    .level-chapitre { border-left: 3px solid #10B981; }
+    .level-position4 { border-left: 3px solid #F59E0B; }
+    .level-position6 { border-left: 3px solid #A78BFA; }
 
     .level-label {
-      font-size: 0.72rem;
+      font-size: 0.68rem;
       font-weight: 700;
       text-transform: uppercase;
+      letter-spacing: 0.04em;
       color: #94A3B8;
-      min-width: 74px;
+      min-width: 72px;
       padding-top: 2px;
     }
 
     .level-code {
       font-family: var(--font-mono, 'JetBrains Mono', monospace);
       font-weight: 700;
-      font-size: 0.96rem;
+      font-size: 0.92rem;
       color: #F8FAFC;
       min-width: 56px;
     }
 
-    .level-content { display: flex; flex-direction: column; gap: 4px; }
-    .level-desc { color: #E2E8F0; font-size: 0.94rem; line-height: 1.4; }
-    .level-note { margin: 0; color: #94A3B8; font-size: 0.82rem; line-height: 1.4; }
+    .level-content { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+    .level-desc { color: #E2E8F0; font-size: 0.9rem; line-height: 1.4; }
+
+    .note-details summary {
+      cursor: pointer;
+      color: #93C5FD;
+      font-size: 0.78rem;
+      font-weight: 600;
+      user-select: none;
+    }
+
+    .level-note {
+      margin: 6px 0 0;
+      padding: 8px 10px;
+      border-radius: 6px;
+      background: #0D1421;
+      color: #94A3B8;
+      font-size: 0.8rem;
+      line-height: 1.45;
+      white-space: pre-line;
+    }
 
     .subpositions h4 {
       color: #F8FAFC;
       font-family: var(--font-display, 'Space Grotesk', sans-serif);
-      font-size: 1rem;
-      margin: 0 0 12px;
+      font-size: 0.98rem;
+      margin: 0 0 10px;
     }
 
     .table-wrap { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; }
     th {
-      padding: 10px 14px;
+      padding: 8px 11px;
       text-align: left;
       color: #94A3B8;
-      font-size: 0.74rem;
+      font-size: 0.72rem;
       text-transform: uppercase;
+      letter-spacing: 0.05em;
       border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     }
+
     td {
-      padding: 11px 14px;
+      padding: 9px 11px;
       color: #CBD5E1;
-      font-size: 0.9rem;
+      font-size: 0.87rem;
       border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      vertical-align: top;
     }
+
     .clickable-row { cursor: pointer; }
     .clickable-row:hover td { background: rgba(245, 158, 11, 0.06); }
+
+    .titre-row td {
+      border-bottom: none;
+      padding: 10px 11px 3px;
+      color: #94A3B8;
+      font-size: 0.79rem;
+      font-style: italic;
+    }
 
     .code-cell {
       font-family: var(--font-mono, 'JetBrains Mono', monospace);
@@ -603,80 +637,67 @@ import { CustomsCardComponent } from '../components/customs-card/customs-card.co
       white-space: nowrap;
     }
 
-    .cards-list {
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
+    .mini-key {
+      margin-left: 4px;
+      padding: 1px 5px;
+      border-radius: 4px;
+      background: rgba(245, 158, 11, 0.16);
+      color: #FCD34D;
+      font-size: 0.7rem;
     }
+
+    .tax-cell { white-space: nowrap; font-size: 0.82rem; color: #CBD5E1; }
+
+    .cards-list { display: flex; flex-direction: column; gap: 10px; }
 
     .compare-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 18px;
+      gap: 16px;
       align-items: start;
     }
 
-    .compare-col {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      min-width: 0;
-    }
+    .compare-col { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 
     .compare-col-head {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 10px;
-      padding: 11px 14px;
+      padding: 10px 14px;
       border-radius: 10px;
       background: #111827;
       border: 1px solid rgba(255, 255, 255, 0.08);
     }
 
-    .compare-col-head.dz {
-      border-top: 3px solid #F59E0B;
-    }
-
-    .compare-col-head.eu {
-      border-top: 3px solid #3B82F6;
-    }
+    .compare-col-head.dz { border-top: 3px solid #F59E0B; }
+    .compare-col-head.eu { border-top: 3px solid #3B82F6; }
 
     .col-title {
       font-family: var(--font-display, 'Space Grotesk', sans-serif);
       font-weight: 700;
-      font-size: 0.96rem;
+      font-size: 0.94rem;
       color: #F8FAFC;
     }
 
-    .col-count {
-      font-size: 0.76rem;
-      font-weight: 700;
-      color: #94A3B8;
-      white-space: nowrap;
-    }
+    .col-count { font-size: 0.75rem; font-weight: 600; color: #94A3B8; white-space: nowrap; }
 
     .compare-empty {
-      padding: 18px;
-      border-radius: 12px;
+      padding: 16px;
+      border-radius: 10px;
       background: #111827;
       border: 1px dashed rgba(255, 255, 255, 0.14);
       color: #94A3B8;
-      font-size: 0.88rem;
+      font-size: 0.86rem;
       line-height: 1.45;
     }
 
-    @media (max-width: 900px) {
-      .compare-grid {
-        grid-template-columns: 1fr;
-      }
-    }
+    @media (max-width: 900px) { .compare-grid { grid-template-columns: 1fr; } }
 
     @media (max-width: 720px) {
       .search-form { flex-direction: column; }
       .search-button { border-radius: 0 0 12px 12px; }
       .level { flex-direction: column; gap: 4px; }
-      .level-chapitre, .level-position4, .level-position6 { margin-left: 0; }
     }
   `]
 })
@@ -699,11 +720,23 @@ export class DecodeP10Component implements OnInit, OnDestroy {
     { code: '870380', label: 'Voitures électriques' }
   ];
 
+  private readonly decodeExamplesDz = ['0101.21.91.00 L', '080410', '0808'];
+  private readonly decodeExamplesEu = ['0101.21.00', '0804.10.00', '870380'];
+
   private searchService = inject(SearchService);
   private oauthService = inject(OAuthService);
   private state = inject(SearchStateService);
   private zoneSub?: Subscription;
   private compareSub?: Subscription;
+
+  get decodeExamples(): string[] {
+    return this.zone === 'EU' ? this.decodeExamplesEu : this.decodeExamplesDz;
+  }
+
+  get currentHs6Prefix(): string {
+    const digits = (this.result?.codeRecherche || '').replace(/[^0-9]/g, '');
+    return digits.length >= 6 ? digits.slice(0, 6) : '';
+  }
 
   ngOnInit(): void {
     this.compareMode = this.state.compareMode;
@@ -742,8 +775,36 @@ export class DecodeP10Component implements OnInit, OnDestroy {
     this.compareSub?.unsubscribe();
   }
 
-  setCompareMode(enabled: boolean): void {
-    this.state.compareMode = enabled;
+  cleanDesc(text?: string | null): string {
+    const cleaned = (text || '').replace(/^[-–—\s]+/, '').trim();
+    return cleaned || text || '—';
+  }
+
+  formatDuty(value?: string): string {
+    if (!value) return '—';
+    const trimmed = value.trim();
+    if (!trimmed || trimmed === '-') return '—';
+    if (trimmed.includes('%')) return trimmed;
+    const starMatch = trimmed.match(/^(\d+(?:[.,]\d+)?)\s*\*$/);
+    if (starMatch) return `${starMatch[1]} % *`;
+    return /^\d+(?:[.,]\d+)?$/.test(trimmed) ? `${trimmed} %` : trimmed;
+  }
+
+  getDeltaTitles(index: number, code: string): string[] {
+    const curr = this.cleanTitleList(this.getItemTitles(code));
+    if (curr.length === 0) return [];
+    if (index === 0) return curr;
+    const prevItem = this.result?.positions10?.[index - 1];
+    const prev = prevItem ? this.cleanTitleList(this.getItemTitles(prevItem.code)) : [];
+    let i = 0;
+    while (i < Math.min(curr.length, prev.length) && curr[i] === prev[i]) i++;
+    return curr.slice(i);
+  }
+
+  private cleanTitleList(titles: string[]): string[] {
+    return (titles || [])
+      .map(t => (t || '').replace(/^[-–—\s]+/, '').replace(/\s*:\s*$/, '').trim())
+      .filter(t => t.length > 0 && !/^d[ée]signation des produits$/i.test(t));
   }
 
   getItemTitles(code: string): string[] {

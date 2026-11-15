@@ -12,14 +12,16 @@ import { environment } from '../../../environments/environment';
   template: `
     <div class="tarif-shell">
       <header class="tarif-header">
-        <div class="trust-pill">
-          <span class="trust-dot"></span>
-          100 % Nomenclature Officielle — Zéro code inventé
+        <div class="header-copy">
+          <span class="header-kicker">
+            <span class="trust-dot"></span>
+            Nomenclature officielle · DGD &amp; EUR-Lex
+          </span>
+          <h1>Nomenclature Douanière &amp; Recherche Tarifaire</h1>
+          <p class="subtitle">
+            Algérie (P10 · DD, TVA, UQN, FAP) &amp; Union Européenne (NC8 2026 · TDC) — recherche, décodage et alignement HS6.
+          </p>
         </div>
-        <h1>Nomenclature Douanière &amp; Recherche Tarifaire</h1>
-        <p class="subtitle">
-          Système Harmonisé (HS-06), Tarif National Algérien (P10 · DD, TVA, UQN, FAP) &amp; Nomenclature Combinée UE 2026 (NC8 · TDC) · Saisie multilingue
-        </p>
 
         <div class="zone-switcher" role="group" aria-label="Zone tarifaire active">
           <button
@@ -27,65 +29,57 @@ import { environment } from '../../../environments/environment';
             class="zone-pill-btn"
             [class.active]="(state.selectedZone$ | async) !== 'EU'"
             (click)="state.setZone('DZ')">
-            <span class="zone-code">DZ</span> Algérie · P10 (DGD)
+            <span class="zone-code">DZ</span> Algérie · P10
           </button>
           <button
             type="button"
             class="zone-pill-btn eu"
             [class.active]="(state.selectedZone$ | async) === 'EU'"
             (click)="state.setZone('EU')">
-            <span class="zone-code">UE</span> Union Européenne · NC8 (TDC 2026)
+            <span class="zone-code">UE</span> Europe · NC8
           </button>
         </div>
       </header>
 
-      <nav class="mode-nav" aria-label="Modes de recherche et décodage">
-        <div class="mode-card">
-          <span class="mode-label">Recherche par désignation (IA)</span>
-          <div class="mode-links">
-            <a routerLink="search-position10" routerLinkActive="active">
-              {{ (state.selectedZone$ | async) === 'EU' ? 'NC8 Europe (UE)' : 'Position-10 (DZ)' }}
-              <span class="badge-cost">{{ (isAuthenticated$ | async) ? '15 cr' : '2 essais gratuits' }}</span>
-            </a>
-            <a routerLink="search" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
-              HS-06 International
-              <span class="badge-cost">{{ (isAuthenticated$ | async) ? '10 cr' : 'Essai gratuit' }}</span>
-            </a>
-            @if ((isAuthenticated$ | async) && !isBetaMode) {
-              <a routerLink="searchListLots" routerLinkActive="active">
-                Liste CSV/Excel
-              </a>
-              <a routerLink="batch-search" routerLinkActive="active">
-                Batch asynchrone
-              </a>
-            }
-          </div>
-        </div>
+      <nav class="workspace-nav" aria-label="Modes de recherche et décodage">
+        <a routerLink="search-position10" routerLinkActive="active" class="nav-pill">
+          <span>Recherche {{ (state.selectedZone$ | async) === 'EU' ? 'NC8 (UE)' : 'P10 (DZ)' }}</span>
+          <span class="badge-cost">{{ (isAuthenticated$ | async) ? '15 cr' : 'IA · 2 essais' }}</span>
+        </a>
 
-        <div class="mode-card">
-          <span class="mode-label">Décodage officiel par code (SQL)</span>
-          <div class="mode-links">
-            <a routerLink="decode-p10"
-               routerLinkActive="route-match"
-               #rlaDecode="routerLinkActive"
-               [class.active]="rlaDecode.isActive && !(state.compareMode$ | async)"
-               (click)="state.compareMode = false">
-              Code P10 / NC8 complet
-              <span class="badge-free">Gratuit</span>
-            </a>
-            <a routerLink="decode" routerLinkActive="active">
-              Code HS 2-6 chiffres
-              <span class="badge-free">Gratuit</span>
-            </a>
-            <button type="button"
-                    class="mode-action-btn"
-                    [class.active]="rlaDecode.isActive && (state.compareMode$ | async) === true"
-                    (click)="openComparator()">
-              ⇄ Comparateur DZ ↔ UE
-              <span class="badge-free">Gratuit</span>
-            </button>
-          </div>
-        </div>
+        <a routerLink="search" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-pill">
+          <span>HS-06 International</span>
+          <span class="badge-cost">{{ (isAuthenticated$ | async) ? '10 cr' : 'IA · Essai' }}</span>
+        </a>
+
+        @if ((isAuthenticated$ | async) && !isBetaMode) {
+          <a routerLink="searchListLots" routerLinkActive="active" class="nav-pill">
+            <span>Liste CSV</span>
+          </a>
+          <a routerLink="batch-search" routerLinkActive="active" class="nav-pill">
+            <span>Batch</span>
+          </a>
+        }
+
+        <span class="nav-sep" aria-hidden="true"></span>
+
+        <a routerLink="decode-p10"
+           routerLinkActive="route-match"
+           #rlaDecode="routerLinkActive"
+           class="nav-pill"
+           [class.active]="rlaDecode.isActive && !(state.compareMode$ | async)"
+           (click)="state.compareMode = false">
+          <span>Décodeur par code</span>
+          <span class="badge-free">Gratuit</span>
+        </a>
+
+        <button type="button"
+                class="nav-pill compare-pill"
+                [class.active]="rlaDecode.isActive && (state.compareMode$ | async) === true"
+                (click)="openComparator()">
+          <span>⇄ Comparateur DZ ↔ UE</span>
+          <span class="badge-free">Gratuit</span>
+        </button>
       </nav>
 
       <main class="tarif-main">
@@ -106,87 +100,94 @@ import { environment } from '../../../environments/environment';
     }
 
     .tarif-shell {
-      max-width: 1180px;
+      max-width: 1140px;
       margin: 0 auto;
-      padding: 28px 20px 36px;
+      padding: 20px 20px 32px;
       display: flex;
       flex-direction: column;
       min-height: calc(100vh - 64px);
     }
 
     .tarif-header {
-      text-align: center;
-      margin-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 16px;
+      text-align: left;
     }
 
-    .trust-pill {
+    .header-copy {
+      flex: 1 1 520px;
+    }
+
+    .header-kicker {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      padding: 5px 14px;
-      border-radius: 999px;
-      background: rgba(16, 185, 129, 0.1);
-      border: 1px solid rgba(16, 185, 129, 0.3);
-      color: #34D399;
-      font-size: 0.78rem;
+      gap: 7px;
+      font-family: var(--font-sans, 'Inter', sans-serif);
+      font-size: 0.74rem;
       font-weight: 700;
-      letter-spacing: 0.03em;
-      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #34D399;
+      margin-bottom: 6px;
     }
 
     .trust-dot {
-      width: 7px;
-      height: 7px;
+      width: 6px;
+      height: 6px;
       border-radius: 50%;
       background: #10B981;
       box-shadow: 0 0 8px rgba(16, 185, 129, 0.75);
     }
 
     .tarif-header h1 {
-      margin: 0 0 8px;
+      margin: 0 0 6px;
       color: #F8FAFC;
-      font-family: var(--font-display, 'Space Grotesk', sans-serif);
-      font-size: 1.85rem;
+      font-family: var(--font-serif, 'Source Serif 4', Georgia, serif);
+      font-size: 1.75rem;
       font-weight: 700;
-      letter-spacing: -0.02em;
+      letter-spacing: -0.015em;
     }
 
     .subtitle {
-      margin: 0 0 16px;
+      margin: 0;
+      font-family: var(--font-sans, 'Inter', sans-serif);
       color: #94A3B8;
-      font-size: 0.95rem;
+      font-size: 0.9rem;
+      font-weight: 400;
+      line-height: 1.45;
     }
 
     .zone-switcher {
       display: inline-flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 6px;
-      padding: 5px;
-      border-radius: 12px;
+      gap: 4px;
+      padding: 4px;
+      border-radius: 10px;
       background: #0D1421;
       border: 1px solid rgba(255, 255, 255, 0.09);
+      flex-shrink: 0;
     }
 
     .zone-pill-btn {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      padding: 8px 16px;
-      border-radius: 9px;
+      gap: 7px;
+      padding: 7px 13px;
+      border-radius: 7px;
       border: 1px solid transparent;
       background: transparent;
       color: #94A3B8;
-      font-size: 0.85rem;
+      font-size: 0.83rem;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: all 0.15s ease;
+      white-space: nowrap;
     }
 
-    .zone-pill-btn:hover {
-      color: #F8FAFC;
-      background: rgba(255, 255, 255, 0.04);
-    }
+    .zone-pill-btn:hover { color: #F8FAFC; background: rgba(255, 255, 255, 0.04); }
 
     .zone-pill-btn.active {
       background: rgba(245, 158, 11, 0.16);
@@ -202,128 +203,106 @@ import { environment } from '../../../environments/environment';
 
     .zone-code {
       font-family: var(--font-mono, 'JetBrains Mono', monospace);
-      font-size: 0.72rem;
-      font-weight: 800;
-      padding: 2px 6px;
-      border-radius: 5px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 1px 5px;
+      border-radius: 4px;
       background: rgba(255, 255, 255, 0.08);
     }
 
-    .mode-nav {
-      display: grid;
-      grid-template-columns: 1.25fr 1fr;
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-
-    .mode-card {
+    .workspace-nav {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 8px 10px;
+      margin-bottom: 18px;
       background: #111827;
       border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 16px;
-      padding: 16px 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      transition: border-color 0.2s ease;
+      border-radius: 12px;
     }
 
-    .mode-card:has(.active) {
-      border-color: rgba(245, 158, 11, 0.4);
-      background: linear-gradient(145deg, rgba(17, 24, 39, 0.98), rgba(13, 20, 33, 0.98));
-    }
-
-    .mode-label {
-      font-size: 0.84rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: #94A3B8;
-    }
-
-    .mode-card:has(.active) .mode-label {
-      color: #F59E0B;
-    }
-
-    .mode-links {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .mode-links a,
-    .mode-action-btn {
-      padding: 9px 15px;
-      min-height: 40px;
+    .nav-pill {
+      padding: 7px 12px;
+      min-height: 36px;
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      font-size: 0.88rem;
+      gap: 7px;
+      font-size: 0.85rem;
       font-weight: 600;
-      border-radius: 10px;
+      border-radius: 8px;
       background: #0D1421;
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.07);
       color: #CBD5E1;
       text-decoration: none;
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: all 0.15s ease;
+      white-space: nowrap;
     }
 
-    .mode-links a:hover,
-    .mode-action-btn:hover {
+    .nav-pill:hover {
       border-color: rgba(245, 158, 11, 0.45);
       color: #F8FAFC;
     }
 
-    .mode-links a.active,
-    .mode-action-btn.active {
+    .nav-pill.active {
       background: rgba(245, 158, 11, 0.14);
-      border-color: rgba(245, 158, 11, 0.55);
+      border-color: rgba(245, 158, 11, 0.5);
       color: #FCD34D;
     }
 
+    .nav-pill.compare-pill.active {
+      background: rgba(59, 130, 246, 0.15);
+      border-color: rgba(59, 130, 246, 0.5);
+      color: #93C5FD;
+    }
+
+    .nav-sep {
+      width: 1px;
+      height: 22px;
+      background: rgba(255, 255, 255, 0.1);
+      margin: 0 2px;
+    }
+
     .badge-cost {
-      font-size: 0.72rem;
+      font-size: 0.7rem;
       font-weight: 700;
-      padding: 2px 8px;
+      padding: 1px 7px;
       border-radius: 999px;
       background: rgba(255, 255, 255, 0.07);
       color: #94A3B8;
-      white-space: nowrap;
     }
 
-    .mode-links a.active .badge-cost {
+    .nav-pill.active .badge-cost {
       background: rgba(245, 158, 11, 0.22);
       color: #FCD34D;
     }
 
     .badge-free {
-      font-size: 0.72rem;
+      font-size: 0.7rem;
       font-weight: 700;
-      padding: 2px 8px;
+      padding: 1px 7px;
       border-radius: 999px;
       background: rgba(16, 185, 129, 0.16);
       color: #34D399;
       border: 1px solid rgba(16, 185, 129, 0.3);
-      white-space: nowrap;
     }
 
-    .tarif-main {
-      flex-grow: 1;
-    }
+    .tarif-main { flex-grow: 1; }
 
     .tarif-footer {
-      margin-top: 32px;
-      padding-top: 16px;
+      margin-top: 28px;
+      padding-top: 14px;
       border-top: 1px solid rgba(255, 255, 255, 0.06);
       text-align: center;
       color: #64748B;
-      font-size: 0.84rem;
+      font-size: 0.82rem;
     }
 
     @media (max-width: 820px) {
-      .tarif-shell { padding: 16px 12px 24px; }
-      .mode-nav { grid-template-columns: 1fr; }
+      .tarif-shell { padding: 14px 12px 24px; }
       .tarif-header h1 { font-size: 1.45rem; }
+      .nav-sep { display: none; }
     }
   `]
 })
