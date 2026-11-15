@@ -134,14 +134,8 @@ export class SearchListLotsComponent {
      * Lance la recherche en respectant une limite de 5 requêtes par minute.
      */
     search(): void {
-      // Vérifier l'authentification
-      console.log('Vérification de l\'authentification...');
-      console.log('Token valide:', this.oauthService.hasValidAccessToken());
-      console.log('Token:', this.oauthService.getAccessToken());
-
       if (!this.oauthService.hasValidAccessToken()) {
         this.error = 'Vous devez être connecté pour effectuer une recherche.';
-        console.log('Utilisateur non authentifié');
         return;
       }
       //

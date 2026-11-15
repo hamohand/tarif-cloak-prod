@@ -1,148 +1,247 @@
-import { Component } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { CommonModule } from '@angular/common';
+import { Component, inject } from '@angular/core';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { CommonModule, AsyncPipe } from '@angular/common';
+import { AuthService } from '../../core/services/auth.service';
+import { SearchStateService } from '../services/search-state.service';
+import { environment } from '../../../environments/environment';
 
 @Component({
-  selector: 'app-root',
+  selector: 'app-tarif-shell',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, CommonModule],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, CommonModule, AsyncPipe],
   template: `
-    <div class="container">
-      <header>
-        <h1>Universal Tariff for International Trade</h1>
-        <h2>Harmonised System - Nomenclature</h2>
-        <h3>Recherche multilingue - Multilingual search - 多语言搜索 - بحث متعدد اللغات</h3>
+    <div class="tarif-shell">
+      <header class="tarif-header">
+        <div class="trust-pill">
+          <span class="trust-dot"></span>
+          100 % Nomenclature Officielle — Zéro code inventé
+        </div>
+        <h1>Nomenclature Douanière &amp; Recherche Tarifaire</h1>
+        <p class="subtitle">
+          Système Harmonisé (HS-06), Tarif National Algérien (P10 · DD, TVA, UQN, FAP) &amp; Nomenclature Combinée UE 2026 (NC8 · TDC) · Saisie multilingue
+        </p>
+
+        <div class="zone-switcher" role="group" aria-label="Zone tarifaire active">
+          <button
+            type="button"
+            class="zone-pill-btn"
+            [class.active]="(state.selectedZone$ | async) !== 'EU'"
+            (click)="state.setZone('DZ')">
+            <span class="zone-code">DZ</span> Algérie · P10 (DGD)
+          </button>
+          <button
+            type="button"
+            class="zone-pill-btn eu"
+            [class.active]="(state.selectedZone$ | async) === 'EU'"
+            (click)="state.setZone('EU')">
+            <span class="zone-code">UE</span> Union Européenne · NC8 (TDC 2026)
+          </button>
+        </div>
       </header>
 
-      <!-- Navigation : 2 cartes de modes -->
-      <nav class="mode-nav">
+      <nav class="mode-nav" aria-label="Modes de recherche et décodage">
         <div class="mode-card">
-          <span class="mode-label">🔍 Je cherche une position</span>
+          <span class="mode-label">Recherche par désignation (IA)</span>
           <div class="mode-links">
-            <a routerLink="search"            routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}">
-              HScode-06 <span class="credit-cost">10 cr</span>
-            </a>
             <a routerLink="search-position10" routerLinkActive="active">
-              Position-10 <span class="credit-cost">15 cr</span>
+              {{ (state.selectedZone$ | async) === 'EU' ? 'NC8 Europe (UE)' : 'Position-10 (DZ)' }}
+              <span class="badge-cost">{{ (isAuthenticated$ | async) ? '15 cr' : '2 essais gratuits' }}</span>
             </a>
+            <a routerLink="search" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+              HS-06 International
+              <span class="badge-cost">{{ (isAuthenticated$ | async) ? '10 cr' : 'Essai gratuit' }}</span>
+            </a>
+            @if ((isAuthenticated$ | async) && !isBetaMode) {
+              <a routerLink="searchListLots" routerLinkActive="active">
+                Liste CSV/Excel
+              </a>
+              <a routerLink="batch-search" routerLinkActive="active">
+                Batch asynchrone
+              </a>
+            }
           </div>
         </div>
+
         <div class="mode-card">
-          <span class="mode-label">📋 Je cherche une désignation</span>
+          <span class="mode-label">Décodage officiel par code (SQL)</span>
           <div class="mode-links">
-            <a routerLink="decode"     routerLinkActive="active">
-              Vérifier un code HS <span class="credit-cost">2 cr</span>
+            <a routerLink="decode-p10"
+               routerLinkActive="route-match"
+               #rlaDecode="routerLinkActive"
+               [class.active]="rlaDecode.isActive && !(state.compareMode$ | async)"
+               (click)="state.compareMode = false">
+              Code P10 / NC8 complet
+              <span class="badge-free">Gratuit</span>
             </a>
-            <a routerLink="decode-p10" routerLinkActive="active">
-              Vérifier un code P10 <span class="credit-cost">5 cr</span>
+            <a routerLink="decode" routerLinkActive="active">
+              Code HS 2-6 chiffres
+              <span class="badge-free">Gratuit</span>
             </a>
+            <button type="button"
+                    class="mode-action-btn"
+                    [class.active]="rlaDecode.isActive && (state.compareMode$ | async) === true"
+                    (click)="openComparator()">
+              ⇄ Comparateur DZ ↔ UE
+              <span class="badge-free">Gratuit</span>
+            </button>
           </div>
         </div>
       </nav>
 
-      <main>
+      <main class="tarif-main">
         <router-outlet></router-outlet>
       </main>
 
-      <footer>
-        <p>&copy; 2025-2026 Enclume-Numérique</p>
+      <footer class="tarif-footer">
+        <p>&copy; 2025-2026 Enclume-Numérique — Données officielles DGD / EUR-Lex (NC 2026) / OMD</p>
       </footer>
     </div>
   `,
   styles: [`
     :host {
       display: block;
-      background: var(--neu-bg, #E0E5EC);
       min-height: 100vh;
-      font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      color: var(--neu-text-primary, #3D4852);
+      background: var(--neu-bg, #070B14);
+      color: #E2E8F0;
     }
 
-    .container {
-      max-width: 1200px;
+    .tarif-shell {
+      max-width: 1180px;
       margin: 0 auto;
-      padding: 30px;
-      background: #EDF0F5;
-      border-radius: var(--neu-radius-container, 32px);
-      box-shadow: 6px 6px 12px rgba(163,177,198,0.35), -6px -6px 12px rgba(255,255,255,0.7);
-      min-height: calc(100vh - 60px);
+      padding: 28px 20px 36px;
       display: flex;
       flex-direction: column;
+      min-height: calc(100vh - 64px);
     }
 
-    header h1 {
+    .tarif-header {
       text-align: center;
-      color: var(--neu-text-heading, #2D3748);
-      font-family: var(--font-display, 'Plus Jakarta Sans', sans-serif);
+      margin-bottom: 24px;
+    }
+
+    .trust-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 14px;
+      border-radius: 999px;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #34D399;
+      font-size: 0.78rem;
       font-weight: 700;
-      margin-bottom: 5px;
+      letter-spacing: 0.03em;
+      margin-bottom: 12px;
     }
 
-    h2 {
-      text-align: center;
-      margin-bottom: 15px;
-      color: var(--neu-text-heading, #2D3748);
-      font-family: var(--font-display, 'Plus Jakarta Sans', sans-serif);
-      font-weight: 500;
+    .trust-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #10B981;
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.75);
     }
 
-    h3 {
-      text-align: center;
-      color: var(--neu-text-muted, #6B7280);
-      font-size: 1rem;
-      font-weight: 400;
-      margin-top: 10px;
+    .tarif-header h1 {
+      margin: 0 0 8px;
+      color: #F8FAFC;
+      font-family: var(--font-display, 'Space Grotesk', sans-serif);
+      font-size: 1.85rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
     }
 
-    main {
-      flex-grow: 1;
-      padding-bottom: 20px;
+    .subtitle {
+      margin: 0 0 16px;
+      color: #94A3B8;
+      font-size: 0.95rem;
     }
 
-    footer {
-      margin-top: 30px;
-      padding-top: 15px;
-      text-align: center;
-      color: var(--neu-text-muted, #6B7280);
+    .zone-switcher {
+      display: inline-flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 6px;
+      padding: 5px;
+      border-radius: 12px;
+      background: #0D1421;
+      border: 1px solid rgba(255, 255, 255, 0.09);
+    }
+
+    .zone-pill-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: 9px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: #94A3B8;
       font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
     }
 
-    /* ── Navigation deux cartes ── */
+    .zone-pill-btn:hover {
+      color: #F8FAFC;
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .zone-pill-btn.active {
+      background: rgba(245, 158, 11, 0.16);
+      border-color: rgba(245, 158, 11, 0.45);
+      color: #FCD34D;
+    }
+
+    .zone-pill-btn.eu.active {
+      background: rgba(59, 130, 246, 0.16);
+      border-color: rgba(59, 130, 246, 0.45);
+      color: #93C5FD;
+    }
+
+    .zone-code {
+      font-family: var(--font-mono, 'JetBrains Mono', monospace);
+      font-size: 0.72rem;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 5px;
+      background: rgba(255, 255, 255, 0.08);
+    }
 
     .mode-nav {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1.25fr 1fr;
       gap: 16px;
-      margin: 20px 0 28px;
+      margin-bottom: 24px;
     }
 
     .mode-card {
-      background: var(--neu-bg, #E0E5EC);
-      border-radius: 20px;
-      padding: 20px 24px;
-      box-shadow: 9px 9px 16px rgba(163,177,198,0.6), -9px -9px 16px rgba(255,255,255,0.5);
+      background: #111827;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 16px 20px;
       display: flex;
       flex-direction: column;
-      gap: 14px;
-      transition: box-shadow 0.25s ease;
+      gap: 12px;
+      transition: border-color 0.2s ease;
     }
 
-    /* Carte active = celle qui contient un lien .active */
-    .mode-card:has(a.active) {
-      background: #E8E6F8;
-      box-shadow: inset 6px 6px 10px rgba(163,177,198,0.6), inset -6px -6px 10px rgba(255,255,255,0.5);
+    .mode-card:has(.active) {
+      border-color: rgba(245, 158, 11, 0.4);
+      background: linear-gradient(145deg, rgba(17, 24, 39, 0.98), rgba(13, 20, 33, 0.98));
     }
 
     .mode-label {
-      font-size: 0.95rem;
+      font-size: 0.84rem;
       font-weight: 700;
-      color: var(--neu-text-primary, #3D4852);
-      font-family: var(--font-display, 'Plus Jakarta Sans', sans-serif);
-      transition: color 0.25s ease;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #94A3B8;
     }
 
-    .mode-card:has(a.active) .mode-label {
-      color: var(--neu-accent-secondary, #2DD4BF);
+    .mode-card:has(.active) .mode-label {
+      color: #F59E0B;
     }
 
     .mode-links {
@@ -151,54 +250,92 @@ import { CommonModule } from '@angular/common';
       flex-wrap: wrap;
     }
 
-    .mode-links a {
-      padding: 9px 20px;
+    .mode-links a,
+    .mode-action-btn {
+      padding: 9px 15px;
       min-height: 40px;
       display: inline-flex;
       align-items: center;
-      font-size: 0.9rem;
+      gap: 8px;
+      font-size: 0.88rem;
       font-weight: 600;
       border-radius: 10px;
-      background: var(--neu-bg, #E0E5EC);
-      box-shadow: 4px 4px 8px rgba(163,177,198,0.5), -4px -4px 8px rgba(255,255,255,0.5);
-      color: var(--neu-text-muted, #6B7280);
+      background: #0D1421;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #CBD5E1;
       text-decoration: none;
-      transition: box-shadow 0.2s ease, color 0.2s ease;
+      cursor: pointer;
+      transition: all 0.2s ease;
     }
 
-    .mode-links a:hover {
-      color: var(--neu-accent-secondary, #2DD4BF);
+    .mode-links a:hover,
+    .mode-action-btn:hover {
+      border-color: rgba(245, 158, 11, 0.45);
+      color: #F8FAFC;
     }
 
-    .mode-links a.active {
-      background: var(--neu-active-bg, #D9D7F2);
-      box-shadow: inset 4px 4px 8px rgba(163,177,198,0.6), inset -4px -4px 8px rgba(255,255,255,0.5);
-      color: var(--neu-accent-secondary, #2DD4BF);
+    .mode-links a.active,
+    .mode-action-btn.active {
+      background: rgba(245, 158, 11, 0.14);
+      border-color: rgba(245, 158, 11, 0.55);
+      color: #FCD34D;
+    }
+
+    .badge-cost {
+      font-size: 0.72rem;
       font-weight: 700;
-    }
-
-    .credit-cost {
-      margin-left: 6px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      padding: 2px 7px;
-      border-radius: 20px;
-      background: rgba(163,177,198,0.25);
-      color: var(--neu-text-muted, #6B7280);
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.07);
+      color: #94A3B8;
       white-space: nowrap;
     }
 
-    .mode-links a.active .credit-cost {
-      background: rgba(45,212,191,0.15);
-      color: var(--neu-accent-secondary, #2DD4BF);
+    .mode-links a.active .badge-cost {
+      background: rgba(245, 158, 11, 0.22);
+      color: #FCD34D;
     }
 
-    @media (max-width: 768px) {
-      .container { padding: 16px; }
-      .mode-nav { grid-template-columns: 1fr; gap: 12px; margin: 16px 0 20px; }
-      .mode-card { padding: 16px 18px; }
-      .mode-links a { padding: 8px 14px; font-size: 0.85rem; }
+    .badge-free {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(16, 185, 129, 0.16);
+      color: #34D399;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      white-space: nowrap;
+    }
+
+    .tarif-main {
+      flex-grow: 1;
+    }
+
+    .tarif-footer {
+      margin-top: 32px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      text-align: center;
+      color: #64748B;
+      font-size: 0.84rem;
+    }
+
+    @media (max-width: 820px) {
+      .tarif-shell { padding: 16px 12px 24px; }
+      .mode-nav { grid-template-columns: 1fr; }
+      .tarif-header h1 { font-size: 1.45rem; }
     }
   `]
 })
-export class TarifComponent {}
+export class TarifComponent {
+  private authService = inject(AuthService);
+  private router = inject(Router);
+  public state = inject(SearchStateService);
+  isAuthenticated$ = this.authService.isAuthenticated();
+  isBetaMode = environment.betaMode === true;
+
+  openComparator(): void {
+    this.state.compareMode = true;
+    this.router.navigate(['/recherche/decode-p10']);
+  }
+}

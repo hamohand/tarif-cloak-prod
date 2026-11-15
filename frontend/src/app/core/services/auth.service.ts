@@ -91,23 +91,6 @@ export class AuthService {
         }
 
         if (isAuthenticated && initialToken) {
-          // Afficher le token dans la console après connexion réussie
-          console.log('=== TOKEN JWT ===');
-          console.log('Token complet:', initialToken);
-          console.log('Token (premiers 50 caractères):', initialToken.substring(0, 50) + '...');
-          
-          // Décoder et afficher les informations du token (payload)
-          try {
-            const payload = JSON.parse(atob(initialToken.split('.')[1]));
-            console.log('Informations du token:', payload);
-            console.log('Rôles:', payload.realm_access?.roles || payload.resource_access?.['frontend-client']?.roles || 'Aucun rôle trouvé');
-            console.log('Utilisateur:', payload.preferred_username || payload.email || payload.sub);
-            console.log('Expiration:', new Date(payload.exp * 1000).toLocaleString());
-          } catch (e) {
-            console.warn('Impossible de décoder le token:', e);
-          }
-          console.log('================');
-          
           // Nettoyer l'URL des paramètres OAuth
           if (hasCode || hasState) {
             window.history.replaceState({}, document.title, window.location.pathname);

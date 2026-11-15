@@ -195,6 +195,7 @@ services:
       # Keycloak prod partagé
       KEYCLOAK_ISSUER_URI: "${KEYCLOAK_EXTERNAL_URL}/realms/${KEYCLOAK_REALM}"
       KEYCLOAK_JWK_SET_URI: "${KEYCLOAK_EXTERNAL_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/certs"
+      CORS_ALLOWED_ORIGINS: "https://${STAGING_DOMAIN}"
       # IA (clés dédiées staging si définies, sinon repli sur celles de la prod)
       OPENAI_API_KEY: "${STAGING_OPENAI_API_KEY:-${OPENAI_API_KEY}}"
       ANTHROPIC_API_KEY: "${STAGING_ANTHROPIC_API_KEY:-${ANTHROPIC_API_KEY}}"

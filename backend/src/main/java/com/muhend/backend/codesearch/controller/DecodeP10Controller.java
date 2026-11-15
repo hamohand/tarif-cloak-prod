@@ -1,34 +1,21 @@
 package com.muhend.backend.codesearch.controller;
 
-import com.muhend.backend.codesearch.model.*;
-import com.muhend.backend.codesearch.repository.*;
-import com.muhend.backend.organization.exception.QuotaExceededException;
-import com.muhend.backend.organization.service.OrganizationService;
-import com.muhend.backend.organization.service.PlanChangeService;
-import com.muhend.backend.usage.service.UsageLogService;
+import com.muhend.backend.codesearch.model.DecodeResult;
+import com.muhend.backend.codesearch.model.Hs6ComparisonResult;
+import com.muhend.backend.codesearch.service.TariffDecodeService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
- * Recherche inverse P10 : à partir d'un code (2, 4, 6 ou 10 chiffres),
- * retourne la hiérarchie complète jusqu'à Position10 avec titres hiérarchiques.
- * Pure requête SQL, sans IA. Consomme 5 crédits.
+ * Recherche inverse nationale multi-zones (P10 DZ / NC8 EU) :
+ * à partir d'un code (2, 4, 6, 8 ou 10 chiffres), retourne la hiérarchie complète
+ * et les données réglementaires officielles.
+ * Pure requête SQL gratuite (sans IA ni consommation de crédits).
  *
- * Route Traefik : /api/decode-p10 → backend:/decode-p10
+ * Route Traefik : /api/decode-p10 -> backend:/decode-p10
  */
 @RestController
 @RequestMapping("/decode-p10")
@@ -36,253 +23,35 @@ import java.util.stream.Collectors;
 @Slf4j
 public class DecodeP10Controller {
 
-    private final ChapitreRepository chapitreRepository;
-    private final SectionRepository sectionRepository;
-    private final Position4Repository position4Repository;
-    private final Position6DzRepository position6DzRepository;
-    private final Position10DzRepository position10DzRepository;
-    private final OrganizationService organizationService;
-    private final PlanChangeService planChangeService;
-    private final UsageLogService usageLogService;
+    private final TariffDecodeService tariffDecodeService;
 
     @GetMapping(produces = "application/json")
-    public ResponseEntity<DecodeResult> decodeCode(@RequestParam String code,
-            @RequestHeader(value = "X-Source", required = false) String source) {
-        if (!"search".equals(source)) checkQuotaAndLog("/decode-p10", code);
-        String normalized = code.replaceAll("[^0-9]", "");
-        log.debug("Décodage P10: '{}' → normalisé: '{}'", code, normalized);
-
-        int len = normalized.length();
-        if (len != 2 && len != 4 && len != 6 && len != 10) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Le code doit faire 2, 4, 6 ou 10 chiffres après normalisation. Reçu : " + len + " chiffre(s).");
-        }
-
-        String chapCode = normalized.substring(0, 2);
-        Chapitre chapitre = chapitreRepository.findByCode(chapCode)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "Chapitre introuvable pour le code : " + chapCode));
-        String sectionCode = chapitre.getSection().trim();
-        if (sectionCode.length() == 1) sectionCode = "0" + sectionCode;
-        String finalSectionCode = sectionCode;
-        Section section = sectionRepository.findByCode(sectionCode)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "Section introuvable pour : " + finalSectionCode));
-
-        DecodeResult.CodeItem sectionItem  = new DecodeResult.CodeItem(section.getCode(), section.getDescription(), section.getNote());
-        DecodeResult.CodeItem chapitreItem = new DecodeResult.CodeItem(chapitre.getCode(), chapitre.getDescription(), chapitre.getNote());
-
-        // Niveau CHAPITRE (2 chiffres)
-        if (len == 2) {
-            List<DecodeResult.CodeItem> positions4 = position4Repository.findAllByPrefix(chapCode + "%")
-                    .stream().map(p -> new DecodeResult.CodeItem(p.getCode(), p.getDescription()))
-                    .collect(Collectors.toList());
-            return ResponseEntity.ok(DecodeResult.builder()
-                    .codeRecherche(code).niveau("CHAPITRE")
-                    .section(sectionItem).chapitre(chapitreItem)
-                    .positions6(positions4).build());
-        }
-
-        String pos4Code = normalized.substring(0, 4);
-        Position4 position4 = position4Repository.findByCode(pos4Code)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "Position4 introuvable pour : " + pos4Code));
-        DecodeResult.CodeItem position4Item = new DecodeResult.CodeItem(position4.getCode(), position4.getDescription());
-
-        // Niveau POSITION4 (4 chiffres) — tous les codes HS6 et tous les P10 de la position
-        if (len == 4) {
-            List<DecodeResult.CodeItem> positions6 = new ArrayList<>(
-                    position6DzRepository.findAllByPrefix(pos4Code + "%")
-                            .stream()
-                            .filter(p -> p.getCode() != null && p.getCode().length() == 6)
-                            .map(p -> new DecodeResult.CodeItem(p.getCode(), p.getDescription()))
-                            .toList());
-
-            List<Position10Dz> allP10 = position10DzRepository.findAllByPrefixWithId(pos4Code + "%");
-            java.util.Set<String> knownP6 = positions6.stream()
-                    .map(DecodeResult.CodeItem::getCode)
-                    .collect(Collectors.toCollection(java.util.LinkedHashSet::new));
-            for (Position10Dz p10 : allP10) {
-                if (p10.getCode() != null && p10.getCode().length() >= 6) {
-                    String p6PrefixCode = p10.getCode().substring(0, 6);
-                    if (knownP6.add(p6PrefixCode)) {
-                        positions6.add(new DecodeResult.CodeItem(p6PrefixCode, position4.getDescription()));
-                    }
-                }
-            }
-            if (positions6.isEmpty()) {
-                positions6.add(new DecodeResult.CodeItem(pos4Code + "00", position4.getDescription()));
-            }
-
-            List<DecodeResult.CodeItem> positions10 = allP10.stream()
-                    .map(p -> new DecodeResult.CodeItem(p.getCode(), p.getDescription()))
-                    .collect(Collectors.toList());
-            Map<String, List<String>> titresParCode = new LinkedHashMap<>();
-            for (DecodeResult.CodeItem p6Item : positions6) {
-                titresParCode.putAll(buildTitresParCode(p6Item.getCode() + "%"));
-            }
-
-            return ResponseEntity.ok(DecodeResult.builder()
-                    .codeRecherche(code).niveau("POSITION4")
-                    .section(sectionItem).chapitre(chapitreItem).position4(position4Item)
-                    .positions6(positions6)
-                    .positions10(positions10)
-                    .titresParPosition10(titresParCode)
-                    .build());
-        }
-
-        String pos6Code = normalized.substring(0, 6);
-        Position6Dz position6 = position6DzRepository.findByCode(pos6Code)
-                .or(() -> pos6Code.endsWith("00") ? position6DzRepository.findByCode(pos4Code) : java.util.Optional.empty())
-                .orElseGet(() -> {
-                    if (pos6Code.endsWith("00")) {
-                        return new Position6Dz(null, pos6Code, position4.getDescription());
-                    }
-                    throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-                            "Code HS introuvable : " + pos6Code);
-                });
-        DecodeResult.CodeItem position6Item = new DecodeResult.CodeItem(pos6Code, position6.getDescription());
-
-        // Niveau POSITION6 (6 chiffres) — liste des P10 avec titres par code
-        if (len == 6) {
-            List<Position10Dz> p10List = position10DzRepository.findAllByPrefixWithId(pos6Code + "%");
-            List<DecodeResult.CodeItem> positions10 = p10List.stream()
-                    .map(p -> new DecodeResult.CodeItem(p.getCode(), p.getDescription()))
-                    .collect(Collectors.toList());
-            Map<String, List<String>> titresParCode = buildTitresParCode(pos6Code + "%");
-            return ResponseEntity.ok(DecodeResult.builder()
-                    .codeRecherche(code).niveau("POSITION6")
-                    .section(sectionItem).chapitre(chapitreItem).position4(position4Item)
-                    .positions6(Collections.singletonList(position6Item))
-                    .positions10(positions10).titresParPosition10(titresParCode).build());
-        }
-
-        // Niveau POSITION10 (10 chiffres)
-        String pos10Code = normalized.substring(0, 10);
-        Position10Dz position10 = position10DzRepository.findByCode(pos10Code)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "Code P10 introuvable : " + pos10Code));
-        List<String> titres = findTitres(position10.getId(), countDashes(position10.getDescription()));
-        return ResponseEntity.ok(DecodeResult.builder()
-                .codeRecherche(code).niveau("POSITION10")
-                .section(sectionItem).chapitre(chapitreItem).position4(position4Item)
-                .positions6(Collections.singletonList(position6Item))
-                .positions10(Collections.singletonList(
-                        new DecodeResult.CodeItem(position10.getCode(), position10.getDescription())))
-                .titresPosition10(titres).build());
+    public ResponseEntity<DecodeResult> decodeCode(
+            @RequestParam String code,
+            @RequestParam(required = false, defaultValue = "DZ") String zone,
+            HttpServletRequest request) {
+        tariffDecodeService.checkRateLimit(extractClientIp(request));
+        return ResponseEntity.ok(tariffDecodeService.decode(code, zone, true));
     }
 
-    /**
-     * Parcourt tous les codes ET titres du préfixe (dans l'ordre id) et retourne,
-     * pour chaque code P10, la liste de titres hiérarchiques qui le précèdent.
-     * Algorithme : pile de titres indexée par niveau (nb de tirets) ;
-     * chaque nouveau titre remplace les titres de niveau égal ou supérieur.
-     */
-    private Map<String, List<String>> buildTitresParCode(String prefix) {
-        // Les codes triés par id (ordre naturel du tarif)
-        List<Position10Dz> codes = position10DzRepository.findAllByPrefixWithId(prefix);
-        if (codes.isEmpty()) return Collections.emptyMap();
-
-        Map<String, List<String>> result = new LinkedHashMap<>();
-
-        // Étape 1 : titres du premier code via findTitres (les titres précédant le 1er code
-        // ont des ids inférieurs à MIN(id codes) et sont absents de findAllWithContextByPrefix)
-        Position10Dz first = codes.get(0);
-        List<String> titleStack = new ArrayList<>(
-                findTitres(first.getId(), countDashes(first.getDescription())));
-        result.put(first.getCode(), new ArrayList<>(titleStack));
-
-        // Étape 2 : titres intercalés entre les codes suivants (ids compris dans la plage)
-        List<Position10Dz> allRows = position10DzRepository.findAllWithContextByPrefix(prefix);
-        boolean pastFirst = false;
-
-        for (Position10Dz row : allRows) {
-            if (row.getCode() == null || row.getCode().isEmpty()) {
-                if (!pastFirst) continue; // titres avant le 1er code déjà gérés
-                int level = countDashes(row.getDescription());
-                if (level == 0) continue; // ignorer les artefacts sans tiret (ex: sauts de page PDF)
-                if (level == 1) {
-                    titleStack.clear(); // STOP : frontière de sous-position à 1 tiret, réinitialiser la pile
-                    continue;
-                }
-                while (!titleStack.isEmpty() && countDashes(titleStack.get(titleStack.size() - 1)) >= level) {
-                    titleStack.remove(titleStack.size() - 1);
-                }
-                titleStack.add(row.getDescription());
-            } else {
-                if (row.getCode().length() != 10) continue;
-                if (!pastFirst) {
-                    pastFirst = true; // 1er code déjà traité en étape 1
-                    continue;
-                }
-                int codeDashes = countDashes(row.getDescription());
-                while (!titleStack.isEmpty() && countDashes(titleStack.get(titleStack.size() - 1)) >= codeDashes) {
-                    titleStack.remove(titleStack.size() - 1);
-                }
-                result.put(row.getCode(), new ArrayList<>(titleStack));
-            }
-        }
-        return result;
+    @GetMapping(value = "/compare", produces = "application/json")
+    public ResponseEntity<Hs6ComparisonResult> compareHs6(
+            @RequestParam String code,
+            HttpServletRequest request) {
+        tariffDecodeService.checkRateLimit(extractClientIp(request));
+        return ResponseEntity.ok(tariffDecodeService.compareHs6(code));
     }
 
-    /**
-     * Remonte la hiérarchie des titres (code='') précédant une entrée.
-     * Algorithme : à partir de l'id et du nombre de tirets de l'entrée,
-     * cherche récursivement les titres avec de moins en moins de tirets
-     * jusqu'à n_tirets = 1.
-     *
-     * @return liste de titres du plus général (> 1 tiret) au plus spécifique
-     */
-    private List<String> findTitres(long startId, int nTirets) {
-        List<String> titres = new ArrayList<>();
-        long currentId = startId;
-
-        while (nTirets > 1) {
-            List<Object[]> rows = position10DzRepository
-                    .findFirstTitleBeforeWithFewerDashes(currentId, nTirets);
-            if (rows.isEmpty()) break;
-            Object[] row = rows.get(0);
-            long foundId = ((Number) row[0]).longValue();
-            String desc  = (String) row[1];
-            int foundDashes = countDashes(desc);
-            if (foundDashes <= 1) break; // STOP : titre à 1 tiret = frontière de sous-position SH6
-            titres.add(0, desc);
-            currentId = foundId;
-            nTirets = foundDashes;
+    private String extractClientIp(HttpServletRequest request) {
+        if (request == null) return "unknown";
+        String xff = request.getHeader("X-Forwarded-For");
+        if (xff != null && !xff.isBlank()) {
+            return xff.split(",")[0].trim();
         }
-
-        return titres;
-    }
-
-    /**
-     * Compte le nombre de "- " en préfixe d'une description.
-     * "- texte" → 1, "- - texte" → 2, etc.
-     */
-    private int countDashes(String description) {
-        if (description == null) return 0;
-        int count = 0;
-        String s = description;
-        while (s.startsWith("- ")) {
-            count++;
-            s = s.substring(2);
+        String realIp = request.getHeader("X-Real-IP");
+        if (realIp != null && !realIp.isBlank()) {
+            return realIp.trim();
         }
-        return count == 0 && description.startsWith("-") ? 1 : count;
-    }
-
-    private void checkQuotaAndLog(String endpoint, String searchTerm) {
-        try {
-            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            if (!(auth != null && auth.getPrincipal() instanceof Jwt jwt)) return;
-            String userId = jwt.getClaimAsString("sub");
-            Long organizationId = organizationService.getOrganizationIdByUserId(userId);
-            if (!planChangeService.canOrganizationMakeRequests(organizationId)) {
-                throw new QuotaExceededException("Quota de crédits épuisé. Veuillez renouveler votre plan ou choisir un autre plan.");
-            }
-            usageLogService.logUsage(userId, organizationId, endpoint, searchTerm, null, null);
-        } catch (QuotaExceededException e) {
-            throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, e.getMessage());
-        } catch (Exception e) {
-            log.warn("Erreur quota/log decode-p10 (non bloquant): {}", e.getMessage());
-        }
+        return request.getRemoteAddr();
     }
 }

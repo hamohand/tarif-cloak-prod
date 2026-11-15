@@ -5,12 +5,16 @@ import com.tarif.search.dto.QuotaCheckResponse;
 import com.tarif.search.event.SearchEventPublisher;
 import com.tarif.search.model.Position;
 import com.tarif.search.model.UsageInfo;
+import com.tarif.search.service.GuestTrialService;
 import com.tarif.search.service.SearchService;
 import com.tarif.search.service.SearchService.SearchLevel;
 import com.tarif.search.service.ai.AiService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -26,47 +30,95 @@ import java.util.List;
 @Slf4j
 public class RechercheController {
 
+    private static final String BACKEND_UNAVAILABLE_PREFIX = "BACKEND_UNAVAILABLE:";
+
     private final SearchService searchService;
     private final AiService aiService;
     private final BackendClient backendClient;
     private final SearchEventPublisher eventPublisher;
+    private final GuestTrialService guestTrialService;
 
     @GetMapping(value = "/sections", produces = "application/json")
-    public List<Position> reponseSections(@RequestParam String termeRecherche) {
-        return executeSearch(termeRecherche, SearchLevel.SECTIONS, "/recherche/sections");
+    public List<Position> reponseSections(
+            @RequestParam String termeRecherche,
+            @RequestParam(required = false, defaultValue = "DZ") String zone,
+            HttpServletRequest request,
+            HttpServletResponse response) {
+        return executeSearch(termeRecherche, SearchLevel.SECTIONS, zone, "/recherche/sections", request, response);
     }
 
     @GetMapping(value = "/chapitres", produces = "application/json")
-    public List<Position> reponseChapitres(@RequestParam String termeRecherche) {
-        return executeSearch(termeRecherche, SearchLevel.CHAPITRES, "/recherche/chapitres");
+    public List<Position> reponseChapitres(
+            @RequestParam String termeRecherche,
+            @RequestParam(required = false, defaultValue = "DZ") String zone,
+            HttpServletRequest request,
+            HttpServletResponse response) {
+        return executeSearch(termeRecherche, SearchLevel.CHAPITRES, zone, "/recherche/chapitres", request, response);
     }
 
     @GetMapping(value = "/positions4", produces = "application/json")
-    public List<Position> reponsePositions4(@RequestParam String termeRecherche) {
-        return executeSearch(termeRecherche, SearchLevel.POSITIONS4, "/recherche/positions4");
+    public List<Position> reponsePositions4(
+            @RequestParam String termeRecherche,
+            @RequestParam(required = false, defaultValue = "DZ") String zone,
+            HttpServletRequest request,
+            HttpServletResponse response) {
+        return executeSearch(termeRecherche, SearchLevel.POSITIONS4, zone, "/recherche/positions4", request, response);
     }
 
     @GetMapping(value = "/positions6", produces = "application/json")
-    public List<Position> reponsePositions6(@RequestParam String termeRecherche) {
-        return executeSearch(termeRecherche, SearchLevel.POSITIONS6, "/recherche/positions6");
+    public List<Position> reponsePositions6(
+            @RequestParam String termeRecherche,
+            @RequestParam(required = false, defaultValue = "DZ") String zone,
+            HttpServletRequest request,
+            HttpServletResponse response) {
+        return executeSearch(termeRecherche, SearchLevel.POSITIONS6, zone, "/recherche/positions6", request, response);
     }
 
-    @GetMapping(value = "/positions10", produces = "application/json")
-    public List<Position> reponsePositions10(@RequestParam String termeRecherche) {
-        return executeSearch(termeRecherche, SearchLevel.POSITIONS10, "/recherche/positions10");
+    @GetMapping(value = {"/positions10", "/positions-nationales"}, produces = "application/json")
+    public List<Position> reponsePositions10(
+            @RequestParam String termeRecherche,
+            @RequestParam(required = false, defaultValue = "DZ") String zone,
+            HttpServletRequest request,
+            HttpServletResponse response) {
+        return executeSearch(termeRecherche, SearchLevel.POSITIONS10, zone, "/recherche/positions10", request, response);
     }
 
-    private List<Position> executeSearch(String termeRecherche, SearchLevel level, String endpoint) {
-        log.info("Requête {} pour '{}'", endpoint, termeRecherche);
+    @GetMapping(value = "/guest-quota", produces = "application/json")
+    public ResponseEntity<GuestTrialService.TrialStatus> getGuestQuota(HttpServletRequest request) {
+        return ResponseEntity.ok(guestTrialService.peekStatus(extractClientIp(request)));
+    }
+
+    private List<Position> executeSearch(
+            String termeRecherche,
+            SearchLevel level,
+            String zone,
+            String endpoint,
+            HttpServletRequest request,
+            HttpServletResponse response) {
+        log.info("Requête {} pour '{}' (zone: {})", endpoint, termeRecherche, zone);
         boolean searchExecuted = false;
         QuotaCheckResponse quotaCheck = null;
+        String currentUserId = getCurrentUserId();
+        boolean isAuthenticated = currentUserId != null;
+        String clientIp = extractClientIp(request);
 
         try {
-            // Vérifier le quota via le backend
-            quotaCheck = checkQuota();
+            if (isAuthenticated) {
+                quotaCheck = checkQuota();
+            } else {
+                if (level != SearchLevel.POSITIONS6 && level != SearchLevel.POSITIONS10) {
+                    throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentification requise.");
+                }
+                GuestTrialService.TrialStatus trial = guestTrialService.tryConsumeTrial(clientIp);
+                if (!trial.allowed()) {
+                    throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, trial.reason());
+                }
+                if (response != null) {
+                    response.setHeader("X-Guest-Trials-Remaining", String.valueOf(trial.remaining()));
+                }
+            }
 
-            // Exécuter la recherche
-            List<Position> result = searchService.search(termeRecherche, level);
+            List<Position> result = searchService.search(termeRecherche, level, zone);
             searchExecuted = true;
 
             return result != null ? result : new ArrayList<>();
@@ -74,12 +126,14 @@ public class RechercheController {
         } catch (QuotaExceededException e) {
             log.warn("Quota dépassé: {}", e.getMessage());
             throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, e.getMessage());
+        } catch (ResponseStatusException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Erreur lors de la recherche: {}", e.getMessage(), e);
             return new ArrayList<>();
         } finally {
             if (searchExecuted) {
-                publishSearchEvent(endpoint, termeRecherche, quotaCheck);
+                publishSearchEvent(endpoint, termeRecherche, quotaCheck, currentUserId, clientIp);
             }
             aiService.clearCurrentUsage();
         }
@@ -90,38 +144,44 @@ public class RechercheController {
         QuotaCheckResponse response = backendClient.checkQuota(authHeader);
 
         if (response == null) {
-            log.warn("Réponse quota null - Mode dégradé");
-            return QuotaCheckResponse.builder().canSearch(true).quotaOk(true).build();
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                    "Service de vérification des quotas temporairement indisponible.");
         }
 
         if (!response.isCanSearch()) {
-            throw new QuotaExceededException(response.getMessage() != null
-                    ? response.getMessage()
-                    : "Quota dépassé");
+            String message = response.getMessage();
+            if (message != null && message.startsWith(BACKEND_UNAVAILABLE_PREFIX)) {
+                throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                        message.substring(BACKEND_UNAVAILABLE_PREFIX.length()).trim());
+            }
+            throw new QuotaExceededException(message != null ? message : "Quota dépassé");
         }
 
         log.debug("Quota OK - Usage: {}/{}", response.getCurrentUsage(), response.getMonthlyQuota());
         return response;
     }
 
-    private void publishSearchEvent(String endpoint, String searchTerm, QuotaCheckResponse quotaCheck) {
+    private void publishSearchEvent(String endpoint, String searchTerm, QuotaCheckResponse quotaCheck,
+                                    String userId, String clientIp) {
         try {
-            String userId = getCurrentUserId();
             UsageInfo usageInfo = aiService.getCurrentUsage();
-
-            if (userId != null && usageInfo != null) {
-                Long organizationId = quotaCheck != null ? quotaCheck.getOrganizationId() : null;
-                Double cost = determineCost(quotaCheck, usageInfo);
-
-                eventPublisher.publishSearchCompleted(
-                        userId,
-                        organizationId,
-                        endpoint,
-                        searchTerm,
-                        usageInfo.getTokens(),
-                        cost
-                );
+            if (usageInfo == null) {
+                return;
             }
+            String effectiveUserId = userId != null ? userId : "guest:" + clientIp;
+            Long organizationId = (userId != null && quotaCheck != null) ? quotaCheck.getOrganizationId() : null;
+            Double cost = userId != null
+                    ? determineCost(quotaCheck, usageInfo)
+                    : usageInfo.getCostUsd();
+
+            eventPublisher.publishSearchCompleted(
+                    effectiveUserId,
+                    organizationId,
+                    endpoint,
+                    searchTerm,
+                    usageInfo.getTokens(),
+                    cost
+            );
         } catch (Exception e) {
             log.warn("Erreur publication événement (non bloquant): {}", e.getMessage());
         }
@@ -157,6 +217,19 @@ public class RechercheController {
             return "Bearer " + jwt.getTokenValue();
         }
         return "";
+    }
+
+    private String extractClientIp(HttpServletRequest request) {
+        if (request == null) return "unknown";
+        String xff = request.getHeader("X-Forwarded-For");
+        if (xff != null && !xff.isBlank()) {
+            return xff.split(",")[0].trim();
+        }
+        String realIp = request.getHeader("X-Real-IP");
+        if (realIp != null && !realIp.isBlank()) {
+            return realIp.trim();
+        }
+        return request.getRemoteAddr() != null ? request.getRemoteAddr() : "unknown";
     }
 
     public static class QuotaExceededException extends RuntimeException {

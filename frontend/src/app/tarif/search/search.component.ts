@@ -1,25 +1,33 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { SearchService } from '../services/search.service';
-import { SearchStateService, SearchResultItem } from '../services/search-state.service';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { OAuthService } from 'angular-oauth2-oidc';
-import { ActivatedRoute } from '@angular/router';
-import { forkJoin, of } from 'rxjs';
-import { catchError, map, retry } from 'rxjs/operators';
+import { forkJoin, of, Subscription } from 'rxjs';
+import { catchError, map, retry, switchMap } from 'rxjs/operators';
+import { RegulatoryData, SearchService } from '../services/search.service';
+import { SearchResultItem, SearchStateService, TariffZone } from '../services/search-state.service';
+import { CustomsCardComponent } from '../components/customs-card/customs-card.component';
 
 interface GroupedP10 {
   code: string;
+  formattedCode?: string;
+  checkDigit?: string;
   description: string;
   justification: string | null;
-  titres: string[] | null; // titres ayant changé par rapport au code P10 précédent
+  titres: string[] | null;
+  fullTitres: string[];
+  regulatoryData?: RegulatoryData;
+  enriched: boolean;
+  glossary?: Record<string, string>;
 }
 
 interface GroupedP6 {
   code: string;
   description: string;
-  justification: string | null; // pour mode positions6
+  justification: string | null;
   codes10: GroupedP10[];
+  glossary?: Record<string, string>;
 }
 
 interface GroupedP4 {
@@ -32,48 +40,78 @@ interface GroupedP4 {
 @Component({
   selector: 'app-search',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink, CustomsCardComponent],
   template: `
     <div class="search-container">
+      <!-- Bandeau essai gratuit pour visiteurs non connectés -->
+      @if (!isAuthenticated) {
+        <div class="guest-banner">
+          <div class="guest-banner-info">
+            <span class="guest-pill">Essai gratuit sans inscription</span>
+            @if ((guestTrialsRemaining$ | async); as rem) {
+              <span>Il vous reste <strong>{{ rem }}</strong> recherche{{ rem > 1 ? 's' : '' }} IA aujourd'hui (décodage par code toujours illimité et gratuit).</span>
+            } @else if ((guestTrialsRemaining$ | async) === 0) {
+              <span>Vos 2 essais IA du jour sont utilisés. Le décodage SQL reste gratuit et illimité.</span>
+            } @else {
+              <span>2 recherches IA offertes par jour · Décodage SQL officiel gratuit illimité.</span>
+            }
+          </div>
+          <a routerLink="/auth/register" class="guest-cta">Créer un compte gratuit</a>
+        </div>
+      }
+
       <div class="search-form">
         <input
           type="text"
           [(ngModel)]="searchTerm"
-          placeholder="Entrez une désignation ou une description (accepte plusieurs langues)"
+          [placeholder]="endpoint === 'positions10' && zone === 'EU'
+            ? 'Décrivez votre marchandise pour la NC8 UE (ex : Chevaux reproducteurs, Panneaux solaires...)'
+            : 'Décrivez votre marchandise (ex : Chevaux pur sang arabe, Canards sauvages, Dattes...)'"
           class="search-input"
           (keydown.enter)="search()"
         />
         <button
+          type="button"
           (click)="search()"
           class="search-button"
-          [disabled]="isLoading || !searchTerm"
+          [disabled]="isLoading || !searchTerm.trim()"
         >
-          {{ isLoading ? 'Recherche en cours...' : 'Rechercher' }}
+          {{ isLoading ? 'Analyse en cours...' : 'Rechercher' }}
         </button>
       </div>
 
+      <div class="quick-examples">
+        <span class="quick-label">Exemples :</span>
+        @for (ex of exampleQueries; track ex) {
+          <button type="button" class="example-chip" (click)="searchExample(ex)">{{ ex }}</button>
+        }
+      </div>
+
       @if (isLoading) {
-        <div class="loading">Recherche en cours...</div>
+        <div class="loading">Analyse de la nomenclature officielle en cours...</div>
       }
 
       @if (error) {
-        <div class="error">{{ error }}</div>
+        <div class="error">
+          <p>{{ error }}</p>
+          @if (!isAuthenticated) {
+            <a routerLink="/auth/register" class="error-cta">Ouvrir un compte gratuit →</a>
+          }
+        </div>
       }
 
       @if (groupedResults && !isLoading) {
         <div class="results">
-          <h3>Résultat de la recherche</h3>
+          <h3>Résultats officiels</h3>
 
           @if (groupedResults.length === 0) {
-            <p class="no-results">Aucun résultat n'a été trouvé.</p>
+            <p class="no-results">Aucune position trouvée pour cette désignation. Essayez des termes plus précis.</p>
           }
 
           @for (g4 of groupedResults; track g4.code) {
             <div class="result-card">
-
-              <!-- Position 4 -->
               <div class="level level-position4">
-                <span class="level-label">Position</span>
+                <span class="level-label">Position 4</span>
                 <span class="level-code">{{ g4.code }}</span>
                 <span class="level-desc">{{ g4.description }}</span>
               </div>
@@ -81,63 +119,112 @@ interface GroupedP4 {
                 <div class="position-justif">{{ g4.justification }}</div>
               }
 
-              <!-- Pour chaque code6 sous ce code4 -->
               @for (p6 of g4.codes6; track p6.code) {
-                <h4>Code HS</h4>
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Code</th>
-                      <th>Description</th>
-                      @if (endpoint === 'positions6' || p6.justification) { <th>Justification</th> }
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td class="code-cell">{{ p6.code }}</td>
-                      <td>{{ p6.description }}</td>
-                      @if (endpoint === 'positions6' || p6.justification) {
-                        <td class="justif">{{ p6.justification }}</td>
-                      }
-                    </tr>
-                  </tbody>
-                </table>
+                @if (endpoint === 'positions6') {
+                  <app-customs-card
+                    [code]="p6.code"
+                    [zone]="zone"
+                    [description]="p6.description"
+                    [position4]="{ code: g4.code, description: g4.description }"
+                    [justification]="p6.justification"
+                    [highlight]="true"
+                    (hs6MatchRequest)="onHs6Match($event)">
+                  </app-customs-card>
+                } @else {
+                  <div class="hs6-subheader">
+                    <span class="hs6-tag">HS6 {{ p6.code }}</span>
+                    <span class="hs6-desc">{{ p6.description }}</span>
+                  </div>
+                  @if (p6.justification) {
+                    <div class="hs6-justif">{{ p6.justification }}</div>
+                  }
 
-                <!-- Codes P10 sous ce code6 -->
-                @if (p6.codes10.length > 0) {
-                  <h4>Codes P10 sous ce code HS</h4>
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Code P10</th>
-                        <th>Description</th>
-                        @if (hasP10Justification(p6)) { <th>Justification</th> }
-                      </tr>
-                    </thead>
-                    <tbody>
-                      @for (p10 of p6.codes10; track p10.code) {
-                        @if (p10.titres && p10.titres.length > 0) {
-                          <tr class="titre-row">
-                            <td [attr.colspan]="hasP10Justification(p6) ? 3 : 2" class="titres-cell">
-                              @for (titre of p10.titres; track titre) {
-                                <div class="titre-p10">{{ titre }}</div>
+                  @let featured = getFeaturedP10(p6);
+                  @let siblings = getSiblingP10(p6);
+
+                  <div class="featured-stack">
+                    @for (p10 of featured; track p10.code) {
+                      <app-customs-card
+                        [code]="p10.code"
+                        [formattedCode]="p10.formattedCode"
+                        [checkDigit]="p10.checkDigit"
+                        [zone]="zone"
+                        [description]="p10.description"
+                        [titles]="p10.fullTitres"
+                        [position4]="{ code: g4.code, description: g4.description }"
+                        [justification]="p10.justification"
+                        [regulatoryData]="p10.regulatoryData"
+                        [glossary]="p10.glossary || p6.glossary"
+                        [enriched]="p10.enriched"
+                        [highlight]="!!p10.justification"
+                        (hs6MatchRequest)="onHs6Match($event)">
+                      </app-customs-card>
+                    }
+                  </div>
+
+                  @if (siblings.length > 0) {
+                    <details class="siblings-accordion">
+                      <summary>
+                        Voir les {{ siblings.length }} autre{{ siblings.length > 1 ? 's' : '' }} sous-position{{ siblings.length > 1 ? 's' : '' }} officielle{{ siblings.length > 1 ? 's' : '' }} sous {{ p6.code }}
+                      </summary>
+                      <div class="siblings-table-wrap">
+                        <table>
+                          <thead>
+                            <tr>
+                              <th>{{ zone === 'EU' ? 'Code NC8' : 'Code P10' }}</th>
+                              <th>Désignation</th>
+                              @if (zone === 'EU') {
+                                <th>Droit TDC</th>
+                                <th>Unité suppl.</th>
+                              } @else {
+                                <th>DD / TVA</th>
+                                <th>FAP</th>
                               }
-                            </td>
-                          </tr>
-                        }
-                        <tr [class.highlighted]="p10.justification">
-                          <td class="code-cell p10">{{ p10.code }}</td>
-                          <td>{{ p10.description }}</td>
-                          @if (hasP10Justification(p6)) {
-                            <td class="justif">{{ p10.justification }}</td>
-                          }
-                        </tr>
-                      }
-                    </tbody>
-                  </table>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            @for (p10 of siblings; track p10.code) {
+                              @if (p10.titres && p10.titres.length > 0) {
+                                <tr class="titre-row">
+                                  <td colspan="4" class="titres-cell">
+                                    @for (titre of p10.titres; track titre) {
+                                      <div class="titre-p10">{{ titre }}</div>
+                                    }
+                                  </td>
+                                </tr>
+                              }
+                              <tr>
+                                <td class="code-cell p10">
+                                  {{ p10.formattedCode || p10.code }}
+                                  @if (p10.checkDigit) {
+                                    <span class="mini-key">{{ p10.checkDigit }}</span>
+                                  }
+                                </td>
+                                <td class="desc-cell">{{ p10.description }}</td>
+                                @if (zone === 'EU') {
+                                  <td class="tax-cell">{{ formatSiblingDuty(p10.regulatoryData?.dd) }}</td>
+                                  <td class="fap-cell">{{ p10.regulatoryData?.uqn || '—' }}</td>
+                                } @else {
+                                  <td class="tax-cell">
+                                    @if (p10.regulatoryData?.dd || p10.regulatoryData?.tva) {
+                                      {{ formatSiblingDuty(p10.regulatoryData?.dd) }} / {{ formatSiblingDuty(p10.regulatoryData?.tva) }}
+                                    } @else {
+                                      —
+                                    }
+                                  </td>
+                                  <td class="fap-cell">
+                                    {{ p10.regulatoryData?.fap?.join(', ') || '—' }}
+                                  </td>
+                                }
+                              </tr>
+                            }
+                          </tbody>
+                        </table>
+                      </div>
+                    </details>
+                  }
                 }
               }
-
             </div>
           }
         </div>
@@ -146,314 +233,435 @@ interface GroupedP4 {
   `,
   styles: [`
     .search-container {
-      padding: 40px 20px;
-      max-width: 900px;
+      padding: 20px 8px;
+      max-width: 960px;
       margin: 0 auto;
-      animation: fadeIn 0.5s ease-in;
+      animation: fadeIn 0.35s ease;
     }
 
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(20px); }
+      from { opacity: 0; transform: translateY(10px); }
       to { opacity: 1; transform: translateY(0); }
+    }
+
+    .guest-banner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding: 12px 16px;
+      margin-bottom: 18px;
+      border-radius: 12px;
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.28);
+      color: #CBD5E1;
+      font-size: 0.88rem;
+    }
+
+    .guest-banner-info {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .guest-pill {
+      padding: 3px 9px;
+      border-radius: 999px;
+      background: rgba(59, 130, 246, 0.22);
+      color: #93C5FD;
+      font-size: 0.74rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .guest-cta {
+      padding: 6px 12px;
+      border-radius: 8px;
+      background: #F59E0B;
+      color: #070B14;
+      font-weight: 700;
+      font-size: 0.82rem;
+      text-decoration: none;
+      white-space: nowrap;
     }
 
     .search-form {
       display: flex;
-      margin-bottom: 30px;
-      background: var(--neu-bg-dark, #0D1421);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: var(--neu-radius-inner, 8px);
+      margin-bottom: 12px;
+      background: #0D1421;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
       overflow: hidden;
       transition: border-color 0.2s ease, box-shadow 0.2s ease;
     }
 
     .search-form:focus-within {
-      border-color: var(--neu-accent, #F59E0B);
+      border-color: #F59E0B;
       box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.18);
     }
 
     .search-input {
       flex: 1;
-      padding: 16px 20px;
-      min-height: 44px;
+      padding: 15px 18px;
+      min-height: 48px;
       font-size: 16px;
       border: none;
       outline: none;
       background: transparent;
-      color: var(--neu-text-primary, #3D4852);
+      color: #F8FAFC;
     }
 
-    .search-input::placeholder { color: var(--neu-text-muted, #6B7280); }
+    .search-input::placeholder {
+      color: #64748B;
+    }
 
     .search-button {
-      padding: 16px 32px;
-      min-height: 44px;
+      padding: 15px 28px;
+      min-height: 48px;
       font-size: 15px;
       font-family: var(--font-display, 'Space Grotesk', sans-serif);
-      background: var(--neu-accent, #F59E0B);
+      background: #F59E0B;
       color: #070B14;
       border: none;
       font-weight: 700;
-      border-radius: 0 var(--neu-radius-inner, 8px) var(--neu-radius-inner, 8px) 0;
-      box-shadow: 0 0 16px rgba(245, 158, 11, 0.3);
-      transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
       cursor: pointer;
       white-space: nowrap;
+      transition: background 0.2s ease;
     }
 
-    .search-button:hover:not(:disabled) {
-      background: var(--neu-accent-hover, #D97706);
-      box-shadow: 0 0 24px rgba(245, 158, 11, 0.45);
-      transform: translateY(-1px);
+    .search-button:hover:not(:disabled) { background: #D97706; }
+    .search-button:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    .quick-examples {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 24px;
     }
 
-    .search-button:active:not(:disabled) {
-      background: var(--neu-accent-hover, #D97706);
-      transform: translateY(1px);
-      box-shadow: none;
+    .quick-label {
+      font-size: 0.8rem;
+      color: #94A3B8;
+      font-weight: 600;
     }
 
-    .search-button:disabled {
-      background: rgba(255, 255, 255, 0.05);
-      color: var(--neu-text-muted, #64748B);
-      box-shadow: none;
-      cursor: not-allowed;
-      opacity: 0.5;
+    .example-chip {
+      padding: 5px 12px;
+      border-radius: 999px;
+      background: #111827;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #CBD5E1;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: border-color 0.15s ease, color 0.15s ease;
+    }
+
+    .example-chip:hover {
+      border-color: rgba(245, 158, 11, 0.5);
+      color: #FCD34D;
     }
 
     .loading {
-      margin: 30px 0;
+      margin: 28px 0;
       text-align: center;
-      color: var(--neu-accent, #6C63FF);
-      font-size: 1.1rem;
-      font-weight: 500;
-      animation: pulse 1.5s ease-in-out infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
+      color: #F59E0B;
+      font-size: 1rem;
+      font-weight: 600;
     }
 
     .error {
-      margin: 30px 0;
-      color: var(--neu-accent-danger, #EF4444);
-      background: rgba(239, 68, 68, 0.08);
-      border: 1px solid rgba(239, 68, 68, 0.25);
-      padding: 16px 20px;
-      border-radius: var(--neu-radius-inner, 8px);
+      margin: 24px 0;
+      color: #FCA5A5;
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      padding: 14px 18px;
+      border-radius: 10px;
     }
 
-    .results {
-      margin-top: 20px;
-      animation: slideUp 0.4s ease;
-    }
-
-    @keyframes slideUp {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
+    .error p { margin: 0; }
+    .error-cta {
+      display: inline-block;
+      margin-top: 8px;
+      color: #FCD34D;
+      font-weight: 700;
+      text-decoration: none;
     }
 
     .results h3 {
-      margin-bottom: 20px;
-      color: var(--neu-text-heading, #2D3748);
-      font-family: var(--font-display, 'Plus Jakarta Sans', sans-serif);
-      font-size: 1.3rem;
-      font-weight: 600;
+      margin: 0 0 18px;
+      color: #F8FAFC;
+      font-family: var(--font-display, 'Space Grotesk', sans-serif);
+      font-size: 1.25rem;
     }
 
     .no-results {
       text-align: center;
-      color: var(--neu-text-muted, #6B7280);
-      font-style: italic;
-      margin-top: 20px;
+      color: #94A3B8;
+      padding: 24px;
+      background: #111827;
+      border-radius: 12px;
     }
 
     .result-card {
       margin-bottom: 24px;
-      padding: 20px 24px;
-      background: var(--neu-card-bg, #111827);
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      border-radius: var(--neu-radius-container, 14px);
-      box-shadow: var(--neu-extruded);
-      transition: border-color 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    .result-card:hover {
-      border-color: rgba(245, 158, 11, 0.2);
-      box-shadow: var(--neu-extruded-hover);
-    }
-
-    .level {
+      padding: 20px;
+      background: #0D1421;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
       display: flex;
-      align-items: baseline;
-      gap: 12px;
-      padding: 14px 18px;
-      border-radius: var(--neu-radius-inner, 12px);
-      margin-bottom: 14px;
-      border: none;
+      flex-direction: column;
+      gap: 16px;
     }
 
     .level-position4 {
-      background: var(--neu-bg-dark, #0D1421);
+      display: flex;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 12px 16px;
+      background: #111827;
       border: 1px solid rgba(255, 255, 255, 0.06);
-      border-left: 3px solid var(--neu-accent, #F59E0B);
+      border-left: 3px solid #F59E0B;
+      border-radius: 10px;
     }
 
     .level-label {
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       font-weight: 700;
       text-transform: uppercase;
-      color: var(--neu-text-muted, #6B7280);
-      min-width: 70px;
+      color: #94A3B8;
     }
 
     .level-code {
       font-family: var(--font-mono, 'JetBrains Mono', monospace);
-      font-weight: 600;
+      font-weight: 700;
       font-size: 1rem;
-      color: var(--neu-accent, #F59E0B);
-      min-width: 60px;
+      color: #F59E0B;
     }
 
     .level-desc {
-      color: var(--neu-text-primary, #3D4852);
+      color: #E2E8F0;
       font-size: 0.95rem;
-      line-height: 1.4;
+    }
+
+    .position-justif,
+    .hs6-justif {
+      font-style: italic;
+      color: #CBD5E1;
+      font-size: 0.86rem;
+      line-height: 1.45;
+      padding: 6px 12px;
+      border-left: 2px solid rgba(96, 165, 250, 0.45);
+      background: rgba(17, 24, 39, 0.55);
+      border-radius: 0 8px 8px 0;
     }
 
     .position-justif {
-      font-style: italic;
-      color: var(--neu-text-muted, #6B7280);
-      font-size: 0.85rem;
-      margin: -6px 0 12px 18px;
+      border-left-color: rgba(245, 158, 11, 0.55);
+      margin-top: -6px;
     }
 
-    h4 {
-      color: var(--neu-text-heading, #2D3748);
-      font-family: var(--font-display, 'Plus Jakarta Sans', sans-serif);
-      font-size: 0.95rem;
+    .hs6-justif {
+      margin: -4px 0 4px 4px;
+    }
+
+    .hs6-subheader {
+      display: flex;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 4px 4px 0;
+    }
+
+    .hs6-tag {
+      font-family: var(--font-mono, 'JetBrains Mono', monospace);
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #60A5FA;
+      background: rgba(59, 130, 246, 0.14);
+      padding: 3px 9px;
+      border-radius: 6px;
+    }
+
+    .hs6-desc {
+      color: #CBD5E1;
+      font-size: 0.92rem;
+      font-weight: 500;
+    }
+
+    .featured-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .siblings-accordion {
+      background: #111827;
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 12px;
+      padding: 12px 16px;
+    }
+
+    .siblings-accordion summary {
+      cursor: pointer;
+      color: #93C5FD;
+      font-size: 0.88rem;
       font-weight: 600;
-      margin: 14px 0 8px;
-      padding-bottom: 5px;
+      user-select: none;
+    }
+
+    .siblings-table-wrap {
+      margin-top: 12px;
+      overflow-x: auto;
     }
 
     table {
       width: 100%;
-      border-collapse: separate;
-      border-spacing: 0 0.5rem;
-      background: transparent;
-      margin-bottom: 4px;
+      border-collapse: collapse;
     }
 
     th {
-      padding: 10px 16px;
+      padding: 8px 12px;
       text-align: left;
-      background: rgba(255, 255, 255, 0.03);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
-      font-weight: 600;
-      font-family: var(--font-display, 'Space Grotesk', sans-serif);
-      color: var(--neu-text-muted, #64748B);
-      text-transform: uppercase;
+      color: #94A3B8;
       font-size: 0.72rem;
-      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     }
 
     td {
-      padding: 11px 16px;
-      text-align: left;
-      background: transparent;
+      padding: 10px 12px;
+      color: #CBD5E1;
+      font-size: 0.88rem;
       border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      vertical-align: top;
     }
 
-    td:first-child { border-radius: 0; }
-    td:last-child { border-radius: 0; }
-
-    tbody tr:hover td { background: rgba(245, 158, 11, 0.04); }
-    tbody tr.highlighted td {
-      background: rgba(245, 158, 11, 0.06);
-      border-left: 2px solid var(--neu-accent, #F59E0B);
-    }
-
-    .code-cell {
+    .code-cell.p10 {
       font-family: var(--font-mono, 'JetBrains Mono', monospace);
-      font-weight: 600;
-      color: var(--neu-accent-secondary, #3B82F6);
-      font-size: 0.9rem;
+      font-weight: 700;
+      color: #F59E0B;
       white-space: nowrap;
     }
 
-    .code-cell.p10 { color: var(--neu-accent, #F59E0B); }
+    .mini-key {
+      margin-left: 4px;
+      padding: 1px 5px;
+      border-radius: 4px;
+      background: rgba(245, 158, 11, 0.16);
+      color: #FCD34D;
+      font-size: 0.72rem;
+    }
 
-    .justif {
-      font-style: italic;
-      color: var(--neu-text-muted, #6B7280);
-      font-size: 0.85rem;
+    .tax-cell, .fap-cell {
+      white-space: nowrap;
+      font-size: 0.82rem;
+      color: #94A3B8;
     }
 
     .titre-row td {
-      background: transparent;
       border-bottom: none;
-      padding: 4px 16px 2px;
+      padding: 6px 12px 2px;
     }
-    .titre-row:hover td { background: transparent; }
-
-    .titres-cell { padding: 6px 16px 2px !important; }
 
     .titre-p10 {
       font-style: italic;
-      color: var(--neu-text-muted, #64748B);
-      font-size: 0.85rem;
-      padding: 2px 0 1px 10px;
-      border-left: 2px solid rgba(245, 158, 11, 0.4);
+      color: #94A3B8;
+      font-size: 0.82rem;
+      padding-left: 10px;
+      border-left: 2px solid rgba(245, 158, 11, 0.45);
     }
 
-    @media (max-width: 768px) {
-      .search-container { padding: 20px 12px; }
+    @media (max-width: 720px) {
       .search-form { flex-direction: column; }
-      .search-button { border-radius: 0 0 var(--neu-radius-inner, 12px) var(--neu-radius-inner, 12px); }
-      .result-card { padding: 16px; border-radius: 20px; }
-      .level { flex-direction: column; gap: 4px; }
-    }
-
-    @media (max-width: 1024px) {
-      .search-container { padding: 30px 16px; }
+      .search-button { border-radius: 0 0 12px 12px; }
     }
   `]
 })
-export class SearchComponent implements OnInit {
+export class SearchComponent implements OnInit, OnDestroy {
   searchTerm: string = '';
   groupedResults: GroupedP4[] | null = null;
   isLoading: boolean = false;
   error: string | null = null;
   endpoint: 'positions6' | 'positions10' = 'positions6';
+  zone: TariffZone = 'DZ';
+
+  private readonly exampleQueriesDz = [
+    'Chevaux pur sang arabe',
+    'Canards sauvages',
+    'Dattes Deglet Nour',
+    'Voiture électrique'
+  ];
+
+  private readonly exampleQueriesEu = [
+    'Chevaux reproducteurs race pure',
+    'Voiture électrique',
+    'Panneaux solaires photovoltaïques',
+    'Huile d’olive vierge'
+  ];
+
+  get exampleQueries(): string[] {
+    return (this.endpoint === 'positions10' && this.zone === 'EU')
+      ? this.exampleQueriesEu
+      : this.exampleQueriesDz;
+  }
 
   private searchService = inject(SearchService);
   private oauthService = inject(OAuthService);
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
   private state = inject(SearchStateService);
+  private zoneSub?: Subscription;
+
+  guestTrialsRemaining$ = this.searchService.guestTrialsRemaining$;
+
+  get isAuthenticated(): boolean {
+    return this.oauthService.hasValidAccessToken();
+  }
 
   ngOnInit(): void {
     const mode = this.route.snapshot.data['mode'];
-    if (mode === 'position10') {
-      this.endpoint = 'positions10';
-      this.searchTerm = this.state.searchTerm_p10;
-      const decoded = this.state.searchDecoded_p10;
-      if (decoded) this.groupedResults = this.buildGrouped(decoded);
-    } else {
-      this.searchTerm = this.state.searchTerm_hs;
-      const decoded = this.state.searchDecoded_hs;
-      if (decoded) this.groupedResults = this.buildGrouped(decoded);
+    this.endpoint = mode === 'position10' ? 'positions10' : 'positions6';
+
+    this.zoneSub = this.state.selectedZone$.subscribe(z => {
+      this.zone = z;
+      this.error = null;
+      this.loadStateForZone();
+    });
+
+    if (!this.isAuthenticated) {
+      this.searchService.getGuestQuota().subscribe({ error: () => {} });
     }
   }
 
+  ngOnDestroy(): void {
+    this.zoneSub?.unsubscribe();
+  }
+
+  formatSiblingDuty(value?: string): string {
+    if (!value) return '—';
+    const trimmed = value.trim();
+    if (!trimmed || trimmed === '-') return '—';
+    if (trimmed.includes('%')) return trimmed;
+    const starMatch = trimmed.match(/^(\d+(?:[.,]\d+)?)\s*\*$/);
+    if (starMatch) return `${starMatch[1]} % *`;
+    return /^\d+(?:[.,]\d+)?$/.test(trimmed) ? `${trimmed} %` : trimmed;
+  }
+
+  searchExample(term: string): void {
+    this.searchTerm = term;
+    this.search();
+  }
+
   search(): void {
-    if (!this.oauthService.hasValidAccessToken()) {
-      this.error = 'Vous devez être connecté pour effectuer une recherche.';
-      return;
-    }
-    if (!this.searchTerm) {
-      this.error = 'Veuillez entrer un terme de recherche';
+    const trimmed = this.searchTerm.trim();
+    if (!trimmed) {
+      this.error = 'Veuillez entrer une désignation à rechercher.';
       return;
     }
 
@@ -461,7 +669,7 @@ export class SearchComponent implements OnInit {
     this.error = null;
     this.groupedResults = null;
 
-    this.searchService.searchCodes(this.searchTerm, this.endpoint).subscribe({
+    this.searchService.searchCodes(trimmed, this.endpoint, this.zone).subscribe({
       next: (results: any[]) => {
         if (!results || results.length === 0) {
           this.groupedResults = [];
@@ -484,35 +692,71 @@ export class SearchComponent implements OnInit {
 
         const decodeObservables = validResults.map((r: any) => {
           const rawDigits = (r.code || '').replace(/[^0-9]/g, '');
+          const targetLeafLen = this.zone === 'EU' ? 8 : 10;
           const aiCode = this.endpoint === 'positions6' && rawDigits.length > 6
             ? rawDigits.substring(0, 6)
-            : (rawDigits.length > 6 && rawDigits.length !== 10 ? rawDigits.substring(0, 6) : rawDigits);
+            : (rawDigits.length > 6 && rawDigits.length !== targetLeafLen ? rawDigits.substring(0, 6) : rawDigits);
           const justification: string | null = r.justification ?? null;
-          // Décoder au niveau exact retourné (4, 6 ou 10 chiffres) :
-          // - 4 chiffres -> toute la Position (tous ses codes HS6 et tous leurs codes P10)
-          // - 6 chiffres -> toute la Sous-position HS6 (tous ses codes P10)
-          // - 10 chiffres -> uniquement le code P10 précis trouvé
-          const codeToDecode = aiCode;
+
+          if (this.endpoint === 'positions10' && aiCode.length === 4) {
+            return this.searchService.decodeP10Code(aiCode, this.zone).pipe(
+              retry(1),
+              catchError(() => of(null)),
+              switchMap(p4Decoded => {
+                if (!p4Decoded || !p4Decoded.position4) {
+                  return of([] as SearchResultItem[]);
+                }
+                const hs6List = p4Decoded.positions6 || [];
+                if (hs6List.length === 0) {
+                  return of([{ decoded: p4Decoded, justification, aiCode } as SearchResultItem]);
+                }
+                const childCalls = hs6List.map(p6 =>
+                  this.searchService.decodeP10Code(p6.code.replace(/[^0-9]/g, ''), this.zone).pipe(
+                    retry(1),
+                    catchError(() => of(null)),
+                    map(p6Decoded => {
+                      if (!p6Decoded || (!p6Decoded.position4 && (!p6Decoded.positions6 || p6Decoded.positions6.length === 0))) {
+                        return null;
+                      }
+                      return { decoded: p6Decoded, justification, aiCode } as SearchResultItem;
+                    })
+                  )
+                );
+                return forkJoin(childCalls).pipe(
+                  map(children => {
+                    const validChildren = children.filter((c): c is SearchResultItem => c !== null);
+                    return validChildren.length > 0
+                      ? validChildren
+                      : [{ decoded: p4Decoded, justification, aiCode } as SearchResultItem];
+                  })
+                );
+              })
+            );
+          }
+
+          const codeToDecode = this.endpoint === 'positions10' && aiCode.length >= 6
+            ? aiCode.substring(0, 6)
+            : aiCode;
 
           const decode$ = this.endpoint === 'positions10'
-            ? this.searchService.decodeP10Code(codeToDecode, true)
-            : this.searchService.decodeCode(codeToDecode, true);
+            ? this.searchService.decodeP10Code(codeToDecode, this.zone)
+            : this.searchService.decodeCode(codeToDecode, this.zone);
 
           return decode$.pipe(
             retry(1),
             catchError(() => of(null)),
             map(decoded => {
               if (!decoded || (!decoded.position4 && (!decoded.positions6 || decoded.positions6.length === 0))) {
-                return null;
+                return [] as SearchResultItem[];
               }
-              return { decoded, justification, aiCode } as SearchResultItem;
+              return [{ decoded, justification, aiCode } as SearchResultItem];
             })
           );
         });
 
         forkJoin(decodeObservables).subscribe({
-          next: (items: any[]) => {
-            const valid = items.filter(i => i != null) as SearchResultItem[];
+          next: (itemLists: SearchResultItem[][]) => {
+            const valid = itemLists.flat().filter(i => i != null);
             if (valid.length === 0) {
               this.error = 'Le décodage des codes retournés a échoué. Veuillez réessayer.';
               this.isLoading = false;
@@ -529,21 +773,37 @@ export class SearchComponent implements OnInit {
         });
       },
       error: (err: any) => {
-        if (err.status === 401 || err.status === 403) this.oauthService.logOut();
+        if ((err.status === 401 || err.status === 403) && this.oauthService.hasValidAccessToken()) {
+          this.oauthService.logOut();
+        }
         this.error = err.message || 'Une erreur est survenue lors de la recherche.';
         this.isLoading = false;
       }
     });
   }
 
-  hasP10Justification(p6: GroupedP6): boolean {
-    return p6.codes10.some(c => !!c.justification);
+  getFeaturedP10(p6: GroupedP6): GroupedP10[] {
+    const highlighted = p6.codes10.filter(c => !!c.justification);
+    if (highlighted.length > 0) return highlighted;
+    return p6.codes10.slice(0, 1);
+  }
+
+  getSiblingP10(p6: GroupedP6): GroupedP10[] {
+    const highlighted = p6.codes10.filter(c => !!c.justification);
+    if (highlighted.length > 0) return p6.codes10.filter(c => !c.justification);
+    return p6.codes10.slice(1);
+  }
+
+  onHs6Match(event: { hs6: string; zone: string; sourceCode: string }): void {
+    this.state.compareMode = true;
+    this.state.compareHs6Input = event.hs6;
+    this.state.compareResult = null;
+    this.router.navigate(['/recherche/decode-p10']);
   }
 
   /** Construit la structure groupée : P4 → P6 → P10, sans doublons. */
   private buildGrouped(items: SearchResultItem[]): GroupedP4[] {
     const mapP4 = new Map<string, GroupedP4>();
-    // Pour le calcul du delta de titres : dernier titre connu par groupe P6
     const prevTitlesMap = new Map<string, string[]>();
 
     for (const item of items) {
@@ -568,14 +828,14 @@ export class SearchComponent implements OnInit {
         const p6Clean = p6.code.replace(/[^0-9]/g, '');
         let group6 = group4.codes6.find(g => g.code.replace(/[^0-9]/g, '') === p6Clean);
         if (!group6) {
-          const newGroup6: GroupedP6 = {
+          group6 = {
             code: p6.code,
             description: p6.description,
             justification: null,
-            codes10: []
+            codes10: [],
+            glossary: item.decoded.glossary
           };
-          group4.codes6.push(newGroup6);
-          group6 = newGroup6;
+          group4.codes6.push(group6);
         }
 
         if (this.endpoint === 'positions6') {
@@ -594,15 +854,21 @@ export class SearchComponent implements OnInit {
             const existing = group6.codes10.find(g => g.code.replace(/[^0-9]/g, '') === p10Code);
             if (!existing) {
               const allTitres = item.decoded.titresParPosition10?.[p10.code]
-                ?? (item.decoded.niveau === 'POSITION10' ? (item.decoded.titresPosition10 ?? []) : []);
+                ?? ((item.decoded.niveau === 'POSITION10' || item.decoded.niveau === 'POSITION8') ? (item.decoded.titresPosition10 ?? []) : []);
               const prevTitres = prevTitlesMap.get(p6Clean) ?? [];
               const delta = this.titreDelta(allTitres, prevTitres);
               prevTitlesMap.set(p6Clean, allTitres);
               group6.codes10.push({
                 code: p10.code,
+                formattedCode: p10.formattedCode,
+                checkDigit: p10.checkDigit,
                 description: p10.description,
                 justification: p10Code === item.aiCode ? item.justification : null,
-                titres: delta.length > 0 ? delta : null
+                titres: delta.length > 0 ? delta : null,
+                fullTitres: allTitres,
+                regulatoryData: p10.regulatoryData,
+                enriched: !!p10.enriched,
+                glossary: item.decoded.glossary
               });
             } else if (p10Code === item.aiCode && item.justification) {
               existing.justification = item.justification;
@@ -615,17 +881,36 @@ export class SearchComponent implements OnInit {
     return Array.from(mapP4.values());
   }
 
-  /** Retourne les titres qui ont changé par rapport aux titres précédents. */
   private titreDelta(current: string[], prev: string[]): string[] {
     let i = 0;
     while (i < Math.min(current.length, prev.length) && current[i] === prev[i]) i++;
     return current.slice(i);
   }
 
+  private loadStateForZone(): void {
+    if (this.endpoint === 'positions10') {
+      if (this.zone === 'EU') {
+        this.searchTerm = this.state.searchTerm_p10_eu;
+        this.groupedResults = this.state.searchDecoded_p10_eu ? this.buildGrouped(this.state.searchDecoded_p10_eu) : null;
+      } else {
+        this.searchTerm = this.state.searchTerm_p10;
+        this.groupedResults = this.state.searchDecoded_p10 ? this.buildGrouped(this.state.searchDecoded_p10) : null;
+      }
+    } else {
+      this.searchTerm = this.state.searchTerm_hs;
+      this.groupedResults = this.state.searchDecoded_hs ? this.buildGrouped(this.state.searchDecoded_hs) : null;
+    }
+  }
+
   private saveState(decoded: SearchResultItem[]): void {
     if (this.endpoint === 'positions10') {
-      this.state.searchTerm_p10 = this.searchTerm;
-      this.state.searchDecoded_p10 = decoded;
+      if (this.zone === 'EU') {
+        this.state.searchTerm_p10_eu = this.searchTerm;
+        this.state.searchDecoded_p10_eu = decoded;
+      } else {
+        this.state.searchTerm_p10 = this.searchTerm;
+        this.state.searchDecoded_p10 = decoded;
+      }
     } else {
       this.state.searchTerm_hs = this.searchTerm;
       this.state.searchDecoded_hs = decoded;

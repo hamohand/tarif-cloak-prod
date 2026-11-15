@@ -25,6 +25,9 @@ public class AnthropicService implements AiProvider {
     private final String apiKey;
     private final String model;
     private final String apiUrl;
+    private final double baseRequestPrice;
+    private final double priceInputPerMillion;
+    private final double priceOutputPerMillion;
     private final float temperature = 0.1F;
 
     private static final ThreadLocal<UsageInfo> currentUsage = new ThreadLocal<>();
@@ -33,12 +36,19 @@ public class AnthropicService implements AiProvider {
             RestTemplate restTemplate,
             @Value("${ai.anthropic.api-key:}") String apiKey,
             @Value("${ai.anthropic.model:claude-haiku-4-5-20251001}") String model, // au lieu de claude-sonnet-4-5-20250929 trop cher
-            @Value("${ai.anthropic.base-url:https://api.anthropic.com/v1}") String baseUrl) {
+            @Value("${ai.anthropic.base-url:https://api.anthropic.com/v1}") String baseUrl,
+            @Value("${ai.base-request-price:0.01}") double baseRequestPrice,
+            @Value("${ai.anthropic.price-input-per-million:3.00}") double priceInputPerMillion,
+            @Value("${ai.anthropic.price-output-per-million:15.00}") double priceOutputPerMillion) {
         this.restTemplate = restTemplate;
         this.apiKey = apiKey;
         this.model = model;
         this.apiUrl = baseUrl + "/messages";
-        log.info("AnthropicService initialisé avec le modèle: {}", model);
+        this.baseRequestPrice = baseRequestPrice;
+        this.priceInputPerMillion = priceInputPerMillion;
+        this.priceOutputPerMillion = priceOutputPerMillion;
+        log.info("AnthropicService initialisé avec le modèle: {} (tarifs: input=${}/M, output=${}/M)",
+                model, priceInputPerMillion, priceOutputPerMillion);
     }
 
     @Override
@@ -105,15 +115,16 @@ public class AnthropicService implements AiProvider {
                     // Récupérer les tokens si disponibles
                     int inputTokens = rootNode.path("usage").path("input_tokens").asInt(0);
                     int outputTokens = rootNode.path("usage").path("output_tokens").asInt(0);
+                    double tokenCostUsd = (inputTokens * priceInputPerMillion + outputTokens * priceOutputPerMillion) / 1_000_000.0;
 
                     UsageInfo usageInfo = new UsageInfo(
                             inputTokens + outputTokens,
-                            0.01,
+                            baseRequestPrice,
                             inputTokens,
                             outputTokens,
-                            0.0
+                            tokenCostUsd
                     );
-                    currentUsage.set(usageInfo);
+                    currentUsage.set(UsageInfo.accumulate(currentUsage.get(), usageInfo));
 
                     return cleanedMessage;
                 }
@@ -124,11 +135,9 @@ public class AnthropicService implements AiProvider {
 
         } catch (org.springframework.web.client.HttpClientErrorException e) {
             log.error("Erreur HTTP API Anthropic - Status: {}, Body: {}", e.getStatusCode(), e.getResponseBodyAsString());
-            currentUsage.remove();
             throw new AiProviderException("Erreur HTTP Anthropic: " + e.getStatusCode(), e);
         } catch (Exception e) {
             log.error("Erreur lors de la requête à l'API Anthropic: {}", e.getMessage(), e);
-            currentUsage.remove();
             throw new AiProviderException("Erreur Anthropic: " + e.getMessage(), e);
         }
     }

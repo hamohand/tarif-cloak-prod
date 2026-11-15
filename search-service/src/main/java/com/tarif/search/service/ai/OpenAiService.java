@@ -126,7 +126,7 @@ public class OpenAiService implements AiProvider {
                     completionTokens,
                     tokenCostUsd
             );
-            currentUsage.set(usageInfo);
+            currentUsage.set(UsageInfo.accumulate(currentUsage.get(), usageInfo));
 
             log.debug("Niveau: {}, Tokens: {}, Coût: {}", titre, totalTokens, tokenCostUsd);
 
@@ -134,7 +134,6 @@ public class OpenAiService implements AiProvider {
 
         } catch (Exception e) {
             log.error("Erreur lors de la requête à l'API OpenAI: {}", e.getMessage());
-            currentUsage.remove();
             throw new AiProviderException("Erreur OpenAI: " + e.getMessage(), e);
         }
     }

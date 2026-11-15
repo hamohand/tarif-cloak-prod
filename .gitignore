@@ -41,6 +41,8 @@ tarif-cloak-prod
 # Données tarifaires (PDFs sources — trop volumineux pour git)
 # ========================
 pdfs-chapitres/
+data/dz/chapitres/*.json
+data/eu/*.xhtml
 *.pdf
 
 # Fichiers temporaires d'extraction
@@ -67,3 +69,7 @@ nul
 
 ### Visual Studio Code ###
 .vscode/
+
+### Python ###
+__pycache__/
+*.py[cod]

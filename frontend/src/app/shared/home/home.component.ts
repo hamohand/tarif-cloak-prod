@@ -1,16 +1,35 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule, AsyncPipe } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { Router, RouterLink } from '@angular/router';
+import { combineLatest, forkJoin, of } from 'rxjs';
+import { catchError, distinctUntilChanged, map, retry, switchMap, take } from 'rxjs/operators';
 import { AuthService } from '../../core/services/auth.service';
 import { OrganizationAccountService } from '../../core/services/organization-account.service';
-import { combineLatest, of } from 'rxjs';
-import { map, switchMap, catchError, distinctUntilChanged } from 'rxjs/operators';
+import { DecodeCodeItem, DecodeResult, SearchService } from '../../tarif/services/search.service';
+import { SearchStateService, TariffZone } from '../../tarif/services/search-state.service';
+import { CustomsCardComponent } from '../../tarif/components/customs-card/customs-card.component';
 import { environment } from '../../../environments/environment';
+
+interface TryCardItem {
+  code: string;
+  formattedCode?: string;
+  checkDigit?: string;
+  zone: string;
+  description: string;
+  titles: string[];
+  position4?: { code: string; description: string } | null;
+  justification?: string | null;
+  regulatoryData?: DecodeCodeItem['regulatoryData'];
+  glossary?: Record<string, string>;
+  enriched: boolean;
+  highlight: boolean;
+}
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterLink, AsyncPipe],
+  imports: [CommonModule, FormsModule, RouterLink, AsyncPipe, CustomsCardComponent],
   template: `
     <div class="home-container">
       <!-- Hero Section -->
@@ -19,8 +38,8 @@ import { environment } from '../../../environments/environment';
 
         <div class="hero-eyebrow">
           <span class="eyebrow-chip">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;flex-shrink:0"><path d="M12 2a10 10 0 100 20A10 10 0 0012 2z"/><path d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg>
-            IA · Nomenclature Douanière · SH
+            <span class="official-dot"></span>
+            100 % Nomenclature Officielle — Zéro code inventé
           </span>
         </div>
 
@@ -29,7 +48,7 @@ import { environment } from '../../../environments/environment';
           <span class="hero-fullname">
             <span class="hero-name-fr">Tarif du Commerce International</span>
             <span class="hero-name-sep">—</span>
-            <span class="hero-name-ar">سعر التجارة الدولية</span>
+            <span class="hero-name-ar">تعريفة التجارة الدولية</span>
           </span>
         </h1>
 
@@ -38,257 +57,295 @@ import { environment } from '../../../environments/environment';
           <span class="lang-chip">English</span>
           <span class="lang-chip">عربي</span>
           <span class="lang-chip">中文</span>
-          <span class="lang-chip lang-chip-more">+ autres langues</span>
+          <span class="lang-chip lang-chip-more">+ recherche par arbre officiel DGD / EUR-Lex / OMD</span>
         </div>
 
-        <ng-container *ngIf="!(isAuthenticated$ | async)">
-          <p class="hero-desc">TCI analyse vos produits et retourne les positions tarifaires les plus pertinentes — avec explication détaillée.<br>
-          Un code de nomenclature inconnu devient lisible en un instant : section, chapitre, position, sous-position.</p>
-        </ng-container>
+        @if (!(isAuthenticated$ | async)) {
+          <p class="hero-desc">
+            Décrivez un produit en langage naturel ou saisissez un code douanier : TCI retrouve la position officielle
+            exacte à 10 chiffres (Algérie · P10) ou 8 chiffres (UE · NC8), ses droits et taxes, son unité et ses formalités.
+          </p>
 
-        <div class="hero-cta" *ngIf="!(isAuthenticated$ | async)">
-          <a *ngIf="isBetaMode" routerLink="/auth/login" class="cta-button primary">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;flex-shrink:0"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-            Commencer gratuitement
-          </a>
-          @if (isBetaMode) {
-            <div class="trial-offer-badge">
-              <svg class="trial-offer-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12v9H4v-9"/><path d="M22 7H2v5h20V7z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg>
-              <span>Offre Invité — <strong>500 crédits · 30 jours</strong></span>
+          <!-- Widget d'essai immédiat sans inscription -->
+          <div class="try-widget">
+            <div class="try-zone-bar" role="group" aria-label="Zone tarifaire">
+              <span class="try-zone-label">Nomenclature :</span>
+              <button
+                type="button"
+                class="try-zone-btn"
+                [class.active]="tryZone === 'DZ'"
+                (click)="setTryZone('DZ')">
+                Algérie · P10
+              </button>
+              <button
+                type="button"
+                class="try-zone-btn eu"
+                [class.active]="tryZone === 'EU'"
+                (click)="setTryZone('EU')">
+                Europe · NC8 (2026)
+              </button>
             </div>
-          }
-          <a *ngIf="!isBetaMode" routerLink="/pricing" class="cta-button ghost">Voir les tarifs</a>
-          <a routerLink="/aide" class="cta-button ghost guide-btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;flex-shrink:0"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/><path d="M12 6v6M12 15h.01"/></svg>
-            Guide
-          </a>
-        </div>
-      </section>
 
-      <!-- Présentation de l'API Recherche HS-code - Affichée uniquement pour les utilisateurs non connectés -->
-      <section class="api-presentation" *ngIf="!(isAuthenticated$ | async)">
-        <div class="api-header">
-          <h2>Recherche de HS-code et positions tarifaires</h2>
-          <p class="api-subtitle">Recherche intelligente et multilingue dans le système harmonisé douanier</p>
-        </div>
+            <div class="try-tabs" role="tablist">
+              <button
+                type="button"
+                role="tab"
+                [attr.aria-selected]="tryTab === 'ai'"
+                class="try-tab"
+                [class.active]="tryTab === 'ai'"
+                (click)="switchTryTab('ai')">
+                Décrire un produit
+                <span class="tab-badge amber">IA · {{ getTrialBadgeText(guestTrialsRemaining$ | async) }}</span>
+              </button>
+              <button
+                type="button"
+                role="tab"
+                [attr.aria-selected]="tryTab === 'decode'"
+                class="try-tab"
+                [class.active]="tryTab === 'decode'"
+                (click)="switchTryTab('decode')">
+                Décoder un code
+                <span class="tab-badge green">SQL · Gratuit illimité</span>
+              </button>
+            </div>
 
-        <div class="api-content">
-          <div class="api-features-grid">
-            <div class="api-feature">
-              <div class="api-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <circle cx="12" cy="12" r="9"/>
-                  <path d="M12 3a14.5 14.5 0 0 1 0 18M12 3a14.5 14.5 0 0 0 0 18M3 12h18"/>
-                </svg>
+            @if (tryTab === 'ai') {
+              <div class="try-body">
+                <div class="try-input-row">
+                  <input
+                    type="text"
+                    [(ngModel)]="tryAiTerm"
+                    [placeholder]="tryZone === 'EU' ? 'Ex : Chevaux reproducteurs race pure, Voiture électrique, Panneaux solaires...' : 'Ex : Chevaux pur sang arabe, Canards sauvages, Dattes...'"
+                    class="try-input"
+                    (keydown.enter)="runTryAi()"
+                  />
+                  <button
+                    type="button"
+                    class="try-submit"
+                    (click)="runTryAi()"
+                    [disabled]="tryLoading || !tryAiTerm.trim()">
+                    {{ tryLoading ? 'Analyse...' : (tryZone === 'EU' ? 'Trouver le code NC8' : 'Trouver le code P10') }}
+                  </button>
+                </div>
+
+                <div class="try-examples">
+                  <span class="examples-label">Essayer :</span>
+                  @for (q of aiExamples; track q) {
+                    <button type="button" class="try-chip" (click)="pickAiExample(q)">{{ q }}</button>
+                  }
+                </div>
               </div>
-              <h3>Multilingue</h3>
-              <p>Saisissez votre produit dans n'importe quelle langue — français, anglais, arabe, chinois…</p>
-            </div>
+            } @else {
+              <div class="try-body">
+                <div class="try-input-row">
+                  <input
+                    type="text"
+                    [(ngModel)]="tryDecodeInput"
+                    [placeholder]="tryZone === 'EU' ? 'Ex : 0101.21.00, 0804.10.00, 8703.80.10' : 'Ex : 0101.21.91.00 L, 0106.39.94.00 X, 080410'"
+                    class="try-input mono"
+                    maxlength="20"
+                    (keydown.enter)="runTryDecode()"
+                  />
+                  <button
+                    type="button"
+                    class="try-submit blue"
+                    (click)="runTryDecode()"
+                    [disabled]="tryLoading || !tryDecodeInput.trim()">
+                    {{ tryLoading ? 'Décodage...' : 'Décoder le code' }}
+                  </button>
+                </div>
 
-            <div class="api-feature">
-              <div class="api-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <path d="M12 3l1.5 4.5h4.5l-3.5 2.5 1.5 4.5L12 12l-4 2.5 1.5-4.5L6 7.5h4.5z"/>
-                  <path d="M5 19l2-2M19 19l-2-2M12 21v-3"/>
-                </svg>
+                <div class="try-examples">
+                  <span class="examples-label">Codes d'exemple :</span>
+                  @for (c of decodeExamples; track c) {
+                    <button type="button" class="try-chip mono" (click)="pickDecodeExample(c)">{{ c }}</button>
+                  }
+                </div>
               </div>
-              <h3>Intelligence Artificielle</h3>
-              <p>L'IA analyse la description du produit et retourne la position tarifaire la plus pertinente avec justification.</p>
-            </div>
+            }
 
-            <div class="api-feature">
-              <div class="api-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <rect x="9" y="2" width="6" height="4" rx="1"/>
-                  <rect x="2" y="10" width="6" height="4" rx="1"/>
-                  <rect x="16" y="10" width="6" height="4" rx="1"/>
-                  <rect x="9" y="18" width="6" height="4" rx="1"/>
-                  <path d="M12 6v4M5 14v4h4M19 14v4h-4"/>
-                </svg>
-              </div>
-              <h3>Hiérarchie Complète</h3>
-              <p>Section → Chapitre → Position → Sous-position : chaque niveau est retourné et expliqué.</p>
-            </div>
+            @if (tryLoading) {
+              <div class="try-status loading">Consultation de la nomenclature officielle en cours...</div>
+            }
 
-            <div class="api-feature">
-              <div class="api-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <rect x="3" y="4" width="18" height="3" rx="1"/>
-                  <rect x="3" y="10" width="18" height="3" rx="1"/>
-                  <rect x="3" y="16" width="12" height="3" rx="1"/>
-                </svg>
+            @if (tryError) {
+              <div class="try-status error">
+                <span>{{ tryError }}</span>
+                <a routerLink="/auth/register" class="inline-cta">Créer un compte gratuit →</a>
               </div>
-              <h3>Recherche par Listes</h3>
-              <p>Traitez plusieurs produits simultanément — jusqu'à 1 000 produits en traitement asynchrone.</p>
-            </div>
+            }
 
-            <div class="api-feature">
-              <div class="api-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3"/>
-                  <path d="M16 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3"/>
-                  <path d="M12 8v8M9 11l3-3 3 3"/>
-                </svg>
+            @if (tryDecodeHierarchy && !tryLoading) {
+              <div class="try-hierarchy">
+                <span><strong>Section {{ tryDecodeHierarchy.section.code }}</strong> : {{ tryDecodeHierarchy.section.description }}</span>
+                <span><strong>Chapitre {{ tryDecodeHierarchy.chapitre.code }}</strong> : {{ tryDecodeHierarchy.chapitre.description }}</span>
+                @if (tryDecodeHierarchy.position4) {
+                  <span><strong>Pos. {{ tryDecodeHierarchy.position4.code }}</strong> : {{ tryDecodeHierarchy.position4.description }}</span>
+                }
               </div>
-              <h3>Décodage Inverse</h3>
-              <p>Partez d'un code existant et obtenez instantanément sa désignation complète et sa position dans la nomenclature.</p>
-            </div>
+            }
 
-            <div class="api-feature">
-              <div class="api-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z"/>
-                </svg>
+            @if (tryCards.length > 0 && !tryLoading) {
+              <div class="try-results">
+                @for (card of tryCards; track card.code) {
+                  <app-customs-card
+                    [code]="card.code"
+                    [formattedCode]="card.formattedCode"
+                    [checkDigit]="card.checkDigit"
+                    [zone]="card.zone"
+                    [description]="card.description"
+                    [titles]="card.titles"
+                    [position4]="card.position4"
+                    [justification]="card.justification"
+                    [regulatoryData]="card.regulatoryData"
+                    [glossary]="card.glossary"
+                    [enriched]="card.enriched"
+                    [highlight]="card.highlight"
+                    (hs6MatchRequest)="onHs6Match($event)">
+                  </app-customs-card>
+                }
               </div>
-              <h3>Sécurisé et Fiable</h3>
-              <p>Authentification OAuth2, suivi détaillé de l'utilisation et gestion des quotas par organisation.</p>
-            </div>
+            }
           </div>
 
-          <div class="api-endpoints">
-            <h3>Exemples de résultats</h3>
-            <div class="examples-grid">
-
-              <div class="example-card">
-                <div class="example-query">
-                  <span class="query-label">Recherche</span>
-                  <span class="query-term" dir="rtl">سيارة كهربائية</span>
-                </div>
-                <div class="example-result">
-                  <div class="result-row">
-                    <span class="result-badge hscode">HS-code</span>
-                    <span class="result-code">870380</span>
-                    <span class="result-desc">Véhicules à moteur électrique pour la propulsion</span>
-                  </div>
-                  <div class="result-row sub">
-                    <span class="result-badge p10">P10</span>
-                    <span class="result-code">8703801000</span>
-                    <span class="result-desc">Véhicules blindés</span>
-                  </div>
-                  <div class="result-row sub">
-                    <span class="result-badge p10">P10</span>
-                    <span class="result-code">8703809000</span>
-                    <span class="result-desc">Autres véhicules</span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="example-card">
-                <div class="example-query">
-                  <span class="query-label">Recherche</span>
-                  <span class="query-term">dattes</span>
-                </div>
-                <div class="example-result">
-                  <div class="result-row">
-                    <span class="result-badge hscode">HS-code</span>
-                    <span class="result-code">080410</span>
-                    <span class="result-desc">Dattes</span>
-                  </div>
-                  <div class="result-row sub">
-                    <span class="result-badge p10">P10</span>
-                    <span class="result-code">0804101111</span>
-                    <span class="result-desc">Deglet nour — ≤ 1 kg</span>
-                  </div>
-                  <div class="result-row sub">
-                    <span class="result-badge p10">P10</span>
-                    <span class="result-code">0804101112</span>
-                    <span class="result-desc">Deglet nour — > 1 kg</span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="example-card">
-                <div class="example-query">
-                  <span class="query-label">Recherche</span>
-                  <span class="query-term">Smart phone</span>
-                </div>
-                <div class="example-result">
-                  <div class="result-row">
-                    <span class="result-badge hscode">HS-code</span>
-                    <span class="result-code">851713</span>
-                    <span class="result-desc">Téléphones intelligents pour réseaux cellulaires</span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="example-card">
-                <div class="example-query">
-                  <span class="query-label">Recherche</span>
-                  <span class="query-term" lang="zh">笔记本电脑</span>
-                </div>
-                <div class="example-result">
-                  <div class="result-row">
-                    <span class="result-badge hscode">HS-code</span>
-                    <span class="result-code">847130</span>
-                    <span class="result-desc">Ordinateurs portables</span>
-                  </div>
-                </div>
-              </div>
-
-            </div>
+          <div class="hero-cta">
+            <a routerLink="/recherche/decode-p10" class="cta-button secondary">
+              Ouvrir le décodeur complet (Gratuit)
+            </a>
+            <a *ngIf="isBetaMode" routerLink="/auth/register" class="cta-button primary">
+              Créer un compte gratuit (500 crédits)
+            </a>
+            <a *ngIf="!isBetaMode" routerLink="/pricing" class="cta-button ghost">Voir les tarifs</a>
+            <a routerLink="/aide" class="cta-button ghost guide-btn">Guide</a>
           </div>
-        </div>
+        }
       </section>
 
-      <!-- Section pour les utilisateurs connectés avec rôle ORGANIZATION ou COLLABORATOR -->
+      <!-- Présentation de la plateforme (visiteurs non connectés) -->
+      @if (!(isAuthenticated$ | async)) {
+        <section class="api-presentation">
+          <div class="api-header">
+            <h2>Recherche algorithmique sur nomenclature officielle</h2>
+            <p class="api-subtitle">
+              Aucun intitulé inventé : parcours hiérarchique guidé de la Section jusqu'à la sous-position à 10 chiffres
+            </p>
+          </div>
+
+          <div class="api-content">
+            <div class="api-features-grid">
+              <div class="api-feature">
+                <div class="api-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M9 12l2 2 4-4"/>
+                    <circle cx="12" cy="12" r="9"/>
+                  </svg>
+                </div>
+                <h3>100 % Officiel</h3>
+                <p>Chaque code, clé de contrôle, intitulé à tirets, DD, TVA, UQN et FAP provient des tables douanières officielles.</p>
+              </div>
+
+              <div class="api-feature">
+                <div class="api-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <rect x="9" y="2" width="6" height="4" rx="1"/>
+                    <rect x="2" y="10" width="6" height="4" rx="1"/>
+                    <rect x="16" y="10" width="6" height="4" rx="1"/>
+                    <rect x="9" y="18" width="6" height="4" rx="1"/>
+                    <path d="M12 6v4M5 14v4h4M19 14v4h-4"/>
+                  </svg>
+                </div>
+                <h3>Recherche en Arbre</h3>
+                <p>Cascade chirurgicale Section → Chapitre → Position 4 → HS6 → Position 10 avec justification de la correspondance.</p>
+              </div>
+
+              <div class="api-feature">
+                <div class="api-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3"/>
+                    <path d="M16 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3"/>
+                    <path d="M12 8v8M9 11l3-3 3 3"/>
+                  </svg>
+                </div>
+                <h3>Décodage SQL Gratuit</h3>
+                <p>Entrez un code à 2, 4, 6, 8 ou 10 chiffres et obtenez instantanément son arbre hiérarchique et ses exigences, sans crédit.</p>
+              </div>
+
+              <div class="api-feature">
+                <div class="api-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <circle cx="12" cy="12" r="9"/>
+                    <path d="M12 3a14.5 14.5 0 0 1 0 18M12 3a14.5 14.5 0 0 0 0 18M3 12h18"/>
+                  </svg>
+                </div>
+                <h3>Passerelle Multi-Zones</h3>
+                <p>Pivot universel sur le HS à 6 chiffres pour préparer le passage vers le tarif européen NC8 / TARIC.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+      }
+
+      <!-- Section utilisateurs connectés -->
       <section class="user-actions" *ngIf="showRequestButtons$ | async">
         @if (!(canMakeRequests$ | async)) {
           <div class="trial-expired-message">
             <div class="message-content">
-              <h4>Essai gratuit terminé</h4>
+              <h4>Quota de recherche IA épuisé</h4>
               @if (isOrganizationAccount$ | async) {
                 <p>
-                  Le quota de votre essai gratuit a été atteint et est maintenant définitivement désactivé pour votre organisation.
-                  Aucune recherche HS-code n'est autorisée pour tous les collaborateurs.
-                  Veuillez <a routerLink="/organization/stats">choisir un plan tarifaire</a> ou
-                  <a routerLink="/organization/quote-requests">faire une demande de devis</a> pour continuer à utiliser le service.
+                  Le quota de votre organisation a été atteint pour les recherches IA.
+                  Le <a routerLink="/recherche/decode-p10">décodeur officiel par code</a> reste disponible gratuitement,
+                  ou vous pouvez <a routerLink="/organization/stats">choisir un plan tarifaire</a> ou
+                  <a routerLink="/organization/quote-requests">demander un devis</a>.
                 </p>
               } @else {
                 <p>
-                  Le quota de l'essai gratuit de votre organisation a été atteint et est maintenant définitivement désactivé.
-                  Aucune recherche HS-code n'est autorisée.
-                  Veuillez contacter votre administrateur d'organisation pour choisir un plan tarifaire ou faire une demande de devis.
+                  Le quota de votre organisation est épuisé pour les recherches IA.
+                  Le <a routerLink="/recherche/decode-p10">décodeur officiel par code</a> reste gratuit et accessible.
                 </p>
               }
             </div>
           </div>
         } @else {
-          <h4 class="section-title">Outils de recherche Code tarifaire</h4>
+          <h4 class="section-title">Espace de travail tarifaire</h4>
           <div class="features primary">
             <div class="feature-card request-card">
-              <div class="request-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-              </div>
-              <h3>Recherche d'un produit</h3>
-              <p>Recherchez le code HS d'un produit spécifique en quelques secondes.</p>
-              <a [routerLink]="['/recherche/search']" class="cta-button secondary">
+              <div class="request-icon">🔍</div>
+              <h3>Recherche Position-10 (IA)</h3>
+              <p>Trouvez la position douanière exacte et sa fiche réglementaire (DD, TVA, UQN, FAP) à partir d'une description.</p>
+              <a [routerLink]="['/recherche/search-position10']" class="cta-button primary">
                 Rechercher un produit
               </a>
             </div>
 
+            <div class="feature-card request-card">
+              <div class="request-icon">📋</div>
+              <h3>Décodeur officiel (Gratuit)</h3>
+              <p>Décodez un code à 2, 4, 6, 8 ou 10 chiffres en requête SQL directe sans consommer de crédits.</p>
+              <a [routerLink]="['/recherche/decode-p10']" class="cta-button secondary">
+                Décoder un code
+              </a>
+            </div>
+
             @if (!isBetaMode) {
-            <div class="feature-card request-card">
-              <div class="request-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
+              <div class="feature-card request-card">
+                <div class="request-icon">📑</div>
+                <h3>Recherche par liste</h3>
+                <p>Importez un fichier CSV ou Excel pour qualifier une liste d'articles.</p>
+                <a [routerLink]="['/recherche/searchListLots']" class="cta-button secondary">
+                  Rechercher par liste
+                </a>
               </div>
-              <h3>Recherche par liste</h3>
-              <p>Traitez une liste de produits en une seule fois.</p>
-              <a [routerLink]="['/recherche/searchListLots']" class="cta-button secondary">
-                Rechercher par liste
-              </a>
-            </div>
 
-            <div class="feature-card request-card">
-              <div class="request-icon">⚡</div>
-              <h3>Recherche par lots</h3>
-              <p>Soumettez jusqu'à 1000 produits en une seule fois. Traitement asynchrone avec 50% de réduction.</p>
-              <a [routerLink]="['/recherche/batch-search']" class="cta-button secondary">
-                Rechercher par lots
-              </a>
-            </div>
+              <div class="feature-card request-card">
+                <div class="request-icon">⚡</div>
+                <h3>Recherche par lots</h3>
+                <p>Soumettez jusqu'à 1 000 produits en traitement asynchrone (-50 %).</p>
+                <a [routerLink]="['/recherche/batch-search']" class="cta-button secondary">
+                  Rechercher par lots
+                </a>
+              </div>
             }
-
-
           </div>
         }
 
@@ -304,106 +361,100 @@ import { environment } from '../../../environments/environment';
       </section>
 
       <footer class="home-footer">
-        <p>Développement d'applications pour les entreprises</p>
-        <p>Auto-entreprise Hamroun<br>
-        Contact : mohhamroun&#64;gmail.com <br>
-        WhatsApp : +213 5 60 96 80 66</p>
-        
+        <p>Développement d'applications pour les entreprises — Auto-entreprise Hamroun<br>
+        Contact : mohhamroun&#64;gmail.com · WhatsApp : +213 5 60 96 80 66</p>
       </footer>
     </div>
   `,
   styles: [`
     .home-container {
       text-align: center;
-      padding: 2rem;
-      max-width: 1200px;
+      padding: 1.5rem 1.25rem 3rem;
+      max-width: 1180px;
       margin: 0 auto;
+      color: #E2E8F0;
     }
 
-    /* ═══ Hero Section ═══ */
     .hero {
       position: relative;
-      padding: 3.5rem 2rem 3rem;
+      padding: 2.5rem 1rem 2rem;
       margin-bottom: 1.5rem;
-      text-align: center;
-    }
-
-    .hero::after {
-      content: '';
-      display: block;
-      width: 80px;
-      height: 2px;
-      background: linear-gradient(90deg, transparent, rgba(245,158,11,0.5), transparent);
-      margin: 2.5rem auto 0;
     }
 
     .hero.hero-compact {
-      padding: 1.5rem 2rem 1rem;
+      padding: 1.25rem 1rem 0.75rem;
       margin-bottom: 0;
     }
-    .hero.hero-compact::after { display: none; }
-    .hero.hero-compact .hero-eyebrow { display: none; }
-    .hero.hero-compact .hero-langs { display: none; }
-    .hero.hero-compact .hero-glow { display: none; }
-    .hero.hero-compact .hero-acronym { font-size: 2rem; }
-    .hero.hero-compact .hero-name-fr { font-size: 0.95rem; }
+
+    .hero.hero-compact .hero-eyebrow,
+    .hero.hero-compact .hero-langs,
+    .hero.hero-compact .hero-glow,
     .hero.hero-compact .hero-name-sep,
-    .hero.hero-compact .hero-name-ar { display: none; }
-    .hero.hero-compact .hero-title { gap: 0.2rem; margin-bottom: 0; }
+    .hero.hero-compact .hero-name-ar {
+      display: none;
+    }
+
+    .hero.hero-compact .hero-acronym { font-size: 2.1rem; }
+    .hero.hero-compact .hero-name-fr { font-size: 0.95rem; }
 
     .hero-glow {
       position: absolute;
-      top: 40%;
+      top: 25%;
       left: 50%;
       transform: translate(-50%, -50%);
-      width: 600px;
-      height: 400px;
-      background: radial-gradient(ellipse, rgba(245, 158, 11, 0.07) 0%, transparent 65%);
+      width: 560px;
+      height: 340px;
+      background: radial-gradient(ellipse, rgba(245, 158, 11, 0.08) 0%, transparent 65%);
       pointer-events: none;
       z-index: 0;
     }
 
-    /* ─── Eyebrow ─── */
     .hero-eyebrow {
       position: relative;
       z-index: 1;
-      margin-bottom: 1.5rem;
+      margin-bottom: 1.25rem;
     }
 
     .eyebrow-chip {
       display: inline-flex;
       align-items: center;
-      gap: 0.45rem;
-      padding: 0.35rem 1rem;
-      border-radius: var(--neu-radius-pill);
-      background: rgba(245, 158, 11, 0.08);
-      border: 1px solid rgba(245, 158, 11, 0.28);
-      color: var(--neu-accent, #F59E0B);
-      font-size: 0.72rem;
+      gap: 0.5rem;
+      padding: 0.4rem 1rem;
+      border-radius: 999px;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.32);
+      color: #34D399;
+      font-size: 0.76rem;
       font-weight: 700;
-      letter-spacing: 0.07em;
+      letter-spacing: 0.04em;
       text-transform: uppercase;
-      font-family: var(--font-display);
     }
 
-    /* ─── Title ─── */
+    .official-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10B981;
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.8);
+    }
+
     .hero-title {
       position: relative;
       z-index: 1;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 0.5rem;
-      margin: 0 0 1.5rem;
+      gap: 0.45rem;
+      margin: 0 0 1.25rem;
     }
 
     .hero-acronym {
       font-family: var(--font-display, 'Space Grotesk', sans-serif);
-      font-size: 5.5rem;
+      font-size: 4.75rem;
       font-weight: 800;
       line-height: 1;
       letter-spacing: -0.04em;
-      background: linear-gradient(135deg, #D97706 0%, #F59E0B 35%, #FCD34D 60%, #F59E0B 100%);
+      background: linear-gradient(135deg, #D97706 0%, #F59E0B 40%, #FCD34D 65%, #F59E0B 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
@@ -419,25 +470,14 @@ import { environment } from '../../../environments/environment';
 
     .hero-name-fr {
       font-family: var(--font-display, 'Space Grotesk', sans-serif);
-      font-size: 1.2rem;
-      font-weight: 500;
-      color: var(--neu-text-heading, #F1F5F9);
-      letter-spacing: -0.01em;
-    }
-
-    .hero-name-sep {
-      color: rgba(245, 158, 11, 0.35);
-      font-size: 1.1rem;
-    }
-
-    .hero-name-ar {
       font-size: 1.15rem;
-      font-weight: 400;
-      color: var(--neu-text-muted, #64748B);
-      direction: rtl;
+      font-weight: 600;
+      color: #F8FAFC;
     }
 
-    /* ─── Language chips ─── */
+    .hero-name-sep { color: rgba(245, 158, 11, 0.45); }
+    .hero-name-ar { font-size: 1.1rem; color: #94A3B8; direction: rtl; }
+
     .hero-langs {
       position: relative;
       z-index: 1;
@@ -445,42 +485,268 @@ import { environment } from '../../../environments/environment';
       flex-wrap: wrap;
       justify-content: center;
       gap: 0.5rem;
-      margin-bottom: 1.75rem;
+      margin-bottom: 1.25rem;
     }
 
     .lang-chip {
       padding: 0.25rem 0.8rem;
-      border-radius: var(--neu-radius-pill);
+      border-radius: 999px;
       background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      color: var(--neu-text-muted, #64748B);
-      font-size: 0.75rem;
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      color: #94A3B8;
+      font-size: 0.76rem;
       font-weight: 500;
-      transition: border-color 0.2s ease, color 0.2s ease;
     }
 
-    .lang-chip:hover {
-      border-color: rgba(245, 158, 11, 0.3);
-      color: var(--neu-accent, #F59E0B);
-    }
-
-    .lang-chip-more {
-      color: rgba(100, 116, 139, 0.6);
-      border-style: dashed;
-    }
-
-    /* ─── Description ─── */
     .hero-desc {
       position: relative;
       z-index: 1;
       font-size: 1rem;
-      color: var(--neu-text-muted, #64748B);
-      max-width: 560px;
-      margin: 0 auto 2rem;
-      line-height: 1.75;
+      color: #CBD5E1;
+      max-width: 660px;
+      margin: 0 auto 1.75rem;
+      line-height: 1.65;
     }
 
-    /* ─── CTA ─── */
+    /* ═══ Try Widget ═══ */
+    .try-widget {
+      position: relative;
+      z-index: 1;
+      max-width: 880px;
+      margin: 0 auto 1.75rem;
+      background: #111827;
+      border: 1px solid rgba(245, 158, 11, 0.28);
+      border-radius: 18px;
+      padding: 18px 20px;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.4);
+      text-align: left;
+    }
+
+    .try-zone-bar {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .try-zone-label {
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #64748B;
+      margin-right: 4px;
+    }
+
+    .try-zone-btn {
+      padding: 5px 12px;
+      border-radius: 999px;
+      background: #0D1421;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #94A3B8;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .try-zone-btn:hover { color: #F8FAFC; }
+
+    .try-zone-btn.active {
+      background: rgba(245, 158, 11, 0.16);
+      border-color: rgba(245, 158, 11, 0.45);
+      color: #FCD34D;
+    }
+
+    .try-zone-btn.eu.active {
+      background: rgba(59, 130, 246, 0.16);
+      border-color: rgba(59, 130, 246, 0.45);
+      color: #93C5FD;
+    }
+
+    .try-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .try-tab {
+      flex: 1 1 240px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      background: #0D1421;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #CBD5E1;
+      font-weight: 600;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .try-tab.active {
+      background: rgba(245, 158, 11, 0.12);
+      border-color: rgba(245, 158, 11, 0.5);
+      color: #F8FAFC;
+    }
+
+    .tab-badge {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+
+    .tab-badge.amber {
+      background: rgba(245, 158, 11, 0.2);
+      color: #FCD34D;
+    }
+
+    .tab-badge.green {
+      background: rgba(16, 185, 129, 0.18);
+      color: #34D399;
+    }
+
+    .try-input-row {
+      display: flex;
+      background: #0D1421;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+
+    .try-input-row:focus-within {
+      border-color: #F59E0B;
+      box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.18);
+    }
+
+    .try-input {
+      flex: 1;
+      padding: 14px 16px;
+      min-height: 46px;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: #F8FAFC;
+      font-size: 0.96rem;
+    }
+
+    .try-input.mono {
+      font-family: var(--font-mono, 'JetBrains Mono', monospace);
+    }
+
+    .try-input::placeholder { color: #64748B; }
+
+    .try-submit {
+      padding: 12px 22px;
+      min-height: 46px;
+      background: #F59E0B;
+      color: #070B14;
+      border: none;
+      font-weight: 700;
+      font-size: 0.92rem;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .try-submit.blue {
+      background: #3B82F6;
+      color: #F8FAFC;
+    }
+
+    .try-submit:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    .try-examples {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .examples-label {
+      font-size: 0.8rem;
+      color: #94A3B8;
+      font-weight: 600;
+    }
+
+    .try-chip {
+      padding: 5px 11px;
+      border-radius: 999px;
+      background: #0D1421;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #CBD5E1;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: border-color 0.15s ease, color 0.15s ease;
+    }
+
+    .try-chip.mono {
+      font-family: var(--font-mono, 'JetBrains Mono', monospace);
+    }
+
+    .try-chip:hover {
+      border-color: rgba(245, 158, 11, 0.5);
+      color: #FCD34D;
+    }
+
+    .try-status {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      font-size: 0.9rem;
+    }
+
+    .try-status.loading {
+      background: rgba(245, 158, 11, 0.08);
+      color: #FCD34D;
+    }
+
+    .try-status.error {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #FCA5A5;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .inline-cta {
+      color: #FCD34D;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .try-hierarchy {
+      margin-top: 14px;
+      padding: 10px 14px;
+      background: #0D1421;
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 0.85rem;
+      color: #CBD5E1;
+    }
+
+    .try-results {
+      margin-top: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
     .hero-cta {
       position: relative;
       z-index: 1;
@@ -491,32 +757,11 @@ import { environment } from '../../../environments/environment';
       justify-content: center;
     }
 
-    .guide-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.45rem;
-    }
-
-    .trial-offer-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.55rem;
-      padding: 0.5rem 1rem;
-      border-radius: var(--neu-radius-pill);
-      background: rgba(245, 158, 11, 0.07);
-      border: 1px solid rgba(245, 158, 11, 0.2);
-      color: var(--neu-text-muted, #64748B);
-      font-size: 0.82rem;
-    }
-    .trial-offer-svg { width: 16px; height: 16px; flex-shrink: 0; color: var(--neu-accent, #F59E0B); }
-    .trial-offer-badge strong { color: var(--neu-accent, #F59E0B); font-weight: 600; }
-
-    /* ═══ CTA Buttons ═══ */
     .cta-button {
-      padding: 0.75rem 1.75rem;
-      font-size: 0.95rem;
+      padding: 0.72rem 1.5rem;
+      font-size: 0.92rem;
       border: none;
-      border-radius: var(--neu-radius-button, 8px);
+      border-radius: 10px;
       cursor: pointer;
       text-decoration: none;
       display: inline-flex;
@@ -525,405 +770,256 @@ import { environment } from '../../../environments/environment';
       gap: 0.5rem;
       font-family: var(--font-display, 'Space Grotesk', sans-serif);
       font-weight: 600;
-      transition: all var(--neu-transition, 0.2s ease);
-      min-height: var(--touch-target, 44px);
+      transition: all 0.2s ease;
+      min-height: 44px;
     }
 
     .cta-button.primary {
-      background: var(--neu-accent, #F59E0B);
+      background: #F59E0B;
       color: #070B14;
       font-weight: 700;
-      box-shadow: 0 0 20px rgba(245, 158, 11, 0.35);
     }
 
-    .cta-button.primary:hover {
-      transform: translateY(-2px);
-      background: var(--neu-accent-hover, #D97706);
-      box-shadow: 0 0 32px rgba(245, 158, 11, 0.5);
+    .cta-button.primary:hover { background: #D97706; }
+
+    .cta-button.secondary {
+      background: rgba(245, 158, 11, 0.14);
+      color: #FCD34D;
+      border: 1px solid rgba(245, 158, 11, 0.35);
     }
 
-    .cta-button.primary:active {
-      transform: translateY(0.5px);
-      box-shadow: none;
-    }
+    .cta-button.secondary:hover { background: rgba(245, 158, 11, 0.22); }
 
     .cta-button.ghost {
       background: transparent;
-      color: var(--neu-text-primary, #CBD5E1);
+      color: #CBD5E1;
       border: 1px solid rgba(255, 255, 255, 0.14);
     }
 
     .cta-button.ghost:hover {
-      transform: translateY(-1px);
-      border-color: rgba(245, 158, 11, 0.4);
-      color: var(--neu-accent, #F59E0B);
+      border-color: rgba(245, 158, 11, 0.45);
+      color: #FCD34D;
     }
 
-    .cta-button.ghost:active {
-      transform: translateY(0.5px);
+    /* ═══ Features & Cards (Thème Sombre Unifié) ═══ */
+    .api-presentation {
+      padding: 2rem 0 2.5rem;
+      max-width: 1160px;
+      margin: 0 auto;
     }
 
-    .cta-button.secondary {
-      background: rgba(245, 158, 11, 0.12);
-      color: var(--neu-accent, #F59E0B);
-      border: 1px solid rgba(245, 158, 11, 0.3);
-      font-weight: 600;
+    .api-header { margin-bottom: 2rem; }
+    .api-header h2 {
+      color: #F8FAFC;
+      font-family: var(--font-display, 'Space Grotesk', sans-serif);
+      font-size: 1.75rem;
+      margin: 0 0 0.5rem;
+    }
+    .api-subtitle { color: #94A3B8; font-size: 0.98rem; margin: 0; }
+
+    .api-features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.25rem;
     }
 
-    .cta-button.secondary:hover {
-      transform: translateY(-2px);
-      background: rgba(245, 158, 11, 0.2);
-      border-color: rgba(245, 158, 11, 0.5);
-      box-shadow: 0 0 16px rgba(245, 158, 11, 0.15);
+    .api-feature {
+      background: #111827;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 1.6rem;
+      border-radius: 16px;
+      text-align: center;
+      transition: border-color 0.2s ease, transform 0.2s ease;
     }
 
-    /* ═══ Features grid ═══ */
-    p {
+    .api-feature:hover {
+      transform: translateY(-3px);
+      border-color: rgba(245, 158, 11, 0.32);
+    }
+
+    .api-icon {
+      width: 48px;
+      height: 48px;
+      margin: 0 auto 0.9rem;
+      color: #F59E0B;
+      background: #0D1421;
+      border: 1px solid rgba(245, 158, 11, 0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 12px;
+      padding: 10px;
+    }
+
+    .api-icon svg { width: 100%; height: 100%; }
+
+    .api-feature h3 {
+      color: #F8FAFC;
+      font-family: var(--font-display, 'Space Grotesk', sans-serif);
       font-size: 1.05rem;
-      color: var(--neu-text-muted, #6B7280);
-      margin-bottom: 1.5rem;
+      margin: 0 0 0.5rem;
+    }
+
+    .api-feature p {
+      color: #94A3B8;
+      font-size: 0.88rem;
+      line-height: 1.55;
+      margin: 0;
+    }
+
+    /* ═══ Authenticated Section ═══ */
+    .user-actions { margin: 1rem 0 2rem; }
+    .section-title {
+      color: #F8FAFC;
+      font-family: var(--font-display, 'Space Grotesk', sans-serif);
+      font-size: 1.25rem;
+      margin-bottom: 1.25rem;
     }
 
     .features {
       display: flex;
       justify-content: center;
-      gap: 1.5rem;
-      margin-bottom: 3rem;
+      gap: 1.25rem;
       flex-wrap: wrap;
-    }
-
-    .features.primary { margin-top: 0.5rem; }
-    .features.secondary { margin-top: 3rem; }
-
-    .feature-card {
-      background: var(--neu-card-bg, linear-gradient(145deg, #E8ECF2, #D8DDE4));
-      box-shadow: var(--neu-extruded, 9px 9px 16px rgba(163,177,198,0.6), -9px -9px 16px rgba(255,255,255,0.5));
-      padding: 2rem;
-      border-radius: var(--neu-radius-container, 32px);
-      width: 240px;
-      display: flex;
-      flex-direction: column;
-      gap: 0.8rem;
-      align-items: center;
-      transition: all var(--neu-transition, 0.3s ease-out);
-      border: none;
-    }
-
-    .feature-card:hover {
-      transform: translateY(-4px);
-      background: var(--neu-card-bg-hover, linear-gradient(145deg, #EDF0F5, #DCE1E8));
-      box-shadow: var(--neu-extruded-hover, 12px 12px 20px rgba(163,177,198,0.7), -12px -12px 20px rgba(255,255,255,0.6));
-    }
-
-    .feature-card h3 {
-      color: var(--neu-text-heading, #2D3748);
-      font-family: var(--font-display);
-      font-size: 1.05rem;
-      margin-bottom: 0.4rem;
-    }
-
-    .feature-card p {
-      color: var(--neu-text-muted, #6B7280);
-      font-size: 0.9rem;
-      margin: 0;
-    }
-
-    .feature-card.advise {
-      background: var(--neu-bg, #E0E5EC);
-      box-shadow: var(--neu-inset, inset 6px 6px 10px rgba(163,177,198,0.6), inset -6px -6px 10px rgba(255,255,255,0.5));
-      text-align: left;
-      width: 100%;
-      max-width: 500px;
-      border: none;
-    }
-
-    .feature-card.advise h3 { color: var(--neu-accent-secondary, #2DD4BF); margin-bottom: 0.5rem; }
-    .feature-card.advise p { color: var(--neu-text-muted, #6B7280); }
-
-    /* ═══ User actions ═══ */
-    .user-actions { margin: 0.5rem 0; padding: 0.5rem 0; }
-
-    .section-title {
-      color: var(--neu-accent-tertiary, #FF6B8A);
-      font-family: var(--font-display);
-      font-size: 1.3rem;
-      margin-bottom: 1rem;
-      font-weight: 700;
-      text-align: center;
+      margin-bottom: 1.75rem;
     }
 
     .request-card {
-      background: var(--neu-card-violet, linear-gradient(145deg, #EAE8F8, #DDDAF0));
-      box-shadow: var(--neu-extruded, 9px 9px 16px rgba(163,177,198,0.6), -9px -9px 16px rgba(255,255,255,0.5));
-      color: var(--neu-text-primary, #3D4852);
-      text-align: center;
-      min-width: 240px;
-      max-width: 320px;
+      background: #111827;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
       padding: 1.5rem;
-      border: none;
-      border-radius: var(--neu-radius-container, 32px);
-    }
-
-    .request-card:hover {
-      transform: translateY(-4px);
-      background: var(--neu-card-violet-hover, linear-gradient(145deg, #EFECFB, #E2E0F4));
-      box-shadow: var(--neu-extruded-hover);
-    }
-
-    .request-card h3 { color: var(--neu-text-heading, #2D3748); margin-bottom: 0.4rem; font-size: 1rem; }
-    .request-card p { color: var(--neu-text-muted, #6B7280); font-size: 0.85rem; margin-bottom: 1rem; }
-
-    .request-icon {
-      width: 36px;
-      height: 36px;
-      margin-bottom: 0.5rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 56px;
-      height: 56px;
-      margin: 0 auto 0.75rem;
-      border-radius: 50%;
-      box-shadow: var(--neu-inset-deep, inset 10px 10px 20px rgba(163,177,198,0.7), inset -10px -10px 20px rgba(255,255,255,0.6));
-    }
-
-    .request-card .cta-button.secondary { margin-top: auto; }
-
-    /* ═══ Trial expired ═══ */
-    .trial-expired-message {
-      margin: 2rem auto;
-      padding: 2rem;
-      background: var(--neu-bg, #E0E5EC);
-      box-shadow: var(--neu-inset, inset 6px 6px 10px rgba(163,177,198,0.6), inset -6px -6px 10px rgba(255,255,255,0.5));
-      border-radius: var(--neu-radius-container, 32px);
-      max-width: 800px;
-      border: none;
-    }
-
-    .message-content { text-align: center; }
-    .message-content h4 { margin: 0 0 1rem 0; font-size: 1.4rem; font-weight: 700; color: var(--neu-accent-warning, #ED8936); font-family: var(--font-display); }
-    .message-content p { margin: 0; font-size: 1rem; line-height: 1.7; color: var(--neu-text-muted, #6B7280); }
-    .message-content a { color: var(--neu-accent, #6C63FF); text-decoration: underline; font-weight: 700; }
-    .message-content a:hover { color: var(--neu-accent-hover, #5A52D5); }
-
-    /* ═══ API Presentation ═══ */
-    .api-presentation {
-      border-radius: var(--neu-radius-container, 32px);
-      padding: 3rem 2rem;
-      margin: 0 0 3rem;
-      max-width: 1200px;
-      margin-left: auto;
-      margin-right: auto;
-    }
-
-    .api-header { text-align: center; margin-bottom: 3rem; }
-    .api-header h2 { color: var(--neu-text-heading, #2D3748); font-size: 2rem; margin-bottom: 0.5rem; font-weight: 700; }
-    .api-subtitle { color: var(--neu-text-muted, #6B7280); font-size: 1.05rem; margin: 0; }
-
-    .api-content { display: flex; flex-direction: column; gap: 3rem; }
-
-    .api-features-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 1.5rem;
-    }
-
-    .api-feature {
-      background: var(--neu-card-teal, linear-gradient(145deg, #E2F2F0, #D4EAE7));
-      box-shadow: var(--neu-extruded, 9px 9px 16px rgba(163,177,198,0.6), -9px -9px 16px rgba(255,255,255,0.5));
-      padding: 2rem;
-      border-radius: var(--neu-radius-container, 32px);
-      transition: all var(--neu-transition, 0.3s ease-out);
-      text-align: center;
-      border: none;
-    }
-
-    .api-feature:hover {
-      transform: translateY(-4px);
-      background: var(--neu-card-teal-hover, linear-gradient(145deg, #E9F6F4, #DAF0ED));
-      box-shadow: var(--neu-extruded-hover, 12px 12px 20px rgba(163,177,198,0.7), -12px -12px 20px rgba(255,255,255,0.6));
-    }
-
-    .api-icon {
-      width: 56px;
-      height: 56px;
-      margin: 0 auto 1rem;
-      color: var(--neu-accent-secondary, #2DD4BF);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 50%;
-      box-shadow: var(--neu-inset-deep, inset 10px 10px 20px rgba(163,177,198,0.7), inset -10px -10px 20px rgba(255,255,255,0.6));
-      padding: 12px;
-    }
-
-    .api-icon svg { width: 100%; height: 100%; }
-
-    .api-feature h3 { color: var(--neu-text-heading, #2D3748); font-family: var(--font-display); font-size: 1.15rem; margin-bottom: 0.75rem; font-weight: 600; }
-    .api-feature p { color: var(--neu-text-muted, #6B7280); font-size: 0.92rem; line-height: 1.6; margin: 0; }
-
-    /* ═══ Examples ═══ */
-    .api-endpoints {
-      background: var(--neu-bg, #E0E5EC);
-      box-shadow: var(--neu-inset, inset 6px 6px 10px rgba(163,177,198,0.6), inset -6px -6px 10px rgba(255,255,255,0.5));
-      padding: 2rem;
-      border-radius: var(--neu-radius-container, 32px);
-      border: none;
-    }
-
-    .api-endpoints h3 { color: var(--neu-text-heading, #2D3748); font-family: var(--font-display); font-size: 1.4rem; margin-bottom: 1.5rem; font-weight: 600; text-align: center; }
-
-    .examples-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 1.25rem;
-    }
-
-    .example-card {
-      background: var(--neu-card-coral, linear-gradient(145deg, #F2E8EC, #EAD8DE));
-      box-shadow: var(--neu-extruded-sm, 5px 5px 10px rgba(163,177,198,0.6), -5px -5px 10px rgba(255,255,255,0.5));
-      border-radius: var(--neu-radius-button, 16px);
-      overflow: hidden;
-      transition: all var(--neu-transition, 0.3s ease-out);
-      border: none;
-    }
-
-    .example-card:hover {
-      transform: translateY(-2px);
-      background: var(--neu-card-coral-hover, linear-gradient(145deg, #F7EDF1, #EEDDE3));
-      box-shadow: var(--neu-extruded-hover);
-    }
-
-    .example-query {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      padding: 0.75rem 1rem;
-      box-shadow: var(--neu-inset-sm);
-    }
-
-    .query-label {
-      font-size: 0.7rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--neu-accent-secondary, #2DD4BF);
-      font-weight: 700;
-      white-space: nowrap;
-    }
-
-    .query-term {
-      color: var(--neu-text-heading, #2D3748);
-      font-weight: 600;
-      font-family: 'Courier New', monospace;
-      font-size: 0.95rem;
-    }
-
-    .example-result {
-      padding: 0.75rem 1rem;
+      min-width: 240px;
+      max-width: 280px;
       display: flex;
       flex-direction: column;
-      gap: 0.5rem;
-    }
-
-    .result-row {
-      display: flex;
-      align-items: baseline;
-      gap: 0.6rem;
-      text-align: left;
-    }
-
-    .result-row.sub {
-      padding-left: 0.75rem;
-      margin-left: 0.5rem;
-    }
-
-    .result-badge {
-      font-size: 0.65rem;
-      font-weight: 700;
-      padding: 0.2rem 0.5rem;
-      border-radius: var(--neu-radius-inner, 12px);
-      white-space: nowrap;
-      flex-shrink: 0;
-      box-shadow: var(--neu-inset-sm);
-    }
-
-    .result-badge.hscode { color: var(--neu-accent-secondary, #2DD4BF); }
-    .result-badge.p10 { color: var(--neu-accent-secondary, #38B2AC); }
-
-    .result-code {
-      font-family: 'Courier New', monospace;
-      font-size: 0.85rem;
-      font-weight: 700;
-      color: var(--neu-text-heading, #2D3748);
-      white-space: nowrap;
-      flex-shrink: 0;
-    }
-
-    .result-desc {
-      font-size: 0.82rem;
-      color: var(--neu-text-muted, #6B7280);
-      line-height: 1.4;
-    }
-
-    /* ═══ Footer ═══ */
-    .home-footer {
-      margin-top: 3rem;
-      padding-top: 2rem;
+      align-items: center;
+      gap: 0.7rem;
       text-align: center;
+    }
+
+    .request-card h3 { color: #F8FAFC; font-size: 1.02rem; margin: 0; }
+    .request-card p { color: #94A3B8; font-size: 0.86rem; line-height: 1.45; margin: 0 0 0.5rem; }
+    .request-card a { margin-top: auto; }
+
+    .request-icon {
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 12px;
+      background: #0D1421;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 1.35rem;
+    }
+
+    .feature-card.advise {
+      background: #111827;
+      border: 1px solid rgba(59, 130, 246, 0.28);
+      border-radius: 16px;
+      padding: 1.5rem;
+      max-width: 520px;
+      width: 100%;
+      text-align: left;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .feature-card.advise h3 { color: #60A5FA; margin: 0; }
+    .feature-card.advise p { color: #94A3B8; margin: 0; font-size: 0.9rem; }
+
+    .trial-expired-message {
+      margin: 1.5rem auto;
+      padding: 1.5rem;
+      background: #111827;
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      border-radius: 16px;
+      max-width: 780px;
+    }
+
+    .message-content h4 { margin: 0 0 0.75rem; color: #F59E0B; font-size: 1.2rem; }
+    .message-content p { margin: 0; color: #CBD5E1; font-size: 0.95rem; line-height: 1.6; }
+    .message-content a { color: #FCD34D; font-weight: 700; }
+
+    .home-footer {
+      margin-top: 2.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
     }
 
     .home-footer p {
       margin: 0;
       font-size: 0.85rem;
-      color: var(--neu-text-muted, #6B7280);
-      padding: 1.5rem;
-      line-height: 1.7;
+      color: #64748B;
+      line-height: 1.65;
     }
 
-    .home-footer a { color: var(--neu-accent, #6C63FF); text-decoration: none; font-weight: 600; }
-    .home-footer a:hover { color: var(--neu-accent-hover, #5A52D5); }
-
-    /* ═══ Responsive ═══ */
-    @media (max-width: 768px) {
-      .home-container { padding: 1rem; overflow-x: hidden; }
-      .hero { padding: 2.5rem 1rem 2rem; }
-      .hero-glow { width: 280px; height: 280px; }
-      .hero-acronym { font-size: 3.8rem; }
-      .hero-name-fr { font-size: 1rem; }
-      .hero-name-ar { font-size: 0.95rem; }
-      .hero-fullname { gap: 0.4rem; }
-      .hero-desc { font-size: 0.95rem; }
-
-      .feature-card { width: 100%; min-width: unset; }
-      .request-card { min-width: unset; max-width: 100%; width: 100%; }
-      .features { flex-direction: column; align-items: stretch; }
-
-      .api-presentation { padding: 1.5rem 1rem; margin: 1.5rem 0; }
-      .api-header h2 { font-size: 1.5rem; }
-      .api-features-grid { grid-template-columns: 1fr; }
-      .examples-grid { grid-template-columns: 1fr; }
-      .result-code { white-space: normal; word-break: break-all; }
-      .result-row { flex-wrap: wrap; }
-      .home-footer { margin-top: 2rem; padding-top: 1.5rem; }
-    }
-
-    @media (min-width: 769px) and (max-width: 1024px) {
-      .api-features-grid { grid-template-columns: repeat(2, 1fr); }
-      .examples-grid { grid-template-columns: repeat(2, 1fr); }
-      .hero-acronym { font-size: 4.5rem; }
+    @media (max-width: 720px) {
+      .hero-acronym { font-size: 3.3rem; }
+      .try-input-row { flex-direction: column; }
+      .request-card { max-width: 100%; width: 100%; }
     }
   `]
 })
-export class HomeComponent {
+export class HomeComponent implements OnInit {
   private authService = inject(AuthService);
   private organizationAccountService = inject(OrganizationAccountService);
+  private searchService = inject(SearchService);
+  private state = inject(SearchStateService);
+  private router = inject(Router);
+
   isBetaMode = environment.betaMode === true;
 
   isAuthenticated$ = this.authService.isAuthenticated();
   isOrganizationAccount$ = this.authService.isOrganizationAccount();
   isCollaboratorAccount$ = this.authService.isCollaboratorAccount();
+  guestTrialsRemaining$ = this.searchService.guestTrialsRemaining$;
 
-  // Observable combiné pour afficher les boutons d'utilisation de requêtes
+  tryZone: TariffZone = this.state.zone;
+  tryTab: 'ai' | 'decode' = 'ai';
+  tryAiTerm = '';
+  tryDecodeInput = '';
+  tryLoading = false;
+  tryError: string | null = null;
+  tryCards: TryCardItem[] = [];
+  tryDecodeHierarchy: DecodeResult | null = null;
+
+  private readonly aiExamplesDz = [
+    'Chevaux pur sang arabe',
+    'Canards sauvages',
+    'Dattes Deglet Nour',
+    'Voiture électrique'
+  ];
+
+  private readonly aiExamplesEu = [
+    'Chevaux reproducteurs race pure',
+    'Voiture électrique',
+    'Panneaux solaires photovoltaïques',
+    'Huile d’olive vierge'
+  ];
+
+  private readonly decodeExamplesDz = [
+    '0101.21.91.00 L',
+    '0106.39.94.00 X',
+    '080410'
+  ];
+
+  private readonly decodeExamplesEu = [
+    '0101.21.00',
+    '0804.10.00',
+    '8703.80.10'
+  ];
+
+  get aiExamples(): string[] {
+    return this.tryZone === 'EU' ? this.aiExamplesEu : this.aiExamplesDz;
+  }
+
+  get decodeExamples(): string[] {
+    return this.tryZone === 'EU' ? this.decodeExamplesEu : this.decodeExamplesDz;
+  }
+
   showRequestButtons$ = combineLatest([
     this.isAuthenticated$,
     this.isOrganizationAccount$,
@@ -934,7 +1030,6 @@ export class HomeComponent {
     )
   );
 
-  // Observable pour vérifier si l'organisation peut faire des requêtes
   canMakeRequests$ = combineLatest([
     this.isAuthenticated$,
     this.isOrganizationAccount$,
@@ -943,19 +1038,193 @@ export class HomeComponent {
     switchMap(([isAuthenticated, isOrganization, isCollaborator]) => {
       const hasOrgOrCollabAccount = isOrganization || isCollaborator;
       if (!isAuthenticated || !hasOrgOrCollabAccount) {
-        // Pas d'organisation, donc pas de restriction
         return of(true);
       }
-      // Vérifier l'état de l'organisation
       return this.organizationAccountService.getOrganizationStatus().pipe(
         map(status => status.canMakeRequests),
         catchError(err => {
           console.error('Erreur lors de la vérification de l\'état de l\'organisation:', err);
-          // En cas d'erreur, autoriser par défaut pour ne pas bloquer l'interface
           return of(true);
         })
       );
     }),
     distinctUntilChanged()
   );
+
+  ngOnInit(): void {
+    this.isAuthenticated$.pipe(take(1)).subscribe(auth => {
+      if (!auth) {
+        this.searchService.getGuestQuota().subscribe({ error: () => {} });
+      }
+    });
+  }
+
+  getTrialBadgeText(remaining: number | null): string {
+    if (remaining === null || remaining === undefined) {
+      return '2 essais gratuits/jour';
+    }
+    return `${remaining}/2 restant${remaining > 1 ? 's' : ''}`;
+  }
+
+  setTryZone(zone: TariffZone): void {
+    this.tryZone = zone;
+    this.state.setZone(zone);
+    this.tryError = null;
+    this.tryCards = [];
+    this.tryDecodeHierarchy = null;
+  }
+
+  switchTryTab(tab: 'ai' | 'decode'): void {
+    this.tryTab = tab;
+    this.tryError = null;
+    this.tryCards = [];
+    this.tryDecodeHierarchy = null;
+  }
+
+  pickAiExample(term: string): void {
+    this.tryTab = 'ai';
+    this.tryAiTerm = term;
+    this.runTryAi();
+  }
+
+  pickDecodeExample(code: string): void {
+    this.tryTab = 'decode';
+    this.tryDecodeInput = code;
+    this.runTryDecode();
+  }
+
+  runTryAi(): void {
+    const term = this.tryAiTerm.trim();
+    if (!term) return;
+
+    this.tryLoading = true;
+    this.tryError = null;
+    this.tryCards = [];
+    this.tryDecodeHierarchy = null;
+
+    this.searchService.searchCodes(term, 'positions10', this.tryZone).subscribe({
+      next: (results) => {
+        const valid = (results || []).filter(r => ((r.code || '').replace(/\s/g, '')).length > 0);
+        if (valid.length === 0) {
+          this.tryError = 'Aucune position trouvée pour cette description. Essayez un autre terme.';
+          this.tryLoading = false;
+          return;
+        }
+
+        const calls$ = valid.map(r => {
+          const aiCode = (r.code || '').replace(/\s/g, '');
+          const codeForDecode = aiCode.length >= 6 ? aiCode.substring(0, 6) : aiCode;
+          return this.searchService.decodeP10Code(codeForDecode, this.tryZone).pipe(
+            retry(1),
+            catchError(() => of(null)),
+            map(decoded => ({ decoded, aiCode, justification: r.justification ?? null }))
+          );
+        });
+
+        forkJoin(calls$).subscribe({
+          next: (entries) => {
+            const cards: TryCardItem[] = [];
+            for (const entry of entries) {
+              if (!entry.decoded) continue;
+              const list = entry.decoded.positions10 || [];
+              const exact = list.find(p => p.code.replace(/\s/g, '') === entry.aiCode);
+              const targets = exact ? [exact] : list.slice(0, 2);
+
+              if (targets.length === 0 && entry.decoded.positions6?.[0]) {
+                const p6 = entry.decoded.positions6[0];
+                cards.push({
+                  code: p6.code,
+                  zone: entry.decoded.zone || 'DZ',
+                  description: p6.description,
+                  titles: [],
+                  position4: entry.decoded.position4,
+                  justification: entry.justification,
+                  enriched: false,
+                  highlight: true
+                });
+              }
+
+              for (const item of targets) {
+                if (cards.some(c => c.code === item.code)) continue;
+                cards.push({
+                  code: item.code,
+                  formattedCode: item.formattedCode,
+                  checkDigit: item.checkDigit,
+                  zone: entry.decoded.zone || 'DZ',
+                  description: item.description,
+                  titles: entry.decoded.titresParPosition10?.[item.code] ?? [],
+                  position4: entry.decoded.position4,
+                  justification: item.code.replace(/\s/g, '') === entry.aiCode ? entry.justification : null,
+                  regulatoryData: item.regulatoryData,
+                  glossary: entry.decoded.glossary,
+                  enriched: !!item.enriched,
+                  highlight: item.code.replace(/\s/g, '') === entry.aiCode
+                });
+              }
+            }
+            this.tryCards = cards;
+            this.tryLoading = false;
+          },
+          error: () => {
+            this.tryError = 'Erreur lors du décodage des positions retournées.';
+            this.tryLoading = false;
+          }
+        });
+      },
+      error: (err) => {
+        this.tryError = err?.message || 'Recherche impossible pour le moment.';
+        this.tryLoading = false;
+      }
+    });
+  }
+
+  runTryDecode(): void {
+    const code = this.tryDecodeInput.trim();
+    if (!code) return;
+
+    this.tryLoading = true;
+    this.tryError = null;
+    this.tryCards = [];
+    this.tryDecodeHierarchy = null;
+
+    const digits = code.replace(/[^0-9]/g, '');
+    const effectiveZone: TariffZone = digits.length === 8 ? 'EU' : (digits.length === 10 ? 'DZ' : this.tryZone);
+
+    this.searchService.decodeP10Code(code, effectiveZone).subscribe({
+      next: (res) => {
+        this.tryDecodeHierarchy = res;
+        const items = res.positions10 && res.positions10.length > 0
+          ? res.positions10
+          : (res.positions6 || []);
+
+        this.tryCards = items.slice(0, 6).map(item => ({
+          code: item.code,
+          formattedCode: item.formattedCode,
+          checkDigit: item.checkDigit,
+          zone: res.zone || 'DZ',
+          description: item.description,
+          titles: res.titresPosition10 && res.titresPosition10.length > 0
+            ? res.titresPosition10
+            : (res.titresParPosition10?.[item.code] ?? []),
+          position4: res.position4,
+          regulatoryData: item.regulatoryData,
+          glossary: res.glossary,
+          enriched: !!item.enriched,
+          highlight: res.niveau === 'POSITION10' || res.niveau === 'POSITION8'
+        }));
+        this.tryLoading = false;
+      },
+      error: (err) => {
+        this.tryError = err?.message || 'Code introuvable ou invalide.';
+        this.tryLoading = false;
+      }
+    });
+  }
+
+  onHs6Match(event: { hs6: string; zone: string; sourceCode: string }): void {
+    this.state.compareMode = true;
+    this.state.compareHs6Input = event.hs6;
+    this.state.compareResult = null;
+    this.router.navigate(['/recherche/decode-p10']);
+  }
 }

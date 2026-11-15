@@ -101,13 +101,12 @@ public class OllamaService implements AiProvider {
                     completionTokens,
                     0.0
             );
-            currentUsage.set(usageInfo);
+            currentUsage.set(UsageInfo.accumulate(currentUsage.get(), usageInfo));
 
             return assistantMessage;
 
         } catch (Exception e) {
             log.error("Erreur lors de la requête à Ollama: {}", e.getMessage());
-            currentUsage.remove();
             return "";
         }
     }

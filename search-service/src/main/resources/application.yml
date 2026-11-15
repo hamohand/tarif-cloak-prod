@@ -76,6 +76,8 @@ ai:
     api-key: ${ANTHROPIC_API_KEY:}
     model: ${ANTHROPIC_MODEL:claude-sonnet-4-5-20250929}
     base-url: ${ANTHROPIC_BASE_URL:https://api.anthropic.com/v1}
+    price-input-per-million: ${ANTHROPIC_PRICE_INPUT:3.00}
+    price-output-per-million: ${ANTHROPIC_PRICE_OUTPUT:15.00}
   ollama:
     base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
     model: ${OLLAMA_MODEL:llama3}
@@ -128,6 +130,14 @@ resilience4j:
       backendService:
         maxAttempts: 3
         waitDuration: 1s
+
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:https://hscode.enclume-numerique.com,https://www.hscode.enclume-numerique.com,http://localhost:4200}
+
+guest:
+  trial:
+    max-per-ip-per-day: ${GUEST_TRIAL_MAX_PER_IP_PER_DAY:2}
+    global-daily-limit: ${GUEST_TRIAL_GLOBAL_DAILY_LIMIT:100}
 
 # Logging
 logging:

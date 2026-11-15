@@ -50,6 +50,7 @@ class SearchServiceTest {
     @Mock private Position4Service  position4Service;
     @Mock private Position6DzService position6DzService;
     @Mock private Position10DzService position10DzService;
+    @Mock private TariffPositionService tariffPositionService;
 
     private SearchService searchService;
 
@@ -462,6 +463,55 @@ class SearchServiceTest {
             List<Position> resP6 = searchService.search(terme1806, SearchService.SearchLevel.POSITIONS6);
             assertThat(resP6).extracting(Position::getCode)
                     .containsExactly("180610", "180620", "180631", "180632", "180690");
+        }
+    }
+
+    @Nested
+    @DisplayName("Zone EU — conservation des codes NC8 à 8 chiffres")
+    class ZoneEuNc8Test {
+
+        @Test
+        @DisplayName("search(EU, POSITIONS10) conserve les codes NC8 à 8 chiffres sans troncature ni suffixe 00")
+        void searchEu_pos10_conserveCodeNc8HuitChiffres() {
+            SearchService euSearchService = new SearchService(
+                    aiService, aiPrompts,
+                    sectionService, chapitreService,
+                    position4Service, position6DzService, position10DzService,
+                    tariffPositionService
+            );
+
+            when(aiPrompts.getDefTheme()).thenReturn(DefTheme.builder().withDescription(true).build());
+
+            when(sectionService.getAllSections()).thenReturn(List.of(sectionII));
+            when(aiService.promptEtReponse(eq("SECTIONS"), any(), any(), anyBoolean())).thenReturn(ia_sections);
+
+            when(chapitreService.getChapitresBySection("II")).thenReturn(List.of(chapitre08));
+            when(aiService.promptEtReponse(eq("CHAPITRES"), any(), any(), anyBoolean())).thenReturn(ia_chapitres);
+
+            when(position4Service.getPosition4sByPrefix("08%")).thenReturn(List.of(pos4_0808));
+            when(position4Service.getDescription("0808")).thenReturn("Pommes, poires et coings, frais");
+            when(aiService.promptEtReponse(eq("POSITIONS4"), any(), any(), anyBoolean())).thenReturn(ia_positions4);
+
+            when(tariffPositionService.getDistinctHs6ForPos4("EU", "0808"))
+                    .thenReturn(List.of(new Position("080810", "Pommes")));
+            when(tariffPositionService.getHs6Description("EU", "080810")).thenReturn("Pommes");
+            when(aiService.promptEtReponse(eq("POSITIONS6"), any(), any(), anyBoolean())).thenReturn(ia_positions6);
+
+            when(tariffPositionService.getContextPositionsForHs6("EU", "080810")).thenReturn(List.of(
+                    new Position("08081010", "À cidre"),
+                    new Position("08081080", "Autres")
+            ));
+            when(aiService.promptEtReponse(eq("POSITIONS10"), any(), any(), anyBoolean()))
+                    .thenReturn(List.of(new Position("0808 10 80", null, "Pommes de table")));
+            when(tariffPositionService.getDescription("EU", "08081080")).thenReturn("Autres");
+
+            List<Position> result = euSearchService.search(TERME, SearchService.SearchLevel.POSITIONS10, "EU");
+
+            assertThat(result).hasSize(1);
+            assertThat(result.get(0).getCode()).isEqualTo("08081080");
+            assertThat(result.get(0).getDescription()).isEqualTo("Autres");
+            assertThat(result.get(0).getJustification()).isEqualTo("Pommes de table");
+            verifyNoInteractions(position10DzService);
         }
     }
 

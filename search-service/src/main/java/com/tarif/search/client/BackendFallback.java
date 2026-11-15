@@ -10,12 +10,12 @@ public class BackendFallback implements BackendClient {
 
     @Override
     public QuotaCheckResponse checkQuota(String authorizationHeader) {
-        log.warn("Backend indisponible - Mode dégradé activé (recherche autorisée sans vérification quota)");
+        log.error("Backend indisponible - Mode fail-closed activé (recherche refusée)");
 
         return QuotaCheckResponse.builder()
-                .canSearch(true)
-                .quotaOk(true)
-                .message("Mode dégradé - Backend indisponible")
+                .canSearch(false)
+                .quotaOk(false)
+                .message("BACKEND_UNAVAILABLE: Service de vérification des quotas temporairement indisponible")
                 .build();
     }
 }

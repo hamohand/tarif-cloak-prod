@@ -64,8 +64,8 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
-      // Gérer aussi les erreurs 401 pour les requêtes sans token (token expiré)
-      if (error.status === 401) {
+      // Ne déconnecter sur 401 que si un jeton était effectivement présent
+      if (error.status === 401 && token) {
         console.warn('Token expiré ou invalide (401). Déconnexion automatique.');
         authService.logout();
       }

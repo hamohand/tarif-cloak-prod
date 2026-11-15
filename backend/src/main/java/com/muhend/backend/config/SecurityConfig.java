@@ -65,6 +65,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/pricing-plans/**").permitAll()
                 // Les requêtes GET sur /market-profiles sont publiques (lecture seule)
                 .requestMatchers(HttpMethod.GET, "/market-profiles/**").permitAll()
+                // Décodage tarifaire SQL gratuit (public avec limitation de débit par IP)
+                .requestMatchers(HttpMethod.GET, "/decode/**", "/decode-p10/**").permitAll()
                 // Endpoint de recherche accessible aux utilisateurs avec le rôle USER ou ADMIN
                 .requestMatchers("/recherche/**").hasAnyRole("USER", "ADMIN")
                 // Tous les autres endpoints nécessitent une authentification

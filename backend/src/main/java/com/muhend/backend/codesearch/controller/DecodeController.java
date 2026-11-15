@@ -1,31 +1,19 @@
 package com.muhend.backend.codesearch.controller;
 
-import com.muhend.backend.codesearch.model.*;
-import com.muhend.backend.codesearch.repository.*;
-import com.muhend.backend.organization.exception.QuotaExceededException;
-import com.muhend.backend.organization.service.OrganizationService;
-import com.muhend.backend.organization.service.PlanChangeService;
-import com.muhend.backend.usage.service.UsageLogService;
+import com.muhend.backend.codesearch.model.DecodeResult;
+import com.muhend.backend.codesearch.service.TariffDecodeService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
-import org.springframework.http.HttpStatus;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
- * Recherche inverse : à partir d'un code HS (2, 4 ou 6 chiffres),
- * retourne la hiérarchie complète (Section → Chapitre → Position4 → Position6).
- * Pure requête SQL, sans IA. Consomme 2 crédits.
+ * Recherche inverse HS (2, 4 ou 6 chiffres) :
+ * retourne la hiérarchie complète (Section -> Chapitre -> Position4 -> Position6).
+ * Pure requête SQL gratuite (sans IA ni consommation de crédits).
  *
- * Route Traefik : /api/decode → backend:/decode
+ * Route Traefik : /api/decode -> backend:/decode
  */
 @RestController
 @RequestMapping("/decode")
@@ -33,132 +21,27 @@ import java.util.stream.Collectors;
 @Slf4j
 public class DecodeController {
 
-    private final ChapitreRepository chapitreRepository;
-    private final SectionRepository sectionRepository;
-    private final Position4Repository position4Repository;
-    private final Position6DzRepository position6DzRepository;
-    private final OrganizationService organizationService;
-    private final PlanChangeService planChangeService;
-    private final UsageLogService usageLogService;
+    private final TariffDecodeService tariffDecodeService;
 
-    /**
-     * Décode un code HS et retourne la hiérarchie complète.
-     *
-     * @param code Code HS saisi (2, 4 ou 6 chiffres, accepte points et espaces)
-     * @return Hiérarchie : section, chapitre, position4, positions6
-     */
     @GetMapping(produces = "application/json")
-    public ResponseEntity<DecodeResult> decodeCode(@RequestParam String code,
-            @RequestHeader(value = "X-Source", required = false) String source) {
-        if (!"search".equals(source)) checkQuotaAndLog("/decode", code);
-        // Normalisation : supprime tout ce qui n'est pas un chiffre
-        String normalized = code.replaceAll("[^0-9]", "");
-        log.debug("Décodage du code HS: '{}' → normalisé: '{}'", code, normalized);
-
-        int len = normalized.length();
-        if (len != 2 && len != 4 && len != 6 && len != 10) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Le code HS doit faire 2, 4, 6 ou 10 chiffres après normalisation. Reçu : " + normalized.length() + " chiffre(s).");
-        }
-
-        // Extraction des préfixes
-        String chapCode = normalized.substring(0, 2);
-
-        // --- Chapitre ---
-        Chapitre chapitre = chapitreRepository.findByCode(chapCode)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "Chapitre introuvable pour le code : " + chapCode));
-
-        // --- Section ---
-        String sectionCode = chapitre.getSection().trim();
-        if (sectionCode.length() == 1) sectionCode = "0" + sectionCode;
-        String finalSectionCode = sectionCode;
-        Section section = sectionRepository.findByCode(sectionCode)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "Section introuvable pour le code : " + finalSectionCode));
-
-        DecodeResult.CodeItem sectionItem = new DecodeResult.CodeItem(section.getCode(), section.getDescription(), section.getNote());
-        DecodeResult.CodeItem chapitreItem = new DecodeResult.CodeItem(chapitre.getCode(), chapitre.getDescription(), chapitre.getNote());
-
-        // --- Niveau CHAPITRE (2 chiffres) ---
-        if (len == 2) {
-            List<DecodeResult.CodeItem> positions4 = position4Repository.findAllByPrefix(chapCode + "%")
-                    .stream()
-                    .map(p4 -> new DecodeResult.CodeItem(p4.getCode(), p4.getDescription()))
-                    .collect(Collectors.toList());
-
-            return ResponseEntity.ok(DecodeResult.builder()
-                    .codeRecherche(code)
-                    .niveau("CHAPITRE")
-                    .section(sectionItem)
-                    .chapitre(chapitreItem)
-                    .position4(null)
-                    .positions6(positions4) // on réutilise positions6 pour afficher les position4 enfants
-                    .build());
-        }
-
-        // --- Position4 (4 ou 6 chiffres) ---
-        String pos4Code = normalized.substring(0, 4);
-        Position4 position4 = position4Repository.findByCode(pos4Code)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "Position4 introuvable pour le code : " + pos4Code));
-
-        DecodeResult.CodeItem position4Item = new DecodeResult.CodeItem(position4.getCode(), position4.getDescription());
-
-        // --- Niveau POSITION4 (4 chiffres) ---
-        if (len == 4) {
-            List<DecodeResult.CodeItem> positions6 = position6DzRepository.findAllByPrefix(pos4Code + "%")
-                    .stream()
-                    .filter(p6 -> p6.getCode() != null && p6.getCode().length() == 6)
-                    .map(p6 -> new DecodeResult.CodeItem(p6.getCode(), p6.getDescription()))
-                    .collect(Collectors.toList());
-
-            return ResponseEntity.ok(DecodeResult.builder()
-                    .codeRecherche(code)
-                    .niveau("POSITION4")
-                    .section(sectionItem)
-                    .chapitre(chapitreItem)
-                    .position4(position4Item)
-                    .positions6(positions6)
-                    .build());
-        }
-
-        // --- Niveau POSITION6 (6 chiffres) ---
-        String pos6DbCode = normalized.substring(0, 6);
-        Position6Dz position6 = position6DzRepository.findByCode(pos6DbCode)
-                .or(() -> pos6DbCode.endsWith("00") ? position6DzRepository.findByCode(pos4Code) : java.util.Optional.empty())
-                .orElseGet(() -> {
-                    if (pos6DbCode.endsWith("00")) {
-                        return new Position6Dz(null, pos6DbCode, position4.getDescription());
-                    }
-                    throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-                            "Code HS introuvable : " + pos6DbCode);
-                });
-
-        return ResponseEntity.ok(DecodeResult.builder()
-                .codeRecherche(code)
-                .niveau("POSITION6")
-                .section(sectionItem)
-                .chapitre(chapitreItem)
-                .position4(position4Item)
-                .positions6(Collections.singletonList(new DecodeResult.CodeItem(pos6DbCode, position6.getDescription())))
-                .build());
+    public ResponseEntity<DecodeResult> decodeCode(
+            @RequestParam String code,
+            @RequestParam(required = false, defaultValue = "DZ") String zone,
+            HttpServletRequest request) {
+        tariffDecodeService.checkRateLimit(extractClientIp(request));
+        return ResponseEntity.ok(tariffDecodeService.decode(code, zone, false));
     }
 
-    private void checkQuotaAndLog(String endpoint, String searchTerm) {
-        try {
-            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            if (!(auth != null && auth.getPrincipal() instanceof Jwt jwt)) return;
-            String userId = jwt.getClaimAsString("sub");
-            Long organizationId = organizationService.getOrganizationIdByUserId(userId);
-            if (!planChangeService.canOrganizationMakeRequests(organizationId)) {
-                throw new QuotaExceededException("Quota de crédits épuisé. Veuillez renouveler votre plan ou choisir un autre plan.");
-            }
-            usageLogService.logUsage(userId, organizationId, endpoint, searchTerm, null, null);
-        } catch (QuotaExceededException e) {
-            throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, e.getMessage());
-        } catch (Exception e) {
-            log.warn("Erreur quota/log decode (non bloquant): {}", e.getMessage());
+    private String extractClientIp(HttpServletRequest request) {
+        if (request == null) return "unknown";
+        String xff = request.getHeader("X-Forwarded-For");
+        if (xff != null && !xff.isBlank()) {
+            return xff.split(",")[0].trim();
         }
+        String realIp = request.getHeader("X-Real-IP");
+        if (realIp != null && !realIp.isBlank()) {
+            return realIp.trim();
+        }
+        return request.getRemoteAddr();
     }
 }

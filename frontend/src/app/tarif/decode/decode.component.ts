@@ -1,9 +1,9 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { SearchService, DecodeResult } from '../services/search.service';
-import { SearchStateService } from '../services/search-state.service';
 import { OAuthService } from 'angular-oauth2-oidc';
+import { DecodeResult, SearchService } from '../services/search.service';
+import { SearchStateService } from '../services/search-state.service';
 
 @Component({
   selector: 'app-decode',
@@ -11,6 +11,10 @@ import { OAuthService } from 'angular-oauth2-oidc';
   imports: [CommonModule, FormsModule],
   template: `
     <div class="decode-container">
+      <div class="free-badge-row">
+        <span class="free-pill">Décodage SQL officiel · 100 % gratuit &amp; sans crédit</span>
+      </div>
+
       <div class="search-form">
         <input
           type="text"
@@ -18,21 +22,22 @@ import { OAuthService } from 'angular-oauth2-oidc';
           placeholder="Ex : 08, 0808, 080810"
           class="search-input"
           (keydown.enter)="decode()"
-          maxlength="10"
+          maxlength="20"
         />
         <button
+          type="button"
           (click)="decode()"
           class="search-button"
-          [disabled]="isLoading || !codeInput"
+          [disabled]="isLoading || !codeInput.trim()"
         >
-          {{ isLoading ? 'Recherche...' : 'Décoder' }}
+          {{ isLoading ? 'Décodage...' : 'Décoder' }}
         </button>
       </div>
 
-      <p class="hint">Saisissez 2 chiffres (chapitre), 4 chiffres (position) ou 6 chiffres (code HS complet).</p>
+      <p class="hint">Saisissez 2 chiffres (chapitre), 4 chiffres (position) ou 6 chiffres (code HS international).</p>
 
       @if (isLoading) {
-        <div class="loading">Recherche en cours...</div>
+        <div class="loading">Extraction officielle depuis la nomenclature...</div>
       }
 
       @if (error) {
@@ -44,8 +49,7 @@ import { OAuthService } from 'angular-oauth2-oidc';
           <h3>Hiérarchie du code <span class="code-badge">{{ result.codeRecherche }}</span></h3>
 
           <div class="hierarchy">
-            <!-- Section -->
-            <div class="level level-section" [class.has-note]="result.section.note">
+            <div class="level level-section">
               <span class="level-label">Section</span>
               <span class="level-code">{{ result.section.code }}</span>
               <div class="level-content">
@@ -56,8 +60,7 @@ import { OAuthService } from 'angular-oauth2-oidc';
               </div>
             </div>
 
-            <!-- Chapitre -->
-            <div class="level level-chapitre" [class.has-note]="result.chapitre.note">
+            <div class="level level-chapitre">
               <span class="level-label">Chapitre</span>
               <span class="level-code">{{ result.chapitre.code }}</span>
               <div class="level-content">
@@ -68,17 +71,15 @@ import { OAuthService } from 'angular-oauth2-oidc';
               </div>
             </div>
 
-            <!-- Position 4 (si disponible) -->
             @if (result.position4) {
               <div class="level level-position4">
-                <span class="level-label">Position</span>
+                <span class="level-label">Position 4</span>
                 <span class="level-code">{{ result.position4.code }}</span>
                 <span class="level-desc">{{ result.position4.description }}</span>
               </div>
             }
           </div>
 
-          <!-- Liste des sous-positions -->
           @if (result.positions6 && result.positions6.length > 0) {
             <div class="subpositions">
               <h4>
@@ -86,22 +87,24 @@ import { OAuthService } from 'angular-oauth2-oidc';
                 @if (result.niveau === 'POSITION4') { Codes HS sous cette position }
                 @if (result.niveau === 'POSITION6') { Code HS complet }
               </h4>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Code</th>
-                    <th>Description</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (item of result.positions6; track item.code) {
+              <div class="table-wrap">
+                <table>
+                  <thead>
                     <tr>
-                      <td class="code-cell">{{ item.code }}</td>
-                      <td>{{ item.description }}</td>
+                      <th>Code</th>
+                      <th>Description</th>
                     </tr>
-                  }
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    @for (item of result.positions6; track item.code) {
+                      <tr>
+                        <td class="code-cell">{{ item.code }}</td>
+                        <td>{{ item.description }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
             </div>
           }
         </div>
@@ -110,278 +113,186 @@ import { OAuthService } from 'angular-oauth2-oidc';
   `,
   styles: [`
     .decode-container {
-      padding: 40px 20px;
-      max-width: 900px;
+      padding: 20px 8px;
+      max-width: 960px;
       margin: 0 auto;
-      animation: fadeIn 0.5s ease-in;
+      animation: fadeIn 0.35s ease;
     }
 
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(20px); }
+      from { opacity: 0; transform: translateY(10px); }
       to { opacity: 1; transform: translateY(0); }
+    }
+
+    .free-badge-row { margin-bottom: 14px; }
+
+    .free-pill {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 999px;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.32);
+      color: #34D399;
+      font-size: 0.78rem;
+      font-weight: 700;
     }
 
     .search-form {
       display: flex;
       margin-bottom: 10px;
-      background: var(--neu-bg, #E0E5EC);
-      box-shadow: var(--neu-inset, inset 6px 6px 10px rgba(163,177,198,0.6), inset -6px -6px 10px rgba(255,255,255,0.5));
-      border-radius: var(--neu-radius-inner, 12px);
+      background: #0D1421;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
       overflow: hidden;
-      border: none;
-      transition: box-shadow 0.3s ease;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
     }
 
     .search-form:focus-within {
-      box-shadow: var(--neu-inset-deep, inset 8px 8px 14px rgba(163,177,198,0.7), inset -8px -8px 14px rgba(255,255,255,0.6)),
-                  0 0 0 3px rgba(108,99,255,0.25);
+      border-color: #3B82F6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
     }
 
     .search-input {
       flex: 1;
-      padding: 16px 20px;
-      min-height: 44px;
-      font-size: 20px;
-      font-family: 'Courier New', monospace;
+      padding: 15px 18px;
+      min-height: 48px;
+      font-size: 18px;
+      font-family: var(--font-mono, 'JetBrains Mono', monospace);
       border: none;
       outline: none;
-      letter-spacing: 2px;
+      letter-spacing: 0.04em;
       background: transparent;
-      color: var(--neu-text-primary, #3D4852);
+      color: #F8FAFC;
     }
 
     .search-input::placeholder {
-      color: var(--neu-text-muted, #6B7280);
-      font-size: 16px;
+      color: #64748B;
+      font-size: 15px;
       letter-spacing: normal;
-      font-family: 'Segoe UI', sans-serif;
+      font-family: var(--font-sans, system-ui, sans-serif);
     }
 
     .search-button {
-      padding: 16px 32px;
-      min-height: 44px;
-      font-size: 16px;
-      background: var(--neu-accent-secondary, #2DD4BF);
-      color: white;
+      padding: 15px 28px;
+      min-height: 48px;
+      font-size: 15px;
+      font-family: var(--font-display, 'Space Grotesk', sans-serif);
+      background: #3B82F6;
+      color: #F8FAFC;
       border: none;
-      font-weight: 600;
-      letter-spacing: 0.5px;
-      border-radius: var(--neu-radius-inner, 12px);
-      box-shadow: var(--neu-extruded-sm, 5px 5px 10px rgba(163,177,198,0.6), -5px -5px 10px rgba(255,255,255,0.5));
-      transition: box-shadow 0.3s ease, transform 0.15s ease;
+      font-weight: 700;
       cursor: pointer;
+      white-space: nowrap;
     }
 
-    .search-button:hover:not(:disabled) {
-      box-shadow: var(--neu-extruded, 9px 9px 16px rgba(163,177,198,0.6), -9px -9px 16px rgba(255,255,255,0.5));
-      transform: translateY(-1px);
-    }
+    .search-button:hover:not(:disabled) { background: #2563EB; }
+    .search-button:disabled { opacity: 0.45; cursor: not-allowed; }
 
-    .search-button:active:not(:disabled) {
-      box-shadow: var(--neu-inset, inset 6px 6px 10px rgba(163,177,198,0.6), inset -6px -6px 10px rgba(255,255,255,0.5));
-      transform: translateY(0);
-    }
+    .hint { color: #94A3B8; font-size: 0.85rem; margin: 0 0 22px; }
 
-    .search-button:disabled {
-      background: var(--neu-bg, #E0E5EC);
-      color: var(--neu-text-muted, #6B7280);
-      box-shadow: var(--neu-extruded-sm, 5px 5px 10px rgba(163,177,198,0.6), -5px -5px 10px rgba(255,255,255,0.5));
-      cursor: not-allowed;
-      opacity: 0.7;
-    }
-
-    .hint {
-      color: var(--neu-text-muted, #6B7280);
-      font-size: 0.85rem;
-      margin-bottom: 24px;
-      padding-left: 4px;
-    }
-
-    .loading {
-      margin: 30px 0;
-      text-align: center;
-      color: var(--neu-accent-secondary, #2DD4BF);
-      font-size: 1.1rem;
-      font-weight: 500;
-      animation: pulse 1.5s ease-in-out infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
-    }
+    .loading { margin: 26px 0; text-align: center; color: #60A5FA; font-weight: 600; }
 
     .error {
-      margin: 20px 0;
-      color: #c0392b;
-      background: var(--neu-bg, #E0E5EC);
-      padding: 16px 20px;
-      border-radius: var(--neu-radius-inner, 12px);
-      box-shadow: var(--neu-inset, inset 6px 6px 10px rgba(163,177,198,0.6), inset -6px -6px 10px rgba(255,255,255,0.5));
+      margin: 18px 0;
+      color: #FCA5A5;
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      padding: 14px 18px;
+      border-radius: 10px;
     }
 
     .results {
-      margin-top: 20px;
-      animation: slideUp 0.4s ease;
-    }
-
-    @keyframes slideUp {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
+      background: #0D1421;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 20px;
     }
 
     .results h3 {
-      margin-bottom: 20px;
-      color: var(--neu-text-heading, #2D3748);
-      font-family: var(--font-display, 'Plus Jakarta Sans', sans-serif);
-      font-size: 1.3rem;
-      font-weight: 600;
+      margin: 0 0 16px;
+      color: #F8FAFC;
+      font-family: var(--font-display, 'Space Grotesk', sans-serif);
+      font-size: 1.2rem;
     }
 
     .code-badge {
       display: inline-block;
-      background: var(--neu-accent-secondary, #2DD4BF);
-      color: white;
-      padding: 4px 14px;
-      border-radius: var(--neu-radius-inner, 12px);
-      box-shadow: var(--neu-extruded-sm, 5px 5px 10px rgba(163,177,198,0.6), -5px -5px 10px rgba(255,255,255,0.5));
-      font-family: 'Courier New', monospace;
-      font-size: 1.1rem;
-      letter-spacing: 1px;
+      margin-left: 6px;
+      padding: 3px 10px;
+      border-radius: 8px;
+      background: rgba(59, 130, 246, 0.16);
+      border: 1px solid rgba(59, 130, 246, 0.35);
+      color: #60A5FA;
+      font-family: var(--font-mono, 'JetBrains Mono', monospace);
+      font-size: 1rem;
     }
 
-    .hierarchy {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      margin-bottom: 24px;
-    }
+    .hierarchy { display: flex; flex-direction: column; gap: 10px; margin-bottom: 22px; }
 
     .level {
       display: flex;
       align-items: flex-start;
       gap: 12px;
-      padding: 14px 18px;
-      border-radius: var(--neu-radius-inner, 12px);
-      background: var(--neu-card-bg, linear-gradient(145deg, #E8ECF2, #D8DDE4));
-      box-shadow: var(--neu-extruded-sm, 5px 5px 10px rgba(163,177,198,0.6), -5px -5px 10px rgba(255,255,255,0.5));
-      border: none;
-      transition: background 0.3s ease;
+      padding: 12px 16px;
+      border-radius: 10px;
+      background: #111827;
+      border: 1px solid rgba(255, 255, 255, 0.06);
     }
 
-    .level:hover {
-      background: var(--neu-card-bg-hover, linear-gradient(145deg, #EDF0F5, #DCE1E8));
-    }
-
-    .level-section {
-      border-left: 4px solid var(--neu-accent, #6C63FF);
-    }
-
-    .level-chapitre {
-      border-left: 4px solid var(--neu-accent-secondary, #2DD4BF);
-      margin-left: 16px;
-    }
-
-    .level-position4 {
-      border-left: 4px solid #F6AD55;
-      margin-left: 32px;
-    }
+    .level-section { border-left: 3px solid #3B82F6; }
+    .level-chapitre { border-left: 3px solid #10B981; margin-left: 14px; }
+    .level-position4 { border-left: 3px solid #F59E0B; margin-left: 28px; }
 
     .level-label {
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       font-weight: 700;
       text-transform: uppercase;
-      color: var(--neu-text-muted, #6B7280);
-      min-width: 70px;
+      color: #94A3B8;
+      min-width: 74px;
+      padding-top: 2px;
     }
 
     .level-code {
-      font-family: 'Courier New', monospace;
+      font-family: var(--font-mono, 'JetBrains Mono', monospace);
       font-weight: 700;
-      font-size: 1rem;
-      color: var(--neu-text-heading, #2D3748);
-      min-width: 60px;
+      font-size: 0.96rem;
+      color: #F8FAFC;
+      min-width: 52px;
     }
 
-    .level-content {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
+    .level-content { display: flex; flex-direction: column; gap: 4px; }
+    .level-desc { color: #E2E8F0; font-size: 0.94rem; line-height: 1.4; }
+    .level-note { margin: 0; color: #94A3B8; font-size: 0.82rem; line-height: 1.4; }
 
-    .level-desc {
-      color: var(--neu-text-primary, #3D4852);
-      font-size: 0.95rem;
-      line-height: 1.4;
-    }
-
-    .level-note {
-      margin: 0;
-      color: var(--neu-text-muted, #6B7280);
-      font-size: 0.82rem;
-      line-height: 1.5;
-      font-style: italic;
-      border-left: 2px solid var(--neu-accent, #6C63FF);
-      padding-left: 8px;
-    }
-
-    .subpositions h4 {
-      color: var(--neu-text-heading, #2D3748);
-      font-family: var(--font-display, 'Plus Jakarta Sans', sans-serif);
-      font-size: 1rem;
-      font-weight: 600;
-      margin-bottom: 12px;
-      padding-bottom: 6px;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: separate;
-      border-spacing: 0 0.5rem;
-      background: transparent;
-    }
-
+    .subpositions h4 { color: #F8FAFC; font-size: 1rem; margin: 0 0 12px; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
     th {
-      padding: 12px 16px;
+      padding: 10px 14px;
       text-align: left;
-      background: var(--neu-bg, #E0E5EC);
-      font-weight: 600;
-      color: var(--neu-text-heading, #2D3748);
+      color: #94A3B8;
+      font-size: 0.74rem;
       text-transform: uppercase;
-      font-size: 0.82rem;
-      letter-spacing: 0.5px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     }
-
     td {
-      padding: 12px 16px;
-      text-align: left;
-      background: var(--neu-bg, #E0E5EC);
-      box-shadow: var(--neu-extruded-sm, 5px 5px 10px rgba(163,177,198,0.6), -5px -5px 10px rgba(255,255,255,0.5));
+      padding: 11px 14px;
+      color: #CBD5E1;
+      font-size: 0.9rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
     }
-
-    td:first-child { border-radius: var(--neu-radius-inner, 12px) 0 0 var(--neu-radius-inner, 12px); }
-    td:last-child { border-radius: 0 var(--neu-radius-inner, 12px) var(--neu-radius-inner, 12px) 0; }
-
-    tbody tr:hover td { opacity: 0.85; }
-
     .code-cell {
-      font-family: 'Courier New', monospace;
-      font-weight: 600;
-      color: var(--neu-accent-secondary, #2DD4BF);
-      font-size: 0.95rem;
+      font-family: var(--font-mono, 'JetBrains Mono', monospace);
+      font-weight: 700;
+      color: #60A5FA;
+      white-space: nowrap;
     }
 
-    @media (max-width: 768px) {
-      .decode-container { padding: 20px 12px; }
+    @media (max-width: 720px) {
       .search-form { flex-direction: column; }
-      .search-button { border-radius: 0 0 var(--neu-radius-inner, 12px) var(--neu-radius-inner, 12px); }
+      .search-button { border-radius: 0 0 12px 12px; }
       .level { flex-direction: column; gap: 4px; }
-      .level-chapitre { margin-left: 0; }
-      .level-position4 { margin-left: 0; }
-    }
-
-    @media (max-width: 1024px) {
-      .decode-container { padding: 30px 16px; }
+      .level-chapitre, .level-position4 { margin-left: 0; }
     }
   `]
 })
@@ -390,6 +301,7 @@ export class DecodeComponent implements OnInit {
   result: DecodeResult | null = null;
   isLoading: boolean = false;
   error: string | null = null;
+  zone: string = 'DZ';
 
   private searchService = inject(SearchService);
   private oauthService = inject(OAuthService);
@@ -401,20 +313,15 @@ export class DecodeComponent implements OnInit {
   }
 
   decode(): void {
-    if (!this.oauthService.hasValidAccessToken()) {
-      this.error = 'Vous devez être connecté pour effectuer une recherche.';
-      return;
-    }
-
-    if (!this.codeInput) {
+    const trimmed = this.codeInput.trim();
+    if (!trimmed) {
       this.error = 'Veuillez saisir un code HS.';
       return;
     }
 
-    // Validation locale : 2, 4 ou 6 chiffres après normalisation
-    const normalized = this.codeInput.replace(/[^0-9]/g, '');
+    const normalized = trimmed.replace(/[^0-9]/g, '');
     if (normalized.length !== 2 && normalized.length !== 4 && normalized.length !== 6) {
-      this.error = 'Le code doit contenir 2, 4 ou 6 chiffres (ex: 08, 0808, 080810).';
+      this.error = 'Le code doit contenir 2, 4 ou 6 chiffres (ex : 08, 0808, 080810).';
       return;
     }
 
@@ -422,7 +329,7 @@ export class DecodeComponent implements OnInit {
     this.error = null;
     this.result = null;
 
-    this.searchService.decodeCode(this.codeInput).subscribe({
+    this.searchService.decodeCode(trimmed, this.zone).subscribe({
       next: (res) => {
         this.result = res;
         this.state.decodeInput = this.codeInput;
@@ -431,7 +338,7 @@ export class DecodeComponent implements OnInit {
       },
       error: (err) => {
         this.error = err.message || 'Une erreur est survenue.';
-        if (err.status === 401) {
+        if (err.status === 401 && this.oauthService.hasValidAccessToken()) {
           this.oauthService.logOut();
         }
         this.isLoading = false;

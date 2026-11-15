@@ -27,6 +27,7 @@ import { QuoteRequestsComponent } from './features/organization/quote-requests.c
 import { collaboratorGuard } from './core/guards/collaborator.guard';
 import { organizationGuard } from './core/guards/organization.guard';
 import { planRequiredGuard } from './core/guards/plan-required.guard';
+import { adminGuard } from './core/guards/admin.guard';
 import { ChoosePlanComponent } from './features/choose-plan/choose-plan.component';
 import { AccessExpiredComponent } from './features/access-expired/access-expired.component';
 import { HelpComponent } from './features/help/help.component';
@@ -54,9 +55,7 @@ export const routes: Routes = [
   {
     path: 'recherche',
     children: TARIF_ROUTES,
-    component: TarifComponent,
-    //component: DashboardComponent,
-    canActivate: [authGuard, collaboratorGuard, planRequiredGuard]
+    component: TarifComponent
   },
   {
     path: 'dashboard',
@@ -96,32 +95,32 @@ export const routes: Routes = [
   {
     path: 'admin/stats',
     component: StatsComponent,
-    canActivate: [authGuard]
+    canActivate: [authGuard, adminGuard]
   },
   {
     path: 'admin/organizations',
     component: OrganizationsComponent,
-    canActivate: [authGuard]
+    canActivate: [authGuard, adminGuard]
   },
   {
     path: 'admin/invoices',
     component: InvoicesAdminComponent,
-    canActivate: [authGuard]
+    canActivate: [authGuard, adminGuard]
   },
   {
     path: 'admin/invoices/:id',
     component: InvoiceDetailAdminComponent,
-    canActivate: [authGuard]
+    canActivate: [authGuard, adminGuard]
   },
   {
     path: 'admin/quote-requests',
     component: QuoteRequestsAdminComponent,
-    canActivate: [authGuard]
+    canActivate: [authGuard, adminGuard]
   },
   {
     path: 'admin/pending-registrations',
     component: PendingRegistrationsComponent,
-    canActivate: [authGuard]
+    canActivate: [authGuard, adminGuard]
   },
   { path: '**', redirectTo: '' }
 ];

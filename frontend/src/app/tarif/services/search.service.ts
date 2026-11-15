@@ -1,25 +1,64 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Observable, throwError } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
+import { HttpClient, HttpErrorResponse, HttpResponse } from '@angular/common/http';
+import { BehaviorSubject, Observable, throwError } from 'rxjs';
+import { catchError, map, tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
+
+export interface RegulatoryData {
+  dd?: string;
+  tva?: string;
+  autres?: string;
+  uqn?: string;
+  gu?: string;
+  fap?: string[];
+}
 
 export interface DecodeCodeItem {
   code: string;
   description: string;
   note?: string;
+  formattedCode?: string;
+  checkDigit?: string;
+  regulatoryData?: RegulatoryData;
+  enriched?: boolean;
 }
 
 export interface DecodeResult {
+  zone?: string;
   codeRecherche: string;
-  niveau: 'CHAPITRE' | 'POSITION4' | 'POSITION6' | 'POSITION10';
+  niveau: 'CHAPITRE' | 'POSITION4' | 'POSITION6' | 'POSITION8' | 'POSITION10';
   section: DecodeCodeItem;
   chapitre: DecodeCodeItem;
   position4: DecodeCodeItem | null;
   positions6: DecodeCodeItem[];
   positions10: DecodeCodeItem[] | null;
-  titresPosition10: string[] | null;           // titres pour un code unique (POSITION10)
-  titresParPosition10: Record<string, string[]> | null; // titres par code (POSITION6)
+  titresPosition10: string[] | null;
+  titresParPosition10: Record<string, string[]> | null;
+  glossary?: Record<string, string>;
+}
+
+export interface Hs6ComparisonResult {
+  hs6: string;
+  section: DecodeCodeItem;
+  chapitre: DecodeCodeItem;
+  position4?: DecodeCodeItem | null;
+  position6?: DecodeCodeItem | null;
+  dz: DecodeResult | null;
+  eu: DecodeResult | null;
+}
+
+export interface GuestQuotaStatus {
+  allowed: boolean;
+  remaining: number;
+  limit: number;
+  reason?: string | null;
+}
+
+export class ApiSearchError extends Error {
+  constructor(message: string, public readonly status: number) {
+    super(message);
+    this.name = 'ApiSearchError';
+  }
 }
 
 @Injectable({
@@ -31,38 +70,72 @@ export class SearchService {
   private decodeApiUrl = '/api/decode';
   private decodeP10ApiUrl = '/api/decode-p10';
 
+  readonly guestTrialsRemaining$ = new BehaviorSubject<number | null>(null);
+
   constructor(private http: HttpClient) { }
 
-  decodeCode(code: string, embedded = false): Observable<DecodeResult> {
+  getGuestQuota(): Observable<GuestQuotaStatus> {
+    return this.http.get<GuestQuotaStatus>(`${this.apiUrl}/guest-quota`).pipe(
+      tap(status => {
+        if (typeof status?.remaining === 'number') {
+          this.guestTrialsRemaining$.next(status.remaining);
+        }
+      }),
+      catchError(err => this.handleError(err))
+    );
+  }
+
+  decodeCode(code: string, zone: string = 'DZ'): Observable<DecodeResult> {
     return this.http.get<DecodeResult>(this.decodeApiUrl, {
-      params: { code },
-      headers: embedded ? { 'X-Source': 'search' } : {}
+      params: { code, zone }
     }).pipe(
-      catchError(this.handleError)
+      catchError(err => this.handleError(err))
     );
   }
 
-  decodeP10Code(code: string, embedded = false): Observable<DecodeResult> {
+  decodeP10Code(code: string, zone: string = 'DZ'): Observable<DecodeResult> {
     return this.http.get<DecodeResult>(this.decodeP10ApiUrl, {
-      params: { code },
-      headers: embedded ? { 'X-Source': 'search' } : {}
+      params: { code, zone }
     }).pipe(
-      catchError(this.handleError)
+      catchError(err => this.handleError(err))
     );
   }
 
-  searchCodes(searchTerm: string, endpoint: 'positions6' | 'positions10' = 'positions6'): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/${endpoint}`, {
-      params: { termeRecherche: searchTerm }
+  compareHs6(code: string): Observable<Hs6ComparisonResult> {
+    return this.http.get<Hs6ComparisonResult>(`${this.decodeP10ApiUrl}/compare`, {
+      params: { code: code.trim() }
     }).pipe(
-      map((response: any) => {
-        if (!Array.isArray(response)) {
-          console.warn('La réponse reçue du serveur n\'est pas un tableau.', response);
+      catchError(err => this.handleError(err))
+    );
+  }
+
+  searchCodes(
+    searchTerm: string,
+    endpoint: 'positions6' | 'positions10' = 'positions6',
+    zone: string = 'DZ'
+  ): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/${endpoint}`, {
+      params: { termeRecherche: searchTerm, zone },
+      observe: 'response'
+    }).pipe(
+      tap((resp: HttpResponse<any[]>) => {
+        const headerVal = resp.headers.get('X-Guest-Trials-Remaining');
+        if (headerVal !== null) {
+          const parsed = Number(headerVal);
+          if (!Number.isNaN(parsed)) {
+            this.guestTrialsRemaining$.next(parsed);
+          }
+        }
+      }),
+      map((resp: HttpResponse<any[]>) => {
+        const body = resp.body;
+        if (!Array.isArray(body)) {
+          console.warn('La réponse reçue du serveur n\'est pas un tableau.', body);
           return [];
         }
-        return response;
+        return body;
       }),
-      catchError(this.handleError)
+      catchError(err => this.handleError(err))
     );
   }
 
@@ -73,45 +146,53 @@ export class SearchService {
     return this.http.post(`${this.conversionApiUrl}/convert`, formData, {
       responseType: 'text'
     }).pipe(
-      catchError(this.handleError)
+      catchError(err => this.handleError(err))
     );
   }
 
   private handleError(error: HttpErrorResponse): Observable<never> {
     let errorMessage = 'Une erreur est survenue';
+    const backendMessage = typeof error.error?.message === 'string'
+      ? error.error.message
+      : (typeof error.error === 'string' && error.error.trim().length > 0 && !error.error.startsWith('<')
+        ? error.error
+        : null);
 
     if (error.status === 0) {
-      // Erreur réseau ou CORS
       errorMessage = 'Impossible de contacter le serveur. Vérifiez votre connexion.';
     } else if (error.status === 401) {
-      errorMessage = 'Session expirée. Veuillez vous reconnecter.';
+      errorMessage = 'Session expirée ou authentification requise. Veuillez vous reconnecter.';
     } else if (error.status === 403) {
       errorMessage = 'Accès refusé. Vous n\'avez pas les permissions nécessaires.';
     } else if (error.status === 429) {
-      if (environment.betaMode) {
+      if (backendMessage && backendMessage.includes('Essai gratuit')) {
+        this.guestTrialsRemaining$.next(0);
+        errorMessage = backendMessage;
+      } else if (backendMessage) {
+        errorMessage = backendMessage;
+      } else if (environment.betaMode) {
         errorMessage = 'Merci pour votre participation. Veuillez contacter l\'administrateur si vous souhaitez continuer à tester.';
       } else {
         errorMessage = 'Quota de crédits épuisé. Veuillez renouveler votre plan ou choisir un autre plan.';
       }
+    } else if (error.status === 503) {
+      errorMessage = backendMessage || 'Service de vérification des quotas temporairement indisponible. Réessayez dans un instant.';
     } else if (error.status === 404) {
-      errorMessage = 'Code HS introuvable dans la base de données.';
+      errorMessage = backendMessage || 'Code douanier introuvable dans la nomenclature.';
     } else if (error.status === 400) {
-      const msg = error.error?.message || error.error;
-      errorMessage = typeof msg === 'string' ? msg : 'Code HS invalide. Saisissez 2, 4 ou 6 chiffres.';
+      errorMessage = backendMessage || 'Code douanier invalide. Saisissez 2, 4, 6, 8 ou 10 chiffres.';
     } else if (error.status >= 500) {
       errorMessage = 'Erreur serveur. Veuillez réessayer plus tard.';
-    } else if (error.error) {
-      errorMessage = typeof error.error === 'string'
-        ? error.error
-        : JSON.stringify(error.error);
+    } else if (backendMessage) {
+      errorMessage = backendMessage;
     }
 
     console.error('Erreur HTTP:', {
       status: error.status,
       message: errorMessage,
-      error: error
+      error
     });
 
-    return throwError(() => new Error(errorMessage));
+    return throwError(() => new ApiSearchError(errorMessage, error.status));
   }
 }

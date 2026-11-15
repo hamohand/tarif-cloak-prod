@@ -66,11 +66,13 @@ public class AiPrompts {
                     - En revanche, si le terme recherché correspond à l'intitulé général d'une position à 4 chiffres ou désigne une famille de produits sans préciser le critère qui départage ses sous-positions (ex: forme, poids, fourré/non fourré, usage), sélectionnez TOUTES les sous-positions à 6 chiffres pertinentes de cette position (ou directement le code parent à 4 chiffres indiqué dans [Catégorie : Position XXXX ...]), sans vous arrêter au premier code.
                     """;
             case "POSITIONS10" -> """
-                    [CONTEXTE NIVEAU] Vous analysez les POSITIONS TARIFAIRES NATIONALES à 10 chiffres (niveau le plus fin), regroupées sous leurs en-têtes [Catégorie : Position XXXX - ...] et [Catégorie : Sous-position SH6 XXXXXX - ...].
+                    [CONTEXTE NIVEAU] Vous analysez les POSITIONS TARIFAIRES NATIONALES / RÉGIONALES FINALES, regroupées sous leurs en-têtes [Catégorie : Position XXXX - ...] et [Catégorie : Sous-position SH6 XXXXXX - ...] :
+                    - Algérie (DZ) : positions P10 à 10 chiffres.
+                    - Union Européenne (EU) : sous-positions NC8 à 8 chiffres.
                     RÈGLE DE GRANULARITÉ (CRITIQUE) :
-                    1. Cas d'un produit précis (10 chiffres) : si la requête mentionne des caractéristiques spécifiques qui désignent directement un code à 10 chiffres particulier (ex: "graines de tournesol sans coques" -> 1206009920, "pâtes à tartiner contenant du cacao" -> 1806903000), retournez UNIQUEMENT ce code précis à 10 chiffres.
-                    2. Cas d'une recherche tombant sur une Sous-position SH (6 chiffres) ou une Position (4 chiffres) : si la requête reste au niveau général d'une position à 4 chiffres ou d'une sous-position à 6 chiffres SANS préciser le critère qui distingue ses subdivisions à 10 chiffres (ex: semence vs consommation, conditionnement, variété, poids, fourré vs non fourré), NE SÉLECTIONNEZ JAMAIS uniquement le premier code à 10 chiffres : retournez directement le code parent à 6 chiffres (indiqué dans [Catégorie : Sous-position SH6 XXXXXX ...], ex: "120600", "180632") ou le code parent à 4 chiffres (indiqué dans [Catégorie : Position XXXX ...], ex: "1806") afin que toutes les subdivisions commençant par ce préfixe soient restituées.
-                    3. Cas d'un sous-groupe intermédiaire : si la requête correspond à un titre intermédiaire regroupant plusieurs codes à 10 chiffres (ex: "Chocolat et articles en chocolat"), retournez TOUS les codes à 10 chiffres appartenant à ce sous-groupe.
+                    1. Cas d'un produit précis (8 chiffres en UE / 10 chiffres en DZ) : si la requête mentionne des caractéristiques spécifiques qui désignent directement un code final particulier de la liste (ex: "graines de tournesol sans coques" -> 1206009920 en DZ, ou un code NC8 à 8 chiffres en UE), retournez UNIQUEMENT ce code précis issu de la liste, sans inventer de chiffres.
+                    2. Cas d'une recherche tombant sur une Sous-position SH (6 chiffres) ou une Position (4 chiffres) : si la requête reste au niveau général d'une position à 4 chiffres ou d'une sous-position à 6 chiffres SANS préciser le critère qui distingue ses subdivisions (ex: semence vs consommation, conditionnement, variété, poids, fourré vs non fourré), NE SÉLECTIONNEZ JAMAIS uniquement le premier code feuille : retournez directement le code parent à 6 chiffres (indiqué dans [Catégorie : Sous-position SH6 XXXXXX ...], ex: "120600", "180632") ou le code parent à 4 chiffres (indiqué dans [Catégorie : Position XXXX ...], ex: "1806") afin que toutes les subdivisions commençant par ce préfixe soient restituées.
+                    3. Cas d'un sous-groupe intermédiaire : si la requête correspond à un titre intermédiaire regroupant plusieurs codes finaux (ex: "Chocolat et articles en chocolat"), retournez TOUS les codes de ce sous-groupe (8 chiffres en UE ou 10 chiffres en DZ).
                     Appliquez strictement les critères numériques (poids, dimensions, cylindrée, teneur, etc.) lorsqu'ils sont mentionnés dans la requête.
                     """;
             default -> "";
@@ -170,7 +172,7 @@ public class AiPrompts {
 
     private static final String INSTRUCTION_DETAILS_JUSTIFIED = """
 
-                    -- Le code douanier (à 2, 4, 6 ou 10 chiffres selon la granularité appropriée).
+                    -- Le code douanier (à 2, 4, 6, 8 ou 10 chiffres selon la granularité appropriée).
                     -- Une brève justification expliquant pourquoi ce code est pertinent.""";
 
     private static final String FORMAT_EXAMPLE_JUSTIFIED = """
@@ -306,7 +308,7 @@ public class AiPrompts {
 
     private static final String INSTRUCTION_DETAILS_SIMPLE = """
 
-                    le code douanier (à 2, 4, 6 ou 10 chiffres selon la liste).""";
+                    le code douanier (à 2, 4, 6, 8 ou 10 chiffres selon la liste).""";
 
     private static final String FORMAT_EXAMPLE_SIMPLE = """
                    {
