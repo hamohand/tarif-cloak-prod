@@ -12,13 +12,14 @@ export interface RegisterUser {
   password: string;
   organizationName: string;
   organizationEmail: string; // Obligatoire
-  organizationAddress: string;
-  organizationActivityDomain?: string; // Domaine d'activité (optionnel)
+  organizationAddress?: string; // Facultatif
+  organizationActivityDomain?: string | null; // Domaine d'activité
   organizationCountry: string;
   organizationPhone: string;
   organizationPassword: string;
   pricingPlanId?: number | null; // ID du plan tarifaire sélectionné (optionnel)
   marketVersion?: string | null; // Version du marché
+  marketingConsent?: boolean;
 }
 
 export interface KeycloakUser {

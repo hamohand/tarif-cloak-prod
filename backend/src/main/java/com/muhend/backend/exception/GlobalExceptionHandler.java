@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -19,6 +20,23 @@ import java.util.Map;
 @Slf4j
 public class GlobalExceptionHandler {
     
+    /**
+     * Transmet le message exact des ResponseStatusException (400, 404, 429...).
+     */
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<Map<String, Object>> handleResponseStatusException(ResponseStatusException ex) {
+        int status = ex.getStatusCode().value();
+        String message = ex.getReason() != null ? ex.getReason() : "Erreur lors du traitement de la requête";
+        log.warn("Statut HTTP {}: {}", status, message);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("error", ex.getStatusCode().toString());
+        response.put("message", message);
+        response.put("status", status);
+
+        return ResponseEntity.status(ex.getStatusCode()).body(response);
+    }
+
     /**
      * Gère les exceptions de quota dépassé.
      * Renvoie une réponse HTTP 429 (Too Many Requests) avec un message d'erreur.

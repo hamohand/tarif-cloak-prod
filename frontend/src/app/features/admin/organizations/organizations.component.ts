@@ -15,12 +15,15 @@ import { environment } from '../../../../environments/environment';
 
       <!-- Barre d'actions et recherche -->
       <div class="actions-bar">
-        <button class="btn btn-secondary" (click)="showCreateForm = true">+ Créer une organisation</button>
+        <div class="org-actions">
+          <button class="btn btn-secondary" (click)="showCreateForm = true">+ Créer une organisation</button>
+          <button class="btn btn-secondary" (click)="exportAddressBookCsv()" [disabled]="filteredOrganizations.length === 0">📥 Exporter carnet d'adresses (CSV)</button>
+        </div>
         <div class="search-bar">
           <input type="text" 
                  [(ngModel)]="searchTerm" 
                  (input)="filterOrganizations()" 
-                 placeholder="Rechercher par nom ou email..." 
+                 placeholder="Rechercher par nom, email, tél., domaine..." 
                  class="search-input" />
           <select [(ngModel)]="viewMode" (change)="filterOrganizations()" class="view-select">
             <option value="cards">Vue cartes</option>
@@ -64,6 +67,8 @@ import { environment } from '../../../../environments/environment';
                 <th>Nom</th>
                 <th>Statut</th>
                 <th>Email</th>
+                <th>Téléphone</th>
+                <th>Domaine / Pays</th>
                 <th>Utilisateurs</th>
                 <th>Quota mensuel (crédits)</th>
                 <th>Utilisation ce mois (crédits)</th>
@@ -84,6 +89,8 @@ import { environment } from '../../../../environments/environment';
                     }
                   </td>
                   <td>{{ org.email || '-' }}</td>
+                  <td>{{ org.phone || '-' }}</td>
+                  <td>{{ org.activityDomain || '-' }} @if (org.country) { ({{ org.country }}) }</td>
                   <td>{{ org.userCount || 0 }}</td>
                   <td>
                     {{ org.monthlyQuota !== null && org.monthlyQuota !== undefined ? org.monthlyQuota : 'Illimité' }}
@@ -143,7 +150,16 @@ import { environment } from '../../../../environments/environment';
                     }
                   </h3>
                   @if (org.email) {
-                    <p class="org-email">📧 {{ org.email }}</p>
+                    <p class="org-email">📧 {{ org.email }} @if (org.phone) { · 📞 {{ org.phone }} }</p>
+                  } @else if (org.phone) {
+                    <p class="org-email">📞 {{ org.phone }}</p>
+                  }
+                  @if (org.activityDomain || org.country || org.address) {
+                    <p class="org-meta">
+                      @if (org.activityDomain) { 🏷️ {{ org.activityDomain }} }
+                      @if (org.country) { · {{ org.country }} }
+                      @if (org.address) { · {{ org.address }} }
+                    </p>
                   }
                   <p class="org-meta">
                     Créée le {{ formatDate(org.createdAt) }}
@@ -988,11 +1004,43 @@ export class OrganizationsComponent implements OnInit {
       this.filteredOrganizations = this.organizations;
     } else {
       const search = this.searchTerm.toLowerCase().trim();
-      this.filteredOrganizations = this.organizations.filter(org => 
-        org.name.toLowerCase().includes(search) || 
-        (org.email && org.email.toLowerCase().includes(search))
+      this.filteredOrganizations = this.organizations.filter(org =>
+        org.name.toLowerCase().includes(search) ||
+        (org.email && org.email.toLowerCase().includes(search)) ||
+        (org.phone && org.phone.toLowerCase().includes(search)) ||
+        (org.activityDomain && org.activityDomain.toLowerCase().includes(search)) ||
+        (org.country && org.country.toLowerCase().includes(search))
       );
     }
+  }
+
+  exportAddressBookCsv() {
+    if (this.filteredOrganizations.length === 0) return;
+    const escapeCell = (val: unknown): string => {
+      const str = (val ?? '').toString().replace(/\r?\n/g, ' ').trim();
+      return `"${str.replace(/"/g, '""')}"`;
+    };
+    const headers = ['Nom', 'Email', 'Téléphone', "Domaine d'activité", 'Pays', 'Adresse', 'Utilisateurs', 'Statut', 'Date création'];
+    const rows = this.filteredOrganizations.map(org => [
+      escapeCell(org.name),
+      escapeCell(org.email),
+      escapeCell(org.phone),
+      escapeCell(org.activityDomain),
+      escapeCell(org.country),
+      escapeCell(org.address),
+      escapeCell(org.userCount ?? 0),
+      escapeCell(org.enabled === false ? 'Désactivée' : 'Active'),
+      escapeCell(org.createdAt ? this.formatDate(org.createdAt) : '')
+    ].join(';'));
+
+    const csvContent = '\uFEFF' + [headers.map(h => escapeCell(h)).join(';'), ...rows].join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `carnet-adresses-organisations-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
   }
 
   getQuotaPercentage(org: Organization): number {

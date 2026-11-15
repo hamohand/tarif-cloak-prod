@@ -43,20 +43,23 @@ interface GroupedP4 {
   imports: [CommonModule, FormsModule, RouterLink, CustomsCardComponent],
   template: `
     <div class="search-container">
-      <!-- Bandeau essai gratuit pour visiteurs non connectés -->
+      <!-- Bandeau aperçu découverte pour visiteurs non connectés -->
       @if (!isAuthenticated) {
         <div class="guest-banner">
           <div class="guest-banner-info">
-            <span class="guest-pill">Essai gratuit sans inscription</span>
+            <span class="guest-pill">Aperçu sans compte</span>
             @if ((guestTrialsRemaining$ | async); as rem) {
-              <span>Il vous reste <strong>{{ rem }}</strong> recherche{{ rem > 1 ? 's' : '' }} IA aujourd'hui (décodage SQL toujours illimité).</span>
+              <span>Il vous reste <strong>{{ rem }}</strong> recherche{{ rem > 1 ? 's' : '' }} découverte sans compte aujourd'hui · Ouvrez un compte entreprise gratuit pour continuer.</span>
             } @else if ((guestTrialsRemaining$ | async) === 0) {
-              <span>Vos 2 essais IA du jour sont utilisés. Le décodage SQL reste gratuit et illimité.</span>
+              <span>Votre essai découverte du jour est utilisé · Créez un compte entreprise gratuit ou connectez-vous pour poursuivre.</span>
             } @else {
-              <span>2 recherches IA offertes par jour · Décodage SQL officiel gratuit illimité.</span>
+              <span>1 recherche découverte offerte sans compte · Créez un compte entreprise gratuit pour accéder à votre espace.</span>
             }
           </div>
-          <a routerLink="/auth/register" class="guest-cta">Créer un compte gratuit</a>
+          <div class="guest-actions">
+            <a routerLink="/auth/login" class="guest-login">Se connecter</a>
+            <a routerLink="/auth/register" class="guest-cta">Créer un compte gratuit</a>
+          </div>
         </div>
       }
 
@@ -95,7 +98,10 @@ interface GroupedP4 {
         <div class="error">
           <p>{{ error }}</p>
           @if (!isAuthenticated) {
-            <a routerLink="/auth/register" class="error-cta">Ouvrir un compte gratuit →</a>
+            <div class="error-actions">
+              <a routerLink="/auth/register" class="error-cta">Créer un compte entreprise gratuit →</a>
+              <a routerLink="/auth/login" class="error-link">Se connecter</a>
+            </div>
           }
         </div>
       }
@@ -279,6 +285,25 @@ interface GroupedP4 {
       letter-spacing: 0.04em;
     }
 
+    .guest-actions {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .guest-login {
+      padding: 5px 10px;
+      border-radius: 7px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      color: #CBD5E1;
+      font-weight: 600;
+      font-size: 0.8rem;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .guest-login:hover { color: #F8FAFC; border-color: rgba(255, 255, 255, 0.3); }
+
     .guest-cta {
       padding: 5px 11px;
       border-radius: 7px;
@@ -380,12 +405,24 @@ interface GroupedP4 {
     }
 
     .error p { margin: 0; }
+    .error-actions {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 8px;
+    }
     .error-cta {
       display: inline-block;
-      margin-top: 8px;
       color: #FCD34D;
       font-weight: 700;
       text-decoration: none;
+    }
+    .error-link {
+      color: #CBD5E1;
+      font-weight: 600;
+      font-size: 0.88rem;
+      text-decoration: underline;
     }
 
     .results h3 {
@@ -698,7 +735,7 @@ export class SearchComponent implements OnInit, OnDestroy {
           const justification: string | null = r.justification ?? null;
 
           if (this.endpoint === 'positions10' && aiCode.length === 4) {
-            return defer(() => this.searchService.decodeP10Code(aiCode, this.zone)).pipe(
+            return defer(() => this.searchService.decodeP10Code(aiCode, this.zone, true)).pipe(
               retry(1),
               catchError(() => of(null)),
               switchMap(p4Decoded => {
@@ -710,7 +747,7 @@ export class SearchComponent implements OnInit, OnDestroy {
                   return of([{ decoded: p4Decoded, justification, aiCode } as SearchResultItem]);
                 }
                 const childCalls = hs6List.map(p6 =>
-                  defer(() => this.searchService.decodeP10Code(p6.code.replace(/[^0-9]/g, ''), this.zone)).pipe(
+                  defer(() => this.searchService.decodeP10Code(p6.code.replace(/[^0-9]/g, ''), this.zone, true)).pipe(
                     retry(1),
                     catchError(() => of(null)),
                     map(p6Decoded => {
@@ -738,8 +775,8 @@ export class SearchComponent implements OnInit, OnDestroy {
             : aiCode;
 
           const decode$ = this.endpoint === 'positions10'
-            ? defer(() => this.searchService.decodeP10Code(codeToDecode, this.zone))
-            : defer(() => this.searchService.decodeCode(codeToDecode, this.zone));
+            ? defer(() => this.searchService.decodeP10Code(codeToDecode, this.zone, true))
+            : defer(() => this.searchService.decodeCode(codeToDecode, this.zone, true));
 
           return decode$.pipe(
             retry(1),

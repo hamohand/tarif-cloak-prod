@@ -104,7 +104,7 @@ public class PendingRegistrationService {
         pending.setOrganizationPassword(request.getOrganizationPassword()); // TODO: Hasher si nécessaire
         pending.setOrganizationName(request.getOrganizationName());
         pending.setOrganizationEmail(request.getOrganizationEmail());
-        pending.setOrganizationAddress(request.getOrganizationAddress());
+        pending.setOrganizationAddress(request.getOrganizationAddress() != null ? request.getOrganizationAddress().trim() : "");
         if (request.getOrganizationActivityDomain() != null && !request.getOrganizationActivityDomain().trim().isEmpty()) {
             pending.setOrganizationActivityDomain(request.getOrganizationActivityDomain().trim());
         }
@@ -188,7 +188,7 @@ public class PendingRegistrationService {
         pending.setPassword(temporaryPassword);
         pending.setOrganizationName(organization.getName());
         pending.setOrganizationEmail(organization.getEmail());
-        pending.setOrganizationAddress(organization.getAddress());
+        pending.setOrganizationAddress(organization.getAddress() != null ? organization.getAddress() : "");
         if (organization.getActivityDomain() != null && !organization.getActivityDomain().trim().isEmpty()) {
             pending.setOrganizationActivityDomain(organization.getActivityDomain().trim());
         }
@@ -335,7 +335,7 @@ public class PendingRegistrationService {
                     new com.muhend.backend.organization.dto.CreateOrganizationRequest();
             orgRequest.setName(pending.getOrganizationName());
             orgRequest.setEmail(pending.getOrganizationEmail());
-            orgRequest.setAddress(pending.getOrganizationAddress());
+            orgRequest.setAddress(pending.getOrganizationAddress() != null ? pending.getOrganizationAddress().trim() : "");
             if (pending.getOrganizationActivityDomain() != null && !pending.getOrganizationActivityDomain().trim().isEmpty()) {
                 orgRequest.setActivityDomain(pending.getOrganizationActivityDomain().trim());
             }

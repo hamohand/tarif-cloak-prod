@@ -90,7 +90,7 @@ import { environment } from '../../../environments/environment';
                 Rechercher un code →
               </button>
               @if (!(isAuthenticated$ | async)) {
-                <span class="tri-meta">2 essais gratuits / jour</span>
+                <span class="tri-meta">1 essai découverte</span>
               }
             </div>
           </article>
@@ -109,7 +109,7 @@ import { environment } from '../../../environments/environment';
                 (click)="openDecoder(false)">
                 Décoder un code →
               </button>
-              <span class="tri-meta free">Accès libre</span>
+              <span class="tri-meta free">{{ (isAuthenticated$ | async) ? 'Gratuit illimité' : 'Aperçu · Gratuit sur compte' }}</span>
             </div>
           </article>
 
@@ -127,7 +127,7 @@ import { environment } from '../../../environments/environment';
                 (click)="openDecoder(true)">
                 Comparer DZ ↔ UE →
               </button>
-              <span class="tri-meta free">Accès libre</span>
+              <span class="tri-meta free">{{ (isAuthenticated$ | async) ? 'Gratuit illimité' : 'Aperçu · Gratuit sur compte' }}</span>
             </div>
           </article>
         </div>
@@ -137,13 +137,13 @@ import { environment } from '../../../environments/environment';
       @if (!(isAuthenticated$ | async)) {
         <section class="guest-strip" aria-label="Compte et documentation">
           <p class="guest-copy">
-            Accès immédiat sans inscription · Ouvrez un compte pour disposer d'un quota étendu de recherches.
+            Aperçu immédiat sans inscription · Créez gratuitement votre compte entreprise pour accéder sans limite au décodage et à la comparaison.
           </p>
           <div class="guest-actions">
-            @if (isBetaMode) {
-              <a routerLink="/auth/register" class="strip-btn primary">Créer un compte gratuit</a>
-            } @else {
-              <a routerLink="/pricing" class="strip-btn primary">Voir les tarifs</a>
+            <a routerLink="/auth/register" class="strip-btn primary">Créer un compte gratuit</a>
+            <a routerLink="/auth/login" class="strip-btn ghost">Se connecter</a>
+            @if (!isBetaMode) {
+              <a routerLink="/pricing" class="strip-btn ghost">Tarifs</a>
             }
             <a routerLink="/aide" class="strip-btn ghost">Guide</a>
           </div>

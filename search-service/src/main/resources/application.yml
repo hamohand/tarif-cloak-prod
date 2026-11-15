@@ -1,5 +1,7 @@
 server:
   port: 8082
+  error:
+    include-message: always
 
 spring:
   application:
@@ -136,7 +138,7 @@ cors:
 
 guest:
   trial:
-    max-per-ip-per-day: ${GUEST_TRIAL_MAX_PER_IP_PER_DAY:2}
+    max-per-ip-per-day: ${GUEST_TRIAL_MAX_PER_IP_PER_DAY:1}
     global-daily-limit: ${GUEST_TRIAL_GLOBAL_DAILY_LIMIT:100}
 
 # Logging

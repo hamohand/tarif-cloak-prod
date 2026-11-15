@@ -1,6 +1,7 @@
 import { Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { OAuthService } from 'angular-oauth2-oidc';
 import { Subscription } from 'rxjs';
 import { DecodeCodeItem, DecodeResult, Hs6ComparisonResult, SearchService } from '../services/search.service';
@@ -10,9 +11,28 @@ import { CustomsCardComponent } from '../components/customs-card/customs-card.co
 @Component({
   selector: 'app-decode-p10',
   standalone: true,
-  imports: [CommonModule, FormsModule, CustomsCardComponent],
+  imports: [CommonModule, FormsModule, RouterLink, CustomsCardComponent],
   template: `
     <div class="decode-container" [class.compare-wide]="compareMode">
+      @if (!isAuthenticated) {
+        <div class="guest-banner">
+          <div class="guest-banner-info">
+            <span class="guest-pill">Aperçu sans compte</span>
+            @if ((guestDecodesRemaining$ | async); as rem) {
+              <span>Il vous reste <strong>{{ rem }}</strong> consultation{{ rem > 1 ? 's' : '' }} découverte aujourd'hui · <strong>Gratuit et illimité</strong> sur compte entreprise connecté.</span>
+            } @else if ((guestDecodesRemaining$ | async) === 0) {
+              <span>Vos 3 aperçus sans compte du jour sont utilisés · Connectez-vous ou créez gratuitement votre compte entreprise pour un accès illimité.</span>
+            } @else {
+              <span>3 consultations découverte sans compte · Gratuit et illimité dès connexion à votre compte entreprise.</span>
+            }
+          </div>
+          <div class="guest-actions">
+            <a routerLink="/auth/login" class="guest-login">Se connecter</a>
+            <a routerLink="/auth/register" class="guest-cta">Créer un compte gratuit</a>
+          </div>
+        </div>
+      }
+
       @if (!compareMode) {
         <div class="search-form">
           <input
@@ -34,7 +54,7 @@ import { CustomsCardComponent } from '../components/customs-card/customs-card.co
         </div>
 
         <div class="quick-bar">
-          <span class="examples-label">Décodage SQL gratuit (2 à 10 chiffres) · Exemples :</span>
+          <span class="examples-label">{{ isAuthenticated ? 'Décodage officiel gratuit & illimité (2 à 10 chiffres) · Exemples :' : 'Décodage officiel (2 à 10 chiffres) · Exemples :' }}</span>
           @for (ex of decodeExamples; track ex) {
             <button type="button" class="example-chip mono" (click)="quickDecode(ex)">{{ ex }}</button>
           }
@@ -45,7 +65,15 @@ import { CustomsCardComponent } from '../components/customs-card/customs-card.co
         }
 
         @if (error) {
-          <div class="error">{{ error }}</div>
+          <div class="error">
+            <p>{{ error }}</p>
+            @if (!isAuthenticated) {
+              <div class="error-actions">
+                <a routerLink="/auth/register" class="error-cta">Créer un compte entreprise gratuit →</a>
+                <a routerLink="/auth/login" class="error-link">Se connecter</a>
+              </div>
+            }
+          </div>
         }
 
         @if (result && !isLoading) {
@@ -252,7 +280,15 @@ import { CustomsCardComponent } from '../components/customs-card/customs-card.co
         }
 
         @if (compareError) {
-          <div class="error">{{ compareError }}</div>
+          <div class="error">
+            <p>{{ compareError }}</p>
+            @if (!isAuthenticated) {
+              <div class="error-actions">
+                <a routerLink="/auth/register" class="error-cta">Créer un compte entreprise gratuit →</a>
+                <a routerLink="/auth/login" class="error-link">Se connecter</a>
+              </div>
+            }
+          </div>
         }
 
         @if (compareResult && !compareLoading) {
@@ -380,6 +416,57 @@ import { CustomsCardComponent } from '../components/customs-card/customs-card.co
       to { opacity: 1; transform: translateY(0); }
     }
 
+    .guest-banner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 10px 14px;
+      margin-bottom: 14px;
+      border-radius: 10px;
+      background: rgba(16, 185, 129, 0.08);
+      border: 1px solid rgba(16, 185, 129, 0.28);
+      color: #CBD5E1;
+      font-size: 0.85rem;
+    }
+
+    .guest-banner-info, .guest-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+
+    .guest-pill {
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(16, 185, 129, 0.2);
+      color: #34D399;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .guest-login {
+      padding: 5px 10px;
+      border-radius: 7px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      color: #CBD5E1;
+      font-weight: 600;
+      font-size: 0.8rem;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .guest-login:hover { color: #F8FAFC; border-color: rgba(255, 255, 255, 0.3); }
+
+    .guest-cta {
+      padding: 5px 11px;
+      border-radius: 7px;
+      background: #10B981;
+      color: #070B14;
+      font-weight: 700;
+      font-size: 0.8rem;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
     .search-form {
       display: flex;
       margin-bottom: 10px;
@@ -477,6 +564,11 @@ import { CustomsCardComponent } from '../components/customs-card/customs-card.co
       padding: 13px 16px;
       border-radius: 10px;
     }
+
+    .error p { margin: 0; }
+    .error-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 8px; }
+    .error-cta { color: #34D399; font-weight: 700; text-decoration: none; }
+    .error-link { color: #CBD5E1; font-weight: 600; font-size: 0.88rem; text-decoration: underline; }
 
     .results {
       background: #0D1421;
@@ -729,6 +821,12 @@ export class DecodeP10Component implements OnInit, OnDestroy {
   private zoneSub?: Subscription;
   private compareSub?: Subscription;
 
+  guestDecodesRemaining$ = this.searchService.guestDecodesRemaining$;
+
+  get isAuthenticated(): boolean {
+    return this.oauthService.hasValidAccessToken();
+  }
+
   get decodeExamples(): string[] {
     return this.zone === 'EU' ? this.decodeExamplesEu : this.decodeExamplesDz;
   }
@@ -740,6 +838,10 @@ export class DecodeP10Component implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.compareMode = this.state.compareMode;
+
+    if (!this.isAuthenticated) {
+      this.searchService.getGuestDecodeQuota().subscribe({ error: () => {} });
+    }
 
     this.zoneSub = this.state.selectedZone$.subscribe(z => {
       this.zone = z;

@@ -59,8 +59,8 @@ public class SecurityConfig {
                 .filter(s -> !s.isEmpty())
                 .toList());
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With"));
-        configuration.setExposedHeaders(List.of("X-Guest-Trials-Remaining"));
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With", "X-Guest-Search-Pass"));
+        configuration.setExposedHeaders(List.of("X-Guest-Trials-Remaining", "X-Guest-Search-Pass"));
         configuration.setAllowCredentials(true);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

@@ -12,7 +12,7 @@ import { SearchStateService } from '../services/search-state.service';
   template: `
     <div class="decode-container">
       <div class="free-badge-row">
-        <span class="free-pill">Décodage SQL officiel · 100 % gratuit &amp; sans crédit</span>
+        <span class="free-pill">Décodage officiel SH (2 à 6 chiffres) · Gratuit illimité sur compte connecté</span>
       </div>
 
       <div class="search-form">

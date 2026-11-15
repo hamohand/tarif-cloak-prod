@@ -17,7 +17,7 @@ import { take } from 'rxjs/operators';
     <div class="register-container">
       <div class="register-card">
         <h2>Créer un compte organisation</h2>
-        <p>Ce compte administrateur gérera l'ensemble de vos collaborateurs.</p>
+        <p>Décodage et comparaison gratuits en illimité (DZ · UE), essai de recherche assistée offert et gestion de vos collaborateurs.</p>
 
         <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="register-form">
           <div class="form-section">
@@ -73,13 +73,13 @@ import { take } from 'rxjs/operators';
             </div>
 
             <div class="form-group">
-              <label for="organizationActivityDomain">Domaine d'activité</label>
+              <label for="organizationActivityDomain">Domaine d'activité *</label>
               <select
                 id="organizationActivityDomain"
                 formControlName="organizationActivityDomain"
                 class="form-control"
                 [class.error]="isFieldInvalid('organizationActivityDomain')">
-                <option [value]="null">Sélectionner un domaine</option>
+                <option value="">Sélectionner votre secteur d'activité</option>
                 <option value="Sociétés de négoce international (Trading Companies)">Sociétés de négoce international (Trading Companies)</option>
                 <option value="Sociétés de transport et logistique">Sociétés de transport et logistique</option>
                 <option value="Sociétés de transit et de commissionnaire en douane">Sociétés de transit et de commissionnaire en douane</option>
@@ -95,14 +95,14 @@ import { take } from 'rxjs/operators';
             </div>
 
             <div class="form-group">
-              <label for="organizationAddress">Adresse complète *</label>
+              <label for="organizationAddress">Adresse ou ville (facultatif)</label>
               <textarea
                 id="organizationAddress"
-                rows="3"
+                rows="2"
                 formControlName="organizationAddress"
                 class="form-control"
                 [class.error]="isFieldInvalid('organizationAddress')"
-                placeholder="Numéro, rue \ncode postal ville \n{{ selectedMarketProfile?.countryName }}"></textarea>
+                placeholder="Ville, quartier ou adresse complète (facultatif)"></textarea>
               <div class="error-message" *ngIf="isFieldInvalid('organizationAddress')">
                 {{ getErrorMessage('organizationAddress') }}
               </div>
@@ -190,9 +190,13 @@ import { take } from 'rxjs/operators';
           <div class="form-section">
             <div class="form-group">
               <div class="pricing-info-bar">
-                Vous bénéficierez automatiquement d'un plan d'essai gratuit à l'inscription.
+                Vous bénéficierez automatiquement de l'accès illimité au décodage et à la comparaison, plus votre essai de recherche assistée.
               </div>
             </div>
+            <label class="consent-row" for="marketingConsent">
+              <input id="marketingConsent" type="checkbox" formControlName="marketingConsent">
+              <span>J'accepte de recevoir les mises à jour réglementaires (nomenclatures DZ / UE) et les évolutions du service TCI.</span>
+            </label>
           </div>
 
           <div class="form-actions">
@@ -383,7 +387,26 @@ import { take } from 'rxjs/operators';
 
     textarea.form-control {
       resize: vertical;
-      min-height: 80px;
+      min-height: 64px;
+    }
+
+    .consent-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.65rem;
+      margin-top: 1rem;
+      font-weight: 500;
+      font-size: 0.88rem;
+      color: var(--neu-text-muted);
+      cursor: pointer;
+    }
+
+    .consent-row input[type="checkbox"] {
+      margin-top: 0.2rem;
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+      accent-color: var(--neu-accent);
     }
 
     .error-message {
@@ -635,12 +658,13 @@ export class RegisterComponent implements OnInit {
     marketVersion: [null, [Validators.required]],
     organizationName: ['', [Validators.required, Validators.minLength(1), Validators.maxLength(255)]],
     organizationEmail: ['', [Validators.required, Validators.email, Validators.maxLength(255)]],
-    organizationAddress: ['', [Validators.required, Validators.minLength(5), Validators.maxLength(512)]],
-    organizationActivityDomain: [null],
+    organizationAddress: ['', [Validators.maxLength(512)]],
+    organizationActivityDomain: ['', [Validators.required]],
     organizationCountry: ['', [Validators.required, Validators.pattern(/^[A-Za-z]{2}$/)]],
     organizationPhone: ['', [Validators.required, Validators.pattern(/^[+0-9\s().-]{5,32}$/)]],
     organizationPassword: ['', [Validators.required, Validators.minLength(8)]],
     organizationConfirmPassword: ['', [Validators.required]],
+    marketingConsent: [false],
     pricingPlanId: [null]
   }, {
     validators: [this.organizationPasswordMatchValidator]
@@ -813,6 +837,7 @@ export class RegisterComponent implements OnInit {
     const organizationCountry = (formValue.organizationCountry || '').toUpperCase();
     const organizationPassword = formValue.organizationPassword || '';
 
+    const currentMarketVersion = formValue.marketVersion || environment.marketVersion || null;
     const payload = {
       username: organizationEmail,
       email: organizationEmail,
@@ -821,13 +846,14 @@ export class RegisterComponent implements OnInit {
       lastName: '',
       organizationName: formValue.organizationName,
       organizationEmail,
-      organizationAddress: formValue.organizationAddress,
+      organizationAddress: (formValue.organizationAddress || '').trim(),
       organizationActivityDomain: formValue.organizationActivityDomain || null,
       organizationCountry,
       organizationPhone: formValue.organizationPhone,
       organizationPassword,
       pricingPlanId: formValue.pricingPlanId || null,
-      marketVersion: formValue.marketVersion || null
+      marketVersion: currentMarketVersion,
+      marketingConsent: !!formValue.marketingConsent
     };
 
     this.registerService.registerUser(payload).subscribe({
@@ -835,7 +861,14 @@ export class RegisterComponent implements OnInit {
         this.isLoading = false;
         const orgEmail = response.organizationEmail || organizationEmail;
         this.successMessage = response.message || `Un email de confirmation a été envoyé à ${orgEmail}.`;
-        this.registerForm.reset({ pricingPlanId: null });
+        this.registerForm.reset({
+          marketVersion: currentMarketVersion,
+          organizationCountry: this.selectedMarketProfile?.countryCodeIsoAlpha2 || '',
+          organizationPhone: this.selectedMarketProfile ? `${this.selectedMarketProfile.phonePrefix} ` : '',
+          organizationActivityDomain: '',
+          marketingConsent: false,
+          pricingPlanId: null
+        });
       },
       error: (error) => {
         this.isLoading = false;

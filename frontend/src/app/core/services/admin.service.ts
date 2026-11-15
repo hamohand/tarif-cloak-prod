@@ -51,6 +51,11 @@ export interface Organization {
   id: number;
   name: string;
   email?: string | null;
+  address?: string | null;
+  activityDomain?: string | null;
+  country?: string | null;
+  phone?: string | null;
+  marketVersion?: string | null;
   monthlyQuota?: number | null;
   enabled?: boolean; // false = organisation désactivée
   createdAt: string;

@@ -79,7 +79,7 @@ public class OrganizationService {
         Organization organization = new Organization();
         organization.setName(request.getName());
         organization.setEmail(request.getEmail().trim());
-        organization.setAddress(request.getAddress().trim());
+        organization.setAddress(request.getAddress() != null ? request.getAddress().trim() : "");
         if (request.getActivityDomain() != null && !request.getActivityDomain().trim().isEmpty()) {
             organization.setActivityDomain(request.getActivityDomain().trim());
         }

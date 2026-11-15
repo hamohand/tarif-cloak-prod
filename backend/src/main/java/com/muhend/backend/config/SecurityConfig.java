@@ -117,6 +117,7 @@ public class SecurityConfig {
             "Content-Type", 
             "Content-Disposition",
             "X-Total-Count",
+            "X-Guest-Decode-Remaining",
             "Access-Control-Allow-Origin",
             "Access-Control-Allow-Credentials"
         ));

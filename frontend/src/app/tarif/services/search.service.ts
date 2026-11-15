@@ -71,7 +71,9 @@ export class SearchService {
   private decodeP10ApiUrl = '/api/decode-p10';
 
   readonly guestTrialsRemaining$ = new BehaviorSubject<number | null>(null);
+  readonly guestDecodesRemaining$ = new BehaviorSubject<number | null>(null);
 
+  private lastGuestSearchPass: { token: string; expiresAtMs: number } | null = null;
   private decodeCache = new Map<string, Observable<DecodeResult>>();
   private decodeP10Cache = new Map<string, Observable<DecodeResult>>();
   private compareCache = new Map<string, Observable<Hs6ComparisonResult>>();
@@ -81,7 +83,7 @@ export class SearchService {
   getGuestQuota(): Observable<GuestQuotaStatus> {
     return this.http.get<GuestQuotaStatus>(`${this.apiUrl}/guest-quota`).pipe(
       tap(status => {
-        if (typeof status?.remaining === 'number') {
+        if (typeof status?.remaining === 'number' && status.remaining >= 0) {
           this.guestTrialsRemaining$.next(status.remaining);
         }
       }),
@@ -89,7 +91,18 @@ export class SearchService {
     );
   }
 
-  decodeCode(code: string, zone: string = 'DZ'): Observable<DecodeResult> {
+  getGuestDecodeQuota(): Observable<GuestQuotaStatus> {
+    return this.http.get<GuestQuotaStatus>(`${this.decodeP10ApiUrl}/guest-quota`).pipe(
+      tap(status => {
+        if (typeof status?.remaining === 'number' && status.remaining >= 0) {
+          this.guestDecodesRemaining$.next(status.remaining);
+        }
+      }),
+      catchError(err => this.handleError(err))
+    );
+  }
+
+  decodeCode(code: string, zone: string = 'DZ', forSearchEnrichment: boolean = false): Observable<DecodeResult> {
     const normZone = (zone || 'DZ').trim().toUpperCase();
     const key = `${normZone}:${code.trim().replace(/\s+/g, '')}`;
     const cached = this.decodeCache.get(key);
@@ -97,9 +110,14 @@ export class SearchService {
       return cached;
     }
 
+    const headers = forSearchEnrichment ? this.getActiveGuestPassHeaders() : undefined;
     const req$ = this.http.get<DecodeResult>(this.decodeApiUrl, {
-      params: { code, zone: normZone }
+      params: { code, zone: normZone },
+      ...(headers ? { headers } : {}),
+      observe: 'response'
     }).pipe(
+      tap(resp => this.captureDecodeRemainingHeader(resp)),
+      map(resp => resp.body as DecodeResult),
       catchError(err => {
         this.decodeCache.delete(key);
         return this.handleError(err);
@@ -110,7 +128,7 @@ export class SearchService {
     return req$;
   }
 
-  decodeP10Code(code: string, zone: string = 'DZ'): Observable<DecodeResult> {
+  decodeP10Code(code: string, zone: string = 'DZ', forSearchEnrichment: boolean = false): Observable<DecodeResult> {
     const normZone = (zone || 'DZ').trim().toUpperCase();
     const key = `${normZone}:${code.trim().replace(/\s+/g, '')}`;
     const cached = this.decodeP10Cache.get(key);
@@ -118,9 +136,14 @@ export class SearchService {
       return cached;
     }
 
+    const headers = forSearchEnrichment ? this.getActiveGuestPassHeaders() : undefined;
     const req$ = this.http.get<DecodeResult>(this.decodeP10ApiUrl, {
-      params: { code, zone: normZone }
+      params: { code, zone: normZone },
+      ...(headers ? { headers } : {}),
+      observe: 'response'
     }).pipe(
+      tap(resp => this.captureDecodeRemainingHeader(resp)),
+      map(resp => resp.body as DecodeResult),
       catchError(err => {
         this.decodeP10Cache.delete(key);
         return this.handleError(err);
@@ -141,8 +164,11 @@ export class SearchService {
     }
 
     const req$ = this.http.get<Hs6ComparisonResult>(`${this.decodeP10ApiUrl}/compare`, {
-      params: { code: trimmed }
+      params: { code: trimmed },
+      observe: 'response'
     }).pipe(
+      tap(resp => this.captureDecodeRemainingHeader(resp)),
+      map(resp => resp.body as Hs6ComparisonResult),
       catchError(err => {
         this.compareCache.delete(key);
         return this.handleError(err);
@@ -170,6 +196,13 @@ export class SearchService {
             this.guestTrialsRemaining$.next(parsed);
           }
         }
+        const passVal = resp.headers.get('X-Guest-Search-Pass');
+        if (passVal && passVal.trim().length > 0) {
+          this.lastGuestSearchPass = {
+            token: passVal.trim(),
+            expiresAtMs: Date.now() + 115_000
+          };
+        }
       }),
       map((resp: HttpResponse<any[]>) => {
         const body = resp.body;
@@ -181,6 +214,27 @@ export class SearchService {
       }),
       catchError(err => this.handleError(err))
     );
+  }
+
+  private getActiveGuestPassHeaders(): Record<string, string> | undefined {
+    if (!this.lastGuestSearchPass) {
+      return undefined;
+    }
+    if (Date.now() >= this.lastGuestSearchPass.expiresAtMs) {
+      this.lastGuestSearchPass = null;
+      return undefined;
+    }
+    return { 'X-Guest-Search-Pass': this.lastGuestSearchPass.token };
+  }
+
+  private captureDecodeRemainingHeader(resp: HttpResponse<any>): void {
+    const headerVal = resp.headers.get('X-Guest-Decode-Remaining');
+    if (headerVal !== null) {
+      const parsed = Number(headerVal);
+      if (!Number.isNaN(parsed)) {
+        this.guestDecodesRemaining$.next(parsed);
+      }
+    }
   }
 
   convertFile(file: File): Observable<string> {
@@ -211,6 +265,9 @@ export class SearchService {
     } else if (error.status === 429) {
       if (backendMessage && backendMessage.includes('Essai gratuit')) {
         this.guestTrialsRemaining$.next(0);
+        errorMessage = backendMessage;
+      } else if (backendMessage && backendMessage.includes('Aperçu découverte')) {
+        this.guestDecodesRemaining$.next(0);
         errorMessage = backendMessage;
       } else if (backendMessage) {
         errorMessage = backendMessage;

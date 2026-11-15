@@ -76,6 +76,29 @@ class UsageAndGuestTrialTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    void guestTrialSingleLimitUsesSingularMessageAndIssuesEnrichmentPass() {
+        ObjectProvider<StringRedisTemplate> redisProvider = mock(ObjectProvider.class);
+        when(redisProvider.getIfAvailable()).thenReturn(null);
+
+        GuestTrialService service = new GuestTrialService(redisProvider, 1, 10, "unit-test-secret");
+        GuestTrialService.TrialStatus first = service.tryConsumeTrial("198.51.100.9");
+        assertTrue(first.allowed());
+        assertEquals(0, first.remaining());
+
+        GuestTrialService.TrialStatus second = service.tryConsumeTrial("198.51.100.9");
+        assertFalse(second.allowed());
+        assertTrue(second.reason().startsWith("Essai gratuit épuisé (1 recherche découverte"));
+
+        String pass = service.issueEnrichmentPass("198.51.100.9");
+        assertNotNull(pass);
+        String[] parts = pass.split("\\.");
+        assertEquals(2, parts.length);
+        assertTrue(Long.parseLong(parts[0]) > 0);
+        assertEquals(64, parts[1].length());
+    }
+
+    @Test
     void tariffPositionServiceReconstructsAncestorTitlesAndSkipsDashlessHeaders() {
         TariffPositionRepository repo = mock(TariffPositionRepository.class);
         when(repo.findByZoneCodeAndPos4CodeOrderByRowOrderAsc("DZ", "0101")).thenReturn(List.of(

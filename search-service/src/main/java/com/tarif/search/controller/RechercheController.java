@@ -115,6 +115,7 @@ public class RechercheController {
                 }
                 if (response != null) {
                     response.setHeader("X-Guest-Trials-Remaining", String.valueOf(trial.remaining()));
+                    response.setHeader("X-Guest-Search-Pass", guestTrialService.issueEnrichmentPass(clientIp));
                 }
             }
 

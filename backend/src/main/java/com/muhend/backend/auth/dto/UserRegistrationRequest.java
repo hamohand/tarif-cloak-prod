@@ -32,9 +32,10 @@ public class UserRegistrationRequest {
     @Size(max = 255, message = "L'email de l'organisation doit contenir au maximum 255 caractères")
     private String organizationEmail; // Obligatoire et utilisé comme identifiant unique
     
-    @NotBlank(message = "L'adresse de l'organisation est obligatoire")
-    @Size(min = 5, max = 512, message = "L'adresse doit contenir entre 5 et 512 caractères")
+    @Size(max = 512, message = "L'adresse doit contenir au maximum 512 caractères")
     private String organizationAddress;
+
+    private Boolean marketingConsent; // Opt-in actualités réglementaires (optionnel)
     
     @Size(max = 255, message = "Le domaine d'activité doit contenir au maximum 255 caractères")
     private String organizationActivityDomain; // Domaine d'activité (optionnel)

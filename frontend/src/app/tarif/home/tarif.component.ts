@@ -44,12 +44,12 @@ import { environment } from '../../../environments/environment';
       <nav class="workspace-nav" aria-label="Modes de recherche et décodage">
         <a routerLink="search-position10" routerLinkActive="active" class="nav-pill">
           <span>Recherche {{ (state.selectedZone$ | async) === 'EU' ? 'NC8 (UE)' : 'P10 (DZ)' }}</span>
-          <span class="badge-cost">{{ (isAuthenticated$ | async) ? '15 cr' : 'IA · 2 essais' }}</span>
+          <span class="badge-cost">{{ (isAuthenticated$ | async) ? '15 cr' : '1 essai' }}</span>
         </a>
 
         <a routerLink="search" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-pill">
           <span>HS-06 International</span>
-          <span class="badge-cost">{{ (isAuthenticated$ | async) ? '10 cr' : 'IA · Essai' }}</span>
+          <span class="badge-cost">{{ (isAuthenticated$ | async) ? '10 cr' : 'Essai' }}</span>
         </a>
 
         @if ((isAuthenticated$ | async) && !isBetaMode) {
@@ -70,7 +70,7 @@ import { environment } from '../../../environments/environment';
            [class.active]="rlaDecode.isActive && !(state.compareMode$ | async)"
            (click)="state.compareMode = false">
           <span>Décodeur par code</span>
-          <span class="badge-free">Gratuit</span>
+          <span class="badge-free">{{ (isAuthenticated$ | async) ? 'Gratuit' : 'Aperçu · 3/j' }}</span>
         </a>
 
         <button type="button"
@@ -78,7 +78,7 @@ import { environment } from '../../../environments/environment';
                 [class.active]="rlaDecode.isActive && (state.compareMode$ | async) === true"
                 (click)="openComparator()">
           <span>⇄ Comparateur DZ ↔ UE</span>
-          <span class="badge-free">Gratuit</span>
+          <span class="badge-free">{{ (isAuthenticated$ | async) ? 'Gratuit' : 'Aperçu · 3/j' }}</span>
         </button>
       </nav>
 
