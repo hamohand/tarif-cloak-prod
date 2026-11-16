@@ -1,7 +1,11 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ActivatedRoute } from '@angular/router';
+import { take } from 'rxjs/operators';
 import { QuoteRequestService, QuoteRequestDto } from '../../core/services/quote-request.service';
 import { OrganizationAccountService, OrganizationInfo } from '../../core/services/organization-account.service';
+import { PricingPlanService } from '../../core/services/pricing-plan.service';
+import { CurrencyService } from '../../core/services/currency.service';
 import { QuoteRequestFormComponent } from '../pricing/quote-request-form.component';
 
 @Component({
@@ -11,11 +15,17 @@ import { QuoteRequestFormComponent } from '../pricing/quote-request-form.compone
   template: `
     <div class="quote-requests-container">
       <div class="header">
-        <h2>Mes demandes de devis</h2>
+        <h2>Mes demandes d'activation &amp; devis</h2>
         <button class="btn btn-primary" (click)="openNewRequest()" *ngIf="organization">
           Nouvelle demande
         </button>
       </div>
+
+      @if (isInvoiceMode) {
+        <div class="invoice-fallback-banner">
+          <strong>Activation sur facture / virement bancaire (SEPA / SWIFT)</strong> — Envoyez la demande pré-remplie ci-dessous : nous vous transmettons votre facture proforma ainsi que nos coordonnées bancaires et activons votre forfait dès réception.
+        </div>
+      }
 
       @if (loading) {
         <div class="loading">Chargement des demandes...</div>
@@ -74,6 +84,11 @@ import { QuoteRequestFormComponent } from '../pricing/quote-request-form.compone
 
     <app-quote-request-form
       [showForm]="showQuoteForm"
+      [modalTitle]="modalTitle"
+      [submitLabel]="isInvoiceMode ? 'Envoyer la demande d\\'activation' : 'Envoyer la demande'"
+      [defaultContactName]="organization?.name || ''"
+      [defaultContactEmail]="organization?.email || ''"
+      [defaultMessage]="prefilledMessage"
       (formClosed)="closeQuoteForm()"
       (quoteSubmitted)="onQuoteSubmitted()">
     </app-quote-request-form>
@@ -120,6 +135,18 @@ import { QuoteRequestFormComponent } from '../pricing/quote-request-form.compone
       color: var(--neu-text-heading);
       font-family: var(--font-display);
       margin: 0;
+    }
+
+    .invoice-fallback-banner {
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.5rem;
+      border-radius: var(--neu-radius-inner);
+      background: var(--neu-bg);
+      box-shadow: var(--neu-inset);
+      color: var(--neu-text-primary);
+      border-left: 4px solid var(--neu-accent);
+      font-size: 0.95rem;
+      line-height: 1.5;
     }
 
     .btn {
@@ -342,12 +369,18 @@ import { QuoteRequestFormComponent } from '../pricing/quote-request-form.compone
 export class QuoteRequestsComponent implements OnInit {
   private quoteRequestService = inject(QuoteRequestService);
   private organizationAccountService = inject(OrganizationAccountService);
+  private pricingPlanService = inject(PricingPlanService);
+  private currencyService = inject(CurrencyService);
+  private route = inject(ActivatedRoute);
 
   quoteRequests: QuoteRequestDto[] = [];
   organization: OrganizationInfo | null = null;
   loading = true;
   error = '';
   showQuoteForm = false;
+  isInvoiceMode = false;
+  modalTitle = 'Demander un devis personnalisé';
+  prefilledMessage = '';
 
   ngOnInit() {
     this.loadOrganization();
@@ -358,11 +391,50 @@ export class QuoteRequestsComponent implements OnInit {
       next: (org) => {
         this.organization = org;
         this.loadQuoteRequests();
+        this.checkInvoiceFallbackParams();
       },
       error: (err) => {
         console.error('Erreur lors du chargement de l\'organisation:', err);
         this.error = 'Impossible de charger les informations de l\'organisation.';
         this.loading = false;
+      }
+    });
+  }
+
+  private checkInvoiceFallbackParams() {
+    this.route.queryParams.pipe(take(1)).subscribe(params => {
+      if (params['mode'] !== 'invoice') {
+        return;
+      }
+      this.isInvoiceMode = true;
+      this.modalTitle = 'Activer un forfait sur facture / virement';
+      const planId = params['planId'] ? +params['planId'] : null;
+      const invoiceId = params['invoiceId'] ? +params['invoiceId'] : null;
+
+      if (planId && !Number.isNaN(planId)) {
+        this.pricingPlanService.getPricingPlanById(planId).subscribe({
+          next: (plan) => {
+            const sym = this.currencyService.getSymbolForCurrency(plan.currency);
+            const annualPart = plan.pricePerYear ? ` ou ${plan.pricePerYear} ${sym}/an` : '';
+            this.prefilledMessage =
+              `Demande d'activation sur facture / virement bancaire :\n` +
+              `- Forfait souhaité : ${plan.name} (${plan.pricePerMonth ?? ''} ${sym}/mois${annualPart})\n` +
+              `- Entreprise : ${this.organization?.name || ''} (${this.organization?.country || ''})\n` +
+              `- Périodicité souhaitée : annuelle / mensuelle\n` +
+              `- N° TVA intracommunautaire / référence bon de commande (facultatif) : `;
+            this.showQuoteForm = true;
+          },
+          error: () => {
+            this.prefilledMessage = `Demande d'activation sur facture / virement pour le plan #${planId}.`;
+            this.showQuoteForm = true;
+          }
+        });
+      } else if (invoiceId && !Number.isNaN(invoiceId)) {
+        this.prefilledMessage =
+          `Demande de coordonnées bancaires (RIB / IBAN) pour régler la facture #${invoiceId} par virement.`;
+        this.showQuoteForm = true;
+      } else {
+        this.showQuoteForm = true;
       }
     });
   }

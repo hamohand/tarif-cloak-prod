@@ -67,6 +67,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/market-profiles/**").permitAll()
                 // Décodage tarifaire SQL gratuit (public avec limitation de débit par IP)
                 .requestMatchers(HttpMethod.GET, "/decode/**", "/decode-p10/**").permitAll()
+                // Statut des passerelles de paiement (public)
+                .requestMatchers(HttpMethod.GET, "/payments/providers-status").permitAll()
                 // Endpoint de recherche accessible aux utilisateurs avec le rôle USER ou ADMIN
                 .requestMatchers("/recherche/**").hasAnyRole("USER", "ADMIN")
                 // Tous les autres endpoints nécessitent une authentification

@@ -1,14 +1,14 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule, AsyncPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { UserService, UserUsageStats, UserQuota, Organization } from '../../core/services/user.service';
 import { AuthService } from '../../core/services/auth.service';
 import { PricingPlanService, PricingPlan } from '../../core/services/pricing-plan.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { OrganizationAccountService, OrganizationUsageLog } from '../../core/services/organization-account.service';
 import { CurrencyService } from '../../core/services/currency.service';
-import { PaymentService } from '../../core/services/payment.service';
+import { PaymentService, PaymentProvidersStatus } from '../../core/services/payment.service';
 import { Chart, ChartConfiguration, registerables } from 'chart.js';
 import { take } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
@@ -276,9 +276,9 @@ Chart.register(...registerables);
               </button>
               <button class="btn btn-primary" [class.btn-required]="organization && organization.trialPermanentlyExpired" (click)="changePricingPlan()" [disabled]="isChangingPlan">
                 @if (isChangingPlan) {
-                  <span>Redirection en cours...</span>
+                  <span>Traitement en cours...</span>
                 } @else if (selectedPlanForConfirmation && ((selectedPlanForConfirmation.pricePerMonth != null && selectedPlanForConfirmation.pricePerMonth > 0) || (selectedPlanForConfirmation.pricePerRequest != null && selectedPlanForConfirmation.pricePerRequest > 0))) {
-                  <span>Payer et activer le plan</span>
+                  <span>{{ isOnlinePaymentAvailable(selectedPlanForConfirmation) ? 'Payer et activer le plan' : "Demander l'activation sur facture" }}</span>
                 } @else if (organization && organization.trialPermanentlyExpired) {
                   <span>Valider le plan</span>
                 } @else {
@@ -444,6 +444,9 @@ export class OrganizationStatsComponent implements OnInit {
   private organizationAccountService = inject(OrganizationAccountService);
   private currencyService = inject(CurrencyService);
   private paymentService = inject(PaymentService);
+  private router = inject(Router);
+
+  providersStatus: PaymentProvidersStatus = { chargilyConfigured: true, stripeConfigured: false };
 
   organization: Organization | null = null;
   currencySymbol$ = this.currencyService.getCurrencySymbol();
@@ -499,6 +502,9 @@ export class OrganizationStatsComponent implements OnInit {
 
     this.loadOrganization();
     this.loadQuota();
+    this.paymentService.getProvidersStatus().subscribe(status => {
+      this.providersStatus = status;
+    });
     // Charger les logs d'utilisation qui recalculeront automatiquement les stats
     this.loadOrganizationUsageLogs();
   }
@@ -672,6 +678,13 @@ export class OrganizationStatsComponent implements OnInit {
         this.loadingPlans = false;
       }
     });
+  }
+
+  isOnlinePaymentAvailable(plan?: PricingPlan | null): boolean {
+    const isDz = (plan?.currency || '').toUpperCase() === 'DZD'
+      || (plan?.marketVersion || '').toUpperCase() === 'DZ'
+      || (!plan && this.organization?.marketVersion?.toUpperCase() === 'DZ');
+    return isDz ? this.providersStatus.chargilyConfigured : this.providersStatus.stripeConfigured;
   }
 
   getPlanCurrencySymbol(plan?: PricingPlan | null): string {
@@ -850,17 +863,19 @@ export class OrganizationStatsComponent implements OnInit {
         (this.selectedPlanForConfirmation.pricePerRequest != null && this.selectedPlanForConfirmation.pricePerRequest > 0));
 
     if (isPaidPlan) {
-      // Plan payant → paiement via Chargily
-      console.log('💳 Plan payant détecté, redirection vers Chargily');
       this.paymentService.createCheckout({
         pricingPlanId: planIdToUse,
         successUrl: `${window.location.origin}/organization/stats`,
         cancelUrl: `${window.location.origin}/organization/stats`
       }).subscribe({
         next: (response) => {
-          console.log('✅ Checkout Chargily créé, redirection vers:', response.url);
           this.isChangingPlan = false;
           this.showConfirmModal = false;
+          if (response.manualInvoiceFallback || response.url?.startsWith('/')) {
+            this.notificationService.info(response.message || 'Activation par virement sur facture requise.');
+            this.router.navigateByUrl(response.url || `/organization/quote-requests?mode=invoice&planId=${planIdToUse}`);
+            return;
+          }
           window.location.href = response.url;
         },
         error: (err) => {
@@ -926,6 +941,12 @@ export class OrganizationStatsComponent implements OnInit {
       cancelUrl: `${window.location.origin}/organization/stats`
     }).subscribe({
       next: (response) => {
+        this.isRenewing = false;
+        if (response.manualInvoiceFallback || response.url?.startsWith('/')) {
+          this.notificationService.info(response.message || 'Activation par virement sur facture requise.');
+          this.router.navigateByUrl(response.url || `/organization/quote-requests?mode=invoice&planId=${this.organization?.pricingPlanId}`);
+          return;
+        }
         window.location.href = response.url;
       },
       error: (err) => {

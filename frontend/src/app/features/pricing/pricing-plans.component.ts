@@ -8,6 +8,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { CurrencyService, MarketCode } from '../../core/services/currency.service';
 import { OrganizationAccountService } from '../../core/services/organization-account.service';
 import { AccountContextService } from '../../core/services/account-context.service';
+import { PaymentService, PaymentProvidersStatus } from '../../core/services/payment.service';
 import { switchMap } from 'rxjs/operators';
 import { of } from 'rxjs';
 
@@ -35,14 +36,14 @@ import { of } from 'rxjs';
                 [class.active]="selectedMarket === 'DZ'"
                 (click)="selectMarket('DZ')">
           <span class="market-title">🇩🇿 Algérie · Dinar (DA)</span>
-          <span class="market-sub">Paiement CIB / Edahabia &amp; virement sur facture</span>
+          <span class="market-sub">{{ providersStatus.chargilyConfigured ? 'Paiement CIB / Edahabia & virement sur facture' : 'Règlement par virement bancaire sur facture (DA)' }}</span>
         </button>
         <button type="button"
                 class="market-btn"
                 [class.active]="selectedMarket === 'DEFAULT'"
                 (click)="selectMarket('DEFAULT')">
           <span class="market-title">🇪🇺 Europe &amp; International · Euro (€ HT)</span>
-          <span class="market-sub">Carte bancaire &amp; prélèvement SEPA</span>
+          <span class="market-sub">{{ providersStatus.stripeConfigured ? 'Carte bancaire, SEPA & virement sur facture' : 'Règlement par virement bancaire sur facture (€ HT)' }}</span>
         </button>
       </div>
 
@@ -136,9 +137,9 @@ import { of } from 'rxjs';
       <div class="pricing-footer">
         <p>
           @if (selectedMarket === 'DZ') {
-            Facturation en Dinars Algériens (DA) · Règlement par carte CIB / Edahabia (Chargily) ou par virement bancaire annuel sur facture.
+            Facturation en Dinars Algériens (DA) · {{ providersStatus.chargilyConfigured ? 'Règlement par carte CIB / Edahabia (Chargily) ou par virement bancaire annuel sur facture.' : 'Règlement par virement bancaire sur facture.' }}
           } @else {
-            Tarifs en Euros HT (€) · Règlement sécurisé par carte bancaire ou prélèvement SEPA (Stripe), ou sur facture annuelle pour les grands comptes.
+            Tarifs en Euros HT (€) · {{ providersStatus.stripeConfigured ? 'Règlement sécurisé par carte bancaire ou prélèvement SEPA (Stripe), ou sur facture annuelle pour les grands comptes.' : 'Règlement sur facture par virement bancaire (SEPA / SWIFT) après validation de votre demande.' }}
           }
         </p>
         <div class="footer-actions">
@@ -577,16 +578,21 @@ export class PricingPlansComponent implements OnInit {
   private currencyService = inject(CurrencyService);
   private organizationAccountService = inject(OrganizationAccountService);
   private accountContextService = inject(AccountContextService);
+  private paymentService = inject(PaymentService);
   private router = inject(Router);
 
   plans: PricingPlan[] = [];
   selectedMarket: MarketCode = this.currencyService.getSelectedMarket();
+  providersStatus: PaymentProvidersStatus = { chargilyConfigured: true, stripeConfigured: false };
   loading = true;
   error = '';
   showQuoteForm = false;
   isAuthenticated = false;
 
   ngOnInit() {
+    this.paymentService.getProvidersStatus().subscribe(status => {
+      this.providersStatus = status;
+    });
     this.authService.isAuthenticated().subscribe((isAuth: boolean) => {
       this.isAuthenticated = isAuth;
 

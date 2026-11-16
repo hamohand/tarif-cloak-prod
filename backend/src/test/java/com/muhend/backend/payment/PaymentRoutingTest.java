@@ -2,6 +2,8 @@ package com.muhend.backend.payment;
 
 import com.muhend.backend.organization.dto.OrganizationDto;
 import com.muhend.backend.organization.service.OrganizationService;
+import com.muhend.backend.payment.config.ChargilyConfig;
+import com.muhend.backend.payment.config.StripeConfig;
 import com.muhend.backend.payment.controller.PaymentController;
 import com.muhend.backend.payment.dto.CheckoutSessionResponse;
 import com.muhend.backend.payment.dto.CreateCheckoutSessionRequest;
@@ -20,7 +22,7 @@ import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -33,13 +35,16 @@ class PaymentRoutingTest {
     @Mock private PaymentService paymentService;
     @Mock private OrganizationService organizationService;
     @Mock private PricingPlanService pricingPlanService;
+    @Mock private StripeConfig stripeConfig;
+    @Mock private ChargilyConfig chargilyConfig;
 
     private PaymentController controller;
 
     @BeforeEach
     void setUp() {
         controller = new PaymentController(
-                stripeService, chargilyService, paymentService, organizationService, pricingPlanService);
+                stripeService, chargilyService, paymentService, organizationService,
+                pricingPlanService, stripeConfig, chargilyConfig);
         Jwt jwt = Jwt.withTokenValue("tok").header("alg", "none").claim("sub", "kc-user-1").build();
         SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken(jwt, null));
     }
@@ -56,6 +61,7 @@ class PaymentRoutingTest {
         dzPlan.setMarketVersion("DZ");
         dzPlan.setCurrency("DZD");
 
+        when(chargilyConfig.isConfigured()).thenReturn(true);
         when(organizationService.getOrganizationIdByUserId("kc-user-1")).thenReturn(1L);
         when(pricingPlanService.getPricingPlanById(10L)).thenReturn(dzPlan);
         when(chargilyService.createCheckoutSession(eq(1L), any()))
@@ -67,17 +73,19 @@ class PaymentRoutingTest {
         var resp = controller.createCheckoutSession(req);
 
         assertEquals("chk_dz", resp.getBody().getSessionId());
+        assertFalse(resp.getBody().isManualInvoiceFallback());
         verify(chargilyService).createCheckoutSession(eq(1L), eq(req));
         verifyNoInteractions(stripeService);
     }
 
     @Test
-    void routesEurPlanCheckoutToStripeAndNotChargilyOnSameInstance() throws Exception {
+    void routesEurPlanCheckoutToStripeWhenConfigured() throws Exception {
         PricingPlanDto euPlan = new PricingPlanDto();
         euPlan.setId(20L);
         euPlan.setMarketVersion("DEFAULT");
         euPlan.setCurrency("EUR");
 
+        when(stripeConfig.isConfigured()).thenReturn(true);
         when(organizationService.getOrganizationIdByUserId("kc-user-1")).thenReturn(2L);
         when(pricingPlanService.getPricingPlanById(20L)).thenReturn(euPlan);
         when(stripeService.createCheckoutSession(eq(2L), any()))
@@ -89,8 +97,31 @@ class PaymentRoutingTest {
         var resp = controller.createCheckoutSession(req);
 
         assertEquals("cs_eu", resp.getBody().getSessionId());
+        assertFalse(resp.getBody().isManualInvoiceFallback());
         verify(stripeService).createCheckoutSession(eq(2L), eq(req));
         verifyNoInteractions(chargilyService);
+    }
+
+    @Test
+    void fallsBackToManualInvoiceWhenStripeNotConfiguredForEurPlan() {
+        PricingPlanDto euPlan = new PricingPlanDto();
+        euPlan.setId(20L);
+        euPlan.setMarketVersion("DEFAULT");
+        euPlan.setCurrency("EUR");
+
+        when(stripeConfig.isConfigured()).thenReturn(false);
+        when(organizationService.getOrganizationIdByUserId("kc-user-1")).thenReturn(2L);
+        when(pricingPlanService.getPricingPlanById(20L)).thenReturn(euPlan);
+
+        CreateCheckoutSessionRequest req = new CreateCheckoutSessionRequest();
+        req.setPricingPlanId(20L);
+
+        var resp = controller.createCheckoutSession(req);
+
+        assertNotNull(resp.getBody());
+        assertTrue(resp.getBody().isManualInvoiceFallback());
+        assertEquals("/organization/quote-requests?mode=invoice&planId=20", resp.getBody().getUrl());
+        verifyNoInteractions(stripeService, chargilyService);
     }
 
     @Test
@@ -105,6 +136,8 @@ class PaymentRoutingTest {
         frOrg.setMarketVersion("DEFAULT");
         frOrg.setCountry("FR");
 
+        when(chargilyConfig.isConfigured()).thenReturn(true);
+        when(stripeConfig.isConfigured()).thenReturn(true);
         when(organizationService.getOrganizationIdByUserId("kc-user-1")).thenReturn(1L, 2L);
         when(organizationService.getOrganizationById(1L)).thenReturn(dzOrg);
         when(organizationService.getOrganizationById(2L)).thenReturn(frOrg);

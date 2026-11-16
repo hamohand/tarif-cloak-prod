@@ -52,7 +52,8 @@ public class QuoteRequestController {
         }
         
         try {
-            OrganizationDto organization = organizationService.getOrganizationByKeycloakUserId(organizationUserId);
+            Long resolvedOrgId = organizationService.getOrganizationIdByUserId(organizationUserId);
+            OrganizationDto organization = organizationService.getOrganizationById(resolvedOrgId);
             // Créer un nouveau DTO avec l'organizationId récupéré depuis le token
             CreateQuoteRequestDto dtoWithOrgId = new CreateQuoteRequestDto();
             dtoWithOrgId.setOrganizationId(organization.getId());
@@ -85,8 +86,8 @@ public class QuoteRequestController {
         
         try {
             // Vérifier que l'utilisateur appartient à cette organisation
-            OrganizationDto organization = organizationService.getOrganizationByKeycloakUserId(organizationUserId);
-            if (!organization.getId().equals(organizationId)) {
+            Long resolvedOrgId = organizationService.getOrganizationIdByUserId(organizationUserId);
+            if (!resolvedOrgId.equals(organizationId)) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
                         .body(Map.of("error", "FORBIDDEN", "message", "Vous n'avez pas accès à cette organisation"));
             }
@@ -115,7 +116,8 @@ public class QuoteRequestController {
         }
         
         try {
-            OrganizationDto organization = organizationService.getOrganizationByKeycloakUserId(organizationUserId);
+            Long resolvedOrgId = organizationService.getOrganizationIdByUserId(organizationUserId);
+            OrganizationDto organization = organizationService.getOrganizationById(resolvedOrgId);
             List<QuoteRequestDto> requests = quoteRequestService.getQuoteRequestsByOrganization(organization.getId());
             return ResponseEntity.ok(requests);
         } catch (Exception e) {

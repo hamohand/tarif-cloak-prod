@@ -5,6 +5,7 @@ import { RegisterService } from '../../../core/services/register.service';
 import { PricingPlanService, PricingPlan } from '../../../core/services/pricing-plan.service';
 import { MarketProfileService, MarketProfile } from '../../../core/services/market-profile.service';
 import { CurrencyService, MarketCode } from '../../../core/services/currency.service';
+import { PaymentService, PaymentProvidersStatus } from '../../../core/services/payment.service';
 import { CommonModule } from '@angular/common';
 import { environment } from '../../../../environments/environment';
 import { take } from 'rxjs/operators';
@@ -69,14 +70,14 @@ const EU_AND_INTL_COUNTRIES: CountryOption[] = [
                       [class.active]="currentMarket === 'DZ'"
                       (click)="selectMarket('DZ')">
                 <span class="market-title">🇩🇿 Algérie — Dinars (DA)</span>
-                <span class="market-sub">CIB / Edahabia ou virement sur facture</span>
+                <span class="market-sub">{{ providersStatus.chargilyConfigured ? 'CIB / Edahabia ou virement sur facture' : 'Virement sur facture (DA)' }}</span>
               </button>
               <button type="button"
                       class="market-btn"
                       [class.active]="currentMarket === 'DEFAULT'"
                       (click)="selectMarket('DEFAULT')">
                 <span class="market-title">🇪🇺 Europe &amp; International — Euros (€)</span>
-                <span class="market-sub">Carte bancaire ou prélèvement SEPA</span>
+                <span class="market-sub">{{ providersStatus.stripeConfigured ? 'Carte bancaire ou prélèvement SEPA' : 'Règlement par virement sur facture (€ HT)' }}</span>
               </button>
             </div>
             <small class="form-hint">Toutes les nomenclatures (DZ ↔ UE) sont incluses quel que soit votre pays de facturation.</small>
@@ -740,6 +741,9 @@ export class RegisterComponent implements OnInit {
   private pricingPlanService = inject(PricingPlanService);
   private marketProfileService = inject(MarketProfileService);
   private currencyService = inject(CurrencyService);
+  private paymentService = inject(PaymentService);
+
+  providersStatus: PaymentProvidersStatus = { chargilyConfigured: true, stripeConfigured: false };
 
   isLoading = false;
   errorMessage = '';
@@ -779,6 +783,9 @@ export class RegisterComponent implements OnInit {
   });
 
   ngOnInit() {
+    this.paymentService.getProvidersStatus().subscribe(status => {
+      this.providersStatus = status;
+    });
     this.route.queryParams.pipe(take(1)).subscribe((params: any) => {
       const qMarket = (params['market'] || '').toString().toUpperCase();
       if (qMarket === 'DZ' || qMarket === 'DEFAULT') {

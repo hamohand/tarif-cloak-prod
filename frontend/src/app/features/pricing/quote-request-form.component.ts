@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, OnInit, inject } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { QuoteRequestService, CreateQuoteRequestDto } from '../../core/services/quote-request.service';
@@ -11,7 +11,7 @@ import { QuoteRequestService, CreateQuoteRequestDto } from '../../core/services/
     <div class="quote-form-container" *ngIf="showForm">
       <div class="quote-form-card">
         <div class="quote-form-header">
-          <h2>Demander un devis personnalisé</h2>
+          <h2>{{ modalTitle }}</h2>
           <button class="close-btn" (click)="close()" aria-label="Fermer">×</button>
         </div>
 
@@ -60,7 +60,7 @@ import { QuoteRequestService, CreateQuoteRequestDto } from '../../core/services/
             </button>
             <button type="submit" class="btn btn-primary" [disabled]="quoteForm.invalid || isSubmitting">
               <span *ngIf="isSubmitting">Envoi en cours...</span>
-              <span *ngIf="!isSubmitting">Envoyer la demande</span>
+              <span *ngIf="!isSubmitting">{{ submitLabel }}</span>
             </button>
           </div>
 
@@ -296,8 +296,13 @@ import { QuoteRequestService, CreateQuoteRequestDto } from '../../core/services/
     }
   `]
 })
-export class QuoteRequestFormComponent implements OnInit {
+export class QuoteRequestFormComponent implements OnInit, OnChanges {
   @Input() showForm = false;
+  @Input() modalTitle = 'Demander un devis personnalisé';
+  @Input() submitLabel = 'Envoyer la demande';
+  @Input() defaultContactName = '';
+  @Input() defaultContactEmail = '';
+  @Input() defaultMessage = '';
   @Output() formClosed = new EventEmitter<void>();
   @Output() quoteSubmitted = new EventEmitter<void>();
 
@@ -311,13 +316,35 @@ export class QuoteRequestFormComponent implements OnInit {
 
   ngOnInit() {
     this.quoteForm = this.fb.group({
-      contactName: ['', [Validators.required, Validators.minLength(2)]],
-      contactEmail: ['', [Validators.required, Validators.email]],
-      message: ['']
+      contactName: [this.defaultContactName || '', [Validators.required, Validators.minLength(2)]],
+      contactEmail: [this.defaultContactEmail || '', [Validators.required, Validators.email]],
+      message: [this.defaultMessage || '']
     });
+  }
 
-    // L'organizationId sera récupéré automatiquement côté backend depuis le token
-    // Plus besoin de le charger ici
+  ngOnChanges(changes: SimpleChanges) {
+    if (!this.quoteForm) {
+      return;
+    }
+    if (changes['showForm']?.currentValue === true || changes['defaultContactName'] || changes['defaultContactEmail'] || changes['defaultMessage']) {
+      this.applyDefaults(!!changes['defaultMessage']);
+    }
+  }
+
+  private applyDefaults(overwriteMessage: boolean) {
+    const patch: Record<string, string> = {};
+    if (this.defaultContactName && !this.quoteForm.get('contactName')?.value) {
+      patch['contactName'] = this.defaultContactName;
+    }
+    if (this.defaultContactEmail && !this.quoteForm.get('contactEmail')?.value) {
+      patch['contactEmail'] = this.defaultContactEmail;
+    }
+    if (this.defaultMessage && (overwriteMessage || !this.quoteForm.get('message')?.value)) {
+      patch['message'] = this.defaultMessage;
+    }
+    if (Object.keys(patch).length > 0) {
+      this.quoteForm.patchValue(patch);
+    }
   }
 
   isFieldInvalid(fieldName: string): boolean {
@@ -359,10 +386,10 @@ export class QuoteRequestFormComponent implements OnInit {
 
     this.quoteRequestService.createQuoteRequest(dto).subscribe({
       next: () => {
-        this.successMessage = 'Votre demande de devis a été envoyée avec succès. Nous vous contacterons bientôt.';
+        this.isSubmitting = false;
+        this.successMessage = 'Votre demande a été envoyée avec succès. Nous vous contacterons rapidement avec les modalités d\'activation.';
         this.quoteForm.reset();
         this.quoteSubmitted.emit();
-        // Fermer automatiquement après 3 secondes
         setTimeout(() => {
           this.close();
         }, 3000);

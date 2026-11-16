@@ -1,15 +1,15 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
 import { PricingPlanService, PricingPlan } from '../../core/services/pricing-plan.service';
-import { PaymentService } from '../../core/services/payment.service';
+import { PaymentService, PaymentProvidersStatus } from '../../core/services/payment.service';
 import { OrganizationAccountService } from '../../core/services/organization-account.service';
 import { CurrencyService, MarketCode } from '../../core/services/currency.service';
+import { QuoteRequestFormComponent } from '../pricing/quote-request-form.component';
 
 @Component({
   selector: 'app-choose-plan',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, QuoteRequestFormComponent],
   template: `
     <div class="choose-plan-page">
       <div class="choose-plan-container">
@@ -61,7 +61,7 @@ import { CurrencyService, MarketCode } from '../../core/services/currency.servic
                   </ul>
                 }
                 <button class="btn btn-subscribe" (click)="subscribe(plan)" [disabled]="checkoutLoading">
-                  {{ checkoutLoading ? 'Redirection...' : 'Souscrire' }}
+                  {{ checkoutLoading ? 'Traitement...' : (canPayOnline(plan) ? 'Souscrire en ligne' : "Demander l'activation sur facture") }}
                 </button>
               </div>
             }
@@ -69,6 +69,17 @@ import { CurrencyService, MarketCode } from '../../core/services/currency.servic
         }
       </div>
     </div>
+
+    <app-quote-request-form
+      [showForm]="showInvoiceModal"
+      modalTitle="Activer ce forfait sur facture / virement"
+      submitLabel="Envoyer la demande d'activation"
+      [defaultContactName]="orgName"
+      [defaultContactEmail]="orgEmail"
+      [defaultMessage]="invoiceRequestMessage"
+      (formClosed)="showInvoiceModal = false"
+      (quoteSubmitted)="showInvoiceModal = false">
+    </app-quote-request-form>
   `,
   styles: [`
     :host {
@@ -282,18 +293,33 @@ export class ChoosePlanComponent implements OnInit {
   private paymentService = inject(PaymentService);
   private orgAccountService = inject(OrganizationAccountService);
   private currencyService = inject(CurrencyService);
-  private router = inject(Router);
 
   paidPlans: PricingPlan[] = [];
   currentPlanId: number | null = null;
   currentPlanName: string | null = null;
   orgMarketVersion: MarketCode = this.currencyService.getSelectedMarket();
+  orgName = '';
+  orgEmail = '';
+  orgCountry = '';
+  providersStatus: PaymentProvidersStatus = { chargilyConfigured: true, stripeConfigured: false };
+  showInvoiceModal = false;
+  invoiceRequestMessage = '';
   loading = true;
   checkoutLoading = false;
   error: string | null = null;
 
   ngOnInit() {
+    this.paymentService.getProvidersStatus().subscribe(status => {
+      this.providersStatus = status;
+    });
     this.loadData();
+  }
+
+  canPayOnline(plan: PricingPlan): boolean {
+    const isDz = (plan.currency || '').toUpperCase() === 'DZD'
+      || (plan.marketVersion || '').toUpperCase() === 'DZ'
+      || this.orgMarketVersion === 'DZ';
+    return isDz ? this.providersStatus.chargilyConfigured : this.providersStatus.stripeConfigured;
   }
 
   getPlanCurrencySymbol(plan: PricingPlan): string {
@@ -306,6 +332,9 @@ export class ChoosePlanComponent implements OnInit {
     this.loading = true;
     this.orgAccountService.getMyOrganization().subscribe({
       next: org => {
+        this.orgName = org.name || '';
+        this.orgEmail = org.email || '';
+        this.orgCountry = org.country || '';
         const market: MarketCode = org.marketVersion?.toUpperCase() === 'DZ' ? 'DZ'
           : (org.marketVersion ? 'DEFAULT' : this.currencyService.getSelectedMarket());
         this.orgMarketVersion = market;
@@ -337,23 +366,37 @@ export class ChoosePlanComponent implements OnInit {
 
   renewCurrentPlan() {
     if (!this.currentPlanId) return;
-    this.subscribe({ id: this.currentPlanId } as PricingPlan);
+    const plan = this.paidPlans.find(p => p.id === this.currentPlanId) || ({ id: this.currentPlanId } as PricingPlan);
+    this.subscribe(plan);
   }
 
   subscribe(plan: PricingPlan) {
     this.checkoutLoading = true;
+    this.error = null;
     this.paymentService.createCheckout({ pricingPlanId: plan.id }).subscribe({
       next: session => {
+        this.checkoutLoading = false;
+        if (session.manualInvoiceFallback) {
+          const sym = this.getPlanCurrencySymbol(plan);
+          const annualPart = plan.pricePerYear ? ` ou ${plan.pricePerYear} ${sym}/an` : '';
+          this.invoiceRequestMessage =
+            `Demande d'activation sur facture / virement bancaire :\n` +
+            `- Forfait souhaité : ${plan.name || '#' + plan.id} (${plan.pricePerMonth ?? ''} ${sym}/mois${annualPart})\n` +
+            `- Entreprise : ${this.orgName} (${this.orgCountry})\n` +
+            `- Périodicité souhaitée : annuelle / mensuelle\n` +
+            `- Référence bon de commande / TVA (facultatif) : `;
+          this.showInvoiceModal = true;
+          return;
+        }
         if (session.url) {
           window.location.href = session.url;
         } else {
-          this.checkoutLoading = false;
           this.error = 'Impossible de créer la session de paiement.';
         }
       },
-      error: () => {
+      error: (err) => {
         this.checkoutLoading = false;
-        this.error = 'Erreur lors de la création du paiement. Veuillez réessayer.';
+        this.error = err.error?.message || 'Erreur lors de la création du paiement. Veuillez réessayer.';
       }
     });
   }

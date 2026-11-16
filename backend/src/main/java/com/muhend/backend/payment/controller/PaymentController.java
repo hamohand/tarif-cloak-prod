@@ -2,6 +2,8 @@ package com.muhend.backend.payment.controller;
 
 import com.muhend.backend.organization.dto.OrganizationDto;
 import com.muhend.backend.organization.service.OrganizationService;
+import com.muhend.backend.payment.config.ChargilyConfig;
+import com.muhend.backend.payment.config.StripeConfig;
 import com.muhend.backend.payment.dto.CheckoutSessionResponse;
 import com.muhend.backend.payment.dto.CreateCheckoutSessionRequest;
 import com.muhend.backend.payment.dto.PayInvoiceRequest;
@@ -46,6 +48,8 @@ public class PaymentController {
     private final PaymentService paymentService;
     private final OrganizationService organizationService;
     private final PricingPlanService pricingPlanService;
+    private final StripeConfig stripeConfig;
+    private final ChargilyConfig chargilyConfig;
     
     @Value("${payment.provider:stripe}")
     private String paymentProvider = "stripe";
@@ -56,12 +60,32 @@ public class PaymentController {
             ChargilyService chargilyService,
             PaymentService paymentService,
             OrganizationService organizationService,
-            PricingPlanService pricingPlanService) {
+            PricingPlanService pricingPlanService,
+            StripeConfig stripeConfig,
+            ChargilyConfig chargilyConfig) {
         this.stripeService = stripeService;
         this.chargilyService = chargilyService;
         this.paymentService = paymentService;
         this.organizationService = organizationService;
         this.pricingPlanService = pricingPlanService;
+        this.stripeConfig = stripeConfig;
+        this.chargilyConfig = chargilyConfig;
+    }
+
+    @GetMapping("/providers-status")
+    @Operation(
+            summary = "Statut des passerelles de paiement",
+            description = "Indique quelles passerelles de paiement en ligne (Chargily DZD, Stripe EUR) sont configurées."
+    )
+    public ResponseEntity<Map<String, Boolean>> getProvidersStatus() {
+        return ResponseEntity.ok(Map.of(
+                "chargilyConfigured", chargilyConfig.isConfigured(),
+                "stripeConfigured", stripeConfig.isConfigured()
+        ));
+    }
+
+    private boolean isProviderConfigured(String provider) {
+        return "chargily".equals(provider) ? chargilyConfig.isConfigured() : stripeConfig.isConfigured();
     }
 
     /**
@@ -132,6 +156,19 @@ public class PaymentController {
 
             String resolvedProvider = resolvePaymentProvider(organizationId, request.getPricingPlanId(), request.getInvoiceId());
             log.info("Routage checkout: organizationId={}, planId={}, provider={}", organizationId, request.getPricingPlanId(), resolvedProvider);
+
+            if (!isProviderConfigured(resolvedProvider)) {
+                String msg = "stripe".equals(resolvedProvider)
+                        ? "Règlement par virement bancaire sur facture (€) — envoyez la demande pré-remplie pour activer votre forfait."
+                        : "Règlement par virement bancaire (DA) — envoyez la demande pré-remplie pour activer votre forfait.";
+                return ResponseEntity.ok(new CheckoutSessionResponse(
+                        "manual_invoice_plan_" + request.getPricingPlanId(),
+                        "/organization/quote-requests?mode=invoice&planId=" + request.getPricingPlanId(),
+                        null,
+                        true,
+                        msg
+                ));
+            }
 
             CheckoutSessionResponse response = "chargily".equals(resolvedProvider)
                     ? chargilyService.createCheckoutSession(organizationId, request)
@@ -269,6 +306,18 @@ public class PaymentController {
                     request.getCancelUrl() : null;
             
             String resolvedProvider = resolvePaymentProvider(organizationId, null, invoiceId);
+            if (!isProviderConfigured(resolvedProvider)) {
+                String msg = "stripe".equals(resolvedProvider)
+                        ? "Règlement par virement bancaire (€) — contactez-nous via le formulaire pré-rempli pour recevoir le RIB / IBAN."
+                        : "Règlement par virement bancaire (DA) — contactez-nous via le formulaire pré-rempli pour recevoir nos coordonnées.";
+                return ResponseEntity.ok(new CheckoutSessionResponse(
+                        "manual_invoice_" + invoiceId,
+                        "/organization/quote-requests?mode=invoice&invoiceId=" + invoiceId,
+                        null,
+                        true,
+                        msg
+                ));
+            }
             CheckoutSessionResponse response = "chargily".equals(resolvedProvider)
                     ? chargilyService.createInvoiceCheckoutSession(organizationId, invoiceId, successUrl, cancelUrl)
                     : stripeService.createInvoiceCheckoutSession(organizationId, invoiceId, successUrl, cancelUrl);
