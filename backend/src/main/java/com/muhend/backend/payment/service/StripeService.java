@@ -103,12 +103,18 @@ public class StripeService {
         
         // Si c'est un plan mensuel
         if (pricingPlan.getPricePerMonth() != null && pricingPlan.getPricePerMonth().compareTo(BigDecimal.ZERO) > 0) {
+            String planCurrency = pricingPlan.getCurrency() != null && !pricingPlan.getCurrency().isBlank()
+                    ? pricingPlan.getCurrency().trim().toLowerCase(java.util.Locale.ROOT)
+                    : stripeConfig.getCurrency().toLowerCase(java.util.Locale.ROOT);
+            if ("dzd".equalsIgnoreCase(planCurrency)) {
+                throw new IllegalArgumentException("Les plans en DZD relèvent du paiement local Chargily / virement.");
+            }
             SessionCreateParams.LineItem.PriceData.Recurring recurring = SessionCreateParams.LineItem.PriceData.Recurring.builder()
                     .setInterval(SessionCreateParams.LineItem.PriceData.Recurring.Interval.MONTH)
                     .build();
             
             SessionCreateParams.LineItem.PriceData priceData = SessionCreateParams.LineItem.PriceData.builder()
-                    .setCurrency(stripeConfig.getCurrency().toLowerCase())
+                    .setCurrency(planCurrency)
                     .setUnitAmount(pricingPlan.getPricePerMonth().multiply(BigDecimal.valueOf(100)).longValue()) // Convertir en centimes
                     .setRecurring(recurring)
                     .setProductData(

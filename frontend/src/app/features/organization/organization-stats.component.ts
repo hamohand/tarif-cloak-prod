@@ -54,7 +54,7 @@ Chart.register(...registerables);
             @if (currentPlan) {
               <p class="alert-action">Plan actuel : <strong>{{ currentPlan.name }}</strong>
                 @if (currentPlan.pricePerMonth != null && currentPlan.pricePerMonth > 0) {
-                  — {{ currentPlan.pricePerMonth }} DA/mois
+                  — {{ currentPlan.pricePerMonth }} {{ getPlanCurrencySymbol(currentPlan) }}/mois
                 }
               </p>
             }
@@ -120,12 +120,10 @@ Chart.register(...registerables);
                       @if (currentPlan.pricePerMonth === 0) {
                         Gratuit
                       } @else {
-                        {{ currentPlan.pricePerMonth }}
-                        @if (currencySymbol$ | async; as symbol) { {{ symbol }} } @else { € }/mois
+                        {{ currentPlan.pricePerMonth }} {{ getPlanCurrencySymbol(currentPlan) }}/mois
                       }
                     } @else if (currentPlan.pricePerRequest !== null && currentPlan.pricePerRequest !== undefined) {
-                      {{ currentPlan.pricePerRequest }}
-                      @if (currencySymbol$ | async; as symbol) { {{ symbol }} } @else { € }/requête
+                      {{ currentPlan.pricePerRequest }} {{ getPlanCurrencySymbol(currentPlan) }}/requête
                     } @else {
                       Gratuit
                     }
@@ -181,11 +179,9 @@ Chart.register(...registerables);
                   <option [value]="plan.id" [selected]="plan.id === organization.pricingPlanId">
                     {{ plan.name }} -
                     @if (plan.pricePerMonth !== null && plan.pricePerMonth !== undefined && plan.pricePerMonth > 0) {
-                      {{ plan.pricePerMonth }}
-                      @if (currencySymbol$ | async; as symbol) { {{ symbol }} } @else { € }/mois
+                      {{ plan.pricePerMonth }} {{ getPlanCurrencySymbol(plan) }}/mois
                     } @else if (plan.pricePerRequest !== null && plan.pricePerRequest !== undefined && plan.pricePerRequest > 0) {
-                      {{ plan.pricePerRequest }}
-                      @if (currencySymbol$ | async; as symbol) { {{ symbol }} } @else { € }/requête
+                      {{ plan.pricePerRequest }} {{ getPlanCurrencySymbol(plan) }}/requête
                     }
                     @if (plan.trialPeriodDays) { ({{ plan.trialPeriodDays }} jours)
                     } @else if (plan.monthlyQuota) { ({{ plan.monthlyQuota | number }} crédits/mois)
@@ -250,22 +246,12 @@ Chart.register(...registerables);
                     }
                   } @else {
                     <p class="plan-price">
-                      {{ selectedPlanForConfirmation.pricePerMonth }} 
-                      @if (currencySymbol$ | async; as symbol) {
-                        {{ symbol }}
-                      } @else {
-                        €
-                      }/mois
+                      {{ selectedPlanForConfirmation.pricePerMonth }} {{ getPlanCurrencySymbol(selectedPlanForConfirmation) }}/mois
                     </p>
                   }
                 } @else if (selectedPlanForConfirmation.pricePerRequest !== null && selectedPlanForConfirmation.pricePerRequest !== undefined) {
                   <p class="plan-price">
-                    {{ selectedPlanForConfirmation.pricePerRequest }} 
-                    @if (currencySymbol$ | async; as symbol) {
-                      {{ symbol }}
-                    } @else {
-                      €
-                    }/requête
+                    {{ selectedPlanForConfirmation.pricePerRequest }} {{ getPlanCurrencySymbol(selectedPlanForConfirmation) }}/requête
                   </p>
                 }
                 @if (selectedPlanForConfirmation.monthlyQuota) {
@@ -292,7 +278,7 @@ Chart.register(...registerables);
                 @if (isChangingPlan) {
                   <span>Redirection en cours...</span>
                 } @else if (selectedPlanForConfirmation && ((selectedPlanForConfirmation.pricePerMonth != null && selectedPlanForConfirmation.pricePerMonth > 0) || (selectedPlanForConfirmation.pricePerRequest != null && selectedPlanForConfirmation.pricePerRequest > 0))) {
-                  <span>Payer avec Chargily</span>
+                  <span>Payer et activer le plan</span>
                 } @else if (organization && organization.trialPermanentlyExpired) {
                   <span>Valider le plan</span>
                 } @else {
@@ -542,6 +528,7 @@ export class OrganizationStatsComponent implements OnInit {
             }
 
             this.organization = org;
+            this.syncCurrencyFromOrganization(org);
             this.selectedPlanId = org?.pricingPlanId || null;
             this.loadingOrg = false;
             if (org?.pricingPlanId) {
@@ -567,6 +554,7 @@ export class OrganizationStatsComponent implements OnInit {
           next: (org) => {
             console.log('🏢 Organisation chargée (sans statut):', org);
             this.organization = org;
+            this.syncCurrencyFromOrganization(org);
             this.selectedPlanId = org?.pricingPlanId || null;
             this.loadingOrg = false;
             if (org?.pricingPlanId) {
@@ -684,6 +672,23 @@ export class OrganizationStatsComponent implements OnInit {
         this.loadingPlans = false;
       }
     });
+  }
+
+  getPlanCurrencySymbol(plan?: PricingPlan | null): string {
+    if (plan?.currency) {
+      return this.currencyService.getSymbolForCurrency(plan.currency);
+    }
+    if (this.organization?.marketVersion?.toUpperCase() === 'DZ') {
+      return 'DA';
+    }
+    return this.currentCurrencySymbol || '€';
+  }
+
+  private syncCurrencyFromOrganization(org: Organization | null | undefined) {
+    if (!org?.marketVersion) return;
+    const isDz = org.marketVersion.toUpperCase() === 'DZ';
+    this.currentCurrencyCode = isDz ? 'DZD' : 'EUR';
+    this.currentCurrencySymbol = this.currencyService.getSymbolForCurrency(this.currentCurrencyCode);
   }
 
   updateCurrentPlan(planId: number) {

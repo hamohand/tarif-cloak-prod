@@ -1,85 +1,86 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { BehaviorSubject, Observable, of } from 'rxjs';
 import { map, catchError, shareReplay, tap } from 'rxjs/operators';
 import { MarketProfileService } from './market-profile.service';
 import { environment } from '../../../environments/environment';
+
+export type MarketCode = 'DZ' | 'DEFAULT';
 
 @Injectable({
   providedIn: 'root'
 })
 export class CurrencyService {
   private marketProfileService = inject(MarketProfileService);
+  private readonly STORAGE_KEY = 'tci_selected_market';
   private cachedCurrency: string | null = null;
   private cachedSymbol$: Observable<string> | null = null;
+
+  readonly selectedMarket$ = new BehaviorSubject<MarketCode>(this.readInitialMarket());
+
+  private readInitialMarket(): MarketCode {
+    try {
+      const saved = typeof localStorage !== 'undefined' ? localStorage.getItem(this.STORAGE_KEY) : null;
+      if (saved === 'DZ' || saved === 'DEFAULT') {
+        return saved;
+      }
+    } catch {
+      // Ignorer les erreurs d'accès stockage
+    }
+    const envMarket = (environment.marketVersion || '').toString().trim().toUpperCase();
+    return envMarket === 'DZ' ? 'DZ' : 'DEFAULT';
+  }
+
+  getSelectedMarket(): MarketCode {
+    return this.selectedMarket$.value;
+  }
+
+  setSelectedMarket(market: MarketCode): void {
+    const normalized: MarketCode = market === 'DZ' ? 'DZ' : 'DEFAULT';
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(this.STORAGE_KEY, normalized);
+      }
+    } catch {
+      // Ignorer
+    }
+    this.cachedCurrency = normalized === 'DZ' ? 'DZD' : 'EUR';
+    this.cachedSymbol$ = null;
+    if (this.selectedMarket$.value !== normalized) {
+      this.selectedMarket$.next(normalized);
+    }
+  }
 
   /**
    * Récupère le symbole de devise du marché actuel.
    */
   getCurrencySymbol(): Observable<string> {
-    // Si on a déjà un Observable en cache, le retourner
     if (this.cachedSymbol$) {
-      console.log('✅ CurrencyService: Utilisation du symbole en cache:', this.cachedCurrency);
       return this.cachedSymbol$;
     }
 
-    // Si on a déjà la devise en cache, créer un Observable partagé
     if (this.cachedCurrency) {
       const symbol = this.getSymbolForCurrency(this.cachedCurrency);
-      console.log('✅ CurrencyService: Création Observable depuis cache:', symbol, 'pour', this.cachedCurrency);
       this.cachedSymbol$ = of(symbol).pipe(shareReplay(1));
       return this.cachedSymbol$;
     }
 
-    // Récupérer la version de marché depuis l'environnement
-    let marketVersion: string | undefined = undefined;
-    
-    // Essayer plusieurs façons d'accéder à marketVersion
-    if (environment.marketVersion) {
-      marketVersion = environment.marketVersion;
-    } else if ((environment as any).marketVersion) {
-      marketVersion = (environment as any).marketVersion;
-    } else if ((environment as any)['marketVersion']) {
-      marketVersion = (environment as any)['marketVersion'];
-    }
-
-    if (!marketVersion || marketVersion.trim() === '') {
-      // Valeur par défaut si marketVersion n'est pas défini
-      const isProduction = (environment as any).production === true;
-      marketVersion = isProduction ? 'DZ' : 'DEFAULT';
-      console.warn('⚠️ CurrencyService: marketVersion non trouvé dans environment, utilisation de:', marketVersion);
-    }
-
-    console.log('🔍 CurrencyService: Récupération de la devise pour marketVersion:', marketVersion);
-    console.log('🔍 CurrencyService: environment.marketVersion:', environment.marketVersion);
-    console.log('🔍 CurrencyService: (environment as any).marketVersion:', (environment as any).marketVersion);
-
-    // Récupérer le profil de marché et extraire la devise
+    const marketVersion = this.getSelectedMarket();
     this.cachedSymbol$ = this.marketProfileService.getMarketProfileByVersion(marketVersion).pipe(
-      tap(profile => {
-        console.log('✅ CurrencyService: Profil de marché récupéré:', profile);
-        console.log('✅ CurrencyService: Code devise:', profile.currencyCode);
-        console.log('✅ CurrencyService: marketVersion du profil:', profile.marketVersion);
-      }),
       map(profile => {
-        const currency = profile.currencyCode || 'EUR';
+        const currency = profile.currencyCode || (marketVersion === 'DZ' ? 'DZD' : 'EUR');
         this.cachedCurrency = currency;
-        const symbol = this.getSymbolForCurrency(currency);
-        console.log('✅ CurrencyService: Symbole de devise calculé:', symbol, 'pour', currency);
-        console.log('✅ CurrencyService: Vérification mapping DZD -> DA:', currency === 'DZD' ? 'DA' : 'autre');
-        return symbol;
+        return this.getSymbolForCurrency(currency);
       }),
-      catchError((error) => {
-        console.error('❌ CurrencyService: Erreur lors de la récupération du profil de marché:', error);
-        console.error('❌ CurrencyService: Détails de l\'erreur:', error.message, error.stack);
-        // En cas d'erreur, utiliser EUR par défaut
-        this.cachedCurrency = 'EUR';
-        const defaultSymbol = '€';
+      catchError(() => {
+        const fallbackCurrency = marketVersion === 'DZ' ? 'DZD' : 'EUR';
+        this.cachedCurrency = fallbackCurrency;
+        const defaultSymbol = this.getSymbolForCurrency(fallbackCurrency);
         this.cachedSymbol$ = of(defaultSymbol).pipe(shareReplay(1));
         return of(defaultSymbol);
       }),
-      shareReplay(1) // Partager l'Observable pour éviter plusieurs appels
+      shareReplay(1)
     );
-    
+
     return this.cachedSymbol$;
   }
 
@@ -91,37 +92,28 @@ export class CurrencyService {
       return of(this.cachedCurrency);
     }
 
-    let marketVersion: string | undefined = undefined;
-    
-    if ((environment as any).marketVersion) {
-      marketVersion = (environment as any).marketVersion;
-    } else if ((environment as any)['marketVersion']) {
-      marketVersion = (environment as any)['marketVersion'];
-    }
-
-    if (!marketVersion) {
-      const isProduction = (environment as any).production === true;
-      marketVersion = isProduction ? 'DZ' : 'DEFAULT';
-    }
-
+    const marketVersion = this.getSelectedMarket();
     return this.marketProfileService.getMarketProfileByVersion(marketVersion).pipe(
       map(profile => {
-        const currency = profile.currencyCode || 'EUR';
+        const currency = profile.currencyCode || (marketVersion === 'DZ' ? 'DZD' : 'EUR');
         this.cachedCurrency = currency;
         return currency;
       }),
       catchError(() => {
-        this.cachedCurrency = 'EUR';
-        return of('EUR');
+        const fallback = marketVersion === 'DZ' ? 'DZD' : 'EUR';
+        this.cachedCurrency = fallback;
+        return of(fallback);
       })
     );
   }
 
   /**
    * Convertit un code de devise en symbole.
-   * Méthode publique pour être utilisée dans les composants.
    */
-  public getSymbolForCurrency(currency: string): string {
+  public getSymbolForCurrency(currency?: string | null): string {
+    if (!currency) {
+      return '€';
+    }
     const currencyMap: { [key: string]: string } = {
       'EUR': '€',
       'DZD': 'DA',

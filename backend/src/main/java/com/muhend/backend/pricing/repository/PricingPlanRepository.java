@@ -16,7 +16,10 @@ public interface PricingPlanRepository extends JpaRepository<PricingPlan, Long> 
     Optional<PricingPlan> findByIdAndIsActiveTrue(Long id);
     List<PricingPlan> findAllByOrderByDisplayOrderAsc();
     Optional<PricingPlan> findByName(String name);
+    Optional<PricingPlan> findFirstByNameAndMarketVersionAndIsActiveTrueOrderByIdAsc(String name, String marketVersion);
+    Optional<PricingPlan> findFirstByNameAndIsActiveTrueOrderByIdAsc(String name);
     boolean existsByName(String name);
+    boolean existsByNameAndMarketVersion(String name, String marketVersion);
 
     // Méthodes pour filtrer par version de marché
     List<PricingPlan> findByMarketVersionAndIsActiveTrueOrderByDisplayOrderAsc(String marketVersion);

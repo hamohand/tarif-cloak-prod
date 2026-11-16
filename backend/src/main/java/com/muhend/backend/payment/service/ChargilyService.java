@@ -67,6 +67,10 @@ public class ChargilyService {
         var plan = pricingPlanService.getPricingPlanById(request.getPricingPlanId());
         var org = organizationService.getOrganizationById(organizationId);
 
+        if (plan.getCurrency() != null && !"DZD".equalsIgnoreCase(plan.getCurrency())) {
+            throw new IllegalArgumentException("Chargily Pay accepte uniquement les plans en DZD.");
+        }
+
         if (plan.getPricePerMonth() == null || plan.getPricePerMonth().longValue() <= 0) {
             throw new IllegalArgumentException("Ce plan n'a pas de prix mensuel valide.");
         }

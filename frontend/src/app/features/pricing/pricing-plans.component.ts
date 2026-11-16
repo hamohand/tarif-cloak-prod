@@ -5,29 +5,45 @@ import { PricingPlanService, PricingPlan } from '../../core/services/pricing-pla
 import { environment } from '../../../environments/environment';
 import { QuoteRequestFormComponent } from './quote-request-form.component';
 import { AuthService } from '../../core/services/auth.service';
-import { CurrencyService } from '../../core/services/currency.service';
+import { CurrencyService, MarketCode } from '../../core/services/currency.service';
 import { OrganizationAccountService } from '../../core/services/organization-account.service';
 import { AccountContextService } from '../../core/services/account-context.service';
-import { AsyncPipe } from '@angular/common';
 import { switchMap } from 'rxjs/operators';
 import { of } from 'rxjs';
 
 @Component({
   selector: 'app-pricing-plans',
   standalone: true,
-  imports: [CommonModule, RouterLink, QuoteRequestFormComponent, AsyncPipe],
+  imports: [CommonModule, RouterLink, QuoteRequestFormComponent],
   template: `
     <div class="pricing-container">
       <div class="pricing-header">
         <h1>Choisissez votre plan tarifaire</h1>
-        <p>Sélectionnez le plan qui correspond le mieux à vos besoins
-            <span class="quote-badge">💼 Devis personnalisé possible après inscription.</span>
-          </p>
+        <p>Mêmes fonctionnalités DZ ↔ UE pour tous · Devise et moyen de paiement adaptés au pays de votre entreprise.
+          <span class="quote-badge">💼 Devis personnalisé possible.</span>
+        </p>
         @if (isAuthenticated) {
           <div class="quote-notice">
             💼 <strong>Vous pouvez demander un devis personnalisé</strong> adapté à vos besoins spécifiques.
           </div>
         }
+      </div>
+
+      <div class="market-switcher" role="group" aria-label="Pays de facturation et devise">
+        <button type="button"
+                class="market-btn"
+                [class.active]="selectedMarket === 'DZ'"
+                (click)="selectMarket('DZ')">
+          <span class="market-title">🇩🇿 Algérie · Dinar (DA)</span>
+          <span class="market-sub">Paiement CIB / Edahabia &amp; virement sur facture</span>
+        </button>
+        <button type="button"
+                class="market-btn"
+                [class.active]="selectedMarket === 'DEFAULT'"
+                (click)="selectMarket('DEFAULT')">
+          <span class="market-title">🇪🇺 Europe &amp; International · Euro (€ HT)</span>
+          <span class="market-sub">Carte bancaire &amp; prélèvement SEPA</span>
+        </button>
       </div>
 
       @if (loading) {
@@ -36,27 +52,23 @@ import { of } from 'rxjs';
         <div class="error">{{ error }}</div>
       } @else {
         <div class="pricing-info-bar">
-          Possibilité de changer de plan tarifaire et demande de devis personnalisé à tout moment.
+          Possibilité de changer de plan tarifaire ou de demander un devis personnalisé à tout moment.
         </div>
 
         <div class="credits-note">
-          <h4>Coût en crédits par prestation</h4>
+          <h4>Barème d'utilisation sur compte connecté</h4>
           <div class="credits-table">
             <div class="credit-row">
-              <span class="credit-label">Recherche HS-code</span>
+              <span class="credit-label">Décodage officiel &amp; Comparaison DZ ↔ UE</span>
+              <span class="credit-value free">0 crédit · Illimité</span>
+            </div>
+            <div class="credit-row">
+              <span class="credit-label">Recherche assistée — Racine internationale (HS6)</span>
               <span class="credit-value">10 crédits</span>
             </div>
             <div class="credit-row">
-              <span class="credit-label">Recherche Position10</span>
+              <span class="credit-label">Recherche assistée — Code national (P10 DZ / NC8 UE)</span>
               <span class="credit-value">15 crédits</span>
-            </div>
-            <div class="credit-row">
-              <span class="credit-label">Décodage inverse HS</span>
-              <span class="credit-value">2 crédits</span>
-            </div>
-            <div class="credit-row">
-              <span class="credit-label">Décodage inverse P10</span>
-              <span class="credit-value">5 crédits</span>
             </div>
           </div>
         </div>
@@ -70,40 +82,31 @@ import { of } from 'rxjs';
                   @if (plan.pricePerMonth === 0) {
                     <span class="amount">Gratuit</span>
                   } @else {
-                    @if (currencySymbol$ | async; as symbol) {
-                      <span class="currency">{{ symbol }}</span>
-                    } @else {
-                      <span class="currency">{{ getCurrencySymbol(plan.currency) }}</span>
-                    }
-                    <span class="amount">{{ plan.pricePerMonth }}</span>
+                    <span class="amount">{{ plan.pricePerMonth | number:'1.0-2' }}</span>
+                    <span class="currency">{{ getCurrencySymbol(plan.currency) }}</span>
                     <span class="period">/mois</span>
                   }
                 } @else if (plan.pricePerRequest !== null && plan.pricePerRequest !== undefined) {
-                  @if (currencySymbol$ | async; as symbol) {
-                    <span class="currency">{{ symbol }}</span>
-                  } @else {
-                    <span class="currency">{{ getCurrencySymbol(plan.currency) }}</span>
-                  }
-                  <span class="amount">{{ plan.pricePerRequest }}</span>
+                  <span class="amount">{{ plan.pricePerRequest | number:'1.0-2' }}</span>
+                  <span class="currency">{{ getCurrencySymbol(plan.currency) }}</span>
                   <span class="period">/crédit</span>
                 } @else if (plan.pricePerYear !== null && plan.pricePerYear !== undefined) {
-                  @if (currencySymbol$ | async; as symbol) {
-                    <span class="currency">{{ symbol }}</span>
-                  } @else {
-                    <span class="currency">{{ getCurrencySymbol(plan.currency) }}</span>
-                  }
-                  <span class="amount">{{ plan.pricePerYear }}</span>
+                  <span class="amount">{{ plan.pricePerYear | number:'1.0-0' }}</span>
+                  <span class="currency">{{ getCurrencySymbol(plan.currency) }}</span>
                   <span class="period">/an</span>
                 } @else {
                   <span class="amount">Gratuit</span>
                 }
               </div>
+              @if (plan.pricePerYear != null && plan.pricePerYear > 0 && plan.pricePerMonth != null && plan.pricePerMonth > 0) {
+                <p class="year-price">ou {{ plan.pricePerYear | number:'1.0-0' }} {{ getCurrencySymbol(plan.currency) }}/an (2 mois offerts)</p>
+              }
               @if (plan.description) {
                 <p class="description">{{ plan.description }}</p>
               }
               <div class="quota">
                 @if (plan.trialPeriodDays) {
-                  <strong>Valable {{ plan.trialPeriodDays }} jours</strong>
+                  <strong>{{ plan.monthlyQuota | number }} crédits · Valable {{ plan.trialPeriodDays }} jours</strong>
                 } @else if (plan.monthlyQuota) {
                   <strong>{{ plan.monthlyQuota | number }} crédits/mois</strong>
                 } @else if (plan.pricePerRequest !== null && plan.pricePerRequest !== undefined) {
@@ -116,13 +119,13 @@ import { of } from 'rxjs';
                 <div class="features">
                   <h4>Fonctionnalités :</h4>
                   <ul>
-                    @for (feature of parseFeatures(plan.features); track feature) {
+                    @for (feature of parseFeatures(plan.features); track $index) {
                       <li>{{ feature }}</li>
                     }
                   </ul>
                 </div>
               }
-              <a [routerLink]="['/auth/register']" [queryParams]="{ planId: plan.id }" class="btn btn-primary">
+              <a [routerLink]="['/auth/register']" [queryParams]="{ planId: plan.id, market: selectedMarket }" class="btn btn-primary">
                 Choisir ce plan
               </a>
             </div>
@@ -131,7 +134,13 @@ import { of } from 'rxjs';
       }
 
       <div class="pricing-footer">
-        <p>Tarifs de lancement valables jusqu'au 30/06/2026.</p>
+        <p>
+          @if (selectedMarket === 'DZ') {
+            Facturation en Dinars Algériens (DA) · Règlement par carte CIB / Edahabia (Chargily) ou par virement bancaire annuel sur facture.
+          } @else {
+            Tarifs en Euros HT (€) · Règlement sécurisé par carte bancaire ou prélèvement SEPA (Stripe), ou sur facture annuelle pour les grands comptes.
+          }
+        </p>
         <div class="footer-actions">
           <button class="btn btn-secondary" (click)="openQuoteRequestForm()" *ngIf="isAuthenticated">
             Demander un devis personnalisé
@@ -257,6 +266,58 @@ import { of } from 'rxjs';
       font-size: 0.9rem;
       white-space: nowrap;
       margin-left: 1rem;
+    }
+
+    .credit-value.free {
+      color: var(--neu-accent-secondary);
+    }
+
+    .market-switcher {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1rem;
+      max-width: 740px;
+      margin: 0 auto 2rem;
+    }
+
+    .market-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.25rem;
+      padding: 1rem 1.25rem;
+      border-radius: var(--neu-radius-inner);
+      border: 2px solid transparent;
+      background: var(--neu-bg);
+      box-shadow: var(--neu-extruded-sm);
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.2s ease;
+    }
+
+    .market-btn.active {
+      border-color: var(--neu-accent);
+      box-shadow: var(--neu-inset);
+    }
+
+    .market-title {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1rem;
+      color: var(--neu-text-heading);
+    }
+
+    .market-sub {
+      font-size: 0.82rem;
+      color: var(--neu-text-muted);
+    }
+
+    .year-price {
+      text-align: center;
+      margin: -0.5rem 0 0.75rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--neu-accent);
     }
 
     .pricing-plans-grid {
@@ -519,154 +580,90 @@ export class PricingPlansComponent implements OnInit {
   private router = inject(Router);
 
   plans: PricingPlan[] = [];
+  selectedMarket: MarketCode = this.currencyService.getSelectedMarket();
   loading = true;
   error = '';
   showQuoteForm = false;
   isAuthenticated = false;
-  currencySymbol$ = this.currencyService.getCurrencySymbol();
 
   ngOnInit() {
-    // Précharger la devise pour qu'elle soit disponible immédiatement
-    this.currencySymbol$.subscribe({
-      next: (symbol) => {
-        console.log('✅ PricingPlansComponent: Symbole de devise chargé:', symbol);
-      },
-      error: (err) => {
-        console.error('❌ PricingPlansComponent: Erreur lors du chargement de la devise:', err);
-      }
-    });
-    
-    // Vérifier si l'utilisateur est authentifié
     this.authService.isAuthenticated().subscribe((isAuth: boolean) => {
       this.isAuthenticated = isAuth;
-      
-      // Si l'utilisateur est authentifié et qu'il s'agit d'une organisation avec un essai terminé, rediriger
+
       if (isAuth) {
         this.accountContextService.isOrganizationAccount$.pipe(
-          switchMap(isOrg => {
-            if (isOrg) {
-              // Vérifier si l'essai est définitivement terminé
-              return this.organizationAccountService.getMyOrganization();
-            }
-            return of(null);
-          })
+          switchMap(isOrg => isOrg ? this.organizationAccountService.getMyOrganization() : of(null))
         ).subscribe({
           next: (org) => {
             if (org?.trialPermanentlyExpired) {
-              // Rediriger vers la page de sélection de plan de l'organisation
               this.router.navigate(['/organization/stats']);
+              return;
             }
+            if (org?.marketVersion) {
+              const orgMarket: MarketCode = org.marketVersion.toUpperCase() === 'DZ' ? 'DZ' : 'DEFAULT';
+              this.selectedMarket = orgMarket;
+              this.currencyService.setSelectedMarket(orgMarket);
+            }
+            this.loadPricingPlans();
           },
-          error: (err) => {
-            // Ignorer les erreurs (utilisateur peut ne pas être une organisation)
-            console.debug('PricingPlansComponent: Pas une organisation ou erreur:', err);
+          error: () => {
+            this.loadPricingPlans();
           }
         });
+      } else {
+        this.loadPricingPlans();
       }
     });
-    
+  }
+
+  selectMarket(market: MarketCode) {
+    if (this.selectedMarket === market) {
+      return;
+    }
+    this.selectedMarket = market;
+    this.currencyService.setSelectedMarket(market);
     this.loadPricingPlans();
   }
 
   loadPricingPlans() {
     this.loading = true;
     this.error = '';
-    // Le service récupère automatiquement marketVersion depuis l'environnement si non fourni
-    this.pricingPlanService.getActivePricingPlans().subscribe({
+    this.pricingPlanService.getActivePricingPlans(this.selectedMarket).subscribe({
       next: (plans) => {
-        // Si une organisation avec un essai terminé accède à cette page, filtrer les plans gratuits et d'essai
-        if (this.isAuthenticated) {
-          this.accountContextService.isOrganizationAccount$.pipe(
-            switchMap(isOrg => {
-              if (isOrg) {
-                return this.organizationAccountService.getMyOrganization();
-              }
-              return of(null);
-            })
-          ).subscribe({
-            next: (org) => {
-              if (org?.trialPermanentlyExpired) {
-                // Filtrer les plans d'essai et les plans gratuits
-                this.plans = plans.filter(plan => {
-                  // Exclure les plans d'essai
-                  if (plan.trialPeriodDays && plan.trialPeriodDays > 0) {
-                    return false;
-                  }
-                  // Exclure les plans gratuits
-                  const isFree = (plan.pricePerMonth === null || plan.pricePerMonth === undefined || plan.pricePerMonth === 0) 
-                    && (plan.pricePerRequest === null || plan.pricePerRequest === undefined);
-                  return !isFree;
-                });
-              } else {
-                this.plans = plans;
-              }
-              this.loading = false;
-              if (this.plans.length === 0) {
-                this.error = 'Aucun plan tarifaire disponible pour le moment.';
-              }
-            },
-            error: () => {
-              // Pas une organisation ou erreur, afficher tous les plans
-              this.plans = plans;
-              this.loading = false;
-              if (this.plans.length === 0) {
-                this.error = 'Aucun plan tarifaire disponible pour le moment.';
-              }
-            }
-          });
-        } else {
-          // Utilisateur non authentifié, afficher tous les plans
-          this.plans = plans;
-          this.loading = false;
-          if (this.plans.length === 0) {
-            this.error = 'Aucun plan tarifaire disponible pour le moment.';
-          }
+        this.plans = plans;
+        this.loading = false;
+        if (this.plans.length === 0) {
+          this.error = 'Aucun plan tarifaire disponible pour le moment.';
         }
-        console.log('✅ Plans reçus:', this.plans.length, this.plans);
-        console.log('✅ Market versions des plans reçus:', this.plans.map(p => ({ name: p.name, marketVersion: p.marketVersion })));
       },
       error: (err) => {
         this.error = 'Erreur lors du chargement des plans tarifaires: ' + (err.error?.message || err.message || 'Erreur inconnue');
         this.loading = false;
-        console.error('Erreur:', err);
       }
     });
   }
 
   getCurrencySymbol(currency?: string): string {
-    if (!currency) {
-      // Si pas de devise fournie, utiliser la devise du marché depuis le service
-      // Note: Cette méthode est synchrone, donc on ne peut pas utiliser l'Observable ici
-      // Le template utilisera currencySymbol$ qui est asynchrone
-      return '€'; // Par défaut EUR (fallback)
-    }
-    const currencyMap: { [key: string]: string } = {
-      'EUR': '€',
-      'DZD': 'DA',
-      'USD': '$',
-      'GBP': '£',
-      'JPY': '¥',
-      'CNY': '¥',
-      'CHF': 'CHF',
-      'CAD': 'C$',
-      'AUD': 'A$',
-      'MAD': 'DH'
-    };
-    return currencyMap[currency.toUpperCase()] || currency;
+    return this.currencyService.getSymbolForCurrency(
+      currency || (this.selectedMarket === 'DZ' ? 'DZD' : 'EUR')
+    );
   }
 
   parseFeatures(features: string): string[] {
-    try {
-      // Essayer de parser comme JSON
-      const parsed = JSON.parse(features);
-      if (Array.isArray(parsed)) {
-        return parsed;
+    if (!features) return [];
+    const trimmed = features.trim();
+    if (trimmed.startsWith('[')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) {
+          return parsed.map(x => String(x).trim()).filter(Boolean);
+        }
+      } catch {
+        // Fallback ci-dessous
       }
-    } catch (e) {
-      // Si ce n'est pas du JSON, traiter comme texte séparé par des lignes
-      return features.split('\n').filter(f => f.trim().length > 0);
     }
-    return [];
+    const separator = trimmed.includes('\n') ? /\r?\n/ : /,\s*/;
+    return trimmed.split(separator).map(f => f.trim()).filter(f => f.length > 0);
   }
 
   openQuoteRequestForm() {

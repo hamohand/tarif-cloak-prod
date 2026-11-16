@@ -4,7 +4,7 @@ import { Router } from '@angular/router';
 import { PricingPlanService, PricingPlan } from '../../core/services/pricing-plan.service';
 import { PaymentService } from '../../core/services/payment.service';
 import { OrganizationAccountService } from '../../core/services/organization-account.service';
-import { environment } from '../../../environments/environment';
+import { CurrencyService, MarketCode } from '../../core/services/currency.service';
 
 @Component({
   selector: 'app-choose-plan',
@@ -42,11 +42,14 @@ import { environment } from '../../../environments/environment';
                 }
                 <div class="plan-price">
                   @if (plan.pricePerMonth != null) {
-                    <span class="price-amount">{{ plan.pricePerMonth | number:'1.2-2' }}</span>
-                    <span class="price-currency">{{ plan.currency || 'DZD' }}</span>
+                    <span class="price-amount">{{ plan.pricePerMonth | number:'1.0-2' }}</span>
+                    <span class="price-currency">{{ getPlanCurrencySymbol(plan) }}</span>
                     <span class="price-period">/mois</span>
                   }
                 </div>
+                @if (plan.pricePerYear != null && plan.pricePerYear > 0) {
+                  <p class="plan-quota">ou {{ plan.pricePerYear | number:'1.0-0' }} {{ getPlanCurrencySymbol(plan) }}/an</p>
+                }
                 @if (plan.monthlyQuota) {
                   <p class="plan-quota">{{ plan.monthlyQuota | number }} crédits/mois</p>
                 }
@@ -278,11 +281,13 @@ export class ChoosePlanComponent implements OnInit {
   private pricingPlanService = inject(PricingPlanService);
   private paymentService = inject(PaymentService);
   private orgAccountService = inject(OrganizationAccountService);
+  private currencyService = inject(CurrencyService);
   private router = inject(Router);
 
   paidPlans: PricingPlan[] = [];
   currentPlanId: number | null = null;
   currentPlanName: string | null = null;
+  orgMarketVersion: MarketCode = this.currencyService.getSelectedMarket();
   loading = true;
   checkoutLoading = false;
   error: string | null = null;
@@ -291,38 +296,39 @@ export class ChoosePlanComponent implements OnInit {
     this.loadData();
   }
 
+  getPlanCurrencySymbol(plan: PricingPlan): string {
+    return this.currencyService.getSymbolForCurrency(
+      plan.currency || (this.orgMarketVersion === 'DZ' ? 'DZD' : 'EUR')
+    );
+  }
+
   private loadData() {
     this.loading = true;
     this.orgAccountService.getMyOrganization().subscribe({
       next: org => {
-        if (org.pricingPlanId) {
-          this.pricingPlanService.getActivePricingPlans(environment.marketVersion).subscribe({
-            next: plans => {
-              this.paidPlans = plans.filter(p => p.pricePerMonth != null && p.pricePerMonth > 0);
-              const current = plans.find(p => p.id === org.pricingPlanId);
-              if (current && current.pricePerMonth != null && current.pricePerMonth > 0) {
-                this.currentPlanId = current.id;
-                this.currentPlanName = current.name;
-              }
-              this.loading = false;
-            },
-            error: () => { this.loadPlansOnly(); }
-          });
-        } else {
-          this.loadPlansOnly();
-        }
+        const market: MarketCode = org.marketVersion?.toUpperCase() === 'DZ' ? 'DZ'
+          : (org.marketVersion ? 'DEFAULT' : this.currencyService.getSelectedMarket());
+        this.orgMarketVersion = market;
+        this.loadPlansForMarket(market, org.pricingPlanId ?? null);
       },
-      error: () => { this.loadPlansOnly(); }
+      error: () => { this.loadPlansForMarket(this.orgMarketVersion, null); }
     });
   }
 
-  private loadPlansOnly() {
-    this.pricingPlanService.getActivePricingPlans(environment.marketVersion).subscribe({
+  private loadPlansForMarket(market: MarketCode, orgPlanId: number | null) {
+    this.pricingPlanService.getActivePricingPlans(market).subscribe({
       next: plans => {
         this.paidPlans = plans.filter(p => p.pricePerMonth != null && p.pricePerMonth > 0);
+        if (orgPlanId) {
+          const current = plans.find(p => p.id === orgPlanId);
+          if (current && current.pricePerMonth != null && current.pricePerMonth > 0) {
+            this.currentPlanId = current.id;
+            this.currentPlanName = current.name;
+          }
+        }
         this.loading = false;
       },
-      error: err => {
+      error: () => {
         this.error = 'Impossible de charger les plans. Veuillez réessayer.';
         this.loading = false;
       }

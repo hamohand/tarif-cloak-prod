@@ -13,119 +13,98 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 
 /**
- * Service pour initialiser les plans tarifaires par défaut.
+ * Service pour initialiser les plans tarifaires par défaut (DEFAULT/EUR et DZ/DZD).
  * S'exécute après la correction du schéma de la table.
  */
 @Service
 @Slf4j
 @Order(2)
 public class PricingPlanInitializationService {
-    
+
     @Autowired
     private PricingPlanRepository pricingPlanRepository;
-    
+
     @EventListener(ApplicationReadyEvent.class)
     @Transactional
     public void initializePricingPlans() {
-        log.info("Vérification et initialisation des plans tarifaires par défaut...");
-        
-        // Plan d'essai gratuit — 200 crédits / 30 jours
-        if (!pricingPlanRepository.existsByName("Essai gratuit")) {
-            PricingPlan trial = new PricingPlan();
-            trial.setName("Essai gratuit");
-            trial.setDescription("200 crédits gratuits valables pendant 30 jours");
-            trial.setPricePerMonth(BigDecimal.ZERO);
-            trial.setPricePerRequest(null);
-            trial.setMonthlyQuota(200);
-            trial.setTrialPeriodDays(30);
-            trial.setFeatures("200 crédits gratuits, Valable 30 jours, Accès à toutes les fonctionnalités");
-            trial.setIsActive(true);
-            trial.setDisplayOrder(0);
-            pricingPlanRepository.save(trial);
-            log.info("Plan 'Essai gratuit' créé");
-        }
+        log.info("Vérification et initialisation des plans tarifaires (DEFAULT/EUR et DZ/DZD)...");
 
-        // Plan Invité — réservé aux beta-testeurs (prod), 500 crédits / 30 jours
-        if (!pricingPlanRepository.existsByName("Invité")) {
-            PricingPlan invite = new PricingPlan();
-            invite.setName("Invité");
-            invite.setDescription("Accès beta-testeur — 500 crédits offerts pendant 30 jours");
-            invite.setPricePerMonth(BigDecimal.ZERO);
-            invite.setPricePerRequest(null);
-            invite.setMonthlyQuota(500);
-            invite.setTrialPeriodDays(30);
-            invite.setFeatures("500 crédits gratuits, Accès complet pendant 30 jours, Réservé aux beta-testeurs");
-            invite.setIsActive(true);
-            invite.setDisplayOrder(-1);
-            pricingPlanRepository.save(invite);
-            log.info("Plan 'Invité' créé");
-        }
-        
-        // Plan facturé à la requête
-        if (!pricingPlanRepository.existsByName("Pay-per-Request")) {
-            PricingPlan payPerRequest = new PricingPlan();
-            payPerRequest.setName("Pay-per-Request");
-            payPerRequest.setDescription("Facturation à la requête sans limite de temps");
-            payPerRequest.setPricePerMonth(null);
-            payPerRequest.setPricePerRequest(new BigDecimal("0.05")); // 5 centimes par requête
-            payPerRequest.setMonthlyQuota(null); // Pas de quota mensuel
-            payPerRequest.setTrialPeriodDays(null);
-            payPerRequest.setFeatures("Facturation à la requête, Pas de limite de temps, Pas de quota mensuel, Support par email");
-            payPerRequest.setIsActive(true);
-            payPerRequest.setDisplayOrder(1);
-            pricingPlanRepository.save(payPerRequest);
-            log.info("Plan 'Pay-per-Request' créé");
-        }
-        
-        // Plan Starter
-        if (!pricingPlanRepository.existsByName("Starter")) {
-            PricingPlan starter = new PricingPlan();
-            starter.setName("Starter");
-            starter.setDescription("Plan de démarrage idéal pour les petites entreprises");
-            starter.setPricePerMonth(new BigDecimal("29.99"));
-            starter.setPricePerRequest(null);
-            starter.setMonthlyQuota(1000);
-            starter.setTrialPeriodDays(null);
-            starter.setFeatures("1000 requêtes/mois, Support par email, Accès à toutes les fonctionnalités de base");
-            starter.setIsActive(true);
-            starter.setDisplayOrder(2);
-            pricingPlanRepository.save(starter);
-            log.info("Plan 'Starter' créé");
-        }
-        
-        // Plan Professional
-        if (!pricingPlanRepository.existsByName("Professional")) {
-            PricingPlan professional = new PricingPlan();
-            professional.setName("Professional");
-            professional.setDescription("Plan professionnel pour les entreprises en croissance");
-            professional.setPricePerMonth(new BigDecimal("79.99"));
-            professional.setPricePerRequest(null);
-            professional.setMonthlyQuota(5000);
-            professional.setTrialPeriodDays(null);
-            professional.setFeatures("5000 requêtes/mois, Support prioritaire, Accès à toutes les fonctionnalités, Rapports détaillés");
-            professional.setIsActive(true);
-            professional.setDisplayOrder(3);
-            pricingPlanRepository.save(professional);
-            log.info("Plan 'Professional' créé");
-        }
-        
-        // Plan Enterprise
-        if (!pricingPlanRepository.existsByName("Enterprise")) {
-            PricingPlan enterprise = new PricingPlan();
-            enterprise.setName("Enterprise");
-            enterprise.setDescription("Plan entreprise avec quota illimité");
-            enterprise.setPricePerMonth(new BigDecimal("199.99"));
-            enterprise.setPricePerRequest(null);
-            enterprise.setMonthlyQuota(null); // Illimité
-            enterprise.setTrialPeriodDays(null);
-            enterprise.setFeatures("Quota illimité, Support dédié 24/7, Toutes les fonctionnalités, Rapports avancés, Personnalisation");
-            enterprise.setIsActive(true);
-            enterprise.setDisplayOrder(4);
-            pricingPlanRepository.save(enterprise);
-            log.info("Plan 'Enterprise' créé");
-        }
-        
+        // Marché DEFAULT (Europe & International — EUR)
+        ensurePlan("Invité", "DEFAULT", "EUR",
+                "Accès beta-testeur — 500 crédits offerts pendant 30 jours",
+                BigDecimal.ZERO, null, 500, 30, -1,
+                "500 crédits gratuits, Accès complet pendant 30 jours, Réservé aux beta-testeurs");
+        ensurePlan("Essai gratuit", "DEFAULT", "EUR",
+                "Découverte complète — Décodage & Comparaison illimités + 225 crédits offerts (30 jours)",
+                BigDecimal.ZERO, null, 225, 30, 0,
+                "Décodage & Comparaison DZ ↔ UE illimités, 225 crédits de recherche assistée (~15 recherches P10/NC8), Valable 30 jours sans engagement");
+        ensurePlan("Essentiel", "DEFAULT", "EUR",
+                "PME & importateurs/exportateurs réguliers — ~100 recherches assistées/mois + décodage illimité",
+                new BigDecimal("29.00"), new BigDecimal("290.00"), 1500, null, 1,
+                "Décodage & Comparaison DZ ↔ UE illimités, 1 500 crédits / mois (~100 recherches P10/NC8), Import de listes CSV, Support par email");
+        ensurePlan("Pro / Transit", "DEFAULT", "EUR",
+                "Transitaires, commissionnaires en douane & cabinets conseil — ~500 recherches assistées/mois",
+                new BigDecimal("79.00"), new BigDecimal("790.00"), 7500, null, 2,
+                "Décodage & Comparaison DZ ↔ UE illimités, 7 500 crédits / mois (~500 recherches P10/NC8), Listes CSV & traitement Batch, Multi-collaborateurs & statistiques");
+        ensurePlan("Entreprise", "DEFAULT", "EUR",
+                "Grands comptes & groupes logistiques — ~2 000 recherches assistées/mois",
+                new BigDecimal("199.00"), new BigDecimal("1990.00"), 30000, null, 3,
+                "Décodage & Comparaison DZ ↔ UE illimités, 30 000 crédits / mois (~2 000 recherches P10/NC8), Multi-collaborateurs illimités & Batch, Facturation annuelle ou devis sur mesure");
+
+        // Marché DZ (Algérie — DZD)
+        ensurePlan("Invité", "DZ", "DZD",
+                "Accès beta-testeur — 500 crédits offerts pendant 30 jours",
+                BigDecimal.ZERO, null, 500, 30, -1,
+                "500 crédits gratuits, Accès complet pendant 30 jours, Réservé aux beta-testeurs");
+        ensurePlan("Essai gratuit", "DZ", "DZD",
+                "Découverte complète — Décodage & Comparaison illimités + 225 crédits offerts (30 jours)",
+                BigDecimal.ZERO, null, 225, 30, 0,
+                "Décodage & Comparaison DZ ↔ UE illimités, 225 crédits de recherche assistée (~15 recherches P10/NC8), Valable 30 jours sans engagement");
+        ensurePlan("Essentiel", "DZ", "DZD",
+                "PME & importateurs/exportateurs réguliers — ~100 recherches assistées/mois + décodage illimité",
+                new BigDecimal("3900.00"), new BigDecimal("39000.00"), 1500, null, 1,
+                "Décodage & Comparaison DZ ↔ UE illimités, 1 500 crédits / mois (~100 recherches P10/NC8), Import de listes CSV, Paiement CIB / Edahabia ou virement");
+        ensurePlan("Pro / Transit", "DZ", "DZD",
+                "Transitaires, commissionnaires en douane & cabinets conseil — ~500 recherches assistées/mois",
+                new BigDecimal("9900.00"), new BigDecimal("99000.00"), 7500, null, 2,
+                "Décodage & Comparaison DZ ↔ UE illimités, 7 500 crédits / mois (~500 recherches P10/NC8), Listes CSV & traitement Batch, Multi-collaborateurs & statistiques, Paiement CIB / Edahabia ou virement annuel");
+        ensurePlan("Entreprise", "DZ", "DZD",
+                "Grands comptes & groupes logistiques — ~2 000 recherches assistées/mois",
+                new BigDecimal("24000.00"), new BigDecimal("240000.00"), 30000, null, 3,
+                "Décodage & Comparaison DZ ↔ UE illimités, 30 000 crédits / mois (~2 000 recherches P10/NC8), Multi-collaborateurs illimités & Batch, Facturation annuelle par virement / bon de commande");
+
         log.info("Vérification des plans tarifaires terminée");
     }
-}
 
+    private void ensurePlan(
+            String name,
+            String marketVersion,
+            String currency,
+            String description,
+            BigDecimal pricePerMonth,
+            BigDecimal pricePerYear,
+            Integer monthlyQuota,
+            Integer trialPeriodDays,
+            int displayOrder,
+            String features) {
+        if (pricingPlanRepository.existsByNameAndMarketVersion(name, marketVersion)) {
+            return;
+        }
+        PricingPlan plan = new PricingPlan();
+        plan.setName(name);
+        plan.setMarketVersion(marketVersion);
+        plan.setCurrency(currency);
+        plan.setDescription(description);
+        plan.setPricePerMonth(pricePerMonth);
+        plan.setPricePerYear(pricePerYear);
+        plan.setPricePerRequest(null);
+        plan.setMonthlyQuota(monthlyQuota);
+        plan.setTrialPeriodDays(trialPeriodDays);
+        plan.setFeatures(features);
+        plan.setIsActive(true);
+        plan.setIsCustom(false);
+        plan.setDisplayOrder(displayOrder);
+        pricingPlanRepository.save(plan);
+        log.info("Plan '{}' créé pour le marché {} ({})", name, marketVersion, currency);
+    }
+}

@@ -112,11 +112,14 @@ public class PendingRegistrationService {
         pending.setOrganizationPhone(request.getOrganizationPhone());
         Long planId = request.getPricingPlanId();
         if (planId == null) {
-            planId = pricingPlanService.findByName(defaultPlanName)
+            String targetMarket = (request.getMarketVersion() != null && !request.getMarketVersion().trim().isEmpty())
+                    ? request.getMarketVersion().trim().toUpperCase(java.util.Locale.ROOT)
+                    : "DEFAULT";
+            planId = pricingPlanService.findByNameAndMarket(defaultPlanName, targetMarket)
                     .map(com.muhend.backend.pricing.dto.PricingPlanDto::getId)
                     .orElse(null);
             if (planId != null) {
-                log.info("Plan par défaut '{}' assigné automatiquement (id={})", defaultPlanName, planId);
+                log.info("Plan par défaut '{}' ({}) assigné automatiquement (id={})", defaultPlanName, targetMarket, planId);
             } else {
                 log.warn("Plan par défaut '{}' introuvable — inscription sans plan", defaultPlanName);
             }

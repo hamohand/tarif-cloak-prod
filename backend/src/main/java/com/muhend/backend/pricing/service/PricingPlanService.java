@@ -13,8 +13,8 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -43,43 +43,24 @@ public class PricingPlanService {
         try {
             List<PricingPlan> plans;
             log.info("🔍 Récupération des plans tarifaires - marketVersion reçu: '{}'", marketVersion);
-            if (marketVersion != null && !marketVersion.isEmpty() && !marketVersion.trim().isEmpty()) {
-                String trimmedVersion = marketVersion.trim();
-                log.info("🔍 Utilisation de marketVersion trim: '{}'", trimmedVersion);
-
-                // Inclure les plans du marché demandé ET les plans DEFAULT
-                List<String> versions = trimmedVersion.equals("DEFAULT")
-                        ? List.of("DEFAULT")
-                        : Arrays.asList(trimmedVersion, "DEFAULT");
-                plans = pricingPlanRepository.findByMarketVersionInAndIsActiveTrueAndIsCustomFalseOrderByDisplayOrderAsc(versions);
-                log.info("✅ {} plan(s) trouvé(s) pour marketVersions='{}'", plans.size(), versions);
-                
-                if (plans.isEmpty()) {
-                    log.warn("⚠️ Aucun plan trouvé pour marketVersion='{}'. Vérifiez que les plans ont bien market_version='{}' en base de données.", trimmedVersion, trimmedVersion);
-                    // Log tous les plans actifs pour déboguer
-                    List<PricingPlan> allActivePlans = pricingPlanRepository.findByIsActiveTrueOrderByDisplayOrderAsc();
-                    log.warn("⚠️ Plans actifs disponibles en base: {}", 
-                        allActivePlans.stream()
-                            .map(p -> String.format("%s (market_version='%s', is_custom=%s)", 
-                                p.getName(), p.getMarketVersion(), p.getIsCustom()))
-                            .collect(Collectors.joining(", ")));
-                } else {
-                    log.info("✅ Plans trouvés: {}", 
-                        plans.stream()
-                            .map(p -> String.format("%s (market_version='%s')", p.getName(), p.getMarketVersion()))
-                            .collect(Collectors.joining(", ")));
+            if (marketVersion != null && !marketVersion.trim().isEmpty()) {
+                String trimmedVersion = marketVersion.trim().toUpperCase(Locale.ROOT);
+                plans = pricingPlanRepository.findByMarketVersionAndIsActiveTrueAndIsCustomFalseOrderByDisplayOrderAsc(trimmedVersion);
+                if (plans.isEmpty() && !"DEFAULT".equals(trimmedVersion)) {
+                    log.warn("⚠️ Aucun plan actif pour marketVersion='{}', repli sur 'DEFAULT'", trimmedVersion);
+                    plans = pricingPlanRepository.findByMarketVersionAndIsActiveTrueAndIsCustomFalseOrderByDisplayOrderAsc("DEFAULT");
                 }
+                log.info("✅ {} plan(s) trouvé(s) pour marketVersion='{}'", plans.size(), trimmedVersion);
             } else {
-                // Par défaut, récupérer tous les plans actifs (comportement existant)
                 plans = pricingPlanRepository.findByIsActiveTrueOrderByDisplayOrderAsc();
-                log.warn("⚠️ marketVersion non fourni ou vide - Récupération de tous les plans actifs: {}", plans.size());
+                log.info("📋 Récupération de tous les plans actifs: {}", plans.size());
             }
             return plans.stream()
                     .map(this::toDto)
                     .collect(Collectors.toList());
         } catch (Exception e) {
             log.error("Erreur lors de la récupération des plans tarifaires actifs depuis la base de données", e);
-            throw e; // Re-lancer l'exception pour que le controller puisse la gérer
+            throw e;
         }
     }
     
@@ -104,77 +85,66 @@ public class PricingPlanService {
      */
     @Transactional(readOnly = true)
     public List<PricingPlanDto> getAvailablePricingPlansForOrganization(String marketVersion, Long organizationId) {
+        Optional<Organization> orgOpt = organizationId != null
+                ? organizationRepository.findById(organizationId)
+                : Optional.empty();
+
+        String effectiveMarket = (marketVersion != null && !marketVersion.trim().isEmpty())
+                ? marketVersion.trim().toUpperCase(Locale.ROOT)
+                : orgOpt.map(Organization::getMarketVersion)
+                        .filter(m -> m != null && !m.isBlank())
+                        .map(m -> m.trim().toUpperCase(Locale.ROOT))
+                        .orElse(null);
+
         List<PricingPlan> plans;
-        
-        // Récupérer les plans selon la version de marché (inclut DEFAULT en fallback)
-        if (marketVersion != null && !marketVersion.trim().isEmpty()) {
-            String trimmedVersion = marketVersion.trim();
-            List<String> versions = trimmedVersion.equals("DEFAULT")
-                    ? List.of("DEFAULT")
-                    : Arrays.asList(trimmedVersion, "DEFAULT");
-            plans = pricingPlanRepository.findByMarketVersionInAndIsActiveTrueAndIsCustomFalseOrderByDisplayOrderAsc(versions);
-            log.info("🔍 Récupération des plans pour marketVersions='{}': {} plan(s) trouvé(s)", versions, plans.size());
+        if (effectiveMarket != null) {
+            plans = pricingPlanRepository.findByMarketVersionAndIsActiveTrueAndIsCustomFalseOrderByDisplayOrderAsc(effectiveMarket);
+            if (plans.isEmpty() && !"DEFAULT".equals(effectiveMarket)) {
+                plans = pricingPlanRepository.findByMarketVersionAndIsActiveTrueAndIsCustomFalseOrderByDisplayOrderAsc("DEFAULT");
+            }
+            log.info("🔍 Récupération des plans pour marketVersion='{}': {} plan(s)", effectiveMarket, plans.size());
         } else {
             plans = pricingPlanRepository.findByIsActiveTrueOrderByDisplayOrderAsc();
-            log.info("🔍 Récupération de tous les plans actifs: {} plan(s) trouvé(s)", plans.size());
+            log.info("🔍 Récupération de tous les plans actifs: {} plan(s)", plans.size());
         }
-        
-        // Si une organisation est spécifiée, vérifier si elle a déjà utilisé l'essai gratuit
-        if (organizationId != null) {
-            Optional<Organization> orgOpt = organizationRepository.findById(organizationId);
-            if (orgOpt.isPresent()) {
-                Organization org = orgOpt.get();
-                
-                // Vérifier si l'organisation a déjà utilisé l'essai gratuit
-                // L'essai est considéré comme utilisé si :
-                // 1. trialPermanentlyExpired est true, OU
-                // 2. trialExpiresAt n'est pas null (même si pas encore expiré)
-                boolean hasUsedTrial = Boolean.TRUE.equals(org.getTrialPermanentlyExpired()) 
-                        || org.getTrialExpiresAt() != null;
-                
-                // Vérifier si l'organisation a actuellement un plan payant
-                boolean hasPaidPlan = false;
-                if (org.getPricingPlanId() != null) {
-                    try {
-                        PricingPlanDto currentPlan = getPricingPlanById(org.getPricingPlanId());
-                        boolean hasPricePerMonth = currentPlan.getPricePerMonth() != null && currentPlan.getPricePerMonth().compareTo(BigDecimal.ZERO) > 0;
-                        boolean hasPricePerRequest = currentPlan.getPricePerRequest() != null && currentPlan.getPricePerRequest().compareTo(BigDecimal.ZERO) > 0;
-                        hasPaidPlan = hasPricePerMonth || hasPricePerRequest;
-                    } catch (Exception e) {
-                        log.warn("Impossible de récupérer le plan actuel pour vérifier s'il s'agit d'un plan payant: {}", e.getMessage());
-                    }
+
+        if (orgOpt.isPresent()) {
+            Organization org = orgOpt.get();
+            boolean hasUsedTrial = Boolean.TRUE.equals(org.getTrialPermanentlyExpired())
+                    || org.getTrialExpiresAt() != null;
+
+            boolean hasPaidPlan = false;
+            if (org.getPricingPlanId() != null) {
+                try {
+                    PricingPlanDto currentPlan = getPricingPlanById(org.getPricingPlanId());
+                    boolean hasPricePerMonth = currentPlan.getPricePerMonth() != null && currentPlan.getPricePerMonth().compareTo(BigDecimal.ZERO) > 0;
+                    boolean hasPricePerRequest = currentPlan.getPricePerRequest() != null && currentPlan.getPricePerRequest().compareTo(BigDecimal.ZERO) > 0;
+                    hasPaidPlan = hasPricePerMonth || hasPricePerRequest;
+                } catch (Exception e) {
+                    log.warn("Impossible de récupérer le plan actuel pour vérifier s'il s'agit d'un plan payant: {}", e.getMessage());
                 }
-                
-                if (hasUsedTrial || hasPaidPlan) {
-                    // Exclure tous les plans d'essai (trialPeriodDays > 0) ET tous les plans gratuits
-                    int plansBeforeFilter = plans.size();
-                    plans = plans.stream()
-                            .filter(plan -> {
-                                // Exclure les plans d'essai
-                                if (plan.getTrialPeriodDays() != null && plan.getTrialPeriodDays() > 0) {
-                                    return false;
-                                }
-                                
-                                // Exclure les plans gratuits (pricePerMonth = 0 ou null ET pricePerRequest = 0 ou null)
-                                boolean isFreePlan = (plan.getPricePerMonth() == null || plan.getPricePerMonth().compareTo(BigDecimal.ZERO) == 0)
-                                        && (plan.getPricePerRequest() == null || plan.getPricePerRequest().compareTo(BigDecimal.ZERO) == 0);
-                                
-                                // Ne garder que les plans payants
-                                return !isFreePlan;
-                            })
-                            .collect(Collectors.toList());
-                    
-                    log.info("🚫 Plans d'essai et plans gratuits exclus pour l'organisation {} (ID: {}): {} plan(s) filtré(s), {} plan(s) payant(s) restant(s)", 
-                            org.getName(), organizationId, plansBeforeFilter - plans.size(), plans.size());
-                } else {
-                    log.info("✅ Plans d'essai et plans gratuits disponibles pour l'organisation {} (ID: {}): l'essai n'a pas encore été utilisé", 
-                            org.getName(), organizationId);
-                }
-            } else {
-                log.warn("⚠️ Organisation {} introuvable, tous les plans seront retournés", organizationId);
             }
+
+            if (hasUsedTrial || hasPaidPlan) {
+                int plansBeforeFilter = plans.size();
+                plans = plans.stream()
+                        .filter(plan -> {
+                            if (plan.getTrialPeriodDays() != null && plan.getTrialPeriodDays() > 0) {
+                                return false;
+                            }
+                            boolean isFreePlan = (plan.getPricePerMonth() == null || plan.getPricePerMonth().compareTo(BigDecimal.ZERO) == 0)
+                                    && (plan.getPricePerRequest() == null || plan.getPricePerRequest().compareTo(BigDecimal.ZERO) == 0);
+                            return !isFreePlan;
+                        })
+                        .collect(Collectors.toList());
+
+                log.info("🚫 Plans d'essai et gratuits exclus pour {} (ID: {}): {} filtré(s), {} restant(s)",
+                        org.getName(), organizationId, plansBeforeFilter - plans.size(), plans.size());
+            }
+        } else if (organizationId != null) {
+            log.warn("⚠️ Organisation {} introuvable, tous les plans seront retournés", organizationId);
         }
-        
+
         return plans.stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
@@ -196,8 +166,20 @@ public class PricingPlanService {
      */
     @Transactional(readOnly = true)
     public Optional<PricingPlanDto> findByName(String name) {
-        return pricingPlanRepository.findByName(name)
-                .filter(PricingPlan::getIsActive)
+        return pricingPlanRepository.findFirstByNameAndIsActiveTrueOrderByIdAsc(name)
+                .map(this::toDto);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<PricingPlanDto> findByNameAndMarket(String name, String marketVersion) {
+        if (marketVersion != null && !marketVersion.isBlank()) {
+            Optional<PricingPlan> exact = pricingPlanRepository
+                    .findFirstByNameAndMarketVersionAndIsActiveTrueOrderByIdAsc(name, marketVersion.trim().toUpperCase(Locale.ROOT));
+            if (exact.isPresent()) {
+                return exact.map(this::toDto);
+            }
+        }
+        return pricingPlanRepository.findFirstByNameAndIsActiveTrueOrderByIdAsc(name)
                 .map(this::toDto);
     }
 
@@ -227,9 +209,11 @@ public class PricingPlanService {
      */
     @Transactional
     public PricingPlanDto createPricingPlan(CreatePricingPlanRequest request) {
-        // Vérifier l'unicité du nom
-        if (pricingPlanRepository.existsByName(request.getName())) {
-            throw new IllegalArgumentException("Un plan tarifaire avec ce nom existe déjà: " + request.getName());
+        String targetMarket = request.getMarketVersion() != null && !request.getMarketVersion().isBlank()
+                ? request.getMarketVersion().trim().toUpperCase(Locale.ROOT)
+                : "DEFAULT";
+        if (pricingPlanRepository.existsByNameAndMarketVersion(request.getName(), targetMarket)) {
+            throw new IllegalArgumentException("Un plan tarifaire avec ce nom existe déjà sur le marché " + targetMarket + ": " + request.getName());
         }
 
         PricingPlan plan = new PricingPlan();
@@ -243,8 +227,8 @@ public class PricingPlanService {
         plan.setFeatures(request.getFeatures());
         plan.setIsActive(request.getIsActive() != null ? request.getIsActive() : true);
         plan.setDisplayOrder(request.getDisplayOrder());
-        plan.setMarketVersion(request.getMarketVersion() != null ? request.getMarketVersion() : "DEFAULT");
-        plan.setCurrency(request.getCurrency() != null ? request.getCurrency() : "EUR");
+        plan.setMarketVersion(targetMarket);
+        plan.setCurrency(request.getCurrency() != null ? request.getCurrency() : ("DZ".equals(targetMarket) ? "DZD" : "EUR"));
         plan.setIsCustom(request.getIsCustom() != null ? request.getIsCustom() : false);
         // Traiter organizationId = 0 comme null (pas d'organisation associée)
         Long orgId = request.getOrganizationId();
@@ -276,10 +260,14 @@ public class PricingPlanService {
         PricingPlan plan = pricingPlanRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Plan tarifaire introuvable: " + id));
         
-        // Vérifier si le nom existe déjà (pour un autre plan)
-        if (request.getName() != null && !request.getName().equals(plan.getName())) {
-            if (pricingPlanRepository.existsByName(request.getName())) {
-                throw new IllegalArgumentException("Un plan tarifaire avec ce nom existe déjà: " + request.getName());
+        String currentMarket = plan.getMarketVersion() != null ? plan.getMarketVersion() : "DEFAULT";
+        String targetMarket = request.getMarketVersion() != null && !request.getMarketVersion().isBlank()
+                ? request.getMarketVersion().trim().toUpperCase(Locale.ROOT)
+                : currentMarket;
+        String targetName = request.getName() != null ? request.getName() : plan.getName();
+        if (!targetName.equals(plan.getName()) || !targetMarket.equals(currentMarket)) {
+            if (pricingPlanRepository.existsByNameAndMarketVersion(targetName, targetMarket)) {
+                throw new IllegalArgumentException("Un plan tarifaire avec ce nom existe déjà sur le marché " + targetMarket + ": " + targetName);
             }
         }
         
@@ -315,7 +303,7 @@ public class PricingPlanService {
             plan.setDisplayOrder(request.getDisplayOrder());
         }
         if (request.getMarketVersion() != null) {
-            plan.setMarketVersion(request.getMarketVersion());
+            plan.setMarketVersion(targetMarket);
         }
         if (request.getCurrency() != null) {
             plan.setCurrency(request.getCurrency());

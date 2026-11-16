@@ -4,10 +4,51 @@ import { RouterLink, ActivatedRoute } from '@angular/router';
 import { RegisterService } from '../../../core/services/register.service';
 import { PricingPlanService, PricingPlan } from '../../../core/services/pricing-plan.service';
 import { MarketProfileService, MarketProfile } from '../../../core/services/market-profile.service';
-import { CurrencyService } from '../../../core/services/currency.service';
+import { CurrencyService, MarketCode } from '../../../core/services/currency.service';
 import { CommonModule } from '@angular/common';
 import { environment } from '../../../../environments/environment';
 import { take } from 'rxjs/operators';
+
+interface CountryOption {
+  code: string;
+  name: string;
+  dialCode: string;
+}
+
+const EU_AND_INTL_COUNTRIES: CountryOption[] = [
+  { code: 'FR', name: 'France', dialCode: '+33' },
+  { code: 'BE', name: 'Belgique', dialCode: '+32' },
+  { code: 'DE', name: 'Allemagne', dialCode: '+49' },
+  { code: 'ES', name: 'Espagne', dialCode: '+34' },
+  { code: 'IT', name: 'Italie', dialCode: '+39' },
+  { code: 'NL', name: 'Pays-Bas', dialCode: '+31' },
+  { code: 'PT', name: 'Portugal', dialCode: '+351' },
+  { code: 'LU', name: 'Luxembourg', dialCode: '+352' },
+  { code: 'AT', name: 'Autriche', dialCode: '+43' },
+  { code: 'IE', name: 'Irlande', dialCode: '+353' },
+  { code: 'PL', name: 'Pologne', dialCode: '+48' },
+  { code: 'GR', name: 'Grèce', dialCode: '+30' },
+  { code: 'SE', name: 'Suède', dialCode: '+46' },
+  { code: 'DK', name: 'Danemark', dialCode: '+45' },
+  { code: 'FI', name: 'Finlande', dialCode: '+358' },
+  { code: 'CZ', name: 'Tchéquie', dialCode: '+420' },
+  { code: 'RO', name: 'Roumanie', dialCode: '+40' },
+  { code: 'HU', name: 'Hongrie', dialCode: '+36' },
+  { code: 'BG', name: 'Bulgarie', dialCode: '+359' },
+  { code: 'HR', name: 'Croatie', dialCode: '+385' },
+  { code: 'SK', name: 'Slovaquie', dialCode: '+421' },
+  { code: 'SI', name: 'Slovénie', dialCode: '+386' },
+  { code: 'LT', name: 'Lituanie', dialCode: '+370' },
+  { code: 'LV', name: 'Lettonie', dialCode: '+371' },
+  { code: 'EE', name: 'Estonie', dialCode: '+372' },
+  { code: 'CY', name: 'Chypre', dialCode: '+357' },
+  { code: 'MT', name: 'Malte', dialCode: '+356' },
+  { code: 'CH', name: 'Suisse', dialCode: '+41' },
+  { code: 'GB', name: 'Royaume-Uni', dialCode: '+44' },
+  { code: 'TN', name: 'Tunisie', dialCode: '+216' },
+  { code: 'MA', name: 'Maroc', dialCode: '+212' },
+  { code: 'TR', name: 'Turquie', dialCode: '+90' }
+];
 
 @Component({
   selector: 'app-register',
@@ -21,23 +62,24 @@ import { take } from 'rxjs/operators';
 
         <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="register-form">
           <div class="form-section">
-            <h3>Profil de marché</h3>
-            <div class="form-group">
-              <label for="marketVersion">Marché *</label>
-              <ng-container *ngIf="selectedMarketProfile; else loadingProfile">
-                <input 
-                  id="marketVersion" 
-                  type="text" 
-                  [value]="selectedMarketProfile.countryName + ' (' + selectedMarketProfile.currencyCode + ')'"
-                  readonly
-                  class="form-control"
-                  formControlName="marketVersion">
-                <small class="form-hint">Profil de marché configuré pour cette instance de l'application.</small>
-              </ng-container>
-              <ng-template #loadingProfile>
-                <div class="loading-plans">Chargement du profil de marché...</div>
-              </ng-template>
+            <h3>Profil de facturation &amp; marché</h3>
+            <div class="market-switcher" role="group" aria-label="Zone de facturation">
+              <button type="button"
+                      class="market-btn"
+                      [class.active]="currentMarket === 'DZ'"
+                      (click)="selectMarket('DZ')">
+                <span class="market-title">🇩🇿 Algérie — Dinars (DA)</span>
+                <span class="market-sub">CIB / Edahabia ou virement sur facture</span>
+              </button>
+              <button type="button"
+                      class="market-btn"
+                      [class.active]="currentMarket === 'DEFAULT'"
+                      (click)="selectMarket('DEFAULT')">
+                <span class="market-title">🇪🇺 Europe &amp; International — Euros (€)</span>
+                <span class="market-sub">Carte bancaire ou prélèvement SEPA</span>
+              </button>
             </div>
+            <small class="form-hint">Toutes les nomenclatures (DZ ↔ UE) sont incluses quel que soit votre pays de facturation.</small>
           </div>
 
           <div class="form-section">
@@ -110,20 +152,30 @@ import { take } from 'rxjs/operators';
 
             <div class="form-row">
               <div class="form-group half-width">
-                <label for="organizationCountry">Pays (code ISO) *</label>
-                <input
-                  id="organizationCountry"
-                  type="text"
-                  readonly
-                  maxlength="2"
-                  formControlName="organizationCountry"
-                  class="form-control"
-                  [class.error]="isFieldInvalid('organizationCountry')"
-                  placeholder="{{ selectedMarketProfile?.countryCodeIsoAlpha2 }}">
+                <label for="organizationCountry">Pays de l'entreprise *</label>
+                @if (currentMarket === 'DZ') {
+                  <input
+                    id="organizationCountry"
+                    type="text"
+                    readonly
+                    value="Algérie (DZ)"
+                    class="form-control">
+                } @else {
+                  <select
+                    id="organizationCountry"
+                    formControlName="organizationCountry"
+                    (change)="onCountryChange()"
+                    class="form-control"
+                    [class.error]="isFieldInvalid('organizationCountry')">
+                    @for (country of euCountries; track country.code) {
+                      <option [value]="country.code">{{ country.name }} ({{ country.code }})</option>
+                    }
+                  </select>
+                }
                 <div class="error-message" *ngIf="isFieldInvalid('organizationCountry')">
                   {{ getErrorMessage('organizationCountry') }}
                 </div>
-                <small class="form-hint">Code pays ISO à 2 lettres.</small>
+                <small class="form-hint">Détermine la devise et les modalités de facturation.</small>
               </div>
 
               <div class="form-group half-width">
@@ -134,7 +186,7 @@ import { take } from 'rxjs/operators';
                   formControlName="organizationPhone"
                   class="form-control"
                   [class.error]="isFieldInvalid('organizationPhone')"
-                  placeholder="{{selectedMarketProfile?.phonePrefix}} 123456789'">
+                  [placeholder]="selectedDialCode + ' 123456789'">
                 <div class="error-message" *ngIf="isFieldInvalid('organizationPhone')">
                   {{ getErrorMessage('organizationPhone') }}
                 </div>
@@ -190,7 +242,16 @@ import { take } from 'rxjs/operators';
           <div class="form-section">
             <div class="form-group">
               <div class="pricing-info-bar">
-                Vous bénéficierez automatiquement de l'accès illimité au décodage et à la comparaison, plus votre essai de recherche assistée.
+                @if (selectedPlan) {
+                  <strong>Plan sélectionné : {{ selectedPlan.name }}</strong>
+                  @if (selectedPlan.pricePerMonth && selectedPlan.pricePerMonth > 0) {
+                    — {{ selectedPlan.pricePerMonth | number:'1.0-2' }} {{ formatPlanCurrency(selectedPlan) }}/mois (décodage &amp; comparaison illimités inclus)
+                  } @else {
+                    — Décodage &amp; Comparaison illimités + {{ selectedPlan.monthlyQuota | number }} crédits offerts
+                  }
+                } @else {
+                  Vous bénéficierez automatiquement de l'accès illimité au décodage et à la comparaison, plus votre essai de recherche assistée.
+                }
               </div>
             </div>
             <label class="consent-row" for="marketingConsent">
@@ -407,6 +468,45 @@ import { take } from 'rxjs/operators';
       height: 18px;
       flex-shrink: 0;
       accent-color: var(--neu-accent);
+    }
+
+    .market-switcher {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 0.85rem;
+      margin-bottom: 0.65rem;
+    }
+
+    .market-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.2rem;
+      padding: 0.85rem 1rem;
+      border-radius: var(--neu-radius-inner);
+      border: 2px solid transparent;
+      background: var(--neu-bg);
+      box-shadow: var(--neu-extruded-sm);
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.2s ease;
+    }
+
+    .market-btn.active {
+      border-color: var(--neu-accent);
+      box-shadow: var(--neu-inset);
+    }
+
+    .market-title {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--neu-text-primary);
+    }
+
+    .market-sub {
+      font-size: 0.8rem;
+      color: var(--neu-text-muted);
     }
 
     .error-message {
@@ -651,17 +751,25 @@ export class RegisterComponent implements OnInit {
   marketProfiles: MarketProfile[] = [];
   loadingProfiles = false;
   selectedMarketProfile: MarketProfile | null = null;
+  currentMarket: MarketCode = this.currencyService.getSelectedMarket();
+  selectedDialCode = '+33';
+  readonly euCountries = EU_AND_INTL_COUNTRIES;
   private passwordFieldFirstFocus = false;
-  currencySymbol$ = this.currencyService.getCurrencySymbol();
+  private preselectedPlanId: number | null = null;
+
+  get selectedPlan(): PricingPlan | undefined {
+    const id = this.registerForm.get('pricingPlanId')?.value;
+    return this.pricingPlans.find(p => p.id === id);
+  }
 
   registerForm: FormGroup = this.fb.group({
-    marketVersion: [null, [Validators.required]],
+    marketVersion: [this.currentMarket, [Validators.required]],
     organizationName: ['', [Validators.required, Validators.minLength(1), Validators.maxLength(255)]],
     organizationEmail: ['', [Validators.required, Validators.email, Validators.maxLength(255)]],
     organizationAddress: ['', [Validators.maxLength(512)]],
     organizationActivityDomain: ['', [Validators.required]],
-    organizationCountry: ['', [Validators.required, Validators.pattern(/^[A-Za-z]{2}$/)]],
-    organizationPhone: ['', [Validators.required, Validators.pattern(/^[+0-9\s().-]{5,32}$/)]],
+    organizationCountry: [this.currentMarket === 'DZ' ? 'DZ' : 'FR', [Validators.required, Validators.pattern(/^[A-Za-z]{2}$/)]],
+    organizationPhone: [this.currentMarket === 'DZ' ? '+213 ' : '+33 ', [Validators.required, Validators.pattern(/^[+0-9\s().-]{5,32}$/)]],
     organizationPassword: ['', [Validators.required, Validators.minLength(8)]],
     organizationConfirmPassword: ['', [Validators.required]],
     marketingConsent: [false],
@@ -671,83 +779,103 @@ export class RegisterComponent implements OnInit {
   });
 
   ngOnInit() {
-    // Précharger la devise pour qu'elle soit disponible immédiatement
-    this.currencySymbol$.subscribe({
-      next: (symbol) => {
-        console.log('✅ RegisterComponent: Symbole de devise chargé:', symbol);
+    this.route.queryParams.pipe(take(1)).subscribe((params: any) => {
+      const qMarket = (params['market'] || '').toString().toUpperCase();
+      if (qMarket === 'DZ' || qMarket === 'DEFAULT') {
+        this.currentMarket = qMarket;
+        this.currencyService.setSelectedMarket(qMarket);
+      }
+      if (params['planId']) {
+        const parsed = +params['planId'];
+        if (!Number.isNaN(parsed) && parsed > 0) {
+          this.preselectedPlanId = parsed;
+        }
+      }
+      this.applyMarketSelection(this.currentMarket, true);
+    });
+  }
+
+  selectMarket(market: MarketCode) {
+    if (this.currentMarket === market) {
+      return;
+    }
+    this.preselectedPlanId = null;
+    this.applyMarketSelection(market, false);
+  }
+
+  onCountryChange() {
+    if (this.currentMarket === 'DZ') {
+      this.selectedDialCode = '+213';
+      return;
+    }
+    const countryCode = (this.registerForm.get('organizationCountry')?.value || 'FR').toUpperCase();
+    const match = this.euCountries.find(c => c.code === countryCode);
+    this.selectedDialCode = match?.dialCode || '+33';
+    this.applyPhonePrefix(this.selectedDialCode);
+  }
+
+  formatPlanCurrency(plan: PricingPlan): string {
+    return this.currencyService.getSymbolForCurrency(
+      plan.currency || (this.currentMarket === 'DZ' ? 'DZD' : 'EUR')
+    );
+  }
+
+  private applyMarketSelection(market: MarketCode, keepPreselectedPlan: boolean) {
+    this.currentMarket = market;
+    this.currencyService.setSelectedMarket(market);
+
+    const countryCode = market === 'DZ' ? 'DZ' : 'FR';
+    this.selectedDialCode = market === 'DZ' ? '+213' : '+33';
+
+    this.registerForm.patchValue({
+      marketVersion: market,
+      organizationCountry: countryCode,
+      pricingPlanId: keepPreselectedPlan ? this.preselectedPlanId : null
+    }, { emitEvent: false });
+    this.applyPhonePrefix(this.selectedDialCode);
+
+    this.marketProfileService.getMarketProfileByVersion(market).subscribe({
+      next: (profile) => {
+        this.selectedMarketProfile = profile;
+        this.marketProfiles = [profile];
       },
       error: (err) => {
-        console.error('❌ RegisterComponent: Erreur lors du chargement de la devise:', err);
+        console.debug('Profil de marché non chargé (fallback local actif):', err);
       }
     });
-    
-    // Charger automatiquement le profil de marché depuis l'environnement
-    const marketVersion = environment.marketVersion;
-    if (marketVersion) {
-      // Définir la valeur dans le formulaire
-      this.registerForm.patchValue({ marketVersion: marketVersion });
-      
-      // Charger le profil de marché
-      this.marketProfileService.getMarketProfileByVersion(marketVersion).subscribe({
-        next: (profile) => {
-          this.selectedMarketProfile = profile;
-          this.marketProfiles = [profile]; // Pour l'affichage si nécessaire
-          
-          // Pré-remplir les champs avec les valeurs du profil
-          this.registerForm.patchValue({
-            organizationCountry: profile.countryCodeIsoAlpha2,
-            organizationPhone: profile.phonePrefix + ' '
-          }, { emitEvent: false });
-          
-          // Charger les plans tarifaires pour ce marché
-          this.loadPricingPlans(marketVersion);
-        },
-        error: (err) => {
-          console.error('Erreur lors du chargement du profil de marché:', err);
-        }
-      });
+
+    this.loadPricingPlans(market);
+  }
+
+  private applyPhonePrefix(dialCode: string) {
+    const ctrl = this.registerForm.get('organizationPhone');
+    const currentVal = (ctrl?.value || '').toString().trim();
+    if (!currentVal || /^\+\d{1,4}$/.test(currentVal)) {
+      ctrl?.setValue(`${dialCode} `, { emitEvent: false });
     }
   }
 
   loadPricingPlans(marketVersion?: string) {
     this.loadingPlans = true;
-    const marketVersionToUse = marketVersion || (this.registerForm.get('marketVersion')?.value);
-    
-    // Utiliser marketVersion si disponible, sinon utiliser environment.marketVersion
-    const planMarketVersion = marketVersionToUse || (environment as any).marketVersion || undefined;
-    
+    const planMarketVersion = marketVersion || this.currentMarket || 'DEFAULT';
+
     this.pricingPlanService.getActivePricingPlans(planMarketVersion).subscribe({
       next: (plans) => {
         this.pricingPlans = plans;
         this.loadingPlans = false;
-        
-        // Vérifier d'abord les query params pour un planId spécifique
-        this.route.queryParams.pipe(take(1)).subscribe((params: any) => {
-          const planId = params['planId'];
-          if (planId) {
-            const planExists = plans.some(plan => plan.id === +planId);
-            if (planExists) {
-              this.registerForm.patchValue({ pricingPlanId: +planId });
-              return; // Ne pas sélectionner le plan gratuit si un planId est fourni
-            }
-          }
-          
-          // Si aucun plan n'est sélectionné, sélectionner le plan 'Bêta Testeur' (ou gratuit en fallback)
-          const currentPlanId = this.registerForm.get('pricingPlanId')?.value;
-          if (!currentPlanId) {
-            // Priorité absolue au plan Bêta Testeur
-            const betaPlan = plans.find(plan => plan.name === 'Bêta Testeur');
-            if (betaPlan) {
-              this.registerForm.patchValue({ pricingPlanId: betaPlan.id });
-            } else {
-              // Trouver le plan gratuit (pricePerMonth === 0) si Bêta Testeur n'est pas présent
-              const freePlan = plans.find(plan => plan.pricePerMonth === 0);
-              if (freePlan) {
-                this.registerForm.patchValue({ pricingPlanId: freePlan.id });
-              }
-            }
-          }
-        });
+
+        if (this.preselectedPlanId && plans.some(plan => plan.id === this.preselectedPlanId)) {
+          this.registerForm.patchValue({ pricingPlanId: this.preselectedPlanId });
+          return;
+        }
+
+        const betaPlan = plans.find(plan => plan.name === 'Bêta Testeur' || plan.name === 'Invité');
+        const freePlan = plans.find(plan => (plan.pricePerMonth === 0 || plan.pricePerMonth == null) && plan.name === 'Essai gratuit')
+          || plans.find(plan => plan.pricePerMonth === 0);
+        const target = betaPlan || freePlan;
+        if (target) {
+          this.registerForm.patchValue({ pricingPlanId: target.id });
+        }
       },
       error: (err) => {
         console.error('Erreur lors du chargement des plans tarifaires:', err);
@@ -862,13 +990,15 @@ export class RegisterComponent implements OnInit {
         const orgEmail = response.organizationEmail || organizationEmail;
         this.successMessage = response.message || `Un email de confirmation a été envoyé à ${orgEmail}.`;
         this.registerForm.reset({
-          marketVersion: currentMarketVersion,
-          organizationCountry: this.selectedMarketProfile?.countryCodeIsoAlpha2 || '',
-          organizationPhone: this.selectedMarketProfile ? `${this.selectedMarketProfile.phonePrefix} ` : '',
+          marketVersion: this.currentMarket,
+          organizationCountry: this.currentMarket === 'DZ' ? 'DZ' : 'FR',
+          organizationPhone: `${this.currentMarket === 'DZ' ? '+213' : '+33'} `,
           organizationActivityDomain: '',
           marketingConsent: false,
           pricingPlanId: null
         });
+        this.preselectedPlanId = null;
+        this.loadPricingPlans(this.currentMarket);
       },
       error: (error) => {
         this.isLoading = false;
