@@ -15,9 +15,9 @@ spring:
   application:
     name: backend
   datasource:
-    url: jdbc:postgresql://${DB_SERVICE_NAME:app-db}:${POSTGRES_PORT:-5432}/${POSTGRES_DB}?characterEncoding=UTF-8
-    username: ${POSTGRES_USER}
-    password: ${POSTGRES_PASSWORD}
+    url: jdbc:postgresql://${DB_SERVICE_NAME:app-db}:${POSTGRES_PORT:5432}/${POSTGRES_DB:tci_db}?characterEncoding=UTF-8
+    username: ${POSTGRES_USER:postgres}
+    password: ${POSTGRES_PASSWORD:postgres}
   jpa:
     hibernate:
       ddl-auto: validate  # Utiliser Flyway pour les migrations, Hibernate valide seulement
@@ -38,11 +38,11 @@ spring:
       resourceserver:
         jwt:
           # Pour la VALIDATION : Doit correspondre à l'URL publique que Keycloak met dans le token.
-          issuer-uri: ${KEYCLOAK_EXTERNAL_URL}/realms/${KEYCLOAK_REALM}
+          issuer-uri: ${KEYCLOAK_EXTERNAL_URL:http://localhost:8080}/realms/${KEYCLOAK_REALM:hscode-realm}
           # Pour la CONNEXION : Doit utiliser une URL interne pour que le backend puisse joindre Keycloak.
-          jwk-set-uri: ${KEYCLOAK_INTERNAL_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/certs
-          connection-timeout: ${KEYCLOAK_CONNECTION_TIMEOUT:-10000} # Timeout en millisecondes pour les requêtes de validation de jeton
-          read-timeout: ${KEYCLOAK_READ_TIMEOUT:-10000} # Timeout en millisecondes pour les requêtes de validation de jeton
+          jwk-set-uri: ${KEYCLOAK_INTERNAL_URL:http://localhost:8080}/realms/${KEYCLOAK_REALM:hscode-realm}/protocol/openid-connect/certs
+          connection-timeout: ${KEYCLOAK_CONNECTION_TIMEOUT:10000}
+          read-timeout: ${KEYCLOAK_READ_TIMEOUT:10000}
   # ===================================================
   # CONFIGURATION CACHE
   # ===================================================
@@ -97,18 +97,18 @@ resilience4j:
   retry:
     instances:
       keycloak:
-        max-attempts: ${KEYCLOAK_RETRY_MAX_ATTEMPTS:-5}
-        wait-duration: ${KEYCLOAK_RETRY_WAIT_DURATION:-10s}
+        max-attempts: ${KEYCLOAK_RETRY_MAX_ATTEMPTS:5}
+        wait-duration: ${KEYCLOAK_RETRY_WAIT_DURATION:10s}
 
 # ===================================================
 # CONFIGURATION KEYCLOAK ADMIN CLIENT
 # ===================================================
 keycloak:
   admin:
-    server-url: ${KEYCLOAK_INTERNAL_URL:-http://keycloak:8080}
-    realm: ${KEYCLOAK_REALM:-hscode-realm}
-    client-id: ${KEYCLOAK_BACKEND_CLIENT:-backend-client}
-    client-secret: ${KEYCLOAK_BACKEND_CLIENT_SECRET:-backend-secret-keycloak-251017}
+    server-url: ${KEYCLOAK_INTERNAL_URL:http://keycloak:8080}
+    realm: ${KEYCLOAK_REALM:hscode-realm}
+    client-id: ${KEYCLOAK_BACKEND_CLIENT:backend-client}
+    client-secret: ${KEYCLOAK_BACKEND_CLIENT_SECRET:}
   registration:
     realm: ${KEYCLOAK_REALM:hscode-realm}
 
