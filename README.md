@@ -1,241 +1,51 @@
-# Intradia — Tarif Commerce International
-
-Application SaaS de recherche et de décodage de codes de nomenclature douanière (système harmonisé HS), alimentée par l'intelligence artificielle.
-
-## Table des matières
-
-- [Fonctionnalités](#fonctionnalités)
-- [Architecture](#architecture)
-- [Technologies](#technologies)
-- [Prérequis](#prérequis)
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [Commandes utiles](#commandes-utiles)
-- [Documentation](#documentation)
-- [Troubleshooting](#troubleshooting)
-
----
-
-## Fonctionnalités
-
-- **Recherche HS-code** : saisie libre en toute langue, l'IA retourne la position tarifaire la plus pertinente avec justification (10 crédits)
-- **Recherche Position10** : descente jusqu'au niveau sous-position avec titres hiérarchiques (15 crédits)
-- **Décodage inverse HS** : à partir d'un code 2, 4 ou 6 chiffres, retourne la hiérarchie section → chapitre → position6 (2 crédits)
-- **Décodage inverse P10** : à partir d'un code 2, 4, 6 ou 10 chiffres, retourne la hiérarchie complète avec titres (5 crédits)
-- **Recherche par liste** : traitement simultané de plusieurs produits
-- **Recherche par lots** : jusqu'à 1 000 articles en traitement asynchrone (API batch OpenAI / Anthropic)
-- **Gestion multi-organisations** : invitation de collaborateurs, suivi de l'utilisation par organisation
-- **Plans tarifaires** : essai gratuit, plans mensuels avec quotas en crédits, paiement Chargily Pay (DZD)
-- **Facturation** : factures, historique, alertes de quota
-- **Authentification** OAuth2 / OpenID Connect via Keycloak
-
----
-
-## Architecture
-
-```plaintext
-┌──────────────────────────────────────────────────────────────────┐
-│                         CLIENT (Browser)                          │
-└──────────────────────────────┬───────────────────────────────────┘
-                               │
-                               ▼
-┌──────────────────────────────────────────────────────────────────┐
-│                    Traefik (Reverse Proxy / TLS)                   │
-└──────┬──────────────────┬──────────────────┬─────────────────────┘
-       │                  │                  │
-       ▼                  ▼                  ▼
-┌─────────────┐  ┌──────────────────┐  ┌───────────────────┐
-│  Frontend   │  │  Backend         │  │  Search-service   │
-│  Angular    │  │  Spring Boot     │  │  Spring Boot + IA │
-│  :80        │  │  :8081           │  │  :8082            │
-└─────────────┘  └────────┬─────────┘  └────────┬──────────┘
-                           │                     │
-              ┌────────────┼─────────────────────┤
-              ▼            ▼                     ▼
-       ┌──────────┐  ┌──────────┐         ┌──────────┐
-       │ Keycloak │  │PostgreSQL│         │ RabbitMQ │
-       │  :8080   │  │  :5432   │         │  :5672   │
-       └──────────┘  └──────────┘         └──────────┘
-```
-
-### Routage Traefik (production)
-
-| Chemin                                   | Service        | Priorité |
-| ---------------------------------------- | -------------- | -------- |
-| `/`                                      | Frontend       | 1        |
-| `/api`                                   | Backend        | 10       |
-| `/api/recherche`, `/api/batch-search`    | Search-service | 20       |
-| `/api/webhooks`                          | Backend        | 15       |
-
----
-
-## Technologies
-
-### Frontend
-
-- Angular 20 — composants standalone
-- TypeScript 5
-- angular-oauth2-oidc (authentification Keycloak)
-
-### Backend
-
-- Spring Boot 3.5 / Java 21
-- Spring Security OAuth2 Resource Server (JWT)
-- Spring Data JPA / Hibernate + Flyway (migrations)
-- RabbitMQ (communication avec search-service)
-- SpringDoc OpenAPI (Swagger)
-
-### Search-service
-
-- Spring Boot / Java 21
-- OpenAI API (gpt-4.1-mini par défaut), Anthropic, Ollama
-- Architecture RAG en cascade : Sections → Chapitres → Positions4 → Positions6 → Positions10
-- Batch API (traitement asynchrone jusqu'à 1 000 articles)
-
-### Infrastructure
-
-- Docker & Docker Compose
-- Keycloak 22 (authentification)
-- PostgreSQL 16
-- RabbitMQ
-- Traefik (reverse proxy, TLS Let's Encrypt)
-
----
-
-## Prérequis
-
-- Docker ≥ 20.10
-- Docker Compose ≥ 2.0
-- Git
-- (Optionnel) Node.js 18+ pour le développement frontend
-- (Optionnel) JDK 21+ et Maven pour le développement backend
-
----
-
-## Installation
-
-### 1. Cloner le projet
-
-```bash
-git clone <url-du-repo>
-cd tarif-cloak-prod
-```
-
-### 2. Créer le fichier `.env`
-
-Éditer `.env` avec vos valeurs. Variables minimales à renseigner :
-
-```env
-POSTGRES_PASSWORD=...
-KEYCLOAK_BACKEND_CLIENT_SECRET=...
-OPENAI_API_KEY=...
-SMTP_USERNAME=...
-SMTP_PASSWORD=...
-FRONTEND_DOMAIN=...
-WWW_FRONTEND_DOMAIN=...
-```
-
-Consultez [CONFIGURATION.md](CONFIGURATION.md) pour la liste complète.
-
-### 3. Démarrer les services
-
-```bash
-# Développement local
-docker compose -f docker-compose-dev.yml up -d --build
-
-# Production
-docker compose -f docker-compose-prod.yml up -d --build
-```
-
-### 4. Accéder à l'application
-
-- Frontend : `https://votre-domaine.com`
-- Swagger backend : `https://votre-domaine.com/api/swagger-ui/index.html`
-- Keycloak admin : `https://auth.votre-domaine.com`
-
----
-
-## Configuration
-
-Toutes les variables sont centralisées dans `.env`. Voir [CONFIGURATION.md](CONFIGURATION.md) pour le détail complet.
-
-Variables sensibles à changer impérativement en production :
-
-```env
-POSTGRES_PASSWORD
-KEYCLOAK_BACKEND_CLIENT_SECRET
-OPENAI_API_KEY          # ou ANTHROPIC_API_KEY
-CHARGILY_SECRET_KEY
-CHARGILY_WEBHOOK_SECRET
-SMTP_PASSWORD
-```
-
----
-
-## Commandes utiles
-
-```bash
-# Rebuild d'un seul service
-docker compose -f docker-compose-prod.yml up -d --build backend
-docker compose -f docker-compose-prod.yml up -d --build search-service
-docker compose -f docker-compose-prod.yml up -d --build frontend
-
-# Logs en temps réel
-docker compose -f docker-compose-prod.yml logs -f backend
-docker compose -f docker-compose-prod.yml logs -f search-service
-
-# Backup de la base de données
-docker exec app-db pg_dump -U muhend hscode-app-db > backup_$(date +%Y%m%d).sql
-
-# Restauration
-docker exec -i app-db psql -U muhend hscode-app-db < backup.sql
-
-# Réinitialisation complète
-docker compose -f docker-compose-prod.yml down --volumes --remove-orphans
-```
-
----
-
-## Documentation
-
-| Fichier | Contenu |
-| --- | --- |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | Architecture détaillée, modèle de données, flux |
-| [CONFIGURATION.md](CONFIGURATION.md) | Toutes les variables d'environnement |
-| [search-service/BATCH_API_GUIDE.md](search-service/BATCH_API_GUIDE.md) | Guide de l'API batch |
-| [docs/PLAN_FACTURATION.md](docs/PLAN_FACTURATION.md) | Système de facturation, plans, crédits |
-| [docs/MARKET_PROFILE.md](docs/MARKET_PROFILE.md) | Profils de marché (devises, langues) |
-| [CLAUDE.md](CLAUDE.md) | Contexte technique pour Claude Code |
-
----
-
-## Troubleshooting
-
-### Le backend ne démarre pas
-
-```bash
-docker compose -f docker-compose-prod.yml logs backend
-docker compose -f docker-compose-prod.yml ps keycloak
-```
-
-### Erreur 403 à l'inscription
-
-Le service account `backend-client` manque de rôles Keycloak :
-
-1. Keycloak Admin → realm `hscode-realm` → **Clients** → `backend-client` → **Service Account Roles**
-2. Ajouter : `manage-users`, `view-users`, `query-users`
-
-### Webhook Chargily non reçu
-
-- Vérifier que l'URL `https://votre-domaine.com/api/webhooks/chargily` est configurée dans le dashboard Chargily
-- Vérifier `CHARGILY_WEBHOOK_SECRET` dans `.env`
-- Consulter les logs : `docker compose logs -f backend | grep webhook`
-
-### Quota non décompté correctement
-
-Le calcul des crédits se fait dans `OrganizationService.computeCredits()` selon l'endpoint appelé.
-Valeurs configurables dans `.env` : `CREDITS_POSITIONS10`, `CREDITS_POSITIONS6`, `CREDITS_DECODE_P10`, `CREDITS_DECODE`.
-
----
-
-Intradia — Enclume Numérique
+# TCI — Box Locale Algérie (DZ)
+
+Solution souveraine de recherche et classification douanière par IA (**Système Harmonisé / nomenclature à 10 chiffres**), conçue pour fonctionner **100 % localement** sur le réseau interne (LAN) de l'entreprise cliente en Algérie.
+
+> L'historique complet de l'architecture SaaS précédente est conservé sur la branche `main` et le tag Git `archive/saas-prod-staging-2026`.
+
+## Points forts
+
+- **Souveraineté totale des données** : base PostgreSQL, Keycloak, Redis, RabbitMQ et moteur IA **Ollama** hébergés localement sur la Box — aucune description de marchandise ni donnée collaborateur ne quitte le réseau client.
+- **HTTPS transparent sur le LAN** : Traefik v3 avec certificat Let's Encrypt **DNS-01** sans ouvrir aucun port entrant sur le routeur de l'entreprise.
+- **Licences cryptographiques hors-ligne (`Ed25519`)** : jetons `TCI1...` générés hors-ligne via [`scripts/GenerateLicense.java`](scripts/GenerateLicense.java), période de grâce configurable (`OFFLINE_GRACE_DAYS=30`) et protection anti-rollback d'horloge.
+- **Autonomie complète** : création directe des comptes collaborateurs dans Keycloak sans serveur SMTP externe, polices web embarquées localement (`frontend/public/fonts/`).
+- **Support maîtrisé par le client** : tunnel Tailscale arrêté par défaut, activable à la demande via [`scripts/support-tunnel.sh`](scripts/support-tunnel.sh).
+
+## Démarrage rapide
+
+1. Copier le modèle de configuration et renseigner les variables requises :
+   ```bash
+   cp .env.example .env
+   ```
+2. Générer la paire de clés Ed25519 et signer une licence client :
+   ```bash
+   java scripts/GenerateLicense.java --gen-keys
+   java scripts/GenerateLicense.java --sign \
+     --private-key "$TCI_LICENSE_PRIVATE_KEY" \
+     --license-id "LIC-DZ-2026-001" \
+     --box-id "box-client1-dz" \
+     --org "Entreprise Cliente Alger SARL" \
+     --plan "Box Enterprise" \
+     --expires "2027-11-16"
+   ```
+3. *(En atelier, avec Internet)* Télécharger les polices locales :
+   ```bash
+   ./scripts/download-fonts.sh
+   ```
+4. Démarrer la Box :
+   - **Mac Mini M4 Pro** (Ollama natif Metal) :
+     ```bash
+     docker compose up -d --build
+     ```
+   - **Mini-PC / Serveur Linux GPU NVIDIA** :
+     ```bash
+     docker compose --profile linux-gpu up -d --build
+     ```
+
+## Documentation complémentaire
+
+- [`CONFIGURATION.md`](CONFIGURATION.md) — Référence complète des variables `.env`
+- [`docs/ONPREM_BOX_DZ_GUIDE.md`](docs/ONPREM_BOX_DZ_GUIDE.md) — Guide complet de déploiement, matériel, réseau DNS-01, licences et exploitation
+- [`docs/PRODUCT_EDITIONS_ROADMAP.md`](docs/PRODUCT_EDITIONS_ROADMAP.md) — Feuille de route des deux éditions (Box Locale DZ vs SaaS Cloud UE / futur `.dz`) et partage de `search-service`
+- [`CLAUDE.md`](CLAUDE.md) — Guide développeur et commandes de test
