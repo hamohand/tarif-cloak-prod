@@ -36,6 +36,21 @@ public class EmailService {
     @Value("${spring.profiles.active:prod}")
     private String activeProfile;
 
+    @Value("${box.smtp.enabled:false}")
+    private boolean smtpEnabled;
+
+    public boolean isEmailDeliveryEnabled() {
+        return smtpEnabled;
+    }
+
+    private void sendMimeMessageIfEnabled(MimeMessage message, String context) {
+        if (!isEmailDeliveryEnabled()) {
+            log.info("[BOX] Envoi email ignoré (SMTP local désactivé): {}", context);
+            return;
+        }
+        mailSender.send(message);
+    }
+
     /**
      * Envoie un email de notification pour une nouvelle facture.
      *
@@ -81,8 +96,8 @@ public class EmailService {
             helper.setSubject("Nouvelle facture disponible - " + (invoiceNumber != null ? invoiceNumber : ""));
             helper.setText(htmlContent, true);
 
-            mailSender.send(message);
-            log.info("Email de notification de facture envoyé à {} pour la facture {}", toEmail, invoiceNumber);
+            sendMimeMessageIfEnabled(message, "notification facture -> " + toEmail);
+            log.info("Email de notification de facture traité pour {} (facture {})", toEmail, invoiceNumber);
         } catch (MessagingException e) {
             log.error("Erreur lors de l'envoi de l'email de notification de facture à {}: {}", toEmail, e.getMessage(), e);
             throw new RuntimeException("Erreur lors de l'envoi de l'email", e);
@@ -166,8 +181,8 @@ public class EmailService {
             helper.setSubject("⚠️ Facture en retard - " + (invoiceNumber != null ? invoiceNumber : "") + " (" + daysOverdue + " jour(s) de retard)");
             helper.setText(htmlContent, true);
 
-            mailSender.send(message);
-            log.info("Email de rappel de facture en retard envoyé à {} pour la facture {} ({} jours de retard)", 
+            sendMimeMessageIfEnabled(message, "rappel facture en retard -> " + toEmail);
+            log.info("Email de rappel de facture en retard traité pour {} (facture {}, {} jours de retard)",
                     toEmail, invoiceNumber, daysOverdue);
         } catch (MessagingException e) {
             log.error("Erreur lors de l'envoi de l'email de rappel de facture en retard à {}: {}", toEmail, e.getMessage(), e);
@@ -219,6 +234,10 @@ public class EmailService {
             String organizationName,
             String confirmationUrl,
             boolean isExistingOrganization) {
+        if (!isEmailDeliveryEnabled()) {
+            log.info("[ONPREM] Email confirmation inscription ignoré (SMTP local désactivé) pour {}", organizationEmail);
+            return;
+        }
         // Vérifier que la configuration SMTP est valide
         String smtpUsername = System.getenv("SMTP_USERNAME");
         String smtpPassword = System.getenv("SMTP_PASSWORD");
@@ -266,8 +285,8 @@ public class EmailService {
             helper.setSubject(subject);
             helper.setText(htmlContent, true);
 
-            mailSender.send(message);
-            log.info("Email de confirmation d'inscription envoyé à {} pour l'organisation {}", 
+            sendMimeMessageIfEnabled(message, "confirmation inscription -> " + organizationEmail);
+            log.info("Email de confirmation d'inscription envoyé à {} pour l'organisation {}",
                 organizationEmail, organizationName);
         } catch (MessagingException e) {
             log.error("Erreur lors de l'envoi de l'email de confirmation d'inscription à {}: {}", 
@@ -289,6 +308,10 @@ public class EmailService {
             String organizationEmail,
             String confirmationUrl,
             String temporaryPassword) {
+        if (!isEmailDeliveryEnabled()) {
+            log.info("[ONPREM] Email invitation collaborateur ignoré (SMTP local désactivé) pour {}", collaboratorEmail);
+            return;
+        }
         String smtpUsername = System.getenv("SMTP_USERNAME");
         String smtpPassword = System.getenv("SMTP_PASSWORD");
         if (smtpUsername == null || smtpUsername.trim().isEmpty() ||
@@ -330,8 +353,8 @@ public class EmailService {
             helper.setSubject(subject);
             helper.setText(htmlContent, true);
 
-            mailSender.send(message);
-            log.info("Invitation collaborateur envoyée à {} pour l'organisation {}", collaboratorEmail, organizationName);
+            sendMimeMessageIfEnabled(message, "invitation collaborateur -> " + collaboratorEmail);
+            log.info("Invitation collaborateur traitée pour {} (organisation {})", collaboratorEmail, organizationName);
         } catch (MessagingException e) {
             log.error("Erreur lors de l'envoi de l'invitation collaborateur à {}: {}", collaboratorEmail, e.getMessage(), e);
             throw new RuntimeException("Erreur lors de l'envoi de l'invitation collaborateur", e);
@@ -370,8 +393,8 @@ public class EmailService {
                 + "</div>";
 
             helper.setText(html, true);
-            mailSender.send(message);
-            log.info("OTP envoyé à {}", toEmail);
+            sendMimeMessageIfEnabled(message, "OTP -> " + toEmail);
+            log.info("OTP traité pour {}", toEmail);
         } catch (Exception e) {
             log.error("Erreur lors de l'envoi de l'OTP à {}: {}", toEmail, e.getMessage(), e);
             throw new RuntimeException("Erreur lors de l'envoi du code de vérification", e);
@@ -441,8 +464,8 @@ public class EmailService {
             helper.setSubject("Changement de plan tarifaire - " + (organizationName != null ? organizationName : ""));
             helper.setText(htmlContent, true);
 
-            mailSender.send(message);
-            log.info("Email de notification de changement de plan envoyé à {} pour l'organisation {}", 
+            sendMimeMessageIfEnabled(message, "changement de plan -> " + toEmail);
+            log.info("Email de notification de changement de plan traité pour {} (organisation {})",
                     toEmail, organizationName);
         } catch (MessagingException e) {
             log.error("Erreur lors de l'envoi de l'email de notification de changement de plan à {}: {}", 
@@ -531,8 +554,8 @@ public class EmailService {
                 helper.setText(plainText, false);
             }
 
-            mailSender.send(message);
-            log.info("Notification admin envoyée à {} pour la nouvelle organisation {}", adminEmail, organizationName);
+            sendMimeMessageIfEnabled(message, "notification admin nouvelle organisation -> " + adminEmail);
+            log.info("Notification admin traitée pour {} (nouvelle organisation {})", adminEmail, organizationName);
         } catch (MessagingException e) {
             log.error("Erreur lors de l'envoi de la notification admin à {}: {}", adminEmail, e.getMessage(), e);
             // Ne pas faire échouer la création d'organisation si l'email admin échoue
@@ -590,6 +613,10 @@ public class EmailService {
             String contactEmail,
             Long organizationId,
             String messageText) {
+        if (!isEmailDeliveryEnabled()) {
+            log.info("[BOX] Notification demande de devis ignorée (SMTP local désactivé) pour {}", contactEmail);
+            return;
+        }
         if (adminEmail == null || adminEmail.trim().isEmpty()) {
             log.warn("EMAIL_ADMIN_HSCODE n'est pas configuré, notification demande de devis non envoyée");
             return;
@@ -628,8 +655,8 @@ public class EmailService {
                     + "</div></div></body></html>";
 
             helper.setText(html, true);
-            mailSender.send(message);
-            log.info("Notification admin de demande de devis envoyée à {} (contact={})", adminEmail, contactEmail);
+            sendMimeMessageIfEnabled(message, "notification demande de devis -> " + adminEmail);
+            log.info("Notification admin de demande de devis traitée pour {} (contact={})", adminEmail, contactEmail);
         } catch (Exception e) {
             log.error("Erreur lors de l'envoi de la notification admin de devis à {}: {}", adminEmail, e.getMessage(), e);
         }

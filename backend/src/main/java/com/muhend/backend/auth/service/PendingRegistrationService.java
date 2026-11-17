@@ -7,6 +7,7 @@ import com.muhend.backend.email.service.EmailService;
 import com.muhend.backend.organization.dto.CreateCollaboratorRequest;
 import com.muhend.backend.organization.model.Organization;
 import com.muhend.backend.organization.repository.OrganizationRepository;
+import com.muhend.backend.organization.repository.OrganizationUserRepository;
 import com.muhend.backend.organization.service.CollaboratorService;
 import com.muhend.backend.organization.service.OrganizationService;
 import com.muhend.backend.pricing.service.PricingPlanService;
@@ -19,7 +20,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Base64;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -32,6 +35,7 @@ public class PendingRegistrationService {
     
     private final PendingRegistrationRepository pendingRegistrationRepository;
     private final OrganizationRepository organizationRepository;
+    private final OrganizationUserRepository organizationUserRepository;
     private final OrganizationService organizationService;
     private final CollaboratorService collaboratorService;
     private final KeycloakAdminService keycloakAdminService;
@@ -48,10 +52,12 @@ public class PendingRegistrationService {
     private String defaultPlanName;
     
     private static final SecureRandom secureRandom = new SecureRandom();
+    private static final String TEMP_PWD_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
     
     public PendingRegistrationService(
             PendingRegistrationRepository pendingRegistrationRepository,
             OrganizationRepository organizationRepository,
+            OrganizationUserRepository organizationUserRepository,
             OrganizationService organizationService,
             CollaboratorService collaboratorService,
             KeycloakAdminService keycloakAdminService,
@@ -59,6 +65,7 @@ public class PendingRegistrationService {
             PricingPlanService pricingPlanService) {
         this.pendingRegistrationRepository = pendingRegistrationRepository;
         this.organizationRepository = organizationRepository;
+        this.organizationUserRepository = organizationUserRepository;
         this.organizationService = organizationService;
         this.collaboratorService = collaboratorService;
         this.keycloakAdminService = keycloakAdminService;
@@ -207,6 +214,111 @@ public class PendingRegistrationService {
         
         sendCollaboratorInvitationEmail(pending, organization);
         return pending;
+    }
+
+    /**
+     * Crée directement un collaborateur en mode On-Premise sans dépendre d'un serveur SMTP externe.
+     * Génère un mot de passe temporaire (à changer à la première connexion dans Keycloak).
+     */
+    @Transactional
+    public Map<String, Object> createCollaboratorDirectOnPrem(
+            String organizationKeycloakUserId,
+            CreateCollaboratorRequest request,
+            Integer maxUsersLimit) {
+        Organization organization = organizationRepository.findByKeycloakUserId(organizationKeycloakUserId)
+                .orElseThrow(() -> new IllegalArgumentException("Aucune organisation associée à ce compte."));
+
+        if (maxUsersLimit != null) {
+            int currentCount = organizationUserRepository.findByOrganizationId(organization.getId()).size();
+            if (currentCount >= maxUsersLimit) {
+                throw new IllegalArgumentException(
+                        "Plafond d'utilisateurs de votre licence atteint (" + maxUsersLimit + " utilisateurs maximum).");
+            }
+        }
+
+        String organizationEmail = organization.getEmail();
+        if (organizationEmail != null && organizationEmail.equalsIgnoreCase(request.getEmail())) {
+            throw new IllegalArgumentException("L'email du collaborateur doit être différent de celui de l'organisation.");
+        }
+
+        if (keycloakAdminService.getUserIdByUsername(request.getUsername()) != null) {
+            throw new IllegalArgumentException("Un utilisateur avec le nom d'utilisateur '" + request.getUsername() + "' existe déjà.");
+        }
+
+        String tempPassword = generateStrongTemporaryPassword(10);
+
+        jakarta.ws.rs.core.Response response = keycloakAdminService.createUser(
+                request.getUsername(),
+                request.getEmail(),
+                tempPassword,
+                request.getFirstName(),
+                request.getLastName(),
+                true,
+                true,
+                null,
+                Map.of(
+                        "account_type", List.of("COLLABORATOR"),
+                        "organization_email", List.of(organization.getEmail())
+                ),
+                true
+        );
+
+        int status = response.getStatus();
+        String keycloakUserId;
+        if (status >= 200 && status < 300) {
+            keycloakUserId = keycloakAdminService.getUserIdFromResponse(response);
+            if (keycloakUserId == null) {
+                keycloakUserId = keycloakAdminService.getUserIdByUsername(request.getUsername());
+            }
+            response.close();
+        } else if (status == jakarta.ws.rs.core.Response.Status.CONFLICT.getStatusCode()) {
+            response.close();
+            throw new IllegalArgumentException("Un utilisateur avec ce nom d'utilisateur ou cet email existe déjà dans Keycloak.");
+        } else {
+            String errorBody = response.hasEntity() ? response.readEntity(String.class) : "N/A";
+            response.close();
+            throw new RuntimeException("Erreur lors de la création du compte Keycloak (status=" + status + ", body=" + errorBody + ")");
+        }
+
+        if (keycloakUserId == null) {
+            throw new RuntimeException("Impossible de récupérer l'ID Keycloak du collaborateur créé.");
+        }
+
+        keycloakAdminService.assignRealmRoles(keycloakUserId, List.of("COLLABORATOR", "USER"));
+        collaboratorService.addUserToOrganization(organization.getId(), keycloakUserId);
+
+        if (emailService.isEmailDeliveryEnabled()) {
+            try {
+                emailService.sendCollaboratorInvitationEmail(
+                        request.getEmail(),
+                        request.getFirstName(),
+                        request.getLastName(),
+                        request.getUsername(),
+                        organization.getName(),
+                        organization.getEmail(),
+                        frontendUrl,
+                        tempPassword
+                );
+            } catch (Exception e) {
+                log.warn("[ONPREM] Email facultatif non envoyé à {} (collaborateur créé directement): {}",
+                        request.getEmail(), e.getMessage());
+            }
+        }
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("message", "Collaborateur créé immédiatement. Transmettez-lui son identifiant et son mot de passe temporaire (à modifier à la première connexion).");
+        result.put("directCreated", true);
+        result.put("username", request.getUsername());
+        result.put("temporaryPassword", tempPassword);
+        return result;
+    }
+
+    private String generateStrongTemporaryPassword(int length) {
+        StringBuilder sb = new StringBuilder(length);
+        for (int i = 0; i < length; i++) {
+            sb.append(TEMP_PWD_ALPHABET.charAt(secureRandom.nextInt(TEMP_PWD_ALPHABET.length())));
+        }
+        return sb.toString();
     }
     
     /**

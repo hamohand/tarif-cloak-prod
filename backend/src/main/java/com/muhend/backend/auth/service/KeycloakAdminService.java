@@ -59,6 +59,20 @@ public class KeycloakAdminService {
                                boolean emailVerified,
                                List<String> requiredActions,
                                Map<String, List<String>> attributes) {
+        return createUser(username, email, password, firstName, lastName, enabled, emailVerified,
+                requiredActions, attributes, false);
+    }
+
+    public Response createUser(String username,
+                               String email,
+                               String password,
+                               String firstName,
+                               String lastName,
+                               boolean enabled,
+                               boolean emailVerified,
+                               List<String> requiredActions,
+                               Map<String, List<String>> attributes,
+                               boolean temporaryPassword) {
         logger.info("Creating user in Keycloak realm: {}", realm);
         logger.info("Username: {}, Email: {}", username, email);
 
@@ -82,7 +96,7 @@ public class KeycloakAdminService {
                 }
 
                 CredentialRepresentation passwordCred = new CredentialRepresentation();
-                passwordCred.setTemporary(false);
+                passwordCred.setTemporary(temporaryPassword);
                 passwordCred.setType(CredentialRepresentation.PASSWORD);
                 passwordCred.setValue(password);
                 user.setCredentials(Collections.singletonList(passwordCred));

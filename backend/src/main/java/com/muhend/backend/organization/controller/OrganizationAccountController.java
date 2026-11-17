@@ -1,8 +1,9 @@
 package com.muhend.backend.organization.controller;
 
-import com.muhend.backend.auth.model.PendingRegistration;
 import com.muhend.backend.auth.service.KeycloakAdminService;
 import com.muhend.backend.auth.service.PendingRegistrationService;
+import com.muhend.backend.license.dto.LicenseStatusDto;
+import com.muhend.backend.license.service.LicenseService;
 import com.muhend.backend.organization.dto.CreateCollaboratorRequest;
 import com.muhend.backend.organization.dto.OrganizationDto;
 import com.muhend.backend.organization.dto.OrganizationUserDto;
@@ -59,6 +60,7 @@ public class OrganizationAccountController {
     private final CollaboratorService collaboratorService;
     private final UsageLogRepository usageLogRepository;
     private final KeycloakAdminService keycloakAdminService;
+    private final LicenseService licenseService;
     
     @Value("${BASE_REQUEST_PRICE:0.01}")
     private String baseRequestPriceStr;
@@ -121,12 +123,17 @@ public class OrganizationAccountController {
             status.put("trialPermanentlyExpired", trialPermanentlyExpired);
             status.put("trialExpiresAt", organization.getTrialExpiresAt());
             status.put("hasPricingPlan", organization.getPricingPlanId() != null);
-            
-            // Si l'essai est définitivement terminé, cela signifie que le quota a été atteint
-            if (trialPermanentlyExpired) {
-                status.put("message", "Le quota de l'essai gratuit a été atteint et est maintenant définitivement désactivé. Aucune requête HS-code n'est autorisée.");
+
+            LicenseStatusDto license = licenseService.getCurrentStatus();
+            status.put("licenseValid", license.isValid());
+            status.put("licenseState", license.getState());
+            status.put("licenseExpiresAt", license.getExpiresAt());
+            status.put("licensePlanName", license.getPlanName());
+            status.put("licenseMessage", license.getMessage());
+            if (!canMakeRequests && license.getMessage() != null) {
+                status.put("message", license.getMessage());
             }
-            
+
             return ResponseEntity.ok(status);
         } catch (com.muhend.backend.organization.exception.UserNotAssociatedException e) {
             log.warn("Utilisateur {} non associé à une organisation lors du status check", userId);
@@ -205,11 +212,18 @@ public class OrganizationAccountController {
                     .body(Map.of("error", "AUTH_REQUIRED", "message", "Authentification requise"));
         }
         try {
-            PendingRegistration pendingRegistration = pendingRegistrationService.inviteCollaborator(organizationUserId, request);
-            return ResponseEntity.ok(Map.of(
-                    "message", "Invitation envoyée. Le collaborateur doit confirmer son compte via l'email reçu.",
-                    "tokenExpiresAt", pendingRegistration.getExpiresAt()
-            ));
+            LicenseStatusDto license = licenseService.getCurrentStatus();
+            if (!license.isValid()) {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "error", "LICENSE_INVALID",
+                        "message", license.getMessage() != null
+                                ? license.getMessage()
+                                : "Licence inactive (" + license.getState() + "). Activez une licence valide avant d'ajouter des collaborateurs."
+                ));
+            }
+            Map<String, Object> result = pendingRegistrationService.createCollaboratorDirectOnPrem(
+                    organizationUserId, request, license.getMaxUsers());
+            return ResponseEntity.ok(result);
         } catch (IllegalArgumentException e) {
             log.warn("Erreur validation invitation collaborateur: {}", e.getMessage());
             return ResponseEntity.badRequest().body(Map.of("error", "INVITATION_INVALID", "message", e.getMessage()));

@@ -3,6 +3,8 @@ package com.muhend.backend.organization.service;
 import com.muhend.backend.alert.repository.QuotaAlertRepository;
 import com.muhend.backend.email.service.EmailService;
 import com.muhend.backend.invoice.service.InvoiceService;
+import com.muhend.backend.license.dto.LicenseStatusDto;
+import com.muhend.backend.license.service.LicenseService;
 import com.muhend.backend.organization.dto.OrganizationDto;
 import com.muhend.backend.organization.dto.OrganizationMapper;
 import com.muhend.backend.organization.model.Organization;
@@ -37,6 +39,7 @@ class PlanChangeServiceTest {
     @Mock private CollaboratorService collaboratorService;
     @Mock private QuotaAlertRepository quotaAlertRepository;
     @Mock private OrganizationMapper organizationMapper;
+    @Mock private LicenseService licenseService;
 
     @InjectMocks
     private PlanChangeService planChangeService;
@@ -92,5 +95,37 @@ class PlanChangeServiceTest {
         verify(organizationRepository, never()).save(any());
         verify(usageLogRepository, never()).deleteByOrganizationId(any());
         verify(collaboratorService, never()).reactivateAllCollaborators(any());
+    }
+
+    @Test
+    void testCanOrganizationMakeRequests_LicenseValidUnlimited_ShouldAllow() {
+        organization.setEnabled(true);
+        when(licenseService.getCurrentStatus()).thenReturn(
+                LicenseStatusDto.builder().valid(true).state("VALID").monthlyQuota(null).build()
+        );
+
+        assertTrue(planChangeService.canOrganizationMakeRequests(organization));
+    }
+
+    @Test
+    void testCanOrganizationMakeRequests_LicenseQuotaExceeded_ShouldBlock() {
+        organization.setEnabled(true);
+        when(licenseService.getCurrentStatus()).thenReturn(
+                LicenseStatusDto.builder().valid(true).state("VALID").monthlyQuota(100).build()
+        );
+        when(usageLogRepository.findByOrganizationIdAndTimestampBetween(eq(1L), any(), any())).thenReturn(java.util.List.of());
+        when(organizationMapper.computeCredits(any())).thenReturn(100L);
+
+        assertFalse(planChangeService.canOrganizationMakeRequests(organization));
+    }
+
+    @Test
+    void testCanOrganizationMakeRequests_LicenseExpired_ShouldBlock() {
+        organization.setEnabled(true);
+        when(licenseService.getCurrentStatus()).thenReturn(
+                LicenseStatusDto.builder().valid(false).state("EXPIRED").build()
+        );
+
+        assertFalse(planChangeService.canOrganizationMakeRequests(organization));
     }
 }

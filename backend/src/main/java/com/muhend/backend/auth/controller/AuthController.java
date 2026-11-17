@@ -22,43 +22,17 @@ public class AuthController {
 
     public AuthController(PendingRegistrationService pendingRegistrationService) {
         this.pendingRegistrationService = pendingRegistrationService;
-        logger.info("AuthController initialized");
+        logger.info("AuthController initialized (Box Locale DZ)");
     }
 
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@Valid @RequestBody UserRegistrationRequest registrationRequest) {
-        logger.info("=== Registration request received ===");
-        logger.info("Username: {}", registrationRequest.getUsername());
-        logger.info("Email: {}", registrationRequest.getEmail());
-        logger.info("FirstName: {}", registrationRequest.getFirstName());
-        logger.info("LastName: {}", registrationRequest.getLastName());
-        logger.info("OrganizationName: {}", registrationRequest.getOrganizationName());
-        logger.info("OrganizationEmail: {}", registrationRequest.getOrganizationEmail());
-
-        try {
-            // Créer une inscription en attente et envoyer l'email de confirmation
-            var pending = pendingRegistrationService.createPendingRegistration(registrationRequest);
-            
-            logger.info("✓ Pending registration created: id={}, token={}", pending.getId(), pending.getConfirmationToken());
-            
-            return ResponseEntity.status(HttpStatus.CREATED)
+        logger.warn("Tentative d'auto-inscription bloquée sur la Box Locale ({})", registrationRequest.getEmail());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(Map.of(
-                    "message", "Un email de confirmation a été envoyé à l'adresse " + registrationRequest.getOrganizationEmail() + 
-                               ". Veuillez vérifier votre boîte de réception et cliquer sur le lien de confirmation pour finaliser votre inscription.",
-                    "organizationEmail", registrationRequest.getOrganizationEmail()
+                        "error", "REGISTRATION_DISABLED",
+                        "message", "L'inscription publique est désactivée sur cette Box locale. Contactez l'administrateur de votre organisation."
                 ));
-        } catch (IllegalArgumentException e) {
-            logger.error("✗ Error creating pending registration: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(Map.of("error", e.getMessage()));
-        } catch (Exception e) {
-            logger.error("✗ Runtime error during user registration: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of(
-                    "error", "Erreur lors de la création de l'inscription",
-                    "details", e.getMessage()
-                ));
-        }
     }
     
     @PostMapping("/send-confirmation-otp")
