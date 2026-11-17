@@ -1,338 +1,33 @@
 # ===============================================================
-# DOCKER COMPOSE — TCI SaaS (DZ + UE)
-# Orchestration unique : docker compose up -d --build
-# Configuration : copier .env.example vers .env
-#
-# Profils optionnels :
-#   --profile keycloak : déploie Keycloak + sa BDD dans cette pile
-#   --profile mailpit  : capture locale des emails sur 127.0.0.1:8025
-#   --profile proxy    : déploie Traefik si aucun reverse-proxy n'est actif
+# DOCKER COMPOSE - BOX LOCALE ALGÉRIE (DZ)
+# ===============================================================
+# Déploiement 100 % local sur le LAN de l'entreprise cliente :
+# - Reverse proxy HTTPS Traefik v3 avec certificat Let's Encrypt DNS-01
+#   (cadenas vert sur le LAN sans aucun port entrant ouvert sur le routeur)
+# - Base de données PostgreSQL + Keycloak + Redis + RabbitMQ locaux
+# - Moteur IA 100 % local via Ollama (Mac Mini M4 Pro Metal ou Linux NVIDIA GPU)
+# - Licence signée Ed25519 avec période de grâce hors-ligne
+# - Tunnel d'assistance Tailscale coupé par défaut (profil "support")
 # ===============================================================
 
-name: tci
+x-traefik-host-rule: &traefik-host-rule "Host(`${FRONTEND_DOMAIN}`) || Host(`${WWW_FRONTEND_DOMAIN:-${FRONTEND_DOMAIN}}`)"
 
 services:
 
   # ===============================================================
-  # BASE DE DONNÉES APPLICATION (PostgreSQL 16)
-  # Les nomenclatures DZ + UE sont chargées par Flyway (V0_1 -> V40)
+  # TRAEFIK - REVERSE PROXY & HTTPS DNS-01 SUR LE LAN
   # ===============================================================
-  app-db:
-    image: "postgres:${POSTGRES_IMAGE_TAG:-16}"
-    container_name: "${PROJECT_NAME:-tci}-app-db"
-    environment:
-      POSTGRES_DB: "${POSTGRES_DB:-tci_db}"
-      POSTGRES_USER: "${POSTGRES_USER:?POSTGRES_USER doit être défini dans .env}"
-      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?POSTGRES_PASSWORD doit être défini dans .env}"
-    volumes:
-      - app-data:/var/lib/postgresql/data
-    healthcheck:
-      test: [ "CMD", "pg_isready", "-h", "localhost", "-U", "${POSTGRES_USER}", "-d", "${POSTGRES_DB:-tci_db}" ]
-      interval: 10s
-      timeout: 10s
-      retries: 10
-    restart: unless-stopped
-    networks:
-      - internal
-
-  # ===============================================================
-  # RABBITMQ (Communication asynchrone backend <-> search-service)
-  # ===============================================================
-  rabbitmq:
-    image: rabbitmq:3.12-management-alpine
-    container_name: "${PROJECT_NAME:-tci}-rabbitmq"
-    environment:
-      RABBITMQ_DEFAULT_USER: "${RABBITMQ_USER:-admin}"
-      RABBITMQ_DEFAULT_PASS: "${RABBITMQ_PASSWORD:?RABBITMQ_PASSWORD doit être défini dans .env}"
-    volumes:
-      - rabbitmq-data:/var/lib/rabbitmq
-    healthcheck:
-      test: [ "CMD", "rabbitmq-diagnostics", "-q", "ping" ]
-      interval: 30s
-      timeout: 30s
-      retries: 10
-      start_period: 60s
-    restart: unless-stopped
-    networks:
-      - internal
-
-  # ===============================================================
-  # REDIS (Cache search-service)
-  # ===============================================================
-  redis:
-    image: redis:7-alpine
-    container_name: "${PROJECT_NAME:-tci}-redis"
-    command: redis-server --appendonly yes
-    volumes:
-      - redis-data:/data
-    healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
-    networks:
-      - internal
-
-  # ===============================================================
-  # BACKEND — API Spring Boot 3.5 / Java 21
-  # ===============================================================
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: "${PROJECT_NAME:-tci}-backend"
-    depends_on:
-      app-db:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-    environment:
-      BACKEND_INTERNAL_PORT: "8081"
-      SPRING_PROFILES_ACTIVE: "${SPRING_PROFILES_ACTIVE:-prod}"
-      # Base de données
-      DB_SERVICE_NAME: "app-db"
-      POSTGRES_PORT: "${POSTGRES_PORT:-5432}"
-      POSTGRES_DB: "${POSTGRES_DB:-tci_db}"
-      POSTGRES_USER: "${POSTGRES_USER}"
-      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
-      # Keycloak (externe existant par défaut, ou conteneur interne si --profile keycloak)
-      KEYCLOAK_REALM: "${KEYCLOAK_REALM:-hscode-realm}"
-      KEYCLOAK_BACKEND_CLIENT: "${KEYCLOAK_BACKEND_CLIENT:-backend-client}"
-      KEYCLOAK_BACKEND_CLIENT_SECRET: "${KEYCLOAK_BACKEND_CLIENT_SECRET:?KEYCLOAK_BACKEND_CLIENT_SECRET doit être défini dans .env}"
-      KEYCLOAK_EXTERNAL_URL: "${KEYCLOAK_EXTERNAL_URL:?KEYCLOAK_EXTERNAL_URL doit être défini dans .env}"
-      KEYCLOAK_INTERNAL_URL: "${KEYCLOAK_INTERNAL_URL:-${KEYCLOAK_EXTERNAL_URL}}"
-      # IA
-      OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
-      ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:-}"
-      OLLAMA_API_KEY: "${OLLAMA_API_KEY:-}"
-      OLLAMA_BASE_URL: "${OLLAMA_BASE_URL:-http://host.docker.internal:11434}"
-      # Domaine & CORS
-      FRONTEND_DOMAIN: "${FRONTEND_DOMAIN:?FRONTEND_DOMAIN doit être défini dans .env}"
-      WWW_FRONTEND_DOMAIN: "${WWW_FRONTEND_DOMAIN:-${FRONTEND_DOMAIN}}"
-      FRONTEND_URL: "${FRONTEND_URL:-https://${FRONTEND_DOMAIN}}"
-      CORS_ALLOWED_ORIGINS: "${CORS_ALLOWED_ORIGINS:-https://${FRONTEND_DOMAIN}}"
-      SPRINGDOC_SWAGGER_UI_URL: "https://${FRONTEND_DOMAIN}/api/v3/api-docs"
-      PROJECT_NAME: "${PROJECT_NAME:-tci}"
-      FRONTEND_SERVICE_NAME: "${PROJECT_NAME:-tci}-frontend"
-      # RabbitMQ
-      RABBITMQ_HOST: "rabbitmq"
-      RABBITMQ_PORT: "5672"
-      RABBITMQ_USERNAME: "${RABBITMQ_USER:-admin}"
-      RABBITMQ_PASSWORD: "${RABBITMQ_PASSWORD}"
-      # Email SMTP
-      SMTP_HOST: "${SMTP_HOST:-localhost}"
-      SMTP_PORT: "${SMTP_PORT:-587}"
-      SMTP_USERNAME: "${SMTP_USERNAME:-}"
-      SMTP_PASSWORD: "${SMTP_PASSWORD:-}"
-      SMTP_AUTH: "${SMTP_AUTH:-true}"
-      SMTP_STARTTLS: "${SMTP_STARTTLS:-true}"
-      SMTP_STARTTLS_REQUIRED: "${SMTP_STARTTLS_REQUIRED:-true}"
-      SMTP_FROM: "${SMTP_FROM:-noreply@enclume-numerique.com}"
-      SMTP_FROM_NAME: "${SMTP_FROM_NAME:-Enclume Numérique}"
-      EMAIL_ADMIN_HSCODE: "${EMAIL_ADMIN_HSCODE:-}"
-      # Quotas visiteurs anonymes (mode SaaS Internet standard)
-      GUEST_DECODE_MAX_PER_IP_PER_DAY: "${GUEST_DECODE_MAX_PER_IP_PER_DAY:-3}"
-      GUEST_DECODE_GLOBAL_DAILY_LIMIT: "${GUEST_DECODE_GLOBAL_DAILY_LIMIT:-200}"
-      QUOTE_REQUESTS_PUBLIC_MAX_PER_IP_PER_DAY: "${QUOTE_REQUESTS_PUBLIC_MAX_PER_IP_PER_DAY:-10}"
-      # Passerelles de paiement (Chargily DZD & Stripe EUR ; repli facture si vides)
-      PAYMENT_PROVIDER: "${PAYMENT_PROVIDER:-stripe}"
-      CHARGILY_SECRET_KEY: "${CHARGILY_SECRET_KEY:-}"
-      CHARGILY_WEBHOOK_SECRET: "${CHARGILY_WEBHOOK_SECRET:-}"
-      CHARGILY_API_URL: "${CHARGILY_API_URL:-https://pay.chargily.net/api/v2}"
-      STRIPE_SECRET_KEY: "${STRIPE_SECRET_KEY:-}"
-      STRIPE_PUBLISHABLE_KEY: "${STRIPE_PUBLISHABLE_KEY:-}"
-      STRIPE_WEBHOOK_SECRET: "${STRIPE_WEBHOOK_SECRET:-}"
-      BASE_REQUEST_PRICE: "${BASE_REQUEST_PRICE:-0.01}"
-      DEFAULT_PLAN_NAME: "${DEFAULT_PLAN_NAME:-Essai gratuit}"
-      JAVA_TOOL_OPTIONS: "${BACKEND_JAVA_OPTS:--Xms128m -Xmx512m}"
-    labels:
-      traefik.enable: "true"
-      traefik.docker.network: "${TRAEFIK_NETWORK:-webproxy}"
-      "traefik.http.routers.${PROJECT_NAME:-tci}-backend.rule": "Host(`${FRONTEND_DOMAIN}`) && PathPrefix(`/api`)"
-      "traefik.http.routers.${PROJECT_NAME:-tci}-backend.entrypoints": "websecure"
-      "traefik.http.routers.${PROJECT_NAME:-tci}-backend.tls.certresolver": "${TRAEFIK_CERT_RESOLVER:-myresolver}"
-      "traefik.http.routers.${PROJECT_NAME:-tci}-backend.middlewares": "${PROJECT_NAME:-tci}-api-stripprefix"
-      "traefik.http.routers.${PROJECT_NAME:-tci}-backend.service": "${PROJECT_NAME:-tci}-backend-svc"
-      "traefik.http.routers.${PROJECT_NAME:-tci}-backend.priority": "10"
-      "traefik.http.middlewares.${PROJECT_NAME:-tci}-api-stripprefix.stripprefix.prefixes": "/api"
-      "traefik.http.services.${PROJECT_NAME:-tci}-backend-svc.loadbalancer.server.port": "8081"
-    restart: unless-stopped
-    networks:
-      - internal
-      - webproxy
-
-  # ===============================================================
-  # SEARCH-SERVICE — Moteur IA de classification douanière
-  # ===============================================================
-  search-service:
-    build:
-      context: ./search-service
-      dockerfile: Dockerfile
-    container_name: "${PROJECT_NAME:-tci}-search-service"
-    depends_on:
-      app-db:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      backend:
-        condition: service_started
-    environment:
-      SPRING_PROFILES_ACTIVE: "${SPRING_PROFILES_ACTIVE:-prod}"
-      DATABASE_URL: "jdbc:postgresql://app-db:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-tci_db}"
-      DATABASE_USERNAME: "${POSTGRES_USER}"
-      DATABASE_PASSWORD: "${POSTGRES_PASSWORD}"
-      RABBITMQ_HOST: "rabbitmq"
-      RABBITMQ_PORT: "5672"
-      RABBITMQ_USERNAME: "${RABBITMQ_USER:-admin}"
-      RABBITMQ_PASSWORD: "${RABBITMQ_PASSWORD}"
-      REDIS_HOST: "redis"
-      REDIS_PORT: "6379"
-      BACKEND_URL: "http://backend:8081"
-      KEYCLOAK_ISSUER_URI: "${KEYCLOAK_EXTERNAL_URL}/realms/${KEYCLOAK_REALM:-hscode-realm}"
-      KEYCLOAK_JWK_SET_URI: "${KEYCLOAK_INTERNAL_URL:-${KEYCLOAK_EXTERNAL_URL}}/realms/${KEYCLOAK_REALM:-hscode-realm}/protocol/openid-connect/certs"
-      CORS_ALLOWED_ORIGINS: "${CORS_ALLOWED_ORIGINS:-https://${FRONTEND_DOMAIN}}"
-      OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
-      ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:-}"
-      AI_PROVIDER: "${AI_PROVIDER:-openai}"
-      OLLAMA_BASE_URL: "${OLLAMA_BASE_URL:-http://host.docker.internal:11434}"
-      # Quotas découverte visiteurs anonymes (mode SaaS Internet standard)
-      GUEST_TRIAL_MAX_PER_IP_PER_DAY: "${GUEST_TRIAL_MAX_PER_IP_PER_DAY:-1}"
-      GUEST_TRIAL_GLOBAL_DAILY_LIMIT: "${GUEST_TRIAL_GLOBAL_DAILY_LIMIT:-50}"
-      JAVA_TOOL_OPTIONS: "${SEARCH_JAVA_OPTS:--Xms128m -Xmx512m}"
-    healthcheck:
-      test: [ "CMD", "wget", "-q", "--spider", "http://localhost:8082/actuator/health" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
-    labels:
-      traefik.enable: "true"
-      traefik.docker.network: "${TRAEFIK_NETWORK:-webproxy}"
-      "traefik.http.routers.${PROJECT_NAME:-tci}-search.rule": "Host(`${FRONTEND_DOMAIN}`) && (PathPrefix(`/api/recherche`) || PathPrefix(`/api/batch-search`))"
-      "traefik.http.routers.${PROJECT_NAME:-tci}-search.entrypoints": "websecure"
-      "traefik.http.routers.${PROJECT_NAME:-tci}-search.tls.certresolver": "${TRAEFIK_CERT_RESOLVER:-myresolver}"
-      "traefik.http.routers.${PROJECT_NAME:-tci}-search.middlewares": "${PROJECT_NAME:-tci}-search-stripprefix,${PROJECT_NAME:-tci}-search-ratelimit"
-      "traefik.http.routers.${PROJECT_NAME:-tci}-search.service": "${PROJECT_NAME:-tci}-search-svc"
-      "traefik.http.routers.${PROJECT_NAME:-tci}-search.priority": "20"
-      "traefik.http.middlewares.${PROJECT_NAME:-tci}-search-stripprefix.stripprefix.prefixes": "/api"
-      "traefik.http.middlewares.${PROJECT_NAME:-tci}-search-ratelimit.ratelimit.average": "${SEARCH_RATELIMIT_AVERAGE:-5}"
-      "traefik.http.middlewares.${PROJECT_NAME:-tci}-search-ratelimit.ratelimit.burst": "${SEARCH_RATELIMIT_BURST:-15}"
-      "traefik.http.services.${PROJECT_NAME:-tci}-search-svc.loadbalancer.server.port": "8082"
-    restart: unless-stopped
-    networks:
-      - internal
-      - webproxy
-
-  # ===============================================================
-  # FRONTEND — Angular 20 + Nginx
-  # ===============================================================
-  frontend:
-    container_name: "${PROJECT_NAME:-tci}-frontend"
-    build:
-      context: ./frontend
-      args:
-        KEYCLOAK_EXTERNAL_URL: "${KEYCLOAK_EXTERNAL_URL}"
-        KEYCLOAK_REALM: "${KEYCLOAK_REALM:-hscode-realm}"
-        KEYCLOAK_FRONTEND_CLIENT: "${KEYCLOAK_FRONTEND_CLIENT:-frontend-client}"
-        API_URL: "/api"
-        MARKET_VERSION: "${MARKET_VERSION:-DZ}"
-        BETA_MODE: "${BETA_MODE:-false}"
-        NGINX_CONF: nginx.conf
-    depends_on:
-      - backend
-    labels:
-      traefik.enable: "true"
-      traefik.docker.network: "${TRAEFIK_NETWORK:-webproxy}"
-      "traefik.http.routers.${PROJECT_NAME:-tci}-frontend.rule": "Host(`${FRONTEND_DOMAIN}`)"
-      "traefik.http.routers.${PROJECT_NAME:-tci}-frontend.entrypoints": "websecure"
-      "traefik.http.routers.${PROJECT_NAME:-tci}-frontend.tls.certresolver": "${TRAEFIK_CERT_RESOLVER:-myresolver}"
-      "traefik.http.routers.${PROJECT_NAME:-tci}-frontend.service": "${PROJECT_NAME:-tci}-frontend-svc"
-      "traefik.http.routers.${PROJECT_NAME:-tci}-frontend.priority": "1"
-      "traefik.http.services.${PROJECT_NAME:-tci}-frontend-svc.loadbalancer.server.port": "80"
-    restart: unless-stopped
-    networks:
-      - internal
-      - webproxy
-
-  # ===============================================================
-  # SERVICES OPTIONNELS (activés uniquement via --profile)
-  # ===============================================================
-
-  keycloak-db:
-    profiles: [ "keycloak" ]
-    image: "postgres:${POSTGRES_IMAGE_TAG:-16}"
-    container_name: "${PROJECT_NAME:-tci}-keycloak-db"
-    environment:
-      POSTGRES_DB: "${KEYCLOAK_DB:-keycloak}"
-      POSTGRES_USER: "${KEYCLOAK_DB_USER:-keycloak}"
-      POSTGRES_PASSWORD: "${KEYCLOAK_DB_PASSWORD:-keycloak}"
-    volumes:
-      - keycloak-data:/var/lib/postgresql/data
-    healthcheck:
-      test: [ "CMD", "pg_isready", "-h", "localhost", "-U", "${KEYCLOAK_DB_USER:-keycloak}", "-d", "${KEYCLOAK_DB:-keycloak}" ]
-      interval: 10s
-      timeout: 10s
-      retries: 10
-    restart: unless-stopped
-    networks:
-      - internal
-
-  keycloak:
-    profiles: [ "keycloak" ]
-    image: "quay.io/keycloak/keycloak:${KEYCLOAK_IMAGE_TAG:-22.0.1}"
-    container_name: "${PROJECT_NAME:-tci}-keycloak"
-    depends_on:
-      keycloak-db:
-        condition: service_healthy
-    environment:
-      KC_DB: postgres
-      KC_DB_URL: "jdbc:postgresql://keycloak-db:5432/${KEYCLOAK_DB:-keycloak}"
-      KC_DB_USERNAME: "${KEYCLOAK_DB_USER:-keycloak}"
-      KC_DB_PASSWORD: "${KEYCLOAK_DB_PASSWORD:-keycloak}"
-      KEYCLOAK_ADMIN: "${KEYCLOAK_ADMIN_USER:-admin}"
-      KEYCLOAK_ADMIN_PASSWORD: "${KEYCLOAK_ADMIN_PASSWORD:-change_me}"
-      KC_PROXY: "edge"
-      KC_HOSTNAME: "${KEYCLOAK_DOMAIN:-auth.localhost}"
-      KC_HTTP_ENABLED: "true"
-      KC_HEALTH_ENABLED: "true"
-    volumes:
-      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
-      - ./keycloak/themes:/opt/keycloak/themes
-    command: [ "start", "--import-realm" ]
-    labels:
-      traefik.enable: "true"
-      traefik.docker.network: "${TRAEFIK_NETWORK:-webproxy}"
-      "traefik.http.routers.${PROJECT_NAME:-tci}-keycloak.rule": "Host(`${KEYCLOAK_DOMAIN:-auth.localhost}`)"
-      "traefik.http.routers.${PROJECT_NAME:-tci}-keycloak.entrypoints": "websecure"
-      "traefik.http.routers.${PROJECT_NAME:-tci}-keycloak.tls.certresolver": "${TRAEFIK_CERT_RESOLVER:-myresolver}"
-      "traefik.http.routers.${PROJECT_NAME:-tci}-keycloak.service": "${PROJECT_NAME:-tci}-keycloak-svc"
-      "traefik.http.services.${PROJECT_NAME:-tci}-keycloak-svc.loadbalancer.server.port": "8080"
-    restart: unless-stopped
-    networks:
-      - internal
-      - webproxy
-
-  mailpit:
-    profiles: [ "mailpit" ]
-    image: axllent/mailpit:v1.21
-    container_name: "${PROJECT_NAME:-tci}-mailpit"
-    ports:
-      - "127.0.0.1:${MAILPIT_UI_PORT:-8025}:8025"
-    restart: unless-stopped
-    networks:
-      - internal
-
   traefik:
-    profiles: [ "proxy" ]
     image: traefik:v3.6
-    container_name: traefik
+    container_name: "${PROJECT_NAME:-box}-traefik"
     restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
+    environment:
+      CF_DNS_API_TOKEN: "${CF_DNS_API_TOKEN:-}"
+      CF_API_EMAIL: "${CF_API_EMAIL:-}"
+      CF_API_KEY: "${CF_API_KEY:-}"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - traefik-letsencrypt:/letsencrypt
@@ -346,24 +41,381 @@ services:
       - --entrypoints.websecure.address=:443
       - --certificatesresolvers.myresolver.acme.email=${ACME_EMAIL:-admin@enclume-numerique.com}
       - --certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json
-      - --certificatesresolvers.myresolver.acme.tlschallenge=true
+      - --certificatesresolvers.myresolver.acme.dnschallenge=true
+      - --certificatesresolvers.myresolver.acme.dnschallenge.provider=${ACME_DNS_PROVIDER:-cloudflare}
+      - --certificatesresolvers.myresolver.acme.dnschallenge.delaybeforecheck=${ACME_DNS_DELAY:-15}
     networks:
       - webproxy
 
+  # ===============================================================
+  # BASE DE DONNÉES POSTGRESQL APPLICATION
+  # ===============================================================
+  app-db:
+    image: "postgres:${POSTGRES_IMAGE_TAG:-16}"
+    container_name: "${PROJECT_NAME:-box}-app-db"
+    environment:
+      POSTGRES_DB: "${POSTGRES_DB:-hscode-app-db}"
+      POSTGRES_USER: "${POSTGRES_USER:-muhend}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+    volumes:
+      - app-database-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-h", "localhost", "-U", "${POSTGRES_USER:-muhend}", "-d", "${POSTGRES_DB:-hscode-app-db}" ]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+    restart: unless-stopped
+    networks:
+      - default
+
+  # ===============================================================
+  # BASE DE DONNÉES POSTGRESQL KEYCLOAK
+  # ===============================================================
+  keycloak-db:
+    image: "postgres:${POSTGRES_IMAGE_TAG:-16}"
+    container_name: "${PROJECT_NAME:-box}-keycloak-db"
+    environment:
+      POSTGRES_DB: "${KEYCLOAK_DB:-keycloak}"
+      POSTGRES_USER: "${KEYCLOAK_DB_USER:-keycloak}"
+      POSTGRES_PASSWORD: "${KEYCLOAK_DB_PASSWORD}"
+    volumes:
+      - keycloak-database-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-h", "localhost", "-U", "${KEYCLOAK_DB_USER:-keycloak}", "-d", "${KEYCLOAK_DB:-keycloak}" ]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+    restart: unless-stopped
+    networks:
+      - default
+
+  # ===============================================================
+  # KEYCLOAK - AUTHENTIFICATION LOCALE
+  # ===============================================================
+  keycloak:
+    image: "quay.io/keycloak/keycloak:${KEYCLOAK_IMAGE_TAG:-22.0.1}"
+    container_name: "${PROJECT_NAME:-box}-keycloak"
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: "jdbc:postgresql://keycloak-db:5432/${KEYCLOAK_DB:-keycloak}"
+      KC_DB_USERNAME: "${KEYCLOAK_DB_USER:-keycloak}"
+      KC_DB_PASSWORD: "${KEYCLOAK_DB_PASSWORD}"
+      KEYCLOAK_ADMIN: "${KEYCLOAK_ADMIN_USER:-admin}"
+      KEYCLOAK_ADMIN_PASSWORD: "${KEYCLOAK_ADMIN_PASSWORD}"
+      KC_PROXY: "edge"
+      KC_HOSTNAME: "${KEYCLOAK_DOMAIN}"
+      KC_HTTP_ENABLED: "true"
+      KC_HEALTH_ENABLED: "true"
+      KC_THEME_STATIC_MAX_AGE: "2592000"
+      KC_THEME_CACHE_THEMES: "true"
+      KC_THEME_CACHE_TEMPLATES: "true"
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: "${PROJECT_NAME:-box}-webproxy"
+      "traefik.http.middlewares.keycloak-cors.headers.accessControlAllowMethods": "GET,POST,PUT,DELETE,OPTIONS,PATCH"
+      "traefik.http.middlewares.keycloak-cors.headers.accessControlAllowOriginList": "https://${FRONTEND_DOMAIN}"
+      "traefik.http.middlewares.keycloak-cors.headers.accessControlAllowHeaders": "*"
+      "traefik.http.middlewares.keycloak-cors.headers.accessControlAllowCredentials": "true"
+      "traefik.http.middlewares.keycloak-cors.headers.accessControlMaxAge": "3600"
+      "traefik.http.middlewares.keycloak-cors.headers.addVaryHeader": "true"
+      "traefik.http.middlewares.keycloak-cors.headers.customResponseHeaders.Content-Security-Policy": "frame-ancestors 'self' https://${FRONTEND_DOMAIN}"
+      "traefik.http.routers.hscode-keycloak-secure.rule": "Host(`${KEYCLOAK_DOMAIN}`)"
+      "traefik.http.routers.hscode-keycloak-secure.entrypoints": "websecure"
+      "traefik.http.routers.hscode-keycloak-secure.tls.certresolver": "myresolver"
+      "traefik.http.routers.hscode-keycloak-secure.middlewares": "keycloak-cors"
+      "traefik.http.routers.hscode-keycloak-secure.service": "hscode-keycloak"
+      "traefik.http.services.hscode-keycloak.loadbalancer.server.port": "8080"
+    volumes:
+      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
+      - ./keycloak/themes:/opt/keycloak/themes
+    command:
+      - start
+      - --import-realm
+    depends_on:
+      keycloak-db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - default
+      - webproxy
+
+  # ===============================================================
+  # RABBITMQ & REDIS LOCAUX
+  # ===============================================================
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: "${PROJECT_NAME:-box}-rabbitmq"
+    environment:
+      RABBITMQ_DEFAULT_USER: "${RABBITMQ_USER:-admin}"
+      RABBITMQ_DEFAULT_PASS: "${RABBITMQ_PASSWORD}"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "-q", "ping" ]
+      interval: 30s
+      timeout: 30s
+      retries: 10
+      start_period: 60s
+    restart: unless-stopped
+    networks:
+      - default
+
+  redis:
+    image: redis:7-alpine
+    container_name: "${PROJECT_NAME:-box}-redis"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - default
+
+  # ===============================================================
+  # OLLAMA CONTENEURISÉ (UNIQUEMENT POUR LINUX + GPU NVIDIA)
+  # Activer via : docker compose --profile linux-gpu up -d
+  # Sur Mac Mini M4 Pro, laisser Ollama tourner nativement sur macOS (Metal)
+  # avec OLLAMA_BASE_URL=http://host.docker.internal:11434
+  # ===============================================================
+  ollama:
+    image: ollama/ollama:latest
+    container_name: "${PROJECT_NAME:-box}-ollama"
+    profiles: ["linux-gpu"]
+    environment:
+      OLLAMA_FLASH_ATTENTION: "1"
+      OLLAMA_KV_CACHE_TYPE: "q8_0"
+    volumes:
+      - ollama-models:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
+    networks:
+      - default
+
+  # ===============================================================
+  # BACKEND API (BOX LOCALE + LICENCE ED25519)
+  # ===============================================================
+  backend:
+    image: "${REGISTRY_PREFIX:-tci}/backend:${IMAGE_TAG:-latest}"
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: "${PROJECT_NAME:-box}-backend"
+    depends_on:
+      app-db:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      BACKEND_INTERNAL_PORT: "8081"
+      # Base de données locale
+      DB_SERVICE_NAME: "app-db"
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: "${POSTGRES_DB:-hscode-app-db}"
+      POSTGRES_USER: "${POSTGRES_USER:-muhend}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+      # Keycloak
+      KEYCLOAK_REALM: "${KEYCLOAK_REALM:-hscode-realm}"
+      KEYCLOAK_BACKEND_CLIENT: "${KEYCLOAK_BACKEND_CLIENT:-backend-client}"
+      KEYCLOAK_BACKEND_CLIENT_SECRET: "${KEYCLOAK_BACKEND_CLIENT_SECRET}"
+      KEYCLOAK_INTERNAL_URL: "http://keycloak:8080"
+      KEYCLOAK_EXTERNAL_URL: "https://${KEYCLOAK_DOMAIN}"
+      CORS_ALLOWED_ORIGINS: "https://${FRONTEND_DOMAIN}"
+      FRONTEND_URL: "https://${FRONTEND_DOMAIN}"
+      # RabbitMQ
+      RABBITMQ_HOST: "rabbitmq"
+      RABBITMQ_PORT: "5672"
+      RABBITMQ_USERNAME: "${RABBITMQ_USER:-admin}"
+      RABBITMQ_PASSWORD: "${RABBITMQ_PASSWORD}"
+      # SMTP coupé par défaut (zéro fuite d'email hors du LAN)
+      SMTP_ENABLED: "${SMTP_ENABLED:-false}"
+      SMTP_HOST: "${SMTP_HOST:-localhost}"
+      SMTP_PORT: "${SMTP_PORT:-25}"
+      SMTP_USERNAME: "${SMTP_USERNAME:-}"
+      SMTP_PASSWORD: "${SMTP_PASSWORD:-}"
+      SMTP_AUTH: "${SMTP_AUTH:-false}"
+      SMTP_STARTTLS: "${SMTP_STARTTLS:-false}"
+      SMTP_STARTTLS_REQUIRED: "${SMTP_STARTTLS_REQUIRED:-false}"
+      # Bootstrap organisation cliente
+      BOOTSTRAP_ENABLED: "${BOOTSTRAP_ENABLED:-true}"
+      ORG_NAME: "${ORG_NAME:-Entreprise Locale DZ}"
+      ORG_EMAIL: "${ORG_EMAIL:-admin@entreprise.dz}"
+      ORG_PASSWORD: "${ORG_PASSWORD}"
+      ORG_ADDRESS: "${ORG_ADDRESS:-Algérie}"
+      ORG_PHONE: "${ORG_PHONE:-+213000000000}"
+      ORG_ACTIVITY_DOMAIN: "${ORG_ACTIVITY_DOMAIN:-Commerce International}"
+      # Licence Ed25519 + Heartbeat minimal
+      BOX_ID: "${BOX_ID:-box-local-dz}"
+      LICENSE_PUBLIC_KEY: "${LICENSE_PUBLIC_KEY}"
+      LICENSE_TOKEN: "${LICENSE_TOKEN:-}"
+      LICENSE_FILE: "/data/license/license.jwt"
+      LICENSE_HEARTBEAT_URL: "${LICENSE_HEARTBEAT_URL:-}"
+      LICENSE_HEARTBEAT_INTERVAL_MS: "${LICENSE_HEARTBEAT_INTERVAL_MS:-43200000}"
+      OFFLINE_GRACE_DAYS: "${OFFLINE_GRACE_DAYS:-30}"
+      # Ollama local
+      OLLAMA_BASE_URL: "${OLLAMA_BASE_URL:-http://host.docker.internal:11434}"
+      JAVA_TOOL_OPTIONS: "-Xms256m -Xmx768m"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - license-data:/data/license
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: "${PROJECT_NAME:-box}-webproxy"
+      "traefik.http.middlewares.hscode-api-stripprefix.stripprefix.prefixes": "/api"
+      "traefik.http.routers.hscode-backend-secure.rule": "(Host(`${FRONTEND_DOMAIN}`) || Host(`${WWW_FRONTEND_DOMAIN:-${FRONTEND_DOMAIN}}`)) && PathPrefix(`/api`)"
+      "traefik.http.routers.hscode-backend-secure.entrypoints": "websecure"
+      "traefik.http.routers.hscode-backend-secure.tls.certresolver": "myresolver"
+      "traefik.http.routers.hscode-backend-secure.middlewares": "hscode-api-stripprefix"
+      "traefik.http.routers.hscode-backend-secure.service": "hscode-backend"
+      "traefik.http.routers.hscode-backend-secure.priority": "10"
+      "traefik.http.services.hscode-backend.loadbalancer.server.port": "8081"
+    restart: unless-stopped
+    networks:
+      - default
+      - webproxy
+
+  # ===============================================================
+  # SEARCH SERVICE - IA 100 % LOCALE VIA OLLAMA
+  # ===============================================================
+  search-service:
+    image: "${REGISTRY_PREFIX:-tci}/search-service:${IMAGE_TAG:-latest}"
+    build:
+      context: ./search-service
+      dockerfile: Dockerfile
+    container_name: "${PROJECT_NAME:-box}-search-service"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      app-db:
+        condition: service_healthy
+      backend:
+        condition: service_started
+    environment:
+      DATABASE_URL: "jdbc:postgresql://app-db:5432/${POSTGRES_DB:-hscode-app-db}"
+      DATABASE_USERNAME: "${POSTGRES_USER:-muhend}"
+      DATABASE_PASSWORD: "${POSTGRES_PASSWORD}"
+      RABBITMQ_HOST: "rabbitmq"
+      RABBITMQ_PORT: "5672"
+      RABBITMQ_USERNAME: "${RABBITMQ_USER:-admin}"
+      RABBITMQ_PASSWORD: "${RABBITMQ_PASSWORD}"
+      REDIS_HOST: "redis"
+      REDIS_PORT: "6379"
+      BACKEND_URL: "http://backend:8081"
+      KEYCLOAK_ISSUER_URI: "https://${KEYCLOAK_DOMAIN}/realms/${KEYCLOAK_REALM:-hscode-realm}"
+      KEYCLOAK_JWK_SET_URI: "http://keycloak:8080/realms/${KEYCLOAK_REALM:-hscode-realm}/protocol/openid-connect/certs"
+      CORS_ALLOWED_ORIGINS: "https://${FRONTEND_DOMAIN}"
+      # Configuration IA 100 % locale (indépendante d'un éventuel AI_PROVIDER SaaS partagé)
+      AI_PROVIDER: "${BOX_AI_PROVIDER:-ollama}"
+      OLLAMA_BASE_URL: "${OLLAMA_BASE_URL:-http://host.docker.internal:11434}"
+      OLLAMA_MODEL: "${OLLAMA_MODEL:-qwen2.5:14b}"
+      OLLAMA_NUM_CTX: "${OLLAMA_NUM_CTX:-16384}"
+      OLLAMA_KEEP_ALIVE: "${OLLAMA_KEEP_ALIVE:-24h}"
+      OLLAMA_JSON_MODE: "${OLLAMA_JSON_MODE:-true}"
+      AI_HTTP_READ_TIMEOUT_MS: "${AI_HTTP_READ_TIMEOUT_MS:-180000}"
+      AI_BATCH_LOCAL_MAX_REQUESTS: "${AI_BATCH_LOCAL_MAX_REQUESTS:-300}"
+      AI_BATCH_LOCAL_CONCURRENCY: "${AI_BATCH_LOCAL_CONCURRENCY:-1}"
+      AI_BATCH_LOCAL_LEVEL: "${AI_BATCH_LOCAL_LEVEL:-POSITIONS10}"
+      JAVA_TOOL_OPTIONS: "-Xms256m -Xmx768m"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: [ "CMD", "wget", "-q", "--spider", "http://localhost:8082/actuator/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: "${PROJECT_NAME:-box}-webproxy"
+      "traefik.http.middlewares.search-api-stripprefix.stripprefix.prefixes": "/api"
+      "traefik.http.routers.search-service-secure.rule": "(Host(`${FRONTEND_DOMAIN}`) || Host(`${WWW_FRONTEND_DOMAIN:-${FRONTEND_DOMAIN}}`)) && (PathPrefix(`/api/recherche`) || PathPrefix(`/api/batch-search`))"
+      "traefik.http.routers.search-service-secure.entrypoints": "websecure"
+      "traefik.http.routers.search-service-secure.tls.certresolver": "myresolver"
+      "traefik.http.routers.search-service-secure.middlewares": "search-api-stripprefix"
+      "traefik.http.routers.search-service-secure.service": "search-service"
+      "traefik.http.routers.search-service-secure.priority": "20"
+      "traefik.http.services.search-service.loadbalancer.server.port": "8082"
+    restart: unless-stopped
+    networks:
+      - default
+      - webproxy
+
+  # ===============================================================
+  # FRONTEND ANGULAR (BOX LOCALE DZ)
+  # ===============================================================
+  frontend:
+    image: "${REGISTRY_PREFIX:-tci}/frontend:${IMAGE_TAG:-latest}"
+    build:
+      context: ./frontend
+      args:
+        KEYCLOAK_EXTERNAL_URL: "https://${KEYCLOAK_DOMAIN}"
+        KEYCLOAK_REALM: "${KEYCLOAK_REALM:-hscode-realm}"
+        KEYCLOAK_FRONTEND_CLIENT: "${KEYCLOAK_FRONTEND_CLIENT:-frontend-client}"
+        API_URL: "/api"
+        MARKET_VERSION: "DZ"
+        NGINX_CONF: nginx.conf
+    container_name: "${PROJECT_NAME:-box}-frontend"
+    depends_on:
+      - backend
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: "${PROJECT_NAME:-box}-webproxy"
+      "traefik.http.routers.hscode-frontend-secure.rule": *traefik-host-rule
+      "traefik.http.routers.hscode-frontend-secure.entrypoints": "websecure"
+      "traefik.http.routers.hscode-frontend-secure.tls.certresolver": "myresolver"
+      "traefik.http.routers.hscode-frontend-secure.service": "hscode-frontend"
+      "traefik.http.routers.hscode-frontend-secure.priority": "1"
+      "traefik.http.services.hscode-frontend.loadbalancer.server.port": "80"
+    restart: unless-stopped
+    networks:
+      - default
+      - webproxy
+
+  # ===============================================================
+  # TUNNEL DE SUPPORT TEMPORAIRE (COUPÉ PAR DÉFAUT)
+  # Activer uniquement sur demande client : ./scripts/support-tunnel.sh enable
+  # ===============================================================
+  support-tunnel:
+    image: tailscale/tailscale:latest
+    container_name: "${PROJECT_NAME:-box}-support-tunnel"
+    profiles: ["support"]
+    hostname: "${BOX_ID:-tci-box}"
+    environment:
+      TS_AUTHKEY: "${TAILSCALE_AUTHKEY:-}"
+      TS_STATE_DIR: /var/lib/tailscale
+      TS_EXTRA_ARGS: "--ssh"
+    volumes:
+      - tailscale-state:/var/lib/tailscale
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    restart: unless-stopped
+
 volumes:
-  app-data:
-    name: "${PROJECT_NAME:-tci}-app-data"
-  rabbitmq-data:
-    name: "${PROJECT_NAME:-tci}-rabbitmq-data"
-  redis-data:
-    name: "${PROJECT_NAME:-tci}-redis-data"
-  keycloak-data:
-    name: "${PROJECT_NAME:-tci}-keycloak-data"
   traefik-letsencrypt:
-    name: "${PROJECT_NAME:-tci}-letsencrypt"
+  app-database-data:
+  keycloak-database-data:
+  rabbitmq-data:
+  redis-data:
+  license-data:
+  ollama-models:
+  tailscale-state:
 
 networks:
   webproxy:
-    external: true
-    name: "${TRAEFIK_NETWORK:-webproxy}"
-  internal:
+    name: "${PROJECT_NAME:-box}-webproxy"
+  default:
