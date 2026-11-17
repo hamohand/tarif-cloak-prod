@@ -66,6 +66,9 @@ backend:
 
 # Configuration IA
 ai:
+  http:
+    connect-timeout-ms: ${AI_HTTP_CONNECT_TIMEOUT_MS:5000}
+    read-timeout-ms: ${AI_HTTP_READ_TIMEOUT_MS:180000}
   openai:
     api-key: ${OPENAI_API_KEY:}
     model: ${OPENAI_MODEL:gpt-4.1-mini}
@@ -78,21 +81,22 @@ ai:
     base-url: ${ANTHROPIC_BASE_URL:https://api.anthropic.com/v1}
   ollama:
     base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
-    model: ${OLLAMA_MODEL:llama3}
+    model: ${OLLAMA_MODEL:qwen2.5:14b}
+    num-ctx: ${OLLAMA_NUM_CTX:16384}
+    keep-alive: ${OLLAMA_KEEP_ALIVE:24h}
+    json-mode: ${OLLAMA_JSON_MODE:true}
   # Provider actif pour les requêtes standard ET batch
-  # Valeurs supportées pour batch : openai, anthropic
-  # Note : ollama ne supporte pas les opérations batch
-  provider: ${AI_PROVIDER:openai}
+  # Valeurs supportées : ollama (défaut Box Locale DZ), openai, anthropic
+  provider: ${AI_PROVIDER:ollama}
 
-  # Configuration des Batches (Message Batches API)
-  # Les batches permettent de traiter plusieurs requêtes de manière asynchrone avec une réduction de 50% du coût
-  # Utilisez les endpoints /batch-search/* pour soumettre et gérer les batches
-  # Délai de traitement : 1 à 24 heures
-  # Providers supportés : openai (Batch API /v1/batches), anthropic (Message Batches /v1/messages/batches)
-  # Les deux offrent une réduction de 50% du coût
+  # Configuration des Batches (API cloud ou file locale Ollama)
   batch:
     enabled: ${AI_BATCH_ENABLED:true}
     max-requests-per-batch: ${AI_BATCH_MAX_REQUESTS:1000}
+    local-max-requests: ${AI_BATCH_LOCAL_MAX_REQUESTS:300}
+    local-concurrency: ${AI_BATCH_LOCAL_CONCURRENCY:1}
+    local-level: ${AI_BATCH_LOCAL_LEVEL:POSITIONS10}
+    local-ttl-hours: ${AI_BATCH_LOCAL_TTL_HOURS:168}
 
 # RabbitMQ Exchanges et Queues
 messaging:

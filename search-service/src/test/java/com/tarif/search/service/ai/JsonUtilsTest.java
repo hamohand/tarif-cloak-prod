@@ -141,4 +141,23 @@ class JsonUtilsTest {
         assertThat(positions.get(0).getCode()).isEqualTo("0808");
         assertThat(positions.get(0).getJustification()).isNull();
     }
+
+    @Test
+    @DisplayName("Balises <think>...</think> et texte parasite sont nettoyés avant extraction JSON")
+    void cleanJsonString_avecBlocThinkEtTexte_doitExtraireJson() {
+        String brut = "<think>Analyse du produit pommes...</think>\nVoici le résultat :\n[{\"code\":\"0808 10\"}]";
+        String result = JsonUtils.cleanJsonString(brut);
+        assertThat(result).isEqualTo("[{\"code\":\"0808 10\"}]");
+    }
+
+    @Test
+    @DisplayName("Champs JSON inconnus renvoyés par un modèle local sont ignorés")
+    void conversionReponseIaToList_avecChampsInconnus_doitIgnorerChampsInconnus() throws JsonProcessingException {
+        String json = "[{\"code\": \"0808 10\", \"confidence\": 0.98, \"titre\": \"Pommes\"}]";
+
+        List<Position> positions = JsonUtils.conversionReponseIaToList(json);
+
+        assertThat(positions).hasSize(1);
+        assertThat(positions.get(0).getCode()).isEqualTo("0808 10");
+    }
 }

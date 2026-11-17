@@ -2,6 +2,7 @@ package com.tarif.search.service.ai;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tarif.search.model.Position;
 
@@ -15,6 +16,10 @@ public class JsonUtils {
     private static final String JSON_PREFIX = "json";
     private static final char BACKTICK = '`';
     private static final ObjectMapper objectMapper = new ObjectMapper();
+
+    static {
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    }
 
     private JsonUtils() {
     }
@@ -55,7 +60,8 @@ public class JsonUtils {
             throw new RuntimeException("Réponse JSON vide ou nulle !");
         }
 
-        String cleanedJson = jsonResponse.trim();
+        // Supprimer les balises de raisonnement (<think>...</think>) émises par certains modèles locaux (Qwen3, DeepSeek...)
+        String cleanedJson = jsonResponse.replaceAll("(?s)<think>.*?</think>", "").trim();
         cleanedJson = removeEnclosingBackticks(cleanedJson);
 
         if (cleanedJson.startsWith(JSON_PREFIX)) {
@@ -63,10 +69,44 @@ public class JsonUtils {
         }
 
         if (!isValidJson(cleanedJson)) {
+            String extracted = extractJsonSubstring(cleanedJson);
+            if (extracted != null && isValidJson(extracted)) {
+                return extracted;
+            }
             throw new RuntimeException("Veuillez donner plus de précisions. La réponse n'est pas un JSON valide : " + cleanedJson);
         }
 
         return cleanedJson;
+    }
+
+    private static String extractJsonSubstring(String text) {
+        int arrStart = text.indexOf('[');
+        int arrEnd = text.lastIndexOf(']');
+        int objStart = text.indexOf('{');
+        int objEnd = text.lastIndexOf('}');
+
+        boolean validArr = arrStart >= 0 && arrEnd > arrStart;
+        boolean validObj = objStart >= 0 && objEnd > objStart;
+
+        if (validArr && (!validObj || arrStart < objStart)) {
+            String candidate = text.substring(arrStart, arrEnd + 1).trim();
+            if (isValidJson(candidate)) {
+                return candidate;
+            }
+        }
+        if (validObj) {
+            String candidate = text.substring(objStart, objEnd + 1).trim();
+            if (isValidJson(candidate)) {
+                return candidate;
+            }
+        }
+        if (validArr) {
+            String candidate = text.substring(arrStart, arrEnd + 1).trim();
+            if (isValidJson(candidate)) {
+                return candidate;
+            }
+        }
+        return null;
     }
 
     public static String removeEnclosingBackticks(String json) {
