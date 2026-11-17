@@ -149,14 +149,14 @@ services:
     labels:
       traefik.enable: "true"
       traefik.docker.network: "${TRAEFIK_NETWORK:-webproxy}"
-      "traefik.http.routers.${PROJECT_NAME:-tci}-backend.rule": "Host(`${FRONTEND_DOMAIN}`) && PathPrefix(`/api`)"
-      "traefik.http.routers.${PROJECT_NAME:-tci}-backend.entrypoints": "websecure"
-      "traefik.http.routers.${PROJECT_NAME:-tci}-backend.tls.certresolver": "${TRAEFIK_CERT_RESOLVER:-myresolver}"
-      "traefik.http.routers.${PROJECT_NAME:-tci}-backend.middlewares": "${PROJECT_NAME:-tci}-api-stripprefix"
-      "traefik.http.routers.${PROJECT_NAME:-tci}-backend.service": "${PROJECT_NAME:-tci}-backend-svc"
-      "traefik.http.routers.${PROJECT_NAME:-tci}-backend.priority": "10"
-      "traefik.http.middlewares.${PROJECT_NAME:-tci}-api-stripprefix.stripprefix.prefixes": "/api"
-      "traefik.http.services.${PROJECT_NAME:-tci}-backend-svc.loadbalancer.server.port": "8081"
+      "traefik.http.routers.tci-backend.rule": "Host(`${FRONTEND_DOMAIN}`) && PathPrefix(`/api`)"
+      "traefik.http.routers.tci-backend.entrypoints": "websecure"
+      "traefik.http.routers.tci-backend.tls.certresolver": "${TRAEFIK_CERT_RESOLVER:-myresolver}"
+      "traefik.http.routers.tci-backend.middlewares": "tci-api-stripprefix"
+      "traefik.http.routers.tci-backend.service": "tci-backend-svc"
+      "traefik.http.routers.tci-backend.priority": "10"
+      "traefik.http.middlewares.tci-api-stripprefix.stripprefix.prefixes": "/api"
+      "traefik.http.services.tci-backend-svc.loadbalancer.server.port": "8081"
     restart: unless-stopped
     networks:
       - internal
@@ -211,16 +211,16 @@ services:
     labels:
       traefik.enable: "true"
       traefik.docker.network: "${TRAEFIK_NETWORK:-webproxy}"
-      "traefik.http.routers.${PROJECT_NAME:-tci}-search.rule": "Host(`${FRONTEND_DOMAIN}`) && (PathPrefix(`/api/recherche`) || PathPrefix(`/api/batch-search`))"
-      "traefik.http.routers.${PROJECT_NAME:-tci}-search.entrypoints": "websecure"
-      "traefik.http.routers.${PROJECT_NAME:-tci}-search.tls.certresolver": "${TRAEFIK_CERT_RESOLVER:-myresolver}"
-      "traefik.http.routers.${PROJECT_NAME:-tci}-search.middlewares": "${PROJECT_NAME:-tci}-search-stripprefix,${PROJECT_NAME:-tci}-search-ratelimit"
-      "traefik.http.routers.${PROJECT_NAME:-tci}-search.service": "${PROJECT_NAME:-tci}-search-svc"
-      "traefik.http.routers.${PROJECT_NAME:-tci}-search.priority": "20"
-      "traefik.http.middlewares.${PROJECT_NAME:-tci}-search-stripprefix.stripprefix.prefixes": "/api"
-      "traefik.http.middlewares.${PROJECT_NAME:-tci}-search-ratelimit.ratelimit.average": "${SEARCH_RATELIMIT_AVERAGE:-5}"
-      "traefik.http.middlewares.${PROJECT_NAME:-tci}-search-ratelimit.ratelimit.burst": "${SEARCH_RATELIMIT_BURST:-15}"
-      "traefik.http.services.${PROJECT_NAME:-tci}-search-svc.loadbalancer.server.port": "8082"
+      "traefik.http.routers.tci-search.rule": "Host(`${FRONTEND_DOMAIN}`) && (PathPrefix(`/api/recherche`) || PathPrefix(`/api/batch-search`))"
+      "traefik.http.routers.tci-search.entrypoints": "websecure"
+      "traefik.http.routers.tci-search.tls.certresolver": "${TRAEFIK_CERT_RESOLVER:-myresolver}"
+      "traefik.http.routers.tci-search.middlewares": "tci-search-stripprefix,tci-search-ratelimit"
+      "traefik.http.routers.tci-search.service": "tci-search-svc"
+      "traefik.http.routers.tci-search.priority": "20"
+      "traefik.http.middlewares.tci-search-stripprefix.stripprefix.prefixes": "/api"
+      "traefik.http.middlewares.tci-search-ratelimit.ratelimit.average": "${SEARCH_RATELIMIT_AVERAGE:-5}"
+      "traefik.http.middlewares.tci-search-ratelimit.ratelimit.burst": "${SEARCH_RATELIMIT_BURST:-15}"
+      "traefik.http.services.tci-search-svc.loadbalancer.server.port": "8082"
     restart: unless-stopped
     networks:
       - internal
@@ -246,12 +246,12 @@ services:
     labels:
       traefik.enable: "true"
       traefik.docker.network: "${TRAEFIK_NETWORK:-webproxy}"
-      "traefik.http.routers.${PROJECT_NAME:-tci}-frontend.rule": "Host(`${FRONTEND_DOMAIN}`)"
-      "traefik.http.routers.${PROJECT_NAME:-tci}-frontend.entrypoints": "websecure"
-      "traefik.http.routers.${PROJECT_NAME:-tci}-frontend.tls.certresolver": "${TRAEFIK_CERT_RESOLVER:-myresolver}"
-      "traefik.http.routers.${PROJECT_NAME:-tci}-frontend.service": "${PROJECT_NAME:-tci}-frontend-svc"
-      "traefik.http.routers.${PROJECT_NAME:-tci}-frontend.priority": "1"
-      "traefik.http.services.${PROJECT_NAME:-tci}-frontend-svc.loadbalancer.server.port": "80"
+      "traefik.http.routers.tci-frontend.rule": "Host(`${FRONTEND_DOMAIN}`)"
+      "traefik.http.routers.tci-frontend.entrypoints": "websecure"
+      "traefik.http.routers.tci-frontend.tls.certresolver": "${TRAEFIK_CERT_RESOLVER:-myresolver}"
+      "traefik.http.routers.tci-frontend.service": "tci-frontend-svc"
+      "traefik.http.routers.tci-frontend.priority": "1"
+      "traefik.http.services.tci-frontend-svc.loadbalancer.server.port": "80"
     restart: unless-stopped
     networks:
       - internal
@@ -305,11 +305,11 @@ services:
     labels:
       traefik.enable: "true"
       traefik.docker.network: "${TRAEFIK_NETWORK:-webproxy}"
-      "traefik.http.routers.${PROJECT_NAME:-tci}-keycloak.rule": "Host(`${KEYCLOAK_DOMAIN:-auth.localhost}`)"
-      "traefik.http.routers.${PROJECT_NAME:-tci}-keycloak.entrypoints": "websecure"
-      "traefik.http.routers.${PROJECT_NAME:-tci}-keycloak.tls.certresolver": "${TRAEFIK_CERT_RESOLVER:-myresolver}"
-      "traefik.http.routers.${PROJECT_NAME:-tci}-keycloak.service": "${PROJECT_NAME:-tci}-keycloak-svc"
-      "traefik.http.services.${PROJECT_NAME:-tci}-keycloak-svc.loadbalancer.server.port": "8080"
+      "traefik.http.routers.tci-keycloak.rule": "Host(`${KEYCLOAK_DOMAIN:-auth.localhost}`)"
+      "traefik.http.routers.tci-keycloak.entrypoints": "websecure"
+      "traefik.http.routers.tci-keycloak.tls.certresolver": "${TRAEFIK_CERT_RESOLVER:-myresolver}"
+      "traefik.http.routers.tci-keycloak.service": "tci-keycloak-svc"
+      "traefik.http.services.tci-keycloak-svc.loadbalancer.server.port": "8080"
     restart: unless-stopped
     networks:
       - internal
