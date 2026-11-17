@@ -3,6 +3,8 @@ package com.muhend.backend.organization.service;
 import com.muhend.backend.alert.repository.QuotaAlertRepository;
 import com.muhend.backend.email.service.EmailService;
 import com.muhend.backend.invoice.service.InvoiceService;
+import com.muhend.backend.license.dto.LicenseStatusDto;
+import com.muhend.backend.license.service.LicenseService;
 import com.muhend.backend.organization.dto.OrganizationDto;
 import com.muhend.backend.organization.dto.OrganizationMapper;
 import com.muhend.backend.organization.dto.QuotaCheckResult;
@@ -42,6 +44,7 @@ public class PlanChangeService {
     private final CollaboratorService collaboratorService;
     private final QuotaAlertRepository quotaAlertRepository;
     private final OrganizationMapper organizationMapper;
+    private final LicenseService licenseService;
 
     public PlanChangeService(OrganizationRepository organizationRepository,
                              OrganizationUserRepository organizationUserRepository,
@@ -52,7 +55,8 @@ public class PlanChangeService {
                              QuotaService quotaService,
                              CollaboratorService collaboratorService,
                              QuotaAlertRepository quotaAlertRepository,
-                             OrganizationMapper organizationMapper) {
+                             OrganizationMapper organizationMapper,
+                             LicenseService licenseService) {
         this.organizationRepository = organizationRepository;
         this.organizationUserRepository = organizationUserRepository;
         this.usageLogRepository = usageLogRepository;
@@ -63,6 +67,7 @@ public class PlanChangeService {
         this.collaboratorService = collaboratorService;
         this.quotaAlertRepository = quotaAlertRepository;
         this.organizationMapper = organizationMapper;
+        this.licenseService = licenseService;
     }
 
     /**
@@ -426,54 +431,37 @@ public class PlanChangeService {
     /**
      * Vérifie si une organisation peut effectuer des requêtes.
      */
-    @Transactional(readOnly = true)
+    @Transactional
     public boolean canOrganizationMakeRequests(Organization organization) {
         if (!Boolean.TRUE.equals(organization.getEnabled())) {
             log.debug("Organisation {} désactivée par un administrateur", organization.getId());
             return false;
         }
 
-        if (isTrialExpired(organization)) {
+        if (licenseService == null) {
             return false;
         }
 
-        if (organization.getMonthlyPlanEndDate() != null
-                && LocalDate.now().isAfter(organization.getMonthlyPlanEndDate())) {
-            log.debug("Organisation {} bloquée : plan mensuel expiré le {}",
-                    organization.getId(), organization.getMonthlyPlanEndDate());
+        LicenseStatusDto license = licenseService.getCurrentStatus();
+        if (!license.isValid()) {
+            log.debug("Organisation {} bloquée : licence {} ({})",
+                    organization.getId(), license.getState(), license.getMessage());
             return false;
         }
-
-        Integer monthlyQuota = organization.getMonthlyQuota();
-        if (organization.getPricingPlanId() != null) {
-            try {
-                PricingPlanDto plan = pricingPlanService.getPricingPlanById(organization.getPricingPlanId());
-                monthlyQuota = plan.getMonthlyQuota();
-            } catch (Exception e) {
-                log.warn("Impossible de récupérer le plan {} pour vérifier le quota: {}",
-                        organization.getPricingPlanId(), e.getMessage());
-            }
-        }
-        if (monthlyQuota != null) {
-            LocalDateTime start;
-            LocalDateTime end;
-            if (organization.getMonthlyPlanStartDate() != null && organization.getMonthlyPlanEndDate() != null) {
-                start = organization.getMonthlyPlanStartDate().atStartOfDay();
-                end = organization.getMonthlyPlanEndDate().atTime(23, 59, 59);
-            } else {
-                LocalDate today = LocalDate.now();
-                start = today.withDayOfMonth(1).atStartOfDay();
-                end = today.withDayOfMonth(today.lengthOfMonth()).atTime(23, 59, 59);
-            }
-            long currentUsage = organizationMapper.computeCredits(usageLogRepository.findByOrganizationIdAndTimestampBetween(
-                    organization.getId(), start, end));
-            if (currentUsage >= monthlyQuota) {
-                log.debug("Organisation {} bloquée : quota de crédits épuisé ({}/{})",
-                        organization.getId(), currentUsage, monthlyQuota);
+        Integer licenseQuota = license.getMonthlyQuota();
+        if (licenseQuota != null) {
+            LocalDate today = LocalDate.now();
+            LocalDateTime start = today.withDayOfMonth(1).atStartOfDay();
+            LocalDateTime end = today.withDayOfMonth(today.lengthOfMonth()).atTime(23, 59, 59);
+            long currentUsage = organizationMapper.computeCredits(
+                    usageLogRepository.findByOrganizationIdAndTimestampBetween(
+                            organization.getId(), start, end));
+            if (currentUsage >= licenseQuota) {
+                log.debug("Organisation {} bloquée : quota licence épuisé ({}/{})",
+                        organization.getId(), currentUsage, licenseQuota);
                 return false;
             }
         }
-
         return true;
     }
 
