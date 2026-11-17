@@ -240,6 +240,7 @@ services:
         API_URL: "/api"
         MARKET_VERSION: "${MARKET_VERSION:-DZ}"
         BETA_MODE: "${BETA_MODE:-false}"
+        APP_EDITION: "${APP_EDITION:-saas-dz-ue}"
         NGINX_CONF: nginx.conf
     depends_on:
       - backend

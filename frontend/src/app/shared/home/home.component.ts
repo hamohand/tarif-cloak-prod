@@ -180,6 +180,7 @@ import { environment } from '../../../environments/environment';
       <footer class="home-footer">
         <p>Développement d'applications pour les entreprises — Auto-entreprise Hamroun<br>
         Contact : mohhamroun&#64;gmail.com · WhatsApp : +213 5 60 96 80 66</p>
+        <span class="edition-tag">TCI · {{ appEdition }}</span>
       </footer>
     </div>
   `,
@@ -540,6 +541,15 @@ import { environment } from '../../../environments/environment';
 
     .home-footer p { margin: 0; font-size: 0.8rem; color: #64748B; line-height: 1.6; }
 
+    .edition-tag {
+      display: inline-block;
+      margin-top: 0.45rem;
+      font-family: var(--font-mono, 'JetBrains Mono', monospace);
+      font-size: 0.7rem;
+      color: #475569;
+      letter-spacing: 0.04em;
+    }
+
     @media (max-width: 860px) {
       .trichotomy-grid { grid-template-columns: 1fr; }
     }
@@ -552,6 +562,7 @@ export class HomeComponent {
   private router = inject(Router);
 
   isBetaMode = environment.betaMode === true;
+  appEdition = environment.appEdition || 'saas-dz-ue';
 
   isAuthenticated$ = this.authService.isAuthenticated();
   isOrganizationAccount$ = this.authService.isOrganizationAccount();
