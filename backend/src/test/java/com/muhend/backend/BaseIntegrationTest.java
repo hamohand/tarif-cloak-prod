@@ -28,10 +28,9 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 })
 public abstract class BaseIntegrationTest {
 
-    // On utilise l'image postgres:15-alpine pour rester léger
     @Container
     @ServiceConnection
-    protected static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:15-alpine")
+    protected static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")
             .withDatabaseName("tarifcloak_test")
             .withUsername("testuser")
             .withPassword("testpass");
