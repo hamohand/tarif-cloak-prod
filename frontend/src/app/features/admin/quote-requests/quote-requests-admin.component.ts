@@ -39,7 +39,7 @@ import { NotificationService } from '../../../core/services/notification.service
                 <div>
                   <h3>Demande #{{ request.id }}</h3>
                   <p class="meta-info">
-                    Organisation ID: {{ request.organizationId }} | 
+                    {{ request.organizationId ? ('Organisation #' + request.organizationId) : 'Prospect public (sans compte)' }} | 
                     Créée le {{ formatDate(request.createdAt) }}
                   </p>
                 </div>

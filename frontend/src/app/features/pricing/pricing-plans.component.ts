@@ -132,6 +132,31 @@ import { of } from 'rxjs';
             </div>
           }
         </div>
+        <section class="sovereign-box-card" aria-label="Déploiement Souverain sur Site">
+          <div class="sovereign-box-info">
+            <span class="sovereign-badge">
+              {{ selectedMarket === 'DZ' ? 'Conformité Loi 18-07 &amp; Loi 25-11 (Algérie)' : 'Infrastructure privée · Sur site' }}
+            </span>
+            <h3>🏢 Déploiement Souverain sur Site — Box Locale (On-Premise)</h3>
+            <p class="sovereign-desc">
+              @if (selectedMarket === 'DZ') {
+                Déployez l'ensemble de la plateforme (base réglementaire P10/NC8, authentification et moteur IA dédié) directement sur un boîtier local dans votre réseau d'entreprise, sans aucun transfert de données vers l'extérieur.
+              } @else {
+                Déployez TCI sur votre infrastructure interne privée avec moteur IA local dédié pour vos exigences de confidentialité industrielle et douanière, sans appel vers des API cloud externes.
+              }
+            </p>
+            <div class="sovereign-highlights">
+              <span>🔒 Zéro donnée hors site</span>
+              <span>⚡ IA locale dédiée</span>
+              <span>📄 Licence annuelle sur devis</span>
+            </div>
+          </div>
+          <div class="sovereign-box-action">
+            <button type="button" class="btn btn-primary" (click)="openSovereignBoxQuoteForm()">
+              Demander un devis déploiement local
+            </button>
+          </div>
+        </section>
       }
 
       <div class="pricing-footer">
@@ -143,7 +168,7 @@ import { of } from 'rxjs';
           }
         </p>
         <div class="footer-actions">
-          <button class="btn btn-secondary" (click)="openQuoteRequestForm()" *ngIf="isAuthenticated">
+          <button class="btn btn-secondary" (click)="openQuoteRequestForm()">
             Demander un devis personnalisé
           </button>
           <a routerLink="/auth/login" class="link">Déjà un compte ? Connectez-vous</a>
@@ -153,6 +178,9 @@ import { of } from 'rxjs';
 
     <app-quote-request-form
       [showForm]="showQuoteForm"
+      [modalTitle]="quoteModalTitle"
+      [submitLabel]="quoteSubmitLabel"
+      [defaultMessage]="quoteDefaultMessage"
       (formClosed)="closeQuoteForm()"
       (quoteSubmitted)="onQuoteSubmitted()">
     </app-quote-request-form>
@@ -557,6 +585,64 @@ import { of } from 'rxjs';
       color: var(--neu-accent-danger);
     }
 
+    .sovereign-box-card {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 2rem;
+      margin: 2.5rem auto 1rem;
+      padding: 2rem 2.25rem;
+      border-radius: var(--neu-radius-container);
+      background: linear-gradient(145deg, #E2E8F0, #CBD5E1);
+      border-left: 5px solid #4F46E5;
+      box-shadow: var(--neu-extruded);
+    }
+
+    .sovereign-box-info {
+      flex: 1;
+      text-align: left;
+    }
+
+    .sovereign-badge {
+      display: inline-block;
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #4338CA;
+      background: rgba(79, 70, 229, 0.12);
+      padding: 0.25rem 0.65rem;
+      border-radius: 999px;
+      margin-bottom: 0.65rem;
+    }
+
+    .sovereign-box-card h3 {
+      font-family: var(--font-display);
+      font-size: 1.35rem;
+      color: var(--neu-text-heading);
+      margin: 0 0 0.6rem;
+    }
+
+    .sovereign-desc {
+      color: var(--neu-text-primary);
+      font-size: 0.96rem;
+      line-height: 1.55;
+      margin: 0 0 0.9rem;
+    }
+
+    .sovereign-highlights {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.85rem 1.4rem;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--neu-text-heading);
+    }
+
+    .sovereign-box-action {
+      flex-shrink: 0;
+    }
+
     @media (max-width: 768px) {
       .pricing-container {
         padding: 2rem 1rem;
@@ -568,6 +654,12 @@ import { of } from 'rxjs';
 
       .pricing-plans-grid {
         grid-template-columns: 1fr;
+      }
+
+      .sovereign-box-card {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 1.5rem;
       }
     }
   `]
@@ -587,6 +679,9 @@ export class PricingPlansComponent implements OnInit {
   loading = true;
   error = '';
   showQuoteForm = false;
+  quoteModalTitle = 'Demander un devis personnalisé';
+  quoteSubmitLabel = 'Envoyer la demande';
+  quoteDefaultMessage = '';
   isAuthenticated = false;
 
   ngOnInit() {
@@ -673,11 +768,18 @@ export class PricingPlansComponent implements OnInit {
   }
 
   openQuoteRequestForm() {
-    if (!this.isAuthenticated) {
-      // Rediriger vers la page de connexion si non authentifié
-      // L'utilisateur pourra revenir après connexion
-      return;
-    }
+    this.quoteModalTitle = 'Demander un devis personnalisé';
+    this.quoteSubmitLabel = 'Envoyer la demande';
+    this.quoteDefaultMessage = '';
+    this.showQuoteForm = true;
+  }
+
+  openSovereignBoxQuoteForm() {
+    this.quoteModalTitle = 'Étude — Déploiement Souverain sur Site (Box Locale)';
+    this.quoteSubmitLabel = 'Demander à être recontacté';
+    this.quoteDefaultMessage = this.selectedMarket === 'DZ'
+      ? 'Bonjour,\nNous souhaitons recevoir une proposition pour un déploiement souverain sur site (Box Locale Algérie — conformité Loi 18-07 / 25-11).\nNombre estimé d\'utilisateurs : '
+      : 'Bonjour,\nNous souhaitons recevoir une proposition pour un déploiement On-Premise sur notre infrastructure interne.\nNombre estimé d\'utilisateurs : ';
     this.showQuoteForm = true;
   }
 
