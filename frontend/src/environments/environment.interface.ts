@@ -9,5 +9,6 @@ export interface Environment {
   apiUrl: string;
   marketVersion: string; // DEFAULT, DZ, etc.
   betaMode?: boolean;
+  appEdition?: string;
 }
 
