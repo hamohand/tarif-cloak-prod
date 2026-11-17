@@ -43,10 +43,8 @@ export class CurrencyService {
     }
 
     if (!marketVersion || marketVersion.trim() === '') {
-      // Valeur par défaut si marketVersion n'est pas défini
-      const isProduction = (environment as any).production === true;
-      marketVersion = isProduction ? 'DZ' : 'DEFAULT';
-      console.warn('⚠️ CurrencyService: marketVersion non trouvé dans environment, utilisation de:', marketVersion);
+      marketVersion = 'DZ';
+      console.warn('⚠️ CurrencyService: marketVersion non trouvé dans environment, utilisation de: DZ');
     }
 
     console.log('🔍 CurrencyService: Récupération de la devise pour marketVersion:', marketVersion);
@@ -61,19 +59,18 @@ export class CurrencyService {
         console.log('✅ CurrencyService: marketVersion du profil:', profile.marketVersion);
       }),
       map(profile => {
-        const currency = profile.currencyCode || 'EUR';
+        const currency = profile.currencyCode || 'DZD';
         this.cachedCurrency = currency;
         const symbol = this.getSymbolForCurrency(currency);
         console.log('✅ CurrencyService: Symbole de devise calculé:', symbol, 'pour', currency);
-        console.log('✅ CurrencyService: Vérification mapping DZD -> DA:', currency === 'DZD' ? 'DA' : 'autre');
         return symbol;
       }),
       catchError((error) => {
         console.error('❌ CurrencyService: Erreur lors de la récupération du profil de marché:', error);
         console.error('❌ CurrencyService: Détails de l\'erreur:', error.message, error.stack);
-        // En cas d'erreur, utiliser EUR par défaut
-        this.cachedCurrency = 'EUR';
-        const defaultSymbol = '€';
+        // En cas d'erreur, utiliser DZD (DA) par défaut
+        this.cachedCurrency = 'DZD';
+        const defaultSymbol = 'DA';
         this.cachedSymbol$ = of(defaultSymbol).pipe(shareReplay(1));
         return of(defaultSymbol);
       }),
@@ -100,19 +97,18 @@ export class CurrencyService {
     }
 
     if (!marketVersion) {
-      const isProduction = (environment as any).production === true;
-      marketVersion = isProduction ? 'DZ' : 'DEFAULT';
+      marketVersion = 'DZ';
     }
 
     return this.marketProfileService.getMarketProfileByVersion(marketVersion).pipe(
       map(profile => {
-        const currency = profile.currencyCode || 'EUR';
+        const currency = profile.currencyCode || 'DZD';
         this.cachedCurrency = currency;
         return currency;
       }),
       catchError(() => {
-        this.cachedCurrency = 'EUR';
-        return of('EUR');
+        this.cachedCurrency = 'DZD';
+        return of('DZD');
       })
     );
   }

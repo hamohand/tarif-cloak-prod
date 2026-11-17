@@ -5,7 +5,6 @@ import { AuthService } from '../../core/services/auth.service';
 import { OrganizationAccountService } from '../../core/services/organization-account.service';
 import { combineLatest, of } from 'rxjs';
 import { map, switchMap, catchError, distinctUntilChanged } from 'rxjs/operators';
-import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-home',
@@ -47,17 +46,13 @@ import { environment } from '../../../environments/environment';
         </ng-container>
 
         <div class="hero-cta" *ngIf="!(isAuthenticated$ | async)">
-          <a *ngIf="isBetaMode" routerLink="/auth/login" class="cta-button primary">
+          <a routerLink="/auth/login" class="cta-button primary">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;flex-shrink:0"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-            Commencer gratuitement
+            Se connecter
           </a>
-          @if (isBetaMode) {
-            <div class="trial-offer-badge">
-              <svg class="trial-offer-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12v9H4v-9"/><path d="M22 7H2v5h20V7z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg>
-              <span>Offre Invité — <strong>500 crédits · 30 jours</strong></span>
-            </div>
-          }
-          <a *ngIf="!isBetaMode" routerLink="/pricing" class="cta-button ghost">Voir les tarifs</a>
+          <div class="trial-offer-badge">
+            <span>🔒 Instance Locale Souveraine — Données &amp; IA 100 % sur votre réseau</span>
+          </div>
           <a routerLink="/aide" class="cta-button ghost guide-btn">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;flex-shrink:0"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/><path d="M12 6v6M12 15h.01"/></svg>
             Guide
@@ -235,19 +230,16 @@ import { environment } from '../../../environments/environment';
         @if (!(canMakeRequests$ | async)) {
           <div class="trial-expired-message">
             <div class="message-content">
-              <h4>Essai gratuit terminé</h4>
+              <h4>Licence Box IA inactive ou expirée</h4>
               @if (isOrganizationAccount$ | async) {
                 <p>
-                  Le quota de votre essai gratuit a été atteint et est maintenant définitivement désactivé pour votre organisation.
-                  Aucune recherche HS-code n'est autorisée pour tous les collaborateurs.
-                  Veuillez <a routerLink="/organization/stats">choisir un plan tarifaire</a> ou
-                  <a routerLink="/organization/quote-requests">faire une demande de devis</a> pour continuer à utiliser le service.
+                  L'abonnement de votre Box IA locale est expiré ou le plafond de crédits est atteint.
+                  Rendez-vous dans <a routerLink="/organization/account">Mon organisation</a> pour activer une nouvelle clé de licence.
                 </p>
               } @else {
                 <p>
-                  Le quota de l'essai gratuit de votre organisation a été atteint et est maintenant définitivement désactivé.
-                  Aucune recherche HS-code n'est autorisée.
-                  Veuillez contacter votre administrateur d'organisation pour choisir un plan tarifaire ou faire une demande de devis.
+                  L'abonnement de votre Box IA locale est expiré ou le plafond de crédits est atteint.
+                  Veuillez contacter l'administrateur de votre entreprise.
                 </p>
               }
             </div>
@@ -266,7 +258,6 @@ import { environment } from '../../../environments/environment';
               </a>
             </div>
 
-            @if (!isBetaMode) {
             <div class="feature-card request-card">
               <div class="request-icon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
@@ -281,18 +272,16 @@ import { environment } from '../../../environments/environment';
             <div class="feature-card request-card">
               <div class="request-icon">⚡</div>
               <h3>Recherche par lots</h3>
-              <p>Soumettez jusqu'à 1000 produits en une seule fois. Traitement asynchrone avec 50% de réduction.</p>
+              <p>Soumettez jusqu'à 300 produits en une seule fois. Traitement asynchrone 100 % local sur votre Box IA.</p>
               <a [routerLink]="['/recherche/batch-search']" class="cta-button secondary">
                 Rechercher par lots
               </a>
             </div>
-            }
-
 
           </div>
         }
 
-        <div class="features primary" *ngIf="(isOrganizationAccount$ | async) && !isBetaMode">
+        <div class="features primary" *ngIf="isOrganizationAccount$ | async">
           <div class="feature-card advise">
             <h3>Gestion d'organisation</h3>
             <p>Utilisez l'espace <strong>Mon organisation</strong> pour inviter vos collaborateurs et suivre les statistiques globales.</p>
@@ -917,7 +906,6 @@ import { environment } from '../../../environments/environment';
 export class HomeComponent {
   private authService = inject(AuthService);
   private organizationAccountService = inject(OrganizationAccountService);
-  isBetaMode = environment.betaMode === true;
 
   isAuthenticated$ = this.authService.isAuthenticated();
   isOrganizationAccount$ = this.authService.isOrganizationAccount();

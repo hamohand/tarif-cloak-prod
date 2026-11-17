@@ -9,9 +9,9 @@ import { NotificationService } from '../../core/services/notification.service';
 import { OrganizationAccountService, OrganizationUsageLog } from '../../core/services/organization-account.service';
 import { CurrencyService } from '../../core/services/currency.service';
 import { PaymentService } from '../../core/services/payment.service';
+import { LicenseApiService, LicenseStatus } from '../../core/services/license-api.service';
 import { Chart, ChartConfiguration, registerables } from 'chart.js';
 import { take } from 'rxjs/operators';
-import { environment } from '../../../environments/environment';
 
 Chart.register(...registerables);
 
@@ -59,13 +59,7 @@ Chart.register(...registerables);
               </p>
             }
             <div class="renewal-actions">
-              @if (isBetaMode) {
-                <a href="https://wa.me/33622563841" target="_blank" class="btn btn-renew">
-                  💬 Nous Contacter (Plus de crédits)
-                </a>
-              } @else {
-                <a routerLink="/choose-plan" class="btn btn-renew">Gérer mon plan</a>
-              }
+              <a routerLink="/organization/account" class="btn btn-renew">Activer une licence</a>
             </div>
           </div>
         </div>
@@ -87,219 +81,22 @@ Chart.register(...registerables);
         }
       </div>
 
-      <!-- Plan tarifaire -->
+      <!-- Licence Box IA -->
       @if (organization) {
         <div class="pricing-plan-card">
-          <h3>💳 Plan Tarifaire</h3>
-          @if (loadingPlans) {
-            <p>Chargement...</p>
-          } @else if (isBetaMode) {
-            <!-- Mode beta : affichage fixe du plan Invité, aucune option de changement -->
-            <div class="current-plan">
-              <div class="plan-info">
-                <p><strong>Plan actuel :</strong> {{ currentPlan?.name ?? 'Invité' }}</p>
-                <p><strong>Crédits offerts :</strong> {{ currentPlan?.monthlyQuota ?? 500 | number }} crédits</p>
-                @if (currentPlan?.trialPeriodDays) {
-                  <p><strong>Durée :</strong> {{ currentPlan!.trialPeriodDays }} jours</p>
-                }
-                @if (organization.trialExpiresAt) {
-                  <p><strong>Expire le :</strong> {{ formatRenewalDate(organization.trialExpiresAt) }}</p>
-                }
-              </div>
-              <p class="beta-plan-note">
-                🎁 Accès offert pendant la phase bêta. Pour prolonger ou évoluer vers un plan commercial, contactez l'administrateur.
-              </p>
-            </div>
-          } @else if (pricingPlans.length > 0) {
-            <div class="current-plan">
-              @if (currentPlan) {
-                <div class="plan-info">
-                  <p><strong>Plan actuel:</strong> {{ currentPlan.name }}</p>
-                  <p><strong>Prix:</strong>
-                    @if (currentPlan.pricePerMonth !== null && currentPlan.pricePerMonth !== undefined) {
-                      @if (currentPlan.pricePerMonth === 0) {
-                        Gratuit
-                      } @else {
-                        {{ currentPlan.pricePerMonth }}
-                        @if (currencySymbol$ | async; as symbol) { {{ symbol }} } @else { € }/mois
-                      }
-                    } @else if (currentPlan.pricePerRequest !== null && currentPlan.pricePerRequest !== undefined) {
-                      {{ currentPlan.pricePerRequest }}
-                      @if (currencySymbol$ | async; as symbol) { {{ symbol }} } @else { € }/requête
-                    } @else {
-                      Gratuit
-                    }
-                  </p>
-                  @if (currentPlan.trialPeriodDays) {
-                    <p><strong>Période d'essai:</strong> Valable {{ currentPlan.trialPeriodDays }} jours</p>
-                  } @else if (currentPlan.pricePerMonth !== null && currentPlan.pricePerMonth !== undefined && currentPlan.pricePerMonth > 0) {
-                    @if (currentPlan.monthlyQuota) {
-                      <p><strong>Quota:</strong> {{ currentPlan.monthlyQuota | number }} crédits/mois</p>
-                    } @else {
-                      <p><strong>Quota:</strong> Illimité</p>
-                    }
-                    @if (organization.monthlyPlanEndDate) {
-                      <p><strong>Prochaine reconduction:</strong> {{ formatRenewalDate(organization.monthlyPlanEndDate) }}</p>
-                    }
-                  } @else if (currentPlan.pricePerRequest !== null && currentPlan.pricePerRequest !== undefined) {
-                    <p><strong>Quota:</strong> Facturation à la requête</p>
-                  } @else {
-                    <p><strong>Quota:</strong> Illimité</p>
-                  }
-                </div>
-              } @else {
-                <p class="no-plan-message">Aucun plan tarifaire sélectionné</p>
+          <h3>🔐 Licence Box IA</h3>
+          <div class="current-plan">
+            <div class="plan-info">
+              <p><strong>Abonnement :</strong> {{ licenseStatus?.planName ?? 'Box Locale Algérie' }}</p>
+              <p><strong>État :</strong> {{ licenseStatus?.valid ? 'Active' : (licenseStatus?.state ?? 'Inconnue') }}</p>
+              @if (licenseStatus?.expiresAt) {
+                <p><strong>Expire le :</strong> {{ licenseStatus?.expiresAt }}</p>
               }
+              <p><strong>Quota mensuel :</strong> {{ licenseStatus?.monthlyQuota != null ? (licenseStatus?.monthlyQuota | number) + ' crédits/mois' : 'Illimité (IA locale)' }}</p>
             </div>
-            <div class="change-plan-section" [class.required-change]="organization.trialPermanentlyExpired">
-              @if (organization.trialPermanentlyExpired) {
-                <h4 class="required-plan-title">🔴 Sélection obligatoire d'un plan tarifaire</h4>
-                <p class="required-plan-message">
-                  Votre essai gratuit étant définitivement terminé, vous devez choisir un plan payant pour continuer à utiliser le service.
-                  <strong>Il suffit de valider le plan sélectionné ci-dessous - aucune création de compte supplémentaire n'est nécessaire.</strong>
-                </p>
-                @if (!selectedPlanId && pricingPlans.length > 0) {
-                  <p class="selection-prompt" style="color: #dc3545; font-weight: bold; margin: 1rem 0;">
-                    ⚠️ Veuillez sélectionner un plan payant dans la liste ci-dessous.
-                  </p>
-                } @else if (selectedPlanId) {
-                  <p class="selection-prompt" style="color: #28a745; font-weight: bold; margin: 1rem 0;">
-                    ✅ Un plan payant est sélectionné. Cliquez sur le bouton ci-dessous pour valider.
-                  </p>
-                }
-              } @else {
-                <h4>Changer de plan</h4>
-              }
-              <select [(ngModel)]="selectedPlanId" (ngModelChange)="onPlanSelectChange()" class="plan-select" [disabled]="loadingPlans" [class.required-select]="organization.trialPermanentlyExpired">
-                @if (!organization.trialPermanentlyExpired) {
-                  <option [value]="null">Aucun plan (gratuit)</option>
-                }
-                @if (organization.trialPermanentlyExpired && !selectedPlanId && pricingPlans.length > 0) {
-                  <option [value]="null" selected disabled style="color: #dc3545;">⚠️ Sélectionnez un plan payant</option>
-                }
-                @for (plan of pricingPlans; track plan.id) {
-                  <option [value]="plan.id" [selected]="plan.id === organization.pricingPlanId">
-                    {{ plan.name }} -
-                    @if (plan.pricePerMonth !== null && plan.pricePerMonth !== undefined && plan.pricePerMonth > 0) {
-                      {{ plan.pricePerMonth }}
-                      @if (currencySymbol$ | async; as symbol) { {{ symbol }} } @else { € }/mois
-                    } @else if (plan.pricePerRequest !== null && plan.pricePerRequest !== undefined && plan.pricePerRequest > 0) {
-                      {{ plan.pricePerRequest }}
-                      @if (currencySymbol$ | async; as symbol) { {{ symbol }} } @else { € }/requête
-                    }
-                    @if (plan.trialPeriodDays) { ({{ plan.trialPeriodDays }} jours)
-                    } @else if (plan.monthlyQuota) { ({{ plan.monthlyQuota | number }} crédits/mois)
-                    } @else if (plan.pricePerRequest !== null && plan.pricePerRequest !== undefined) { (Facturation à la requête)
-                    } @else { (Quota illimité) }
-                  </option>
-                }
-              </select>
-              <button
-                class="btn btn-primary"
-                [class.btn-required]="organization.trialPermanentlyExpired"
-                (click)="openConfirmModal()"
-                [disabled]="isChangingPlan || !selectedPlanId"
-                [title]="(!selectedPlanId && organization.trialPermanentlyExpired) ? 'Sélectionnez un plan payant pour continuer' : ''">
-                @if (isChangingPlan) {
-                  <span>Redirection en cours...</span>
-                } @else if (organization.trialPermanentlyExpired && selectedPlanId) {
-                  <span>Payer et activer le plan</span>
-                } @else if (organization.trialPermanentlyExpired && !selectedPlanId) {
-                  <span>Sélectionnez un plan payant</span>
-                } @else {
-                  <span>Changer de plan</span>
-                }
-              </button>
-              @if (!organization.trialPermanentlyExpired) {
-                <a routerLink="/pricing" class="view-all-plans-link">Voir tous les plans tarifaires</a>
-              }
-            </div>
-          } @else {
-            <p class="no-plans-message">Aucun plan tarifaire disponible</p>
-          }
-        </div>
-      }
-
-      <!-- Modal de confirmation pour le changement de plan -->
-      @if (showConfirmModal && selectedPlanForConfirmation) {
-        <div class="modal-overlay" [class.modal-required]="organization && organization.trialPermanentlyExpired" (click)="!organization?.trialPermanentlyExpired && closeConfirmModal()">
-          <div class="modal-content" [class.modal-required-content]="organization && organization.trialPermanentlyExpired" (click)="$event.stopPropagation()">
-            <div class="modal-header">
-              @if (organization && organization.trialPermanentlyExpired) {
-                <h3>🔴 Validation obligatoire d'un plan payant</h3>
-              } @else {
-                <h3>Confirmer le changement de plan</h3>
-              }
-              @if (!organization || !organization.trialPermanentlyExpired) {
-                <button class="modal-close" (click)="closeConfirmModal()">&times;</button>
-              }
-            </div>
-            <div class="modal-body">
-              <p>Vous êtes sur le point de changer votre plan tarifaire vers :</p>
-              <div class="selected-plan-info">
-                <h4>{{ selectedPlanForConfirmation.name }}</h4>
-                @if (selectedPlanForConfirmation.description) {
-                  <p class="plan-description">{{ selectedPlanForConfirmation.description }}</p>
-                }
-                @if (selectedPlanForConfirmation.pricePerMonth !== null && selectedPlanForConfirmation.pricePerMonth !== undefined) {
-                  @if (selectedPlanForConfirmation.pricePerMonth === 0) {
-                    @if (!organization?.trialPermanentlyExpired) {
-                      <p class="plan-price">Gratuit</p>
-                    } @else {
-                      <p class="plan-price" style="color: #dc3545;">Plan gratuit - Non disponible</p>
-                    }
-                  } @else {
-                    <p class="plan-price">
-                      {{ selectedPlanForConfirmation.pricePerMonth }} 
-                      @if (currencySymbol$ | async; as symbol) {
-                        {{ symbol }}
-                      } @else {
-                        €
-                      }/mois
-                    </p>
-                  }
-                } @else if (selectedPlanForConfirmation.pricePerRequest !== null && selectedPlanForConfirmation.pricePerRequest !== undefined) {
-                  <p class="plan-price">
-                    {{ selectedPlanForConfirmation.pricePerRequest }} 
-                    @if (currencySymbol$ | async; as symbol) {
-                      {{ symbol }}
-                    } @else {
-                      €
-                    }/requête
-                  </p>
-                }
-                @if (selectedPlanForConfirmation.monthlyQuota) {
-                  <p class="plan-quota">Quota: {{ selectedPlanForConfirmation.monthlyQuota | number }} crédits/mois</p>
-                } @else if (selectedPlanForConfirmation.pricePerRequest !== null && selectedPlanForConfirmation.pricePerRequest !== undefined) {
-                  <p class="plan-quota">Facturation à la requête</p>
-                } @else {
-                  <p class="plan-quota">Quota illimité</p>
-                }
-              </div>
-              @if (organization && organization.trialPermanentlyExpired) {
-                <p class="confirmation-warning-urgent">🔴 <strong>Action obligatoire :</strong> Votre essai gratuit étant définitivement terminé, vous devez valider un plan payant pour continuer à utiliser le service.</p>
-                <p class="confirmation-info">✅ <strong>Validation simple :</strong> Il suffit de valider ce plan payant. Votre compte organisation existant sera automatiquement mis à jour avec le nouveau plan. <strong>Aucune création de compte supplémentaire n'est nécessaire.</strong></p>
-                <p class="confirmation-info">Une fois validé, votre plan sera immédiatement activé et vos collaborateurs pourront à nouveau effectuer des requêtes HS-code.</p>
-              } @else {
-                <p class="confirmation-warning">⚠️ Êtes-vous sûr de vouloir continuer ?</p>
-              }
-            </div>
-            <div class="modal-footer">
-              <button class="btn btn-secondary" (click)="closeConfirmModal()" [disabled]="isChangingPlan">
-                Annuler
-              </button>
-              <button class="btn btn-primary" [class.btn-required]="organization && organization.trialPermanentlyExpired" (click)="changePricingPlan()" [disabled]="isChangingPlan">
-                @if (isChangingPlan) {
-                  <span>Redirection en cours...</span>
-                } @else if (selectedPlanForConfirmation && ((selectedPlanForConfirmation.pricePerMonth != null && selectedPlanForConfirmation.pricePerMonth > 0) || (selectedPlanForConfirmation.pricePerRequest != null && selectedPlanForConfirmation.pricePerRequest > 0))) {
-                  <span>Payer avec Chargily</span>
-                } @else if (organization && organization.trialPermanentlyExpired) {
-                  <span>Valider le plan</span>
-                } @else {
-                  <span>Confirmer le changement</span>
-                }
-              </button>
-            </div>
+            <p class="beta-plan-note">
+              🔒 Boîtier souverain 100 % local. Pour renouveler ou étendre votre licence, rendez-vous dans <a routerLink="/organization/account">Mon organisation</a>.
+            </p>
           </div>
         </div>
       }
@@ -458,6 +255,7 @@ export class OrganizationStatsComponent implements OnInit {
   private organizationAccountService = inject(OrganizationAccountService);
   private currencyService = inject(CurrencyService);
   private paymentService = inject(PaymentService);
+  private licenseApiService = inject(LicenseApiService);
 
   organization: Organization | null = null;
   currencySymbol$ = this.currencyService.getCurrencySymbol();
@@ -473,7 +271,7 @@ export class OrganizationStatsComponent implements OnInit {
   loadingUsageLogs = false;
   errorMessage = '';
 
-  isBetaMode = environment.betaMode === true; // Pour le basculement Bêta / Normal
+  licenseStatus: LicenseStatus | null = null;
 
   // Plans tarifaires
   pricingPlans: PricingPlan[] = [];
@@ -513,6 +311,10 @@ export class OrganizationStatsComponent implements OnInit {
 
     this.loadOrganization();
     this.loadQuota();
+    this.licenseApiService.getStatus().subscribe({
+      next: (status) => { this.licenseStatus = status; },
+      error: () => {}
+    });
     // Charger les logs d'utilisation qui recalculeront automatiquement les stats
     this.loadOrganizationUsageLogs();
   }

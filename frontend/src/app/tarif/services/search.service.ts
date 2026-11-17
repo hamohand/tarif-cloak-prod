@@ -88,11 +88,7 @@ export class SearchService {
     } else if (error.status === 403) {
       errorMessage = 'Accès refusé. Vous n\'avez pas les permissions nécessaires.';
     } else if (error.status === 429) {
-      if (environment.betaMode) {
-        errorMessage = 'Merci pour votre participation. Veuillez contacter l\'administrateur si vous souhaitez continuer à tester.';
-      } else {
-        errorMessage = 'Quota de crédits épuisé. Veuillez renouveler votre plan ou choisir un autre plan.';
-      }
+      errorMessage = 'Licence Box IA expirée ou plafond de crédits atteint. Contactez l\'administrateur de votre organisation.';
     } else if (error.status === 404) {
       errorMessage = 'Code HS introuvable dans la base de données.';
     } else if (error.status === 400) {

@@ -7,6 +7,7 @@ import {
   OrganizationInfo
 } from '../../core/services/organization-account.service';
 import { AuthService } from '../../core/services/auth.service';
+import { LicenseApiService, LicenseStatus } from '../../core/services/license-api.service';
 import { take } from 'rxjs/operators';
 import { Observable } from 'rxjs';
 
@@ -61,7 +62,60 @@ import { Observable } from 'rxjs';
 
         <section class="card">
           <div class="card-header">
-            <h2>Inviter un collaborateur</h2>
+            <div>
+              <h2>🔐 Licence Box IA Locale</h2>
+              <p class="subtitle">Activation et validité hors-ligne de votre boîtier local</p>
+            </div>
+            <div *ngIf="licenseStatus">
+              <span class="status-badge"
+                [class.status-active]="licenseStatus.valid"
+                [class.status-inactive]="!licenseStatus.valid">
+                {{ licenseStatus.valid ? (licenseStatus.state === 'GRACE_PERIOD' ? 'Période de grâce' : 'Active') : 'Inactive (' + licenseStatus.state + ')' }}
+              </span>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="info-grid" *ngIf="licenseStatus">
+              <div>
+                <h3>Plan</h3>
+                <p>{{ licenseStatus.planName || '-' }}</p>
+              </div>
+              <div>
+                <h3>Identifiant Box</h3>
+                <p>{{ licenseStatus.boxId || '-' }}</p>
+              </div>
+              <div>
+                <h3>Expiration</h3>
+                <p>{{ licenseStatus.expiresAt || '-' }}</p>
+              </div>
+              <div>
+                <h3>Utilisateurs max</h3>
+                <p>{{ licenseStatus.maxUsers != null ? licenseStatus.maxUsers : 'Illimité' }}</p>
+              </div>
+            </div>
+            <p *ngIf="licenseStatus?.message" [class.error-message]="!licenseStatus?.valid" [class.success-message]="licenseStatus?.valid" style="margin-top: 0.75rem;">
+              {{ licenseStatus?.message }}
+            </p>
+            <form [formGroup]="licenseForm" (ngSubmit)="activateLicense()" style="margin-top: 1rem; display: flex; flex-direction: column; gap: 0.75rem;">
+              <div class="form-group">
+                <label for="licenseToken">Activer / renouveler avec une clé signée (format TCI1...)</label>
+                <textarea id="licenseToken" rows="3" formControlName="token" placeholder="TCI1.eyJ..."></textarea>
+              </div>
+              <div class="form-actions">
+                <button type="submit" [disabled]="licenseForm.invalid || activatingLicense">
+                  <span *ngIf="activatingLicense">Activation...</span>
+                  <span *ngIf="!activatingLicense">Activer la licence</span>
+                </button>
+              </div>
+            </form>
+            <p class="success-message" *ngIf="licenseActivateSuccess">{{ licenseActivateSuccess }}</p>
+            <p class="error-message" *ngIf="licenseActivateError">{{ licenseActivateError }}</p>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-header">
+            <h2>Ajouter un collaborateur</h2>
           </div>
           <div class="card-body">
             <form [formGroup]="inviteForm" (ngSubmit)="invite()" class="form-grid">
@@ -94,12 +148,20 @@ import { Observable } from 'rxjs';
               </div>
               <div class="form-actions">
                 <button type="submit" [disabled]="inviteForm.invalid || inviting || emailConflictsWithOrganization()">
-                  <span *ngIf="inviting">Envoi...</span>
-                  <span *ngIf="!inviting">Inviter</span>
+                  <span *ngIf="inviting">Création...</span>
+                  <span *ngIf="!inviting">Créer le collaborateur</span>
                 </button>
               </div>
             </form>
             <p class="success-message" *ngIf="inviteSuccess">{{ inviteSuccess }}</p>
+            <div *ngIf="createdCredentials" class="credentials-box">
+              <p><strong>Identifiant :</strong> <code>{{ createdCredentials.username }}</code></p>
+              <p><strong>Mot de passe temporaire :</strong> <code>{{ createdCredentials.temporaryPassword }}</code></p>
+              <p class="subtitle">Le collaborateur devra changer ce mot de passe dès sa première connexion.</p>
+              <button type="button" class="btn btn-secondary" (click)="copyCredentials()">
+                {{ credentialsCopied ? '✅ Identifiants copiés' : '📋 Copier les identifiants' }}
+              </button>
+            </div>
             <p class="error-message" *ngIf="inviteError">{{ inviteError }}</p>
             <p class="warning-message" *ngIf="emailConflictsWithOrganization()">
               L'email du collaborateur doit être différent de celui de l'organisation.
@@ -293,7 +355,8 @@ import { Observable } from 'rxjs';
       letter-spacing: 0.04em;
     }
 
-    input {
+    input,
+    textarea {
       padding: 0.75rem 1rem;
       border: 1.5px solid rgba(163,177,198,0.5);
       border-radius: var(--neu-radius-inner);
@@ -305,12 +368,34 @@ import { Observable } from 'rxjs';
       min-height: 44px;
       width: 100%;
       box-sizing: border-box;
+      font-family: inherit;
     }
 
-    input:focus {
+    input:focus,
+    textarea:focus {
       outline: none;
       border-color: var(--neu-accent);
       box-shadow: inset 2px 2px 5px rgba(163,177,198,0.25), 0 0 0 3px rgba(108,99,255,0.15);
+    }
+
+    .credentials-box {
+      margin-top: 1rem;
+      padding: 1rem 1.25rem;
+      border-radius: var(--neu-radius-inner);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      background: rgba(16, 185, 129, 0.08);
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .credentials-box code {
+      font-family: var(--font-mono, monospace);
+      font-weight: 700;
+      font-size: 1rem;
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      background: rgba(0, 0, 0, 0.15);
     }
 
     input.error {
@@ -582,10 +667,22 @@ import { Observable } from 'rxjs';
 export class OrganizationAccountComponent implements OnInit {
   private organizationAccountService = inject(OrganizationAccountService);
   private authService = inject(AuthService);
+  private licenseApiService = inject(LicenseApiService);
   private fb = inject(FormBuilder);
 
   organization: OrganizationInfo | null = null;
   collaborators: OrganizationCollaborator[] = [];
+  licenseStatus: LicenseStatus | null = null;
+  activatingLicense = false;
+  licenseActivateSuccess = '';
+  licenseActivateError = '';
+
+  licenseForm: FormGroup = this.fb.group({
+    token: ['', [Validators.required]]
+  });
+
+  createdCredentials: { username: string; temporaryPassword: string } | null = null;
+  credentialsCopied = false;
 
   inviteForm: FormGroup = this.fb.group({
     username: ['', [Validators.required, Validators.minLength(3)]],
@@ -606,8 +703,52 @@ export class OrganizationAccountComponent implements OnInit {
       if (isOrg) {
         this.loadOrganization();
         this.loadCollaborators();
+        this.loadLicenseStatus();
       }
     });
+  }
+
+  loadLicenseStatus(): void {
+    this.licenseApiService.getStatus().subscribe({
+      next: (status) => {
+        this.licenseStatus = status;
+      },
+      error: (err) => {
+        console.error('Erreur lors du chargement du statut de licence', err);
+      }
+    });
+  }
+
+  activateLicense(): void {
+    if (this.licenseForm.invalid) {
+      return;
+    }
+    this.activatingLicense = true;
+    this.licenseActivateSuccess = '';
+    this.licenseActivateError = '';
+    const token = (this.licenseForm.value.token || '').trim();
+    this.licenseApiService.activateLicense(token).subscribe({
+      next: (status) => {
+        this.activatingLicense = false;
+        this.licenseStatus = status;
+        this.licenseActivateSuccess = 'Licence activée avec succès.';
+        this.licenseForm.reset();
+      },
+      error: (error) => {
+        this.activatingLicense = false;
+        this.licenseActivateError = error?.error?.message || 'Clé de licence invalide.';
+      }
+    });
+  }
+
+  copyCredentials(): void {
+    if (!this.createdCredentials) return;
+    const text = `Identifiant : ${this.createdCredentials.username}\nMot de passe temporaire : ${this.createdCredentials.temporaryPassword}`;
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(text).then(() => {
+        this.credentialsCopied = true;
+      }).catch(() => {});
+    }
   }
 
   loadOrganization(): void {
@@ -641,6 +782,8 @@ export class OrganizationAccountComponent implements OnInit {
 
     this.inviteSuccess = '';
     this.inviteError = '';
+    this.createdCredentials = null;
+    this.credentialsCopied = false;
 
     if (this.organization && this.inviteForm.value.email && this.organization.email &&
         this.inviteForm.value.email.toLowerCase() === this.organization.email.toLowerCase()) {
@@ -658,7 +801,13 @@ export class OrganizationAccountComponent implements OnInit {
     this.organizationAccountService.inviteCollaborator(this.inviteForm.value).subscribe({
       next: (response) => {
         this.inviting = false;
-        this.inviteSuccess = response.message || 'Invitation envoyée.';
+        this.inviteSuccess = response.message || 'Collaborateur créé.';
+        if (response.directCreated && response.username && response.temporaryPassword) {
+          this.createdCredentials = {
+            username: response.username,
+            temporaryPassword: response.temporaryPassword
+          };
+        }
         this.inviteForm.reset();
         this.loadCollaborators();
       },

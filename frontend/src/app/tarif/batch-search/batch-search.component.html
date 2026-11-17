@@ -2,7 +2,7 @@
   <div class="page-header">
     <h1>🔍 Recherche par Lots (Batch)</h1>
     <p class="subtitle">
-      Recherchez des codes HS pour plusieurs produits simultanément avec une réduction de 50% sur les coûts
+      Traitement par lots 100 % local sur votre Box IA — vos données restent exclusivement sur votre réseau
     </p>
   </div>
 
@@ -47,7 +47,7 @@
             </label>
           </div>
           <p class="help-text">
-            Format: un terme de recherche par ligne (TXT/CSV/TSV) ou première colonne (Excel/ODS), maximum 1000 lignes
+            Format: un terme de recherche par ligne (TXT/CSV/TSV) ou première colonne (Excel/ODS), maximum {{ maxBatchItems }} lignes
           </p>
         </div>
 
@@ -61,12 +61,12 @@
           <span *ngIf="isSubmitting">⏳ Envoi en cours...</span>
         </button>
 
-        <!-- Info économie -->
+        <!-- Info mode local -->
         <div class="info-box">
-          <h4>💰 Économie de 50%</h4>
+          <h4>🔒 Traitement IA 100 % Local sur votre Box</h4>
           <p>
-            L'API Batch coûte moitié prix par rapport à l'API standard.<br/>
-            Délai de traitement : quelques minutes à 24 heures.
+            File d'attente GPU locale, aucune donnée transmise sur Internet.<br/>
+            Les résultats s'affichent automatiquement au fil du traitement.
           </p>
         </div>
       </div>

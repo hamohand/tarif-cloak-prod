@@ -7,7 +7,6 @@ export interface Environment {
     redirectUri: string;
   };
   apiUrl: string;
-  marketVersion: string; // DEFAULT, DZ, etc.
-  betaMode?: boolean;
+  marketVersion: string; // DZ
 }
 

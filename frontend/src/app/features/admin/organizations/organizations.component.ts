@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminService, Organization, OrganizationUser, CreateOrganizationRequest, UpdateOrganizationRequest, UpdateQuotaRequest, AddUserToOrganizationRequest } from '../../../core/services/admin.service';
 import { NotificationService } from '../../../core/services/notification.service';
-import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-organizations',
@@ -114,11 +113,9 @@ import { environment } from '../../../../environments/environment';
                   <td>
                     <button class="btn btn-sm btn-secondary" (click)="toggleEdit(org)">✏️</button>
                     <button class="btn btn-sm btn-info" (click)="toggleUsers(org.id)">👥</button>
-                    @if (betaMode) {
-                      <button class="btn btn-sm btn-primary" (click)="resetOrganizationPlan(org)" title="Réinitialiser le plan">🔄</button>
-                      @if ((org.trialRenewCount ?? 0) > 0) {
-                        <span class="badge badge-count" title="Nombre de réinitialisations">{{ org.trialRenewCount }}x</span>
-                      }
+                    <button class="btn btn-sm btn-primary" (click)="resetOrganizationPlan(org)" title="Réinitialiser le plan">🔄</button>
+                    @if ((org.trialRenewCount ?? 0) > 0) {
+                      <span class="badge badge-count" title="Nombre de réinitialisations">{{ org.trialRenewCount }}x</span>
                     }
                     @if (org.enabled === false) {
                       <button class="btn btn-sm btn-success" (click)="enableOrganization(org)" title="Réactiver">✅</button>
@@ -155,11 +152,9 @@ import { environment } from '../../../../environments/environment';
                 <div class="org-actions">
                   <button class="btn btn-sm btn-secondary" (click)="toggleEdit(org)">✏️ Modifier</button>
                   <button class="btn btn-sm btn-secondary" (click)="toggleUsers(org.id)">👥 Utilisateurs</button>
-                  @if (betaMode) {
-                    <button class="btn btn-sm btn-secondary" (click)="resetOrganizationPlan(org)">🔄 Réinitialiser</button>
-                    @if ((org.trialRenewCount ?? 0) > 0) {
-                      <span class="badge badge-count">{{ org.trialRenewCount }}x</span>
-                    }
+                  <button class="btn btn-sm btn-secondary" (click)="resetOrganizationPlan(org)">🔄 Réinitialiser</button>
+                  @if ((org.trialRenewCount ?? 0) > 0) {
+                    <span class="badge badge-count">{{ org.trialRenewCount }}x</span>
                   }
                   @if (org.enabled === false) {
                     <button class="btn btn-sm btn-success" (click)="enableOrganization(org)">✅ Réactiver</button>
@@ -932,8 +927,6 @@ import { environment } from '../../../../environments/environment';
 export class OrganizationsComponent implements OnInit {
   private adminService = inject(AdminService);
   private notificationService = inject(NotificationService);
-
-  readonly betaMode = environment.betaMode ?? false;
 
   organizations: Organization[] = [];
   filteredOrganizations: Organization[] = [];

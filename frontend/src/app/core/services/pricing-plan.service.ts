@@ -1,7 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 
 export interface PricingPlan {
@@ -57,25 +56,7 @@ export class PricingPlanService {
       console.log('📤 Envoi de la requête sans marketVersion (récupération de tous les plans)');
       console.log('🌐 URL complète:', this.apiUrl);
     }
-    return this.http.get<PricingPlan[]>(this.apiUrl, { params }).pipe(
-      map((plans: PricingPlan[]) => this.filterPlansForProduction(plans))
-    );
-  }
-
-  /**
-   * En mode beta uniquement, ne garder que le plan 'Invité' / 'Bêta Testeur'.
-   * En staging (betaMode=false), tous les plans actifs du MARKET_VERSION sont retournés.
-   */
-  private filterPlansForProduction(plans: PricingPlan[]): PricingPlan[] {
-    if (environment.betaMode) {
-      const invitePlan = plans.find(p => p.name === 'Invité' || p.name === 'Bêta Testeur');
-      if (invitePlan) {
-        return [invitePlan];
-      }
-    } else {
-      return plans.filter(p => p.name !== 'Invité' && p.name !== 'Bêta Testeur');
-    }
-    return plans;
+    return this.http.get<PricingPlan[]>(this.apiUrl, { params });
   }
 
   /**
@@ -90,22 +71,14 @@ export class PricingPlanService {
     } else if (environment.marketVersion) {
       return environment.marketVersion;
     }
-    
-    // Valeur par défaut basée sur l'environnement
-    const isProduction = (environment as any).production === true;
-    if (isProduction) {
-      console.warn('⚠️ marketVersion non trouvé dans environment, utilisation de la valeur par défaut: DZ (production)');
-      return 'DZ';
-    } else {
-      console.warn('⚠️ marketVersion non trouvé dans environment, utilisation de la valeur par défaut: DEFAULT (développement)');
-      return 'DEFAULT';
-    }
+
+    return 'DZ';
   }
 
   /**
    * Récupère les plans tarifaires disponibles pour une organisation.
    * Exclut automatiquement le plan d'essai gratuit si l'organisation l'a déjà utilisé.
-   * @param marketVersion Version de marché (ex: 'DZ', 'DEFAULT')
+   * @param marketVersion Version de marché (ex: 'DZ')
    * @param organizationId ID de l'organisation (optionnel)
    */
   getAvailablePricingPlans(marketVersion?: string, organizationId?: number): Observable<PricingPlan[]> {
@@ -119,9 +92,7 @@ export class PricingPlanService {
       params = params.set('organizationId', organizationId.toString());
     }
     
-    return this.http.get<PricingPlan[]>(`${this.apiUrl}/available`, { params }).pipe(
-      map((plans: PricingPlan[]) => this.filterPlansForProduction(plans))
-    );
+    return this.http.get<PricingPlan[]>(`${this.apiUrl}/available`, { params });
   }
 
   /**

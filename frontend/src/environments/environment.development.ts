@@ -9,6 +9,6 @@ export const environment: Environment = {
     redirectUri: 'http://localhost:4200/'
   },
   apiUrl: 'http://localhost:8081/api',
-  marketVersion: 'DEFAULT' // DEFAULT, DZ, etc.
+  marketVersion: 'DZ'
 };
 

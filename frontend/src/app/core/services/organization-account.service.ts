@@ -49,7 +49,11 @@ export interface InviteCollaboratorRequest {
 
 export interface InviteCollaboratorResponse {
   message: string;
-  tokenExpiresAt: string;
+  tokenExpiresAt?: string;
+  directCreated?: boolean;
+  username?: string;
+  temporaryPassword?: string;
+  activationUrl?: string;
 }
 
 export interface OrganizationUsageLog {
@@ -80,6 +84,11 @@ export interface OrganizationStatus {
   trialPermanentlyExpired?: boolean | null;
   trialExpiresAt?: string | null;
   hasPricingPlan: boolean;
+  licenseValid?: boolean;
+  licenseState?: string;
+  licenseExpiresAt?: string | null;
+  licensePlanName?: string | null;
+  licenseMessage?: string | null;
 }
 
 @Injectable({

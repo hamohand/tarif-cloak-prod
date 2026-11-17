@@ -3,12 +3,8 @@ import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { Observable, interval, Subscription, combineLatest } from 'rxjs';
 import { AuthService } from '../../../core/services/auth.service';
 import { AlertService } from '../../../core/services/alert.service';
-import { InvoiceService } from '../../../core/services/invoice.service';
-import { NotificationService } from '../../../core/services/notification.service';
 import { MarketProfileService } from '../../../core/services/market-profile.service';
 import { OrganizationAccountService, OrganizationInfo } from '../../../core/services/organization-account.service';
-import { PaymentService } from '../../../core/services/payment.service';
-import { UserService } from '../../../core/services/user.service';
 import { environment } from '../../../../environments/environment';
 import { AsyncPipe, CommonModule } from '@angular/common';
 import { take, map, catchError, switchMap } from 'rxjs/operators';
@@ -27,9 +23,6 @@ import { of } from 'rxjs';
             <span class="brand-country-code">{{ countryCode }}</span>
           }
         </a>
-        <span class="env-badge" [class.env-prod]="isBetaMode" [class.env-staging]="!isBetaMode">
-          {{ isBetaMode ? 'PROD' : 'STAGING' }}
-        </span>
       </div>
 
       <button class="hamburger" (click)="toggleMobileMenu()" [class.active]="mobileMenuOpen()">
@@ -54,16 +47,11 @@ import { of } from 'rxjs';
         } @else {
           <a routerLink="/" class="nav-link" (click)="closeMobileMenu()">Accueil إستقبال</a>
         }
-        @if (!isBetaMode) {
-          <a routerLink="/pricing" class="nav-link pricing-link" (click)="closeMobileMenu()">
-            Plans-prix
-          </a>
-        }
         <button class="nav-link contact-btn" (click)="toggleContactPopup(); closeMobileMenu()">
           <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
           Contact اتصال
         </button>
-        @if ((isAuthenticated$ | async) && !isBetaMode) {
+        @if (isAuthenticated$ | async) {
           @if (isOrganizationAccount$ | async) {
             @if (alertCount > 0) {
               <a routerLink="/alerts" class="nav-link alerts-link" (click)="closeMobileMenu()">
@@ -92,7 +80,6 @@ import { of } from 'rxjs';
             </span>
             <button (click)="logout(); closeMobileMenu()" class="btn btn-outline">Déconnexion</button>
           } @else {
-            <button (click)="goToRegister(); closeMobileMenu()" class="btn btn-secondary">Créer un compte إنشاء حساب</button>
             <button (click)="login(); closeMobileMenu()" class="btn btn-primary">Connexion اتصال</button>
           }
         </div>
@@ -105,36 +92,23 @@ import { of } from 'rxjs';
           </span>
           <button (click)="logout()" class="btn btn-outline">Déconnexion</button>
         } @else {
-          <button (click)="goToRegister()" class="btn btn-secondary">Créer un compte إنشاء حساب</button>
           <button (click)="login()" class="btn btn-primary">Connexion اتصال</button>
         }
       </div>
     </nav>
     
-    <!-- Modal renouvellement / changement de plan -->
+    <!-- Modal licence Box IA -->
     @if (showRenewalModal) {
       <div class="renewal-modal-overlay" (click)="closeRenewalModal()">
         <div class="renewal-modal" (click)="$event.stopPropagation()">
           <button class="modal-close-btn" (click)="closeRenewalModal()">✕</button>
-          
-          @if (isBetaMode) {
-            <h3>Quota Épuisé</h3>
-            <p>Merci pour votre participation. Veuillez contacter l'administrateur si vous souhaitez continuer à tester.</p>
-            <div class="renewal-modal-actions">
-              <button class="btn-modal btn-modal-primary" (click)="toggleContactPopup(); closeRenewalModal()">
-                💬 Contacter l'administrateur
-              </button>
-            </div>
-          } @else {
-            <h3>Accès Positions tarifaires suspendu</h3>
-            <p>Votre plan est expiré ou votre quota de crédits est épuisé.</p>
-            <div class="renewal-modal-actions">
-              <a routerLink="/choose-plan" class="btn-modal btn-modal-primary" (click)="closeRenewalModal()">
-                Gérer mon plan
-              </a>
-            </div>
-          }
-          
+          <h3>Licence Box IA suspendue</h3>
+          <p>Votre abonnement local est expiré ou le plafond de crédits est atteint.</p>
+          <div class="renewal-modal-actions">
+            <a routerLink="/organization/account" class="btn-modal btn-modal-primary" (click)="closeRenewalModal()">
+              Gérer ma licence
+            </a>
+          </div>
         </div>
       </div>
     }
@@ -157,22 +131,10 @@ import { of } from 'rxjs';
     @if ((isAuthenticated$ | async) && (isOrganizationAccount$ | async)) {
       @if (!(canMakeRequests$ | async)) {
         <div class="trial-expired-banner">
-          @if (isBetaMode) {
-            <div class="banner-beta-message">
-              <p class="banner-beta-thanks">🙏 Merci pour votre participation à la phase bêta d'TCI !</p>
-              <p class="banner-beta-sub">Si vous désirez continuer, contactez l'administrateur.</p>
-            </div>
-            <div class="banner-actions">
-              <button class="btn-banner btn-banner-primary" (click)="toggleContactPopup()">
-                💬 Contacter l'administrateur
-              </button>
-            </div>
-          } @else {
-            <p>⚠️ L'accès Positions tarifaires est suspendu (plan expiré ou quota épuisé).</p>
-            <div class="banner-actions">
-              <a routerLink="/choose-plan" class="btn-banner btn-banner-primary">Gérer mon plan</a>
-            </div>
-          }
+          <p>⚠️ L'accès Box IA est suspendu (licence expirée ou plafond de crédits atteint).</p>
+          <div class="banner-actions">
+            <a routerLink="/organization/account" class="btn-banner btn-banner-primary">Activer une licence</a>
+          </div>
         </div>
       }
       <nav class="organization-navbar">
@@ -189,7 +151,7 @@ import { of } from 'rxjs';
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/></svg>
             <span>Crédits</span>
           </a>
-          @if (orgQuota !== null && isBetaMode) {
+          @if (orgQuota !== null) {
             <div class="credits-counter" [class.credits-low]="creditsRatio <= 0.2" [class.credits-medium]="creditsRatio > 0.2 && creditsRatio <= 0.5">
               <div class="credits-label">
                 <span>Crédits restants</span>
@@ -199,21 +161,6 @@ import { of } from 'rxjs';
                 <div class="credits-bar-fill" [style.width.%]="creditsRatio * 100"></div>
               </div>
             </div>
-          }
-          @if (!isBetaMode) {
-            <a routerLink="/organization/invoices" routerLinkActive="router-link-active" class="org-nav-link invoices-link">
-              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
-              <span>Factures</span>
-              @if (newInvoicesCount > 0 || overdueInvoicesCount > 0) {
-                <span class="invoice-badge" [class.overdue-badge]="overdueInvoicesCount > 0">
-                  {{ overdueInvoicesCount > 0 ? overdueInvoicesCount : newInvoicesCount }}
-                </span>
-              }
-            </a>
-            <a routerLink="/organization/quote-requests" routerLinkActive="router-link-active" class="org-nav-link">
-              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2M12 12v3M10.5 13.5h3"/></svg>
-              <span>Demandes de devis</span>
-            </a>
           }
           <a routerLink="/aide" routerLinkActive="router-link-active" class="org-nav-link">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/><path d="M12 6v6M12 15h.01"/></svg>
@@ -234,18 +181,6 @@ import { of } from 'rxjs';
             <a routerLink="/admin/organizations" class="admin-nav-link">
               <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 012-2h8a2 2 0 012 2v18M2 22h20M10 7h.01M14 7h.01M10 11h.01M14 11h.01M10 15h.01M14 15h.01"/></svg>
               Organisations
-            </a>
-            <a routerLink="/admin/invoices" class="admin-nav-link">
-              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
-              Factures
-            </a>
-            <a routerLink="/admin/quote-requests" routerLinkActive="router-link-active" class="admin-nav-link">
-              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2M12 12v3M10.5 13.5h3"/></svg>
-              Demandes de devis
-            </a>
-            <a routerLink="/admin/pending-registrations" class="admin-nav-link">
-              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-              Inscriptions en attente
             </a>
           </div>
         </nav>
@@ -889,15 +824,11 @@ export class NavbarComponent implements OnInit, OnDestroy {
   private authService = inject(AuthService);
   private router = inject(Router);
   private alertService = inject(AlertService);
-  private invoiceService = inject(InvoiceService);
   private notificationService = inject(NotificationService);
   private marketProfileService = inject(MarketProfileService);
   private organizationAccountService = inject(OrganizationAccountService);
-  private paymentService = inject(PaymentService);
-  private userService = inject(UserService);
 
   showRenewalModal = false;
-  isRenewing = false;
   showContactPopup = false;
   mobileMenuOpen = signal(false);
 
@@ -913,23 +844,15 @@ export class NavbarComponent implements OnInit, OnDestroy {
     this.showContactPopup = !this.showContactPopup;
   }
 
-  isBetaMode = environment.betaMode === true; // Pour basculer facilement plus tard
-
-  orgPricingPlanId: number | null = null;
-
   isAuthenticated$!: Observable<boolean>;
   isOrganizationAccount$!: Observable<boolean>;
   isCollaboratorAccount$!: Observable<boolean>;
   countryCode$!: Observable<string | null>;
   canMakeRequests$!: Observable<boolean>;
   alertCount = 0;
-  newInvoicesCount = 0;
-  overdueInvoicesCount = 0;
   orgQuota: number | null = null;
   creditsRemaining = 0;
   creditsRatio = 1;
-  private previousInvoicesCount: number | null = null;
-  private previousOverdueInvoicesCount: number | null = null;
   private refreshSubscription?: Subscription;
 
   ngOnInit() {
@@ -937,8 +860,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
     this.isOrganizationAccount$ = this.authService.isOrganizationAccount();
     this.isCollaboratorAccount$ = this.authService.isCollaboratorAccount();
 
-    // Vérifier si l'organisation peut faire des requêtes (essai non expiré)
-    // Par défaut, on suppose que les requêtes sont autorisées
+    // Vérifier si l'organisation peut faire des requêtes (licence valide & quota non épuisé)
     this.canMakeRequests$ = combineLatest([
       this.isOrganizationAccount$,
       this.isCollaboratorAccount$
@@ -946,15 +868,12 @@ export class NavbarComponent implements OnInit, OnDestroy {
       switchMap(([isOrg, isCollab]) => {
         const hasOrgOrCollabAccount = isOrg || isCollab;
         if (!hasOrgOrCollabAccount) {
-          // Pas d'organisation, donc pas de restriction
           return of(true);
         }
-        // Vérifier l'état de l'organisation
         return this.organizationAccountService.getOrganizationStatus().pipe(
           map(status => status.canMakeRequests),
           catchError(err => {
             console.error('Erreur lors de la vérification de l\'état de l\'organisation:', err);
-            // En cas d'erreur, autoriser par défaut pour ne pas bloquer l'interface
             return of(true);
           })
         );
@@ -962,7 +881,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
     );
 
     // Charger le code pays du profil de marché configuré dans l'environnement
-    // Le profil de marché est défini par la variable d'environnement MARKET_VERSION
     if (environment.marketVersion) {
       this.countryCode$ = this.marketProfileService.getMarketProfileByVersion(environment.marketVersion).pipe(
         map(profile => profile.countryCodeIsoAlpha2),
@@ -976,14 +894,10 @@ export class NavbarComponent implements OnInit, OnDestroy {
     }
 
     this.loadAlertCount();
-    this.loadNewInvoicesCount();
-    this.loadOverdueInvoicesCount();
     this.loadOrgQuota();
     // Rafraîchir les compteurs toutes les 30 secondes
     this.refreshSubscription = interval(30000).subscribe(() => {
       this.loadAlertCount();
-      this.loadNewInvoicesCount();
-      this.loadOverdueInvoicesCount();
       this.loadOrgQuota();
     });
   }
@@ -995,7 +909,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
   }
 
   loadAlertCount() {
-    // Charger les alertes pour les comptes organisation et collaborateur
     this.isOrganizationAccount$.pipe(take(1)).subscribe(isOrganization => {
       if (isOrganization) {
         this.alertService.getMyAlertsCount().subscribe({
@@ -1008,7 +921,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
           }
         });
       } else {
-        // Vérifier si c'est un collaborateur
         this.isCollaboratorAccount$.pipe(take(1)).subscribe(isCollaborator => {
           if (isCollaborator) {
             this.alertService.getMyAlertsCount().subscribe({
@@ -1047,126 +959,15 @@ export class NavbarComponent implements OnInit, OnDestroy {
     });
   }
 
-  loadNewInvoicesCount() {
-    this.isOrganizationAccount$.pipe(take(1)).subscribe(isOrganization => {
-      if (isOrganization) {
-        this.invoiceService.getNewInvoicesCount().subscribe({
-          next: (response) => {
-            const newCount = response.count;
-
-            // Afficher une notification si une nouvelle facture est détectée
-            // (seulement après la première vérification, pour éviter de notifier au chargement initial)
-            if (this.previousInvoicesCount !== null && newCount > this.previousInvoicesCount) {
-              const diff = newCount - this.previousInvoicesCount;
-              if (diff === 1) {
-                this.notificationService.info(`Une nouvelle facture est disponible !`);
-              } else {
-                this.notificationService.info(`${diff} nouvelles factures sont disponibles !`);
-              }
-            }
-
-            this.newInvoicesCount = newCount;
-            // Initialiser ou mettre à jour le compteur précédent
-            if (this.previousInvoicesCount === null) {
-              // Première vérification : initialiser sans notifier
-              this.previousInvoicesCount = newCount;
-            } else {
-              // Mettre à jour pour les vérifications suivantes
-              this.previousInvoicesCount = newCount;
-            }
-          },
-          error: (err) => {
-            console.error('Erreur lors du chargement du compteur de factures:', err);
-            this.newInvoicesCount = 0;
-          }
-        });
-      } else {
-        this.newInvoicesCount = 0;
-        this.previousInvoicesCount = null;
-      }
-    });
-  }
-
-  loadOverdueInvoicesCount() {
-    this.isOrganizationAccount$.pipe(take(1)).subscribe(isOrganization => {
-      if (isOrganization) {
-        this.invoiceService.getOverdueInvoicesCount().subscribe({
-          next: (response) => {
-            const newCount = response.count;
-
-            // Afficher une notification si une nouvelle facture en retard est détectée
-            if (this.previousOverdueInvoicesCount !== null && newCount > this.previousOverdueInvoicesCount) {
-              const diff = newCount - this.previousOverdueInvoicesCount;
-              if (diff === 1) {
-                this.notificationService.warning(`Une facture est maintenant en retard !`);
-              } else {
-                this.notificationService.warning(`${diff} factures sont maintenant en retard !`);
-              }
-            }
-
-            this.overdueInvoicesCount = newCount;
-            if (this.previousOverdueInvoicesCount === null) {
-              this.previousOverdueInvoicesCount = newCount;
-            } else {
-              this.previousOverdueInvoicesCount = newCount;
-            }
-          },
-          error: (err) => {
-            console.error('Erreur lors du chargement du compteur de factures en retard:', err);
-            this.overdueInvoicesCount = 0;
-          }
-        });
-      } else {
-        this.overdueInvoicesCount = 0;
-        this.previousOverdueInvoicesCount = null;
-      }
-    });
-  }
-
   openRenewalModal() {
-    if (!this.orgPricingPlanId) {
-      this.userService.getMyOrganization().pipe(take(1)).subscribe({
-        next: (org) => {
-          this.orgPricingPlanId = org?.pricingPlanId ?? null;
-          this.showRenewalModal = true;
-        },
-        error: () => { this.showRenewalModal = true; }
-      });
-    } else {
-      this.showRenewalModal = true;
-    }
+    this.showRenewalModal = true;
   }
 
   closeRenewalModal() {
     this.showRenewalModal = false;
   }
 
-  renewCurrentPlan() {
-    if (!this.orgPricingPlanId) {
-      this.router.navigate(['/organization/stats']);
-      this.closeRenewalModal();
-      return;
-    }
-    this.isRenewing = true;
-    this.paymentService.createCheckout({
-      pricingPlanId: this.orgPricingPlanId,
-      successUrl: `${window.location.origin}/organization/stats`,
-      cancelUrl: `${window.location.origin}/organization/stats`
-    }).subscribe({
-      next: (response) => { window.location.href = response.url; },
-      error: () => {
-        this.isRenewing = false;
-        this.router.navigate(['/organization/stats']);
-        this.closeRenewalModal();
-      }
-    });
-  }
-
   login() {
-    this.router.navigate(['/auth/login']);
-  }
-
-  goToRegister() {
     this.router.navigate(['/auth/login']);
   }
 
