@@ -10,6 +10,7 @@ const keycloakUrl = process.env.KEYCLOAK_EXTERNAL_URL || 'http://localhost:8080'
 const apiUrl = process.env.API_URL || '/api';
 const marketVersion = process.env.MARKET_VERSION || 'DEFAULT';
 const betaMode = process.env.BETA_MODE === 'true';
+const appEdition = process.env.APP_EDITION || 'dz-localization';
 
 // Affichage des valeurs pour debug
 console.log('📋 Variables de configuration :');
@@ -18,7 +19,8 @@ console.log(`   - KEYCLOAK_FRONTEND_CLIENT: ${keycloakClient}`);
 console.log(`   - KEYCLOAK_EXTERNAL_URL: ${keycloakUrl}`);
 console.log(`   - API_URL: ${apiUrl}`);
 console.log(`   - MARKET_VERSION: ${marketVersion}`);
-console.log(`   - BETA_MODE: ${betaMode}\n`);
+console.log(`   - BETA_MODE: ${betaMode}`);
+console.log(`   - APP_EDITION: ${appEdition}\n`);
 
 // Validation basique
 if (!keycloakRealm || !keycloakClient || !keycloakUrl) {
@@ -43,7 +45,8 @@ export const environment: Environment = {
   },
   apiUrl: '${apiUrl}',
   marketVersion: '${marketVersion}', // DEFAULT, DZ, etc. - Configuré via MARKET_VERSION
-  betaMode: ${betaMode}
+  betaMode: ${betaMode},
+  appEdition: '${appEdition}'
 } as Environment;
 `;
 

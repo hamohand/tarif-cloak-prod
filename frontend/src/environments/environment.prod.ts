@@ -9,5 +9,6 @@ export const environment: Environment = {
     redirectUri: window.location.origin + '/'
   },
   apiUrl: '/api',
-  marketVersion: 'DZ' // DEFAULT, DZ, etc. - Configuré pour la version DZ
+  marketVersion: 'DZ',
+  appEdition: 'dz-localization'
 } as Environment;
