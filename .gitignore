@@ -33,6 +33,7 @@ node_modules/
 # ========================
 .env
 .env.*
+!.env.example
 tarif-cloak-prod
 # ========================
 # Données tarifaires (PDFs sources — trop volumineux pour git)
