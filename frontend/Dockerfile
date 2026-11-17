@@ -35,7 +35,7 @@ RUN npm run build
 FROM nginx:stable-alpine
 
 # Accepter un argument pour le fichier de configuration Nginx
-ARG NGINX_CONF=nginx-dev.conf
+ARG NGINX_CONF=nginx.conf
 
 # Copier les fichiers statiques construits depuis l'étape précédente
 # Assurez-vous que 'dist/frontend' correspond au chemin de sortie de votre build

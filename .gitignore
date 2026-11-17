@@ -35,7 +35,7 @@ node_modules/
 .env.*
 .old.env*
 # Gabarits sans secrets (versionnés)
-!.env.*.example
+!.env.example
 tarif-cloak-prod
 # ========================
 # Données tarifaires (PDFs sources — trop volumineux pour git)

@@ -117,34 +117,23 @@ Application SaaS de recherche et de décodage de codes de nomenclature douanièr
 ### 1. Cloner le projet
 
 ```bash
-git clone <url-du-repo>
-cd tarif-cloak-prod
+git clone https://github.com/hamohand/tarif-cloak-prod.git tci
+cd tci
+git checkout saas-dz-ue   # ou saas-conference / dz-localization
 ```
 
 ### 2. Créer le fichier `.env`
 
-Éditer `.env` avec vos valeurs. Variables minimales à renseigner :
-
-```env
-POSTGRES_PASSWORD=...
-KEYCLOAK_BACKEND_CLIENT_SECRET=...
-OPENAI_API_KEY=...
-SMTP_USERNAME=...
-SMTP_PASSWORD=...
-FRONTEND_DOMAIN=...
-WWW_FRONTEND_DOMAIN=...
+```bash
+cp .env.example .env
 ```
 
-Consultez [CONFIGURATION.md](CONFIGURATION.md) pour la liste complète.
+Éditer `.env` avec vos secrets (`POSTGRES_PASSWORD`, `KEYCLOAK_BACKEND_CLIENT_SECRET`, `RABBITMQ_PASSWORD`, `OPENAI_API_KEY`, `FRONTEND_DOMAIN`, `SMTP_*`). Consultez [`.env.example`](.env.example) et [CONFIGURATION.md](CONFIGURATION.md).
 
 ### 3. Démarrer les services
 
 ```bash
-# Développement local
-docker compose -f docker-compose-dev.yml up -d --build
-
-# Production
-docker compose -f docker-compose-prod.yml up -d --build
+docker compose up -d --build
 ```
 
 ### 4. Accéder à l'application
@@ -176,22 +165,16 @@ SMTP_PASSWORD
 
 ```bash
 # Rebuild d'un seul service
-docker compose -f docker-compose-prod.yml up -d --build backend
-docker compose -f docker-compose-prod.yml up -d --build search-service
-docker compose -f docker-compose-prod.yml up -d --build frontend
+docker compose up -d --build backend
+docker compose up -d --build search-service
+docker compose up -d --build frontend
 
 # Logs en temps réel
-docker compose -f docker-compose-prod.yml logs -f backend
-docker compose -f docker-compose-prod.yml logs -f search-service
+docker compose logs -f backend
+docker compose logs -f search-service
 
-# Backup de la base de données
-docker exec app-db pg_dump -U muhend hscode-app-db > backup_$(date +%Y%m%d).sql
-
-# Restauration
-docker exec -i app-db psql -U muhend hscode-app-db < backup.sql
-
-# Réinitialisation complète
-docker compose -f docker-compose-prod.yml down --volumes --remove-orphans
+# Sauvegarde PostgreSQL
+./scripts/backup-db.sh
 ```
 
 ---
@@ -214,8 +197,8 @@ docker compose -f docker-compose-prod.yml down --volumes --remove-orphans
 ### Le backend ne démarre pas
 
 ```bash
-docker compose -f docker-compose-prod.yml logs backend
-docker compose -f docker-compose-prod.yml ps keycloak
+docker compose logs backend
+docker compose ps
 ```
 
 ### Erreur 403 à l'inscription

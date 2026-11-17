@@ -16,81 +16,51 @@ Les utilisateurs soumettent des termes de recherche, l'IA retourne les codes HS 
 ## Structure du projet
 
 ```
-tarif-cloak-prod/
-├── backend/           # API REST principale (utilisateurs, pricing-plans, organisations)
-├── frontend/          # Application Angular
-├── search-service/    # Microservice IA (recherche HS-codes, batch API)
-├── keycloak/          # Configuration realm Keycloak (realm-export.json)
-├── scripts/           # Scripts de sauvegarde et maintenance VPS
-├── docker-compose-staging.yml # Environnement de développement principal
-├── docker-compose-prod.yml    # Environnement Invité (beta)
-└── .env               # NE PAS COMMITER — uniquement sur le VPS
+tci/
+├── backend/            # API REST principale (organisations, plans, paiements, décodage, devis)
+├── frontend/           # Application Angular 20 (nginx.conf unique)
+├── search-service/     # Microservice IA (classification HS/P10/NC8, batch API)
+├── keycloak/           # Configuration realm Keycloak (realm-export.json & thèmes)
+├── scripts/            # Scripts de sauvegarde et d'import tarifaire
+├── docker-compose.yml  # Orchestration unique de la branche active
+├── .env.example        # Gabarit versionné des variables de la branche active
+└── .env                # Secrets locaux/VPS (ignoré par Git)
 ```
 
-## Environnements et flux de déploiement
+## Les 3 branches actives du projet
 
-### Environnements sur le VPS
+L'ancienne distinction `prod` / `staging` est abandonnée (son historique reste figé dans `main` et les tags `archive/*`). Le dépôt ne s'articule plus qu'autour de **3 branches**, chacune pilotée par un unique `docker-compose.yml` et un unique `.env` :
 
-| | **Staging** | **Invité (Beta)** |
+| Branche | Rôle | Particularités |
 | --- | --- | --- |
-| Compose | `docker-compose-staging.yml` | `docker-compose-prod.yml` |
-| Env file | `.env.staging` (gabarit : `.env.staging.example`) | `.env` |
-| Domaine | `tarif.enclume-numerique.com` | `hscode.enclume-numerique.com` |
-| BDD | **Isolée** (`staging-app-db`, volume `staging-app-data`) | Prod (`hscode-app-db`) |
-| Keycloak | **Partagé** (Keycloak prod) | Keycloak prod |
-| Emails | Capturés par Mailpit (UI `127.0.0.1:8025`), aucun envoi réel | SMTP réel |
-| Paiement | API de test Chargily uniquement | — (non utilisé en beta) |
-| `BETA_MODE` | false | true |
-| Usage | Développement continu | Beta-testeurs (Mars–Mai 2026) |
-
-**Le staging ne doit JAMAIS se connecter à `hscode-app-db`** (l'ancienne configuration à BDD partagée a été abandonnée : les migrations Flyway et les tests touchaient les données des beta-testeurs).
-
-**Règle absolue :** le staging est réservé au développement. Les beta-testeurs n'y ont pas accès et n'en connaissent pas l'URL.
-
-**Troisième environnement Client** (lancement commercial post-beta) : délibérément différé, sera déployé après validation de la Phase 1.
-
-### Flux de déploiement
-
-```
-Code → Staging (test) → Invité/Prod (beta-testeurs)
-```
-
-### Ce qui doit toujours passer par staging d'abord
-
-- Nouvelles fonctionnalités, refactos, corrections de bugs
-- Modifications du schéma BDD (migrations)
-- Changements de configuration backend / search-service / frontend
-
-### Ce qui peut être modifié directement en production
-
-- Données métier via l'admin : plans tarifaires, quotas, organisations
-- Gestion des comptes Keycloak : création d'utilisateurs beta, ajustement de sessions
-- Hotfix critique et minuscule pour un bug bloquant les testeurs
-
-### Note Keycloak
-
-Keycloak est partagé entre staging et prod. Ne jamais modifier la configuration du realm (flows, scopes, clients) sans vérifier l'impact sur les deux environnements. Les comptes des beta-testeurs créés pendant la phase beta resteront valides en prod lors du lancement commercial.
+| **`saas-dz-ue`** | **SaaS Cloud standard (`DZ` + `UE`)** | Nomenclatures DZ (P10 enrichi DGD) + UE 2026 (NC8), comparateur `DZ ↔ UE`, double marché `DA` (Chargily) / `EUR` (Stripe) + repli facture, devis publics, quotas visiteurs Internet stricts. |
+| **`saas-conference`** | **SaaS Conférence / Démo publique** | Identique à `saas-dz-ue`, avec quotas visiteurs et limites de débit relevés par défaut pour supporter le Wi-Fi NAT partagé d'une salle de conférence et URL Chargily de test par défaut. |
+| **`dz-localization`** | **Box Locale Algérie (100 % sur site)** | Dérivée de `saas-dz-ue` (`V41` licence `Ed25519` hors-ligne `TCI1...`), moteur IA local **Ollama**, Keycloak local sans SMTP externe, polices WOFF2 hors-ligne, HTTPS LAN DNS-01. |
 
 ## Commandes clés
 
 ```bash
-# Développement (Staging) — Le développement en local (localhost) est ABANDONNÉ.
-# Le staging sur le VPS sert d'environnement de dev et de test principal.
-# Chemin sur le VPS : ~/tarif/tarif-prod
-./scripts/deploy.sh staging                    # tous les services (--build)
-./scripts/deploy.sh staging backend-staging    # un seul service
-./scripts/deploy.sh staging --dry-run          # simulation
+# Démarrer / mettre à jour la branche active (lit automatiquement .env)
+docker compose up -d --build
 
-# Production Invité (sur VPS) : confirmation + sauvegarde des BDD avant déploiement
-./scripts/deploy.sh prod
-./scripts/deploy.sh prod backend               # un seul service
-# Équivalents manuels :
-#   docker compose -f docker-compose-prod.yml up -d --build
-#   docker compose --env-file .env.staging -f docker-compose-staging.yml up -d --build
+# Reconstruire un seul service
+docker compose up -d --build backend
+docker compose up -d --build search-service
+docker compose up -d --build frontend
 
-# Logs (exemple Staging)
-docker compose --env-file .env.staging -f docker-compose-staging.yml logs -f backend-staging
-docker compose --env-file .env.staging -f docker-compose-staging.yml logs -f search-service-staging
+# Vérifier la syntaxe Docker Compose
+docker compose config -q
+
+# Logs en temps réel
+docker compose logs -f backend
+docker compose logs -f search-service
+
+# Changer d'édition SaaS (ex. passer en mode conférence puis revenir au SaaS standard)
+git checkout saas-conference && docker compose up -d --build
+git checkout saas-dz-ue && docker compose up -d --build
+
+# Sauvegarde PostgreSQL
+./scripts/backup-db.sh
 
 # --- TESTS ---
 
@@ -103,28 +73,19 @@ cd backend && mvn test -Dtest=NomDeLaClasse#method # méthode unique
 cd search-service && mvn test
 
 # Frontend
-cd frontend && npm test   # Karma + Jasmine, lance Chrome
-
-# --- DEVOPS & INFRASTRUCTURE ---
-
-# Sauvegarde Automatique Manuelle (App DB & Keycloak DB)
-# Un cronjob doit exécuter ce script tous les jours à 3h du matin
-./scripts/backup-prod-dbs.sh
-
-# Cloner la Production vers le Staging (lecture seule côté prod, cible forcée staging-*)
-./scripts/clone-prod-to-staging.sh
+cd frontend && npm test
 ```
 
-### Conteneurs VPS
+### Conteneurs (`PROJECT_NAME=tci` par défaut)
 
 | Conteneur | Rôle |
 |---|---|
-| `hscode-app-db` | PostgreSQL application (prod) |
-| `hscode-keycloak-db` | PostgreSQL Keycloak |
-| `staging-app-db` | PostgreSQL application (staging, isolée) |
-| `staging-mailpit` | Capture des emails du staging |
-| `frontend`, `backend`, `search-service`, `keycloak` | Services applicatifs (prod) |
-| `staging-frontend`, `staging-backend`, `staging-search-service` | Services applicatifs (staging) |
+| `tci-app-db` | PostgreSQL 16 (nomenclatures DZ + UE auto-chargées par Flyway `V0_1`→`V40`) |
+| `tci-backend` | API Spring Boot 3.5 |
+| `tci-search-service` | Microservice IA de recherche douanière |
+| `tci-frontend` | Angular 20 servi par Nginx |
+| `tci-rabbitmq` / `tci-redis` | Broker de messages & cache |
+| `tci-keycloak` *(profil `--profile keycloak`)* | Keycloak embarqué optionnel (par défaut, utilise le Keycloak externe `KEYCLOAK_EXTERNAL_URL`) |
 
 ## Migrations de base de données (Flyway)
 
