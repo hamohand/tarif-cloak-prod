@@ -131,15 +131,15 @@ services:
       SMTP_FROM: "${SMTP_FROM:-noreply@enclume-numerique.com}"
       SMTP_FROM_NAME: "${SMTP_FROM_NAME:-Enclume Numérique}"
       EMAIL_ADMIN_HSCODE: "${EMAIL_ADMIN_HSCODE:-}"
-      # Quotas visiteurs anonymes (mode SaaS Internet standard)
-      GUEST_DECODE_MAX_PER_IP_PER_DAY: "${GUEST_DECODE_MAX_PER_IP_PER_DAY:-3}"
-      GUEST_DECODE_GLOBAL_DAILY_LIMIT: "${GUEST_DECODE_GLOBAL_DAILY_LIMIT:-200}"
-      QUOTE_REQUESTS_PUBLIC_MAX_PER_IP_PER_DAY: "${QUOTE_REQUESTS_PUBLIC_MAX_PER_IP_PER_DAY:-10}"
-      # Passerelles de paiement (Chargily DZD & Stripe EUR ; repli facture si vides)
+      # Quotas visiteurs anonymes (relevés pour réseau Wi-Fi NAT partagé en conférence)
+      GUEST_DECODE_MAX_PER_IP_PER_DAY: "${GUEST_DECODE_MAX_PER_IP_PER_DAY:-50}"
+      GUEST_DECODE_GLOBAL_DAILY_LIMIT: "${GUEST_DECODE_GLOBAL_DAILY_LIMIT:-1000}"
+      QUOTE_REQUESTS_PUBLIC_MAX_PER_IP_PER_DAY: "${QUOTE_REQUESTS_PUBLIC_MAX_PER_IP_PER_DAY:-50}"
+      # Passerelles de paiement (Chargily DZD sandbox par défaut & Stripe EUR ; repli facture si vides)
       PAYMENT_PROVIDER: "${PAYMENT_PROVIDER:-stripe}"
       CHARGILY_SECRET_KEY: "${CHARGILY_SECRET_KEY:-}"
       CHARGILY_WEBHOOK_SECRET: "${CHARGILY_WEBHOOK_SECRET:-}"
-      CHARGILY_API_URL: "${CHARGILY_API_URL:-https://pay.chargily.net/api/v2}"
+      CHARGILY_API_URL: "${CHARGILY_API_URL:-https://pay.chargily.net/test/api/v2}"
       STRIPE_SECRET_KEY: "${STRIPE_SECRET_KEY:-}"
       STRIPE_PUBLISHABLE_KEY: "${STRIPE_PUBLISHABLE_KEY:-}"
       STRIPE_WEBHOOK_SECRET: "${STRIPE_WEBHOOK_SECRET:-}"
@@ -198,9 +198,9 @@ services:
       ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:-}"
       AI_PROVIDER: "${AI_PROVIDER:-openai}"
       OLLAMA_BASE_URL: "${OLLAMA_BASE_URL:-http://host.docker.internal:11434}"
-      # Quotas découverte visiteurs anonymes (mode SaaS Internet standard)
-      GUEST_TRIAL_MAX_PER_IP_PER_DAY: "${GUEST_TRIAL_MAX_PER_IP_PER_DAY:-1}"
-      GUEST_TRIAL_GLOBAL_DAILY_LIMIT: "${GUEST_TRIAL_GLOBAL_DAILY_LIMIT:-50}"
+      # Quotas découverte visiteurs anonymes (relevés pour réseau Wi-Fi NAT partagé en conférence)
+      GUEST_TRIAL_MAX_PER_IP_PER_DAY: "${GUEST_TRIAL_MAX_PER_IP_PER_DAY:-25}"
+      GUEST_TRIAL_GLOBAL_DAILY_LIMIT: "${GUEST_TRIAL_GLOBAL_DAILY_LIMIT:-300}"
       JAVA_TOOL_OPTIONS: "${SEARCH_JAVA_OPTS:--Xms128m -Xmx512m}"
     healthcheck:
       test: [ "CMD", "wget", "-q", "--spider", "http://localhost:8082/actuator/health" ]
@@ -218,8 +218,8 @@ services:
       "traefik.http.routers.${PROJECT_NAME:-tci}-search.service": "${PROJECT_NAME:-tci}-search-svc"
       "traefik.http.routers.${PROJECT_NAME:-tci}-search.priority": "20"
       "traefik.http.middlewares.${PROJECT_NAME:-tci}-search-stripprefix.stripprefix.prefixes": "/api"
-      "traefik.http.middlewares.${PROJECT_NAME:-tci}-search-ratelimit.ratelimit.average": "${SEARCH_RATELIMIT_AVERAGE:-5}"
-      "traefik.http.middlewares.${PROJECT_NAME:-tci}-search-ratelimit.ratelimit.burst": "${SEARCH_RATELIMIT_BURST:-15}"
+      "traefik.http.middlewares.${PROJECT_NAME:-tci}-search-ratelimit.ratelimit.average": "${SEARCH_RATELIMIT_AVERAGE:-15}"
+      "traefik.http.middlewares.${PROJECT_NAME:-tci}-search-ratelimit.ratelimit.burst": "${SEARCH_RATELIMIT_BURST:-40}"
       "traefik.http.services.${PROJECT_NAME:-tci}-search-svc.loadbalancer.server.port": "8082"
     restart: unless-stopped
     networks:
