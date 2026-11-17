@@ -66,10 +66,11 @@ public class BatchSearchController {
                 .body(new BatchSubmitResponse(null, "Erreur: Liste de recherches vide", HttpStatus.BAD_REQUEST.value()));
         }
 
-        // Limiter le nombre de recherches par batch
-        if (request.getSearches().size() > 1000) {
+        // Limiter le nombre de recherches par batch selon le provider actif
+        int maxRequests = batchService.getMaxRequestsPerBatch();
+        if (request.getSearches().size() > maxRequests) {
             return ResponseEntity.badRequest()
-                .body(new BatchSubmitResponse(null, "Erreur: Maximum 1000 recherches par batch", HttpStatus.BAD_REQUEST.value()));
+                .body(new BatchSubmitResponse(null, "Erreur: Maximum " + maxRequests + " recherches par batch", HttpStatus.BAD_REQUEST.value()));
         }
 
         // Convertir les requêtes en format attendu par le service
@@ -100,6 +101,10 @@ public class BatchSearchController {
                     .body(new BatchSubmitResponse(null, "Erreur lors de la création du batch", HttpStatus.INTERNAL_SERVER_ERROR.value()));
             }
 
+        } catch (IllegalArgumentException e) {
+            log.warn("Requête batch invalide: {}", e.getMessage());
+            return ResponseEntity.badRequest()
+                .body(new BatchSubmitResponse(null, e.getMessage(), HttpStatus.BAD_REQUEST.value()));
         } catch (UnsupportedOperationException e) {
             log.error("Opération batch non supportée: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED)

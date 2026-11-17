@@ -68,12 +68,15 @@ backend:
 
 # Configuration IA
 ai:
+  http:
+    connect-timeout-ms: ${AI_HTTP_CONNECT_TIMEOUT_MS:5000}
+    read-timeout-ms: ${AI_HTTP_READ_TIMEOUT_MS:180000}
   openai:
     api-key: ${OPENAI_API_KEY:}
     model: ${OPENAI_MODEL:gpt-4.1-mini}
     base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
-    price-input-per-million: ${OPENAI_PRICE_INPUT:0.40}    # GPT-4.1-mini: 0.40 | GPT-4.1-nano: 0.10 | GPT-5-nano: à vérifier
-    price-output-per-million: ${OPENAI_PRICE_OUTPUT:1.60}  # GPT-4.1-mini: 1.60 | GPT-4.1-nano: 0.40 | GPT-5-nano: à vérifier
+    price-input-per-million: ${OPENAI_PRICE_INPUT:0.40}
+    price-output-per-million: ${OPENAI_PRICE_OUTPUT:1.60}
   anthropic:
     api-key: ${ANTHROPIC_API_KEY:}
     model: ${ANTHROPIC_MODEL:claude-sonnet-4-5-20250929}
@@ -82,21 +85,21 @@ ai:
     price-output-per-million: ${ANTHROPIC_PRICE_OUTPUT:15.00}
   ollama:
     base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
-    model: ${OLLAMA_MODEL:llama3}
-  # Provider actif pour les requêtes standard ET batch
-  # Valeurs supportées pour batch : openai, anthropic
-  # Note : ollama ne supporte pas les opérations batch
-  provider: ${AI_PROVIDER:openai}
+    model: ${OLLAMA_MODEL:qwen2.5:14b}
+    num-ctx: ${OLLAMA_NUM_CTX:16384}
+    keep-alive: ${OLLAMA_KEEP_ALIVE:24h}
+    json-mode: ${OLLAMA_JSON_MODE:true}
+  # Provider actif pour les requêtes standard ET batch (ollama par défaut sur dz-localization)
+  provider: ${AI_PROVIDER:ollama}
 
-  # Configuration des Batches (Message Batches API)
-  # Les batches permettent de traiter plusieurs requêtes de manière asynchrone avec une réduction de 50% du coût
-  # Utilisez les endpoints /batch-search/* pour soumettre et gérer les batches
-  # Délai de traitement : 1 à 24 heures
-  # Providers supportés : openai (Batch API /v1/batches), anthropic (Message Batches /v1/messages/batches)
-  # Les deux offrent une réduction de 50% du coût
+  # Configuration des Batches (file locale Ollama ou API cloud)
   batch:
     enabled: ${AI_BATCH_ENABLED:true}
     max-requests-per-batch: ${AI_BATCH_MAX_REQUESTS:1000}
+    local-max-requests: ${AI_BATCH_LOCAL_MAX_REQUESTS:300}
+    local-concurrency: ${AI_BATCH_LOCAL_CONCURRENCY:1}
+    local-level: ${AI_BATCH_LOCAL_LEVEL:POSITIONS10}
+    local-ttl-hours: ${AI_BATCH_LOCAL_TTL_HOURS:168}
 
 # RabbitMQ Exchanges et Queues
 messaging:

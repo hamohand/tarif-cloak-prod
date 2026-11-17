@@ -2,6 +2,7 @@ package com.tarif.search.service.ai;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tarif.search.model.Position;
 
@@ -15,6 +16,10 @@ public class JsonUtils {
     private static final String JSON_PREFIX = "json";
     private static final char BACKTICK = '`';
     private static final ObjectMapper objectMapper = new ObjectMapper();
+
+    static {
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    }
 
     private JsonUtils() {
     }

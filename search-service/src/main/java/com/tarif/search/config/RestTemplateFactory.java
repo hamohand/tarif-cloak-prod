@@ -1,23 +1,21 @@
 package com.tarif.search.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.client.JdkClientHttpRequestFactory;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
-
-import java.net.http.HttpClient;
-import java.time.Duration;
 
 @Configuration
 public class RestTemplateFactory {
 
     @Bean
-    public RestTemplate restTemplate() {
-        HttpClient httpClient = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(5))
-                .build();
-        JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory(httpClient);
-        requestFactory.setReadTimeout(Duration.ofSeconds(90));
+    public RestTemplate restTemplate(
+            @Value("${ai.http.connect-timeout-ms:5000}") int connectTimeoutMs,
+            @Value("${ai.http.read-timeout-ms:180000}") int readTimeoutMs) {
+        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(connectTimeoutMs);
+        requestFactory.setReadTimeout(readTimeoutMs);
         return new RestTemplate(requestFactory);
     }
 }
