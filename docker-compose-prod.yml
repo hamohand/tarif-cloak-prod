@@ -20,10 +20,9 @@ x-traefik-frontend-labels: &traefik-frontend-labels
   "traefik.http.routers.hscode-frontend-secure.tls.certresolver": "${TRAEFIK_CERT_RESOLVER:-myresolver}"
   "traefik.http.routers.hscode-frontend-secure.service": "hscode-frontend"
   "traefik.http.routers.hscode-frontend-secure.priority": "1"
-  # --- Routeur HTTP pour la redirection vers HTTPS ---
+  # --- Routeur HTTP (la redirection HTTPS est gérée au niveau entrypoint dans docker-compose-traefik.yml) ---
   "traefik.http.routers.hscode-frontend-http.rule": *traefik-host-rule
   "traefik.http.routers.hscode-frontend-http.entrypoints": "web"
-  "traefik.http.routers.hscode-frontend-http.middlewares": "https-redirect"
   "traefik.http.routers.hscode-frontend-http.priority": "1"
   # --- Service pointant vers le conteneur frontend ---
   "traefik.http.services.hscode-frontend.loadbalancer.server.port": "${FRONTEND_INTERNAL_PORT:-80}"
@@ -42,10 +41,9 @@ x-traefik-backend-labels: &traefik-backend-labels
   "traefik.http.routers.hscode-backend-secure.middlewares": "hscode-api-stripprefix"
   "traefik.http.routers.hscode-backend-secure.service": "hscode-backend"
   "traefik.http.routers.hscode-backend-secure.priority": "10"
-  # --- Routeur HTTP pour la redirection vers HTTPS ---
+  # --- Routeur HTTP (la redirection HTTPS est gérée au niveau entrypoint dans docker-compose-traefik.yml) ---
   "traefik.http.routers.hscode-backend-http.rule": "(Host(`${FRONTEND_DOMAIN}`) || Host(`${WWW_FRONTEND_DOMAIN}`)) && PathPrefix(`/api`)"
   "traefik.http.routers.hscode-backend-http.entrypoints": "web"
-  "traefik.http.routers.hscode-backend-http.middlewares": "https-redirect" # Utilise le middleware global
   "traefik.http.routers.hscode-backend-http.service": "hscode-backend"
   "traefik.http.routers.hscode-backend-http.priority": "10"
   # --- Service pointant vers le conteneur backend ---
@@ -70,10 +68,9 @@ x-traefik-keycloak-labels: &traefik-keycloak-labels
   "traefik.http.routers.hscode-keycloak-secure.tls.certresolver": "${TRAEFIK_CERT_RESOLVER:-myresolver}"
   "traefik.http.routers.hscode-keycloak-secure.middlewares": "keycloak-cors"
   "traefik.http.routers.hscode-keycloak-secure.service": "hscode-keycloak"
-  # --- Routeur HTTP pour la redirection globale (pas besoin de middleware ici) ---
+  # --- Routeur HTTP (la redirection HTTPS est gérée au niveau entrypoint dans docker-compose-traefik.yml) ---
   "traefik.http.routers.hscode-keycloak-http.rule": "Host(`${KEYCLOAK_DOMAIN}`)"
   "traefik.http.routers.hscode-keycloak-http.entrypoints": "web"
-  "traefik.http.routers.hscode-keycloak-http.middlewares": "https-redirect"
   # --- Service pointant vers le conteneur Keycloak sur le port 8080 ---
   "traefik.http.services.hscode-keycloak.loadbalancer.server.port": "${KEYCLOAK_INTERNAL_PORT:-8080}"
 
@@ -166,6 +163,7 @@ services:
   keycloak:
     image: "quay.io/keycloak/keycloak:${KEYCLOAK_IMAGE_TAG:-22.0.1}"
     container_name: "${PROJECT_NAME:-app}-keycloak"
+    init: true
     environment:
       # Configuration Base de données
       KC_DB: postgres
@@ -222,6 +220,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: "${PROJECT_NAME:-app}-backend"
+    init: true
     depends_on:
       app-db:
         condition: service_healthy
@@ -374,6 +373,7 @@ services:
       context: ./search-service
       dockerfile: Dockerfile
     container_name: "${PROJECT_NAME:-app}-search-service"
+    init: true
     deploy:
       replicas: ${SEARCH_SERVICE_REPLICAS:-1}
     environment:

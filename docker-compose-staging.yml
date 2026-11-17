@@ -59,6 +59,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: "staging-backend"
+    init: true
     depends_on:
       rabbitmq-staging:
         condition: service_healthy
@@ -136,6 +137,7 @@ services:
       context: ./search-service
       dockerfile: Dockerfile
     container_name: "staging-search-service"
+    init: true
     environment:
       SPRING_PROFILES_ACTIVE: "${SPRING_PROFILES_ACTIVE:-prod}"
       DATABASE_URL: "jdbc:postgresql://hscode-app-db:${POSTGRES_PORT:-5432}/${POSTGRES_DB}"
