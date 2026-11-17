@@ -1,5 +1,7 @@
 package com.muhend.backend.pricing.controller;
 
+import com.muhend.backend.codesearch.service.GuestDecodeQuotaService;
+import com.muhend.backend.email.service.EmailService;
 import com.muhend.backend.organization.dto.OrganizationDto;
 import com.muhend.backend.organization.service.OrganizationService;
 import com.muhend.backend.pricing.dto.CreateQuoteRequestDto;
@@ -10,9 +12,11 @@ import com.muhend.backend.pricing.service.QuoteRequestService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -21,53 +25,111 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Controller pour gérer les demandes de devis.
  */
 @RestController
 @RequestMapping("/quote-requests")
-@RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Quote Requests", description = "Endpoints pour gérer les demandes de devis personnalisés")
 public class QuoteRequestController {
-    
+
     private final QuoteRequestService quoteRequestService;
     private final OrganizationService organizationService;
-    
+    private final EmailService emailService;
+    private final String adminEmail;
+    private final int maxPublicQuotesPerIpPerDay;
+    private final Map<String, AtomicInteger> publicIpCounters = new ConcurrentHashMap<>();
+
+    @Autowired
+    public QuoteRequestController(
+            QuoteRequestService quoteRequestService,
+            OrganizationService organizationService,
+            EmailService emailService,
+            @Value("${EMAIL_ADMIN_HSCODE:}") String adminEmail,
+            @Value("${quote.public.max-per-ip-per-day:10}") int maxPublicQuotesPerIpPerDay) {
+        this.quoteRequestService = quoteRequestService;
+        this.organizationService = organizationService;
+        this.emailService = emailService;
+        this.adminEmail = adminEmail != null ? adminEmail.trim() : "";
+        this.maxPublicQuotesPerIpPerDay = Math.max(1, maxPublicQuotesPerIpPerDay);
+    }
+
     @PostMapping
-    @PreAuthorize("isAuthenticated()")
     @Operation(
         summary = "Créer une demande de devis",
-        description = "Permet à une organisation de demander un devis pour un plan tarifaire personnalisé. L'organisation est récupérée automatiquement depuis le token d'authentification.",
-        security = @SecurityRequirement(name = "bearerAuth")
+        description = "Permet à un prospect sans compte ou à une organisation connectée de demander un devis personnalisé."
     )
-    public ResponseEntity<?> createQuoteRequest(@Valid @RequestBody CreateQuoteRequestDto dto) {
+    public ResponseEntity<?> createQuoteRequest(
+            @Valid @RequestBody CreateQuoteRequestDto dto,
+            HttpServletRequest request) {
         String organizationUserId = getCurrentUserId();
-        if (organizationUserId == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "AUTH_REQUIRED", "message", "Authentification requise"));
-        }
-        
+
         try {
-            Long resolvedOrgId = organizationService.getOrganizationIdByUserId(organizationUserId);
-            OrganizationDto organization = organizationService.getOrganizationById(resolvedOrgId);
-            // Créer un nouveau DTO avec l'organizationId récupéré depuis le token
-            CreateQuoteRequestDto dtoWithOrgId = new CreateQuoteRequestDto();
-            dtoWithOrgId.setOrganizationId(organization.getId());
-            dtoWithOrgId.setContactName(dto.getContactName());
-            dtoWithOrgId.setContactEmail(dto.getContactEmail());
-            dtoWithOrgId.setMessage(dto.getMessage());
-            
-            QuoteRequestDto created = quoteRequestService.createQuoteRequest(dtoWithOrgId);
+            Long resolvedOrgId = null;
+            if (organizationUserId != null) {
+                try {
+                    Long orgId = organizationService.getOrganizationIdByUserId(organizationUserId);
+                    if (orgId != null) {
+                        OrganizationDto organization = organizationService.getOrganizationById(orgId);
+                        resolvedOrgId = organization != null ? organization.getId() : orgId;
+                    }
+                } catch (Exception e) {
+                    log.warn("Utilisateur {} sans organisation associée pour la demande de devis : {}",
+                            organizationUserId, e.getMessage());
+                }
+            } else {
+                String clientIp = GuestDecodeQuotaService.extractClientIp(request);
+                if (!allowPublicQuote(clientIp)) {
+                    log.warn("Limite quotidienne de demandes de devis publiques atteinte pour l'IP {}", clientIp);
+                    return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                            .body(Map.of(
+                                    "error", "TOO_MANY_REQUESTS",
+                                    "message", "Trop de demandes envoyées aujourd'hui depuis cette connexion. Veuillez réessayer demain ou nous contacter par email."
+                            ));
+                }
+            }
+
+            CreateQuoteRequestDto dtoToSave = new CreateQuoteRequestDto();
+            dtoToSave.setOrganizationId(resolvedOrgId);
+            dtoToSave.setContactName(dto.getContactName());
+            dtoToSave.setContactEmail(dto.getContactEmail());
+            dtoToSave.setMessage(dto.getMessage());
+
+            QuoteRequestDto created = quoteRequestService.createQuoteRequest(dtoToSave);
+            if (emailService != null) {
+                emailService.sendNewQuoteRequestNotificationEmail(
+                        adminEmail,
+                        created.getContactName(),
+                        created.getContactEmail(),
+                        created.getOrganizationId(),
+                        created.getMessage()
+                );
+            }
             return ResponseEntity.ok(created);
         } catch (Exception e) {
             log.error("Erreur lors de la création de la demande de devis: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "INTERNAL_ERROR", "message", "Erreur lors de la création de la demande de devis"));
         }
+    }
+
+    private boolean allowPublicQuote(String clientIp) {
+        String day = LocalDate.now(ZoneOffset.UTC).toString();
+        String dayPrefix = day + ":";
+        if (publicIpCounters.size() > 1000) {
+            publicIpCounters.keySet().removeIf(k -> !k.startsWith(dayPrefix));
+        }
+        String safeIp = (clientIp == null || clientIp.isBlank()) ? "unknown" : clientIp.trim();
+        int count = publicIpCounters.computeIfAbsent(dayPrefix + safeIp, k -> new AtomicInteger(0)).incrementAndGet();
+        return count <= maxPublicQuotesPerIpPerDay;
     }
     
     @GetMapping("/organization/{organizationId}")

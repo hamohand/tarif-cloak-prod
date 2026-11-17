@@ -582,6 +582,60 @@ public class EmailService {
     }
 
     /**
+     * Envoie une notification à l'administrateur lors d'une nouvelle demande de devis B2B.
+     */
+    public void sendNewQuoteRequestNotificationEmail(
+            String adminEmail,
+            String contactName,
+            String contactEmail,
+            Long organizationId,
+            String messageText) {
+        if (adminEmail == null || adminEmail.trim().isEmpty()) {
+            log.warn("EMAIL_ADMIN_HSCODE n'est pas configuré, notification demande de devis non envoyée");
+            return;
+        }
+
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            String from = fromEmail != null ? fromEmail : "noreply@enclume-numerique.com";
+            String fromNameValue = fromName != null ? fromName : "Enclume Numérique";
+
+            helper.setFrom(from, fromNameValue);
+            helper.setTo(adminEmail.trim());
+            if (contactEmail != null && !contactEmail.isBlank()) {
+                helper.setReplyTo(contactEmail.trim());
+            }
+            helper.setSubject("Nouvelle demande de devis TCI - " + (contactName != null ? contactName : "Prospect"));
+
+            String safeName = org.springframework.web.util.HtmlUtils.htmlEscape(contactName != null ? contactName : "-");
+            String safeEmail = org.springframework.web.util.HtmlUtils.htmlEscape(contactEmail != null ? contactEmail : "-");
+            String safeOrg = organizationId != null ? "Organisation #" + organizationId : "Prospect public (sans compte)";
+            String safeMessage = org.springframework.web.util.HtmlUtils.htmlEscape(
+                    messageText != null && !messageText.isBlank() ? messageText : "(Aucun message)"
+            ).replace("\n", "<br/>");
+
+            String html = "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"></head><body style=\"font-family:Arial,sans-serif;color:#333;\">"
+                    + "<div style=\"max-width:600px;margin:0 auto;padding:20px;\">"
+                    + "<div style=\"background:#1e3c72;color:#fff;padding:18px;border-radius:6px 6px 0 0;\">"
+                    + "<h2 style=\"margin:0;\">Nouvelle demande de devis</h2></div>"
+                    + "<div style=\"background:#f9f9f9;padding:20px;border:1px solid #e5e7eb;\">"
+                    + "<p><strong>Contact :</strong> " + safeName + " (" + safeEmail + ")</p>"
+                    + "<p><strong>Origine :</strong> " + safeOrg + "</p>"
+                    + "<p><strong>Message :</strong></p>"
+                    + "<div style=\"background:#fff;padding:12px;border-left:4px solid #1e3c72;\">" + safeMessage + "</div>"
+                    + "</div></div></body></html>";
+
+            helper.setText(html, true);
+            mailSender.send(message);
+            log.info("Notification admin de demande de devis envoyée à {} (contact={})", adminEmail, contactEmail);
+        } catch (Exception e) {
+            log.error("Erreur lors de l'envoi de la notification admin de devis à {}: {}", adminEmail, e.getMessage(), e);
+        }
+    }
+
+    /**
      * Récupère l'URL du frontend depuis les variables d'environnement ou utilise une valeur par défaut.
      */
     private String getFrontendUrl() {

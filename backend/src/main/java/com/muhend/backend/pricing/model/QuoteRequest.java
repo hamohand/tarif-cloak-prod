@@ -25,7 +25,7 @@ public class QuoteRequest {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @Column(name = "organization_id", nullable = false)
+    @Column(name = "organization_id")
     private Long organizationId;
     
     @Column(name = "contact_name", nullable = false, length = 200)

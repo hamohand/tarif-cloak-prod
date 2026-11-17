@@ -69,6 +69,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/decode/**", "/decode-p10/**").permitAll()
                 // Statut des passerelles de paiement (public)
                 .requestMatchers(HttpMethod.GET, "/payments/providers-status").permitAll()
+                // Demandes de devis B2B (ouvert aux prospects sans compte et aux organisations connectées)
+                .requestMatchers(HttpMethod.POST, "/quote-requests").permitAll()
                 // Endpoint de recherche accessible aux utilisateurs avec le rôle USER ou ADMIN
                 .requestMatchers("/recherche/**").hasAnyRole("USER", "ADMIN")
                 // Tous les autres endpoints nécessitent une authentification
