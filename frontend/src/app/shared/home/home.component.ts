@@ -133,18 +133,14 @@ import { environment } from '../../../environments/environment';
         </div>
       </section>
 
-      <!-- Complément visiteur non connecté -->
+      <!-- Complément visiteur non connecté (Box Locale sur site) -->
       @if (!(isAuthenticated$ | async)) {
-        <section class="guest-strip" aria-label="Compte et documentation">
+        <section class="guest-strip" aria-label="Connexion Box Locale">
           <p class="guest-copy">
-            Aperçu immédiat sans inscription · Créez gratuitement votre compte entreprise pour accéder sans limite au décodage et à la comparaison.
+            Instance locale souveraine · Connectez-vous avec les identifiants fournis par votre organisation pour accéder à la recherche IA locale et aux outils de traitement par lots.
           </p>
           <div class="guest-actions">
-            <a routerLink="/auth/register" class="strip-btn primary">Créer un compte gratuit</a>
-            <a routerLink="/auth/login" class="strip-btn ghost">Se connecter</a>
-            @if (!isBetaMode) {
-              <a routerLink="/pricing" class="strip-btn ghost">Tarifs</a>
-            }
+            <a routerLink="/auth/login" class="strip-btn primary">Se connecter</a>
             <a routerLink="/aide" class="strip-btn ghost">Guide</a>
           </div>
         </section>

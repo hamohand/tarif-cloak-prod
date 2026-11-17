@@ -1,0 +1,29 @@
+/* Polices locales — aucun appel externe vers Google Fonts CDN.
+ * En production On-Premise, exécuter scripts/onprem/download-fonts.sh lors du build
+ * pour embarquer les fichiers .woff2 localement dans /fonts/.
+ * À défaut, les polices locales du poste ou les polices système prennent le relais.
+ */
+
+@font-face {
+  font-family: 'Space Grotesk';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: local('Space Grotesk'), url('./SpaceGrotesk-Variable.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: local('Inter'), url('./Inter-Variable.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: local('JetBrains Mono'), url('./JetBrainsMono-Variable.woff2') format('woff2');
+}

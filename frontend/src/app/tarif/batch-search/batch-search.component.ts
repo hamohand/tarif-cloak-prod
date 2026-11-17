@@ -44,6 +44,9 @@ export class BatchSearchComponent implements OnInit, OnDestroy {
   isSubmitting: boolean = false;
   isLoadingResults: boolean = false;
 
+  // Mode Box Locale Algérie
+  readonly maxBatchItems = 300;
+
   // Subscriptions pour le polling
   private pollingSubscriptions: Map<string, Subscription> = new Map();
 
@@ -138,8 +141,8 @@ export class BatchSearchComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (searchTerms.length > 1000) {
-      alert('Maximum 1000 recherches par batch. Veuillez réduire la liste.');
+    if (searchTerms.length > this.maxBatchItems) {
+      alert(`Maximum ${this.maxBatchItems} recherches par batch. Veuillez réduire la liste.`);
       return;
     }
 
@@ -279,7 +282,8 @@ export class BatchSearchComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const subscription = this.batchSearchService.pollBatchStatus(batchId, 30000).subscribe({
+    const pollIntervalMs = 5000;
+    const subscription = this.batchSearchService.pollBatchStatus(batchId, pollIntervalMs).subscribe({
       next: (status) => {
         const batch = this.batches.find(b => b.batchId === batchId);
         if (batch) {

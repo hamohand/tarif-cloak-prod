@@ -51,11 +51,6 @@ import { of } from 'rxjs';
         } @else {
           <a routerLink="/" class="nav-link" (click)="closeMobileMenu()">Accueil إستقبال</a>
         }
-        @if (!isBetaMode) {
-          <a routerLink="/pricing" class="nav-link pricing-link" (click)="closeMobileMenu()">
-            Plans-prix
-          </a>
-        }
         <button class="nav-link contact-btn" (click)="toggleContactPopup(); closeMobileMenu()">
           <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
           Contact اتصال
@@ -89,7 +84,6 @@ import { of } from 'rxjs';
             </span>
             <button (click)="logout(); closeMobileMenu()" class="btn btn-outline">Déconnexion</button>
           } @else {
-            <button (click)="goToRegister(); closeMobileMenu()" class="btn btn-secondary">Créer un compte إنشاء حساب</button>
             <button (click)="login(); closeMobileMenu()" class="btn btn-primary">Connexion اتصال</button>
           }
         </div>
@@ -102,36 +96,23 @@ import { of } from 'rxjs';
           </span>
           <button (click)="logout()" class="btn btn-outline">Déconnexion</button>
         } @else {
-          <button (click)="goToRegister()" class="btn btn-secondary">Créer un compte إنشاء حساب</button>
           <button (click)="login()" class="btn btn-primary">Connexion اتصال</button>
         }
       </div>
     </nav>
     
-    <!-- Modal renouvellement / changement de plan -->
+    <!-- Modal licence / quota Box Locale -->
     @if (showRenewalModal) {
       <div class="renewal-modal-overlay" (click)="closeRenewalModal()">
         <div class="renewal-modal" (click)="$event.stopPropagation()">
           <button class="modal-close-btn" (click)="closeRenewalModal()">✕</button>
-          
-          @if (isBetaMode) {
-            <h3>Quota Épuisé</h3>
-            <p>Merci pour votre participation. Veuillez contacter l'administrateur si vous souhaitez continuer à tester.</p>
-            <div class="renewal-modal-actions">
-              <button class="btn-modal btn-modal-primary" (click)="toggleContactPopup(); closeRenewalModal()">
-                💬 Contacter l'administrateur
-              </button>
-            </div>
-          } @else {
-            <h3>Accès Positions tarifaires suspendu</h3>
-            <p>Votre plan est expiré ou votre quota de crédits est épuisé.</p>
-            <div class="renewal-modal-actions">
-              <a routerLink="/choose-plan" class="btn-modal btn-modal-primary" (click)="closeRenewalModal()">
-                Gérer mon plan
-              </a>
-            </div>
-          }
-          
+          <h3>Accès Box IA Locale suspendu</h3>
+          <p>Votre licence Box Locale est inactive/expirée ou son plafond est atteint.</p>
+          <div class="renewal-modal-actions">
+            <a routerLink="/organization/account" class="btn-modal btn-modal-primary" (click)="closeRenewalModal()">
+              Activer / vérifier la licence
+            </a>
+          </div>
         </div>
       </div>
     }

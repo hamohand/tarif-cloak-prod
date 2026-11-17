@@ -8,13 +8,13 @@ import { CommonModule } from '@angular/common';
   template: `
     <div class="expired-page">
       <div class="expired-container">
-        <div class="expired-icon">🙏</div>
-        <h1 class="expired-title">Merci pour votre participation</h1>
+        <div class="expired-icon">🔒</div>
+        <h1 class="expired-title">Licence Box IA inactive ou expirée</h1>
         <p class="expired-message">
-          Votre période de test à la phase beta d'<strong>TCI</strong> est terminée.
+          L'accès au moteur <strong>TCI Box Locale</strong> est momentanément suspendu (licence expirée ou quota mensuel atteint).
         </p>
         <p class="expired-contact-intro">
-          Pour la prolonger ou passer à un plan commercial, contactez notre équipe :
+          Veuillez contacter l'administrateur de votre entreprise afin qu'il active une clé de renouvellement dans l'espace <strong>Mon organisation</strong> :
         </p>
         <div class="contact-links">
           <a href="mailto:contact@enclume-numerique.com" class="contact-item email-link">

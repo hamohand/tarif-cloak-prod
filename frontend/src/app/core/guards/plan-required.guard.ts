@@ -2,16 +2,11 @@ import { CanActivateFn, Router } from '@angular/router';
 import { inject } from '@angular/core';
 import { OrganizationAccountService } from '../services/organization-account.service';
 import { AuthService } from '../services/auth.service';
-import { environment } from '../../../environments/environment';
 import { catchError, combineLatest, map, of, switchMap, take } from 'rxjs';
 
 /**
- * Guard qui bloque la navigation si l'organisation ne peut plus faire de requêtes.
- * - BETA_MODE=true  → redirige vers /access-expired
- * - BETA_MODE=false → redirige vers /choose-plan
- *
+ * Guard qui bloque la navigation si la licence Box IA est inactive/expirée ou le quota atteint.
  * Ne s'applique qu'aux comptes ORGANIZATION et COLLABORATOR.
- * Exclure ce guard sur : /choose-plan, /access-expired, /auth/**, /admin/**
  */
 export const planRequiredGuard: CanActivateFn = () => {
   const authService = inject(AuthService);
@@ -33,8 +28,7 @@ export const planRequiredGuard: CanActivateFn = () => {
         map(status => {
           if (status.canMakeRequests) return true;
 
-          const redirectTo = environment.betaMode ? '/access-expired' : '/choose-plan';
-          router.navigate([redirectTo]);
+          router.navigate([isOrg ? '/organization/account' : '/access-expired']);
           return false;
         }),
         catchError(() => of(true)) // En cas d'erreur réseau, laisser passer
