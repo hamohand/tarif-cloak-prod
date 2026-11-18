@@ -34,19 +34,7 @@ import { CommonModule } from '@angular/common';
   `,
   styles: [`
     :host {
-      --neu-bg: var(--neu-bg, #E0E5EC);
-      --neu-extruded: var(--neu-extruded, 9px 9px 16px rgba(163,177,198,0.6), -9px -9px 16px rgba(255,255,255,0.5));
-      --neu-extruded-hover: var(--neu-extruded-hover, 12px 12px 20px rgba(163,177,198,0.7), -12px -12px 20px rgba(255,255,255,0.6));
-      --neu-extruded-sm: var(--neu-extruded-sm, 5px 5px 10px rgba(163,177,198,0.5), -5px -5px 10px rgba(255,255,255,0.4));
-      --neu-inset: var(--neu-inset, inset 4px 4px 8px rgba(163,177,198,0.5), inset -4px -4px 8px rgba(255,255,255,0.4));
-      --neu-radius-container: var(--neu-radius-container, 32px);
-      --neu-radius-inner: var(--neu-radius-inner, 12px);
-      --neu-accent: var(--neu-accent, #6C63FF);
-      --neu-accent-secondary: var(--neu-accent-secondary, #38B2AC);
-      --neu-text-primary: var(--neu-text-primary, #3D4852);
-      --neu-text-muted: var(--neu-text-muted, #6B7280);
-      --neu-text-heading: var(--neu-text-heading, #2D3748);
-      --font-display: var(--font-display, 'Plus Jakarta Sans', sans-serif);
+      display: block;
     }
 
     .expired-page {

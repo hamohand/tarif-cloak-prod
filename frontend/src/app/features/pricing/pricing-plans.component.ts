@@ -187,20 +187,7 @@ import { of } from 'rxjs';
   `,
   styles: [`
     :host {
-      --neu-bg: var(--neu-bg, #E0E5EC);
-      --neu-extruded: var(--neu-extruded, 9px 9px 16px rgba(163,177,198,0.6), -9px -9px 16px rgba(255,255,255,0.5));
-      --neu-extruded-hover: var(--neu-extruded-hover, 12px 12px 20px rgba(163,177,198,0.7), -12px -12px 20px rgba(255,255,255,0.6));
-      --neu-extruded-sm: var(--neu-extruded-sm, 5px 5px 10px rgba(163,177,198,0.5), -5px -5px 10px rgba(255,255,255,0.4));
-      --neu-inset: var(--neu-inset, inset 4px 4px 8px rgba(163,177,198,0.5), inset -4px -4px 8px rgba(255,255,255,0.4));
-      --neu-radius-container: var(--neu-radius-container, 32px);
-      --neu-radius-inner: var(--neu-radius-inner, 12px);
-      --neu-accent: var(--neu-accent, #6C63FF);
-      --neu-accent-secondary: var(--neu-accent-secondary, #38B2AC);
-      --neu-accent-danger: var(--neu-accent-danger, #E53E3E);
-      --neu-text-primary: var(--neu-text-primary, #3D4852);
-      --neu-text-muted: var(--neu-text-muted, #6B7280);
-      --neu-text-heading: var(--neu-text-heading, #2D3748);
-      --font-display: var(--font-display, 'Plus Jakarta Sans', sans-serif);
+      display: block;
     }
 
     .pricing-container {
@@ -225,7 +212,7 @@ import { of } from 'rxjs';
 
     .pricing-header p {
       font-size: 1.2rem;
-      color: var(--neu-text-muted);
+      color: #94A3B8;
     }
 
     .quote-badge {
@@ -236,7 +223,8 @@ import { of } from 'rxjs';
     .quote-notice {
       margin-top: 1.5rem;
       padding: 1rem 1.5rem;
-      background: var(--neu-bg);
+      background: var(--neu-card-bg);
+      border: 1px solid rgba(255, 255, 255, 0.08);
       box-shadow: var(--neu-inset);
       border-radius: var(--neu-radius-inner);
       color: var(--neu-text-primary);
@@ -253,13 +241,14 @@ import { of } from 'rxjs';
       max-width: 600px;
       margin: 0 auto 2.5rem;
       padding: 1.25rem 1.5rem;
-      background: var(--neu-bg);
+      background: var(--neu-card-bg);
+      border: 1px solid rgba(255, 255, 255, 0.08);
       box-shadow: var(--neu-inset);
       border-radius: var(--neu-radius-inner);
     }
 
     .credits-note h4 {
-      color: var(--neu-text-muted);
+      color: #94A3B8;
       font-family: var(--font-display);
       font-size: 0.85rem;
       text-transform: uppercase;
@@ -280,7 +269,8 @@ import { of } from 'rxjs';
       align-items: center;
       padding: 0.55rem 0.85rem;
       border-radius: var(--neu-radius-inner);
-      background: var(--neu-bg);
+      background: var(--neu-bg-dark);
+      border: 1px solid rgba(255, 255, 255, 0.06);
       box-shadow: var(--neu-extruded-sm);
     }
 
@@ -291,14 +281,14 @@ import { of } from 'rxjs';
 
     .credit-value {
       font-weight: 700;
-      color: var(--neu-accent);
+      color: var(--neu-accent-light);
       font-size: 0.9rem;
       white-space: nowrap;
       margin-left: 1rem;
     }
 
     .credit-value.free {
-      color: var(--neu-accent-secondary);
+      color: var(--neu-accent-tertiary);
     }
 
     .market-switcher {
@@ -316,8 +306,8 @@ import { of } from 'rxjs';
       gap: 0.25rem;
       padding: 1rem 1.25rem;
       border-radius: var(--neu-radius-inner);
-      border: 2px solid transparent;
-      background: var(--neu-bg);
+      border: 2px solid rgba(255, 255, 255, 0.08);
+      background: var(--neu-card-bg);
       box-shadow: var(--neu-extruded-sm);
       cursor: pointer;
       text-align: left;
@@ -326,6 +316,7 @@ import { of } from 'rxjs';
 
     .market-btn.active {
       border-color: var(--neu-accent);
+      background: var(--neu-card-bg-hover);
       box-shadow: var(--neu-inset);
     }
 
@@ -338,7 +329,7 @@ import { of } from 'rxjs';
 
     .market-sub {
       font-size: 0.82rem;
-      color: var(--neu-text-muted);
+      color: #94A3B8;
     }
 
     .year-price {
@@ -346,7 +337,7 @@ import { of } from 'rxjs';
       margin: -0.5rem 0 0.75rem;
       font-size: 0.85rem;
       font-weight: 600;
-      color: var(--neu-accent);
+      color: var(--neu-accent-light);
     }
 
     .pricing-plans-grid {
@@ -360,10 +351,11 @@ import { of } from 'rxjs';
       text-align: center;
       padding: 0.85rem 1.25rem;
       margin-bottom: 2rem;
-      background: var(--neu-bg);
+      background: var(--neu-card-bg);
+      border: 1px solid rgba(255, 255, 255, 0.08);
       box-shadow: var(--neu-inset);
       border-radius: var(--neu-radius-inner);
-      color: var(--neu-text-muted);
+      color: #94A3B8;
       font-size: 0.9rem;
       font-style: italic;
       max-width: 800px;
@@ -372,8 +364,9 @@ import { of } from 'rxjs';
     }
 
     .pricing-plan-card {
-      background: linear-gradient(145deg, #EDE9FE, #DDD6FE);
-      border-top: 4px solid #7C3AED;
+      background: linear-gradient(155deg, #131B2E, #0D1424);
+      border: 1px solid rgba(139, 92, 246, 0.32);
+      border-top: 4px solid #8B5CF6;
       border-radius: var(--neu-radius-container);
       padding: 2rem;
       box-shadow: var(--neu-extruded);
@@ -384,18 +377,21 @@ import { of } from 'rxjs';
     }
 
     .pricing-plan-card:nth-child(4n+2) {
-      background: linear-gradient(145deg, #CFFAFE, #A5F3FC);
-      border-top-color: #0891B2;
+      background: linear-gradient(155deg, #0E1D2B, #0A1520);
+      border-color: rgba(14, 165, 233, 0.32);
+      border-top-color: #0EA5E9;
     }
 
     .pricing-plan-card:nth-child(4n+3) {
-      background: linear-gradient(145deg, #DCFCE7, #BBF7D0);
-      border-top-color: #059669;
+      background: linear-gradient(155deg, #0D201D, #091715);
+      border-color: rgba(16, 185, 129, 0.34);
+      border-top-color: #10B981;
     }
 
     .pricing-plan-card:nth-child(4n+4) {
-      background: linear-gradient(145deg, #FEF9C3, #FDE68A);
-      border-top-color: #D97706;
+      background: linear-gradient(155deg, #1E180C, #141008);
+      border-color: rgba(245, 158, 11, 0.38);
+      border-top-color: #F59E0B;
     }
 
     .pricing-plan-card:hover {
@@ -406,7 +402,8 @@ import { of } from 'rxjs';
     .pricing-plan-card h3 {
       font-family: var(--font-display);
       font-size: 1.5rem;
-      color: var(--neu-text-heading);
+      font-weight: 700;
+      color: #F8FAFC;
       margin-bottom: 0.75rem;
     }
 
@@ -419,7 +416,7 @@ import { of } from 'rxjs';
 
     .currency {
       font-size: 1.3rem;
-      color: var(--neu-text-muted);
+      color: #CBD5E1;
       margin-right: 0.25rem;
       font-family: var(--font-display);
     }
@@ -428,17 +425,17 @@ import { of } from 'rxjs';
       font-family: var(--font-display);
       font-size: 2.5rem;
       font-weight: 700;
-      color: var(--neu-accent);
+      color: #FCD34D;
     }
 
     .period {
       font-size: 1rem;
-      color: var(--neu-text-muted);
+      color: #CBD5E1;
       margin-left: 0.25rem;
     }
 
     .description {
-      color: var(--neu-text-muted);
+      color: #CBD5E1;
       margin-bottom: 0.75rem;
       text-align: center;
       font-size: 0.9rem;
@@ -448,10 +445,11 @@ import { of } from 'rxjs';
       text-align: center;
       margin: 1rem 0;
       padding: 0.75rem;
-      background: var(--neu-bg);
+      background: rgba(7, 11, 20, 0.72);
+      border: 1px solid rgba(255, 255, 255, 0.1);
       box-shadow: var(--neu-inset);
       border-radius: var(--neu-radius-inner);
-      color: var(--neu-text-primary);
+      color: #F8FAFC;
     }
 
     .features {
@@ -460,7 +458,7 @@ import { of } from 'rxjs';
 
     .features h4 {
       font-size: 1rem;
-      color: var(--neu-text-heading);
+      color: #F1F5F9;
       margin-bottom: 0.5rem;
     }
 
@@ -471,13 +469,13 @@ import { of } from 'rxjs';
 
     .features li {
       padding: 0.4rem 0;
-      color: var(--neu-text-primary);
+      color: #E2E8F0;
       font-size: 0.9rem;
     }
 
     .features li:before {
       content: "\\2713  ";
-      color: var(--neu-accent-secondary);
+      color: #10B981;
       font-weight: bold;
       margin-right: 0.5rem;
     }
@@ -524,7 +522,7 @@ import { of } from 'rxjs';
     }
 
     .pricing-footer p {
-      color: var(--neu-text-muted);
+      color: #94A3B8;
       margin-bottom: 1rem;
     }
 
@@ -536,10 +534,10 @@ import { of } from 'rxjs';
     }
 
     .btn-secondary {
-      background: var(--neu-bg);
-      color: var(--neu-accent);
+      background: var(--neu-card-bg);
+      color: #FCD34D;
       padding: 0.75rem 1.5rem;
-      border: none;
+      border: 1px solid rgba(245, 158, 11, 0.45);
       border-radius: var(--neu-radius-inner);
       font-size: 1rem;
       font-weight: 600;
@@ -551,6 +549,7 @@ import { of } from 'rxjs';
 
     .btn-secondary:hover {
       transform: translateY(-1px);
+      background: var(--neu-card-bg-hover);
       box-shadow: var(--neu-extruded-hover);
     }
 
@@ -578,7 +577,7 @@ import { of } from 'rxjs';
       text-align: center;
       padding: 2rem;
       font-size: 1.2rem;
-      color: var(--neu-text-muted);
+      color: #94A3B8;
     }
 
     .error {
@@ -593,8 +592,9 @@ import { of } from 'rxjs';
       margin: 2.5rem auto 1rem;
       padding: 2rem 2.25rem;
       border-radius: var(--neu-radius-container);
-      background: linear-gradient(145deg, #E2E8F0, #CBD5E1);
-      border-left: 5px solid #4F46E5;
+      background: linear-gradient(145deg, #111B2E, #0B1322);
+      border: 1px solid rgba(245, 158, 11, 0.32);
+      border-left: 5px solid #F59E0B;
       box-shadow: var(--neu-extruded);
     }
 
@@ -609,8 +609,9 @@ import { of } from 'rxjs';
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      color: #4338CA;
-      background: rgba(79, 70, 229, 0.12);
+      color: #FCD34D;
+      background: rgba(245, 158, 11, 0.14);
+      border: 1px solid rgba(245, 158, 11, 0.32);
       padding: 0.25rem 0.65rem;
       border-radius: 999px;
       margin-bottom: 0.65rem;
@@ -619,12 +620,12 @@ import { of } from 'rxjs';
     .sovereign-box-card h3 {
       font-family: var(--font-display);
       font-size: 1.35rem;
-      color: var(--neu-text-heading);
+      color: #F8FAFC;
       margin: 0 0 0.6rem;
     }
 
     .sovereign-desc {
-      color: var(--neu-text-primary);
+      color: #CBD5E1;
       font-size: 0.96rem;
       line-height: 1.55;
       margin: 0 0 0.9rem;
@@ -636,7 +637,7 @@ import { of } from 'rxjs';
       gap: 0.85rem 1.4rem;
       font-size: 0.88rem;
       font-weight: 600;
-      color: var(--neu-text-heading);
+      color: #F1F5F9;
     }
 
     .sovereign-box-action {
