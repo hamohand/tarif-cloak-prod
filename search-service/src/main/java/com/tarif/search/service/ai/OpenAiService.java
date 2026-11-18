@@ -73,8 +73,12 @@ public class OpenAiService implements AiProvider {
                 Map.of("role", "user", "content", question)
         });
         int maxTokens = AiPrompts.getMaxTokensForLevel(withJustification);
-        requestBody.put("max_tokens", maxTokens);
-        requestBody.put("temperature", temperature);
+        if (isReasoningModel(model)) {
+            requestBody.put("max_completion_tokens", Math.max(maxTokens * 4, 2048));
+        } else {
+            requestBody.put("max_tokens", maxTokens);
+            requestBody.put("temperature", temperature);
+        }
         requestBody.put("response_format", Map.of("type", "json_object"));
 
         ObjectMapper objectMapper = new ObjectMapper();
@@ -136,6 +140,21 @@ public class OpenAiService implements AiProvider {
             log.error("Erreur lors de la requête à l'API OpenAI: {}", e.getMessage());
             throw new AiProviderException("Erreur OpenAI: " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * Les modèles de raisonnement OpenAI (gpt-5*, o1*, o3*, o4*) exigent
+     * max_completion_tokens à la place de max_tokens et refusent temperature=0.
+     */
+    public static boolean isReasoningModel(String model) {
+        if (model == null) {
+            return false;
+        }
+        String normalized = model.trim().toLowerCase();
+        return normalized.startsWith("gpt-5")
+                || normalized.startsWith("o1")
+                || normalized.startsWith("o3")
+                || normalized.startsWith("o4");
     }
 
     @Override
