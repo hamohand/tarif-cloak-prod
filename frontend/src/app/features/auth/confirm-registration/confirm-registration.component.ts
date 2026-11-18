@@ -71,16 +71,18 @@ import { environment } from '../../../../environments/environment';
     }
 
     .confirm-card {
-      background: white;
+      background: var(--neu-card-bg);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--neu-text-primary);
       padding: 3rem;
       border-radius: 12px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      box-shadow: var(--neu-extruded);
       width: 100%;
       max-width: 480px;
       text-align: center;
     }
 
-    h2 { color: #2c3e50; margin-bottom: 1rem; }
+    h2 { color: var(--neu-text-heading); margin-bottom: 1rem; }
 
     .step-state, .error-state, .success-state {
       display: flex;
@@ -89,7 +91,7 @@ import { environment } from '../../../../environments/environment';
       gap: 1rem;
     }
 
-    .intro { color: #7f8c8d; line-height: 1.6; margin: 0; }
+    .intro { color: #94A3B8; line-height: 1.6; margin: 0; }
 
     .form-group {
       width: 100%;
@@ -99,12 +101,14 @@ import { environment } from '../../../../environments/environment';
       gap: 0.5rem;
     }
 
-    .form-group label { font-weight: 600; color: #2c3e50; font-size: 0.95rem; }
+    .form-group label { font-weight: 600; color: var(--neu-text-heading); font-size: 0.95rem; }
 
     .otp-input {
       width: 100%;
       padding: 0.75rem 1rem;
-      border: 2px solid #bdc3c7;
+      background: var(--neu-bg-dark);
+      color: #F8FAFC;
+      border: 2px solid rgba(255, 255, 255, 0.2);
       border-radius: 6px;
       font-size: 1.5rem;
       letter-spacing: 0.5rem;

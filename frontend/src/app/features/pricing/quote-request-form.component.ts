@@ -77,21 +77,7 @@ import { QuoteRequestService, CreateQuoteRequestDto } from '../../core/services/
   `,
   styles: [`
     :host {
-      --neu-bg: var(--neu-bg, #E0E5EC);
-      --neu-extruded: var(--neu-extruded, 9px 9px 16px rgba(163,177,198,0.6), -9px -9px 16px rgba(255,255,255,0.5));
-      --neu-extruded-hover: var(--neu-extruded-hover, 12px 12px 20px rgba(163,177,198,0.7), -12px -12px 20px rgba(255,255,255,0.6));
-      --neu-extruded-sm: var(--neu-extruded-sm, 5px 5px 10px rgba(163,177,198,0.5), -5px -5px 10px rgba(255,255,255,0.4));
-      --neu-inset: var(--neu-inset, inset 4px 4px 8px rgba(163,177,198,0.5), inset -4px -4px 8px rgba(255,255,255,0.4));
-      --neu-inset-deep: var(--neu-inset-deep, inset 6px 6px 12px rgba(163,177,198,0.6), inset -6px -6px 12px rgba(255,255,255,0.5));
-      --neu-radius-container: var(--neu-radius-container, 32px);
-      --neu-radius-inner: var(--neu-radius-inner, 12px);
-      --neu-accent: var(--neu-accent, #6C63FF);
-      --neu-accent-secondary: var(--neu-accent-secondary, #38B2AC);
-      --neu-accent-danger: var(--neu-accent-danger, #E53E3E);
-      --neu-text-primary: var(--neu-text-primary, #3D4852);
-      --neu-text-muted: var(--neu-text-muted, #6B7280);
-      --neu-text-heading: var(--neu-text-heading, #2D3748);
-      --font-display: var(--font-display, 'Plus Jakarta Sans', sans-serif);
+      display: block;
     }
 
     .quote-form-container {
@@ -100,7 +86,7 @@ import { QuoteRequestService, CreateQuoteRequestDto } from '../../core/services/
       left: 0;
       right: 0;
       bottom: 0;
-      background: rgba(163, 177, 198, 0.4);
+      background: rgba(7, 11, 20, 0.78);
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
       display: flex;
@@ -111,7 +97,8 @@ import { QuoteRequestService, CreateQuoteRequestDto } from '../../core/services/
     }
 
     .quote-form-card {
-      background: var(--neu-card-bg, linear-gradient(145deg, #E8ECF2, #D8DDE4));
+      background: var(--neu-card-bg);
+      border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: var(--neu-radius-container);
       box-shadow: var(--neu-extruded-hover);
       max-width: 600px;
@@ -179,20 +166,21 @@ import { QuoteRequestService, CreateQuoteRequestDto } from '../../core/services/
     .form-control {
       width: 100%;
       padding: 0.75rem 1rem;
-      background: var(--neu-bg);
+      background: var(--neu-bg-dark);
       box-shadow: var(--neu-inset);
-      border: none;
+      border: 1px solid rgba(255, 255, 255, 0.12);
       border-radius: var(--neu-radius-inner);
       font-size: 1rem;
-      color: var(--neu-text-primary);
-      transition: box-shadow 0.3s;
+      color: #F8FAFC;
+      transition: box-shadow 0.3s, border-color 0.2s;
       box-sizing: border-box;
       min-height: 44px;
     }
 
     .form-control:focus {
       outline: none;
-      box-shadow: var(--neu-inset-deep), 0 0 0 2px rgba(108, 99, 255, 0.3);
+      border-color: var(--neu-accent);
+      box-shadow: var(--neu-inset-deep), 0 0 0 2px rgba(245, 158, 11, 0.25);
     }
 
     .form-control.error {
@@ -250,7 +238,8 @@ import { QuoteRequestService, CreateQuoteRequestDto } from '../../core/services/
 
     .btn-primary {
       background: var(--neu-accent);
-      color: white;
+      color: #0B0F19;
+      font-weight: 700;
       box-shadow: var(--neu-extruded-sm);
     }
 

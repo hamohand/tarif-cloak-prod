@@ -288,24 +288,8 @@ const EU_AND_INTL_COUNTRIES: CountryOption[] = [
     </div>
   `,
   styles: [`
-    /* ── Neumorphism Register ── */
-
     :host {
-      --neu-bg: #E0E5EC;
-      --neu-extruded: 8px 8px 16px rgba(163,177,198,0.6), -8px -8px 16px rgba(255,255,255,0.5);
-      --neu-extruded-sm: 4px 4px 8px rgba(163,177,198,0.6), -4px -4px 8px rgba(255,255,255,0.5);
-      --neu-inset: inset 6px 6px 10px rgba(163,177,198,0.6), inset -6px -6px 10px rgba(255,255,255,0.5);
-      --neu-inset-deep: inset 8px 8px 14px rgba(163,177,198,0.7), inset -8px -8px 14px rgba(255,255,255,0.6);
-      --neu-radius-container: 32px;
-      --neu-radius-button: 16px;
-      --neu-radius-inner: 12px;
-      --neu-accent: #6C63FF;
-      --neu-accent-hover: #5A52E0;
-      --neu-accent-danger: #E53E3E;
-      --neu-accent-secondary: #38B2AC;
-      --neu-text-primary: #3D4852;
-      --neu-text-muted: #6B7280;
-      --font-display: 'Poppins', 'Segoe UI', system-ui, sans-serif;
+      display: block;
     }
 
     .register-container {
@@ -318,18 +302,18 @@ const EU_AND_INTL_COUNTRIES: CountryOption[] = [
     }
 
     .register-card {
-      background: var(--neu-card-violet, linear-gradient(145deg, #EAE8F8, #DDDAF0));
+      background: var(--neu-card-bg);
       padding: 2.5rem;
       border-radius: var(--neu-radius-container);
       box-shadow: var(--neu-extruded);
-      border: none;
+      border: 1px solid rgba(255, 255, 255, 0.08);
       width: 100%;
       max-width: 720px;
     }
 
     h2 {
       font-family: var(--font-display);
-      color: var(--neu-text-primary);
+      color: var(--neu-text-heading);
       margin-bottom: 0.5rem;
       text-align: center;
       font-size: 1.6rem;
@@ -337,7 +321,7 @@ const EU_AND_INTL_COUNTRIES: CountryOption[] = [
     }
 
     p {
-      color: var(--neu-text-muted);
+      color: #94A3B8;
       margin-bottom: 2rem;
       text-align: center;
       font-size: 0.95rem;
@@ -350,9 +334,9 @@ const EU_AND_INTL_COUNTRIES: CountryOption[] = [
     }
 
     .form-section {
-      background: var(--neu-bg);
+      background: var(--neu-bg-dark);
       box-shadow: var(--neu-inset);
-      border: none;
+      border: 1px solid rgba(255, 255, 255, 0.06);
       border-radius: var(--neu-radius-button);
       padding: 1.5rem;
     }
@@ -360,7 +344,7 @@ const EU_AND_INTL_COUNTRIES: CountryOption[] = [
     .form-section h3 {
       margin: 0 0 1rem 0;
       font-family: var(--font-display);
-      color: var(--neu-text-primary);
+      color: var(--neu-text-heading);
       font-size: 1.15rem;
       font-weight: 600;
     }
@@ -441,7 +425,7 @@ const EU_AND_INTL_COUNTRIES: CountryOption[] = [
 
     select.form-control {
       appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236B7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23CBD5E1' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
       background-repeat: no-repeat;
       background-position: right 1rem center;
       padding-right: 2.5rem;
@@ -550,13 +534,13 @@ const EU_AND_INTL_COUNTRIES: CountryOption[] = [
     }
 
     .pricing-plan-select {
-      background: var(--neu-bg) !important;
+      background-color: #0D1421 !important;
       box-shadow: var(--neu-inset) !important;
-      color: var(--neu-text-primary) !important;
+      color: #F8FAFC !important;
       min-height: 44px !important;
-      padding: 0.5rem 1rem !important;
+      padding: 0.5rem 2.5rem 0.5rem 1rem !important;
       line-height: 1.5 !important;
-      border: none !important;
+      border: 1px solid rgba(255, 255, 255, 0.14) !important;
       border-radius: var(--neu-radius-inner) !important;
       font-size: 1rem !important;
       width: 100% !important;
@@ -564,8 +548,8 @@ const EU_AND_INTL_COUNTRIES: CountryOption[] = [
     }
 
     .pricing-plan-select option {
-      background: var(--neu-bg) !important;
-      color: var(--neu-text-primary) !important;
+      background-color: #0D1421 !important;
+      color: #F8FAFC !important;
       padding: 0.5rem !important;
     }
 
@@ -594,14 +578,15 @@ const EU_AND_INTL_COUNTRIES: CountryOption[] = [
 
     .btn-primary {
       background-color: var(--neu-accent);
-      color: #ffffff;
+      color: #0B0F19;
+      font-weight: 700;
       box-shadow: var(--neu-extruded-sm);
     }
 
     .btn-primary:hover:not(:disabled) {
       background-color: var(--neu-accent-hover);
-      box-shadow: 2px 2px 4px rgba(163,177,198,0.6), -2px -2px 4px rgba(255,255,255,0.5);
-      transform: translateY(1px);
+      box-shadow: var(--neu-extruded-hover);
+      transform: translateY(-1px);
     }
 
     .btn-primary:active:not(:disabled) {
