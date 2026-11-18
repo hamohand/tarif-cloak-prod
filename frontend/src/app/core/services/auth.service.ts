@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { OAuthService } from 'angular-oauth2-oidc';
 import { authConfig } from '../config/auth.config';
 import { BehaviorSubject, Observable, interval, Subscription } from 'rxjs';
+import { distinctUntilChanged } from 'rxjs/operators';
 import { AccountContextService } from './account-context.service';
 import { Router } from '@angular/router';
 
@@ -12,6 +13,7 @@ export class AuthService {
   private isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
   private configured = false;
   private tokenCheckInterval?: Subscription;
+  private visibilityListenersBound = false;
 
   constructor(
     private oauthService: OAuthService,
@@ -21,6 +23,12 @@ export class AuthService {
     setTimeout(() => {
       this.configure();
     }, 0);
+  }
+
+  private emitAuthenticated(isAuth: boolean): void {
+    if (this.isAuthenticatedSubject.value !== isAuth) {
+      this.isAuthenticatedSubject.next(isAuth);
+    }
   }
 
   private configure() {
@@ -66,7 +74,7 @@ export class AuthService {
       
       // Nettoyer l'URL des paramètres d'erreur
       window.history.replaceState({}, document.title, window.location.pathname);
-      this.isAuthenticatedSubject.next(false);
+      this.emitAuthenticated(false);
       return;
     }
     
@@ -86,7 +94,7 @@ export class AuthService {
         if (initialToken && !this.isTokenValid()) {
           console.warn('Token présent mais invalide détecté au démarrage. Nettoyage automatique.');
           this.cleanupTokens();
-          this.isAuthenticatedSubject.next(false);
+          this.emitAuthenticated(false);
           return;
         }
 
@@ -104,10 +112,7 @@ export class AuthService {
           this.updateAccountContext(initialToken);
         }
         
-        this.isAuthenticatedSubject.next(isAuthenticated);
-        if (isAuthenticated) {
-          this.updateAccountContext(initialToken);
-        }
+        this.emitAuthenticated(isAuthenticated);
       })
       .catch((error) => {
         // Si c'est une erreur NG0200 (injecteur non prêt), réessayer après un court délai
@@ -126,19 +131,19 @@ export class AuthService {
             console.warn('Erreur HTTPS détectée. La configuration requireHttps: false devrait résoudre ce problème.');
             console.warn('Vérifiez que l\'URL de l\'issuer Keycloak est correcte:', authConfig.issuer);
             // Ne pas nettoyer les tokens, juste marquer comme non authentifié
-            this.isAuthenticatedSubject.next(false);
+            this.emitAuthenticated(false);
           } else if (error.message.includes('discovery') || error.message.includes('Failed to load')) {
             console.error('Erreur critique : Impossible de charger le document de découverte Keycloak:', error);
             this.cleanupTokens();
-            this.isAuthenticatedSubject.next(false);
+            this.emitAuthenticated(false);
           } else {
             // Si c'est juste la tentative de connexion automatique qui échoue, ce n'est pas grave
             // (pas de log nécessaire, c'est normal si pas de session active)
-            this.isAuthenticatedSubject.next(false);
+            this.emitAuthenticated(false);
           }
         } else {
           // Si pas de message d'erreur, c'est peut-être juste une absence de session
-          this.isAuthenticatedSubject.next(false);
+          this.emitAuthenticated(false);
         }
       });
 
@@ -149,7 +154,7 @@ export class AuthService {
         console.warn('Erreur de token détectée, nettoyage automatique');
         this.stopTokenCheck();
         this.cleanupTokens();
-        this.isAuthenticatedSubject.next(false);
+        this.emitAuthenticated(false);
         this.accountContextService.clear();
         // Utiliser setTimeout pour éviter d'interrompre la navigation en cours
         setTimeout(() => {
@@ -179,19 +184,39 @@ export class AuthService {
           console.log('==================');
         }
         this.startTokenCheck();
-        this.isAuthenticatedSubject.next(this.oauthService.hasValidAccessToken());
+        this.emitAuthenticated(this.oauthService.hasValidAccessToken());
         const refreshedToken = this.oauthService.getAccessToken();
         if (refreshedToken) {
           this.updateAccountContext(refreshedToken);
         }
       }
-      else if (event.type === 'discovery_document_loaded' || 
-               event.type === 'session_changed' || event.type === 'session_unchanged') {
+      else if (event.type === 'session_unchanged') {
+        // Émis toutes les 3 s par l'iframe OIDC : ignorer si l'état n'a pas changé
         const isValid = this.oauthService.hasValidAccessToken();
-        this.isAuthenticatedSubject.next(isValid);
+        if (isValid === this.isAuthenticatedSubject.value) {
+          return;
+        }
+        this.emitAuthenticated(isValid);
         if (isValid) {
-          this.oauthService.setupAutomaticSilentRefresh();
-          this.startTokenCheck();
+          const sessionToken = this.oauthService.getAccessToken();
+          if (sessionToken) {
+            this.updateAccountContext(sessionToken);
+          }
+        } else {
+          this.accountContextService.clear();
+          this.stopTokenCheck();
+        }
+      }
+      else if (event.type === 'discovery_document_loaded' || 
+               event.type === 'session_changed') {
+        const isValid = this.oauthService.hasValidAccessToken();
+        const stateChanged = this.isAuthenticatedSubject.value !== isValid;
+        this.emitAuthenticated(isValid);
+        if (isValid) {
+          if (stateChanged || !this.tokenCheckInterval) {
+            this.oauthService.setupAutomaticSilentRefresh();
+            this.startTokenCheck();
+          }
           const sessionToken = this.oauthService.getAccessToken();
           if (sessionToken) {
             this.updateAccountContext(sessionToken);
@@ -203,13 +228,16 @@ export class AuthService {
       }
       else if (event.type === 'logout') {
         this.stopTokenCheck();
-        this.isAuthenticatedSubject.next(false);
+        this.emitAuthenticated(false);
         this.accountContextService.clear();
       }
-      // Mettre à jour le statut d'authentification pour tous les autres événements
+      // Mettre à jour le statut d'authentification pour les autres événements sans ré-émission inutile
       else {
         const isValid = this.oauthService.hasValidAccessToken();
-        this.isAuthenticatedSubject.next(isValid);
+        if (this.isAuthenticatedSubject.value === isValid) {
+          return;
+        }
+        this.emitAuthenticated(isValid);
         if (isValid) {
           const currentToken = this.oauthService.getAccessToken();
           if (currentToken) {
@@ -235,14 +263,14 @@ export class AuthService {
         if (!this.isTokenValid()) {
           console.debug('Token invalide détecté au démarrage. Nettoyage automatique.');
           this.cleanupTokens();
-          this.isAuthenticatedSubject.next(false);
+          this.emitAuthenticated(false);
         }
       }
     } catch (error) {
       // En cas d'erreur, nettoyer les tokens pour être sûr
       console.debug('Erreur lors de la validation des tokens. Nettoyage préventif.', error);
       this.cleanupTokens();
-      this.isAuthenticatedSubject.next(false);
+      this.emitAuthenticated(false);
     }
   }
 
@@ -261,23 +289,25 @@ export class AuthService {
     // Vérifier immédiatement
     this.checkTokenExpiration();
     
-    // Écouter les événements de visibilité de la page pour vérifier la session
-    // quand l'utilisateur revient sur l'application après une période d'inactivité
-    document.addEventListener('visibilitychange', () => {
-      if (!document.hidden) {
-        // L'utilisateur revient sur la page, vérifier la session
-        setTimeout(() => {
-          this.checkTokenExpiration();
-        }, 1000); // Attendre 1 seconde pour laisser le temps à l'application de se stabiliser
-      }
-    });
-    
-    // Écouter aussi l'événement focus de la fenêtre
-    window.addEventListener('focus', () => {
-      setTimeout(() => {
-        this.checkTokenExpiration();
-      }, 1000);
-    });
+    // N'enregistrer les écouteurs DOM qu'une seule fois
+    if (!this.visibilityListenersBound) {
+      this.visibilityListenersBound = true;
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden && this.isAuthenticatedSubject.value) {
+          setTimeout(() => {
+            this.checkTokenExpiration();
+          }, 1000);
+        }
+      });
+
+      window.addEventListener('focus', () => {
+        if (this.isAuthenticatedSubject.value) {
+          setTimeout(() => {
+            this.checkTokenExpiration();
+          }, 1000);
+        }
+      });
+    }
   }
 
   /**
@@ -304,7 +334,7 @@ export class AuthService {
       if (currentValue) {
         // Seulement mettre à jour le statut si nécessaire, sans redirection
         this.stopTokenCheck();
-        this.isAuthenticatedSubject.next(false);
+        this.emitAuthenticated(false);
       }
       return;
     }
@@ -320,8 +350,8 @@ export class AuthService {
         console.warn('Token expiré ou sur le point d\'expirer. Déconnexion automatique.');
         this.stopTokenCheck();
         this.cleanupTokens();
-        this.isAuthenticatedSubject.next(false);
-        this.accountContextService.setContext({ accountType: null, organizationEmail: null });
+        this.emitAuthenticated(false);
+        this.accountContextService.clear();
         // Utiliser setTimeout pour éviter d'interrompre la navigation en cours
         setTimeout(() => {
           this.router.navigate(['/']);
@@ -338,26 +368,23 @@ export class AuthService {
           console.warn('Token présent mais session Keycloak invalide. Déconnexion automatique.');
           this.stopTokenCheck();
           this.cleanupTokens();
-          this.isAuthenticatedSubject.next(false);
-          this.accountContextService.setContext({ accountType: null, organizationEmail: null });
+          this.emitAuthenticated(false);
+          this.accountContextService.clear();
           // Utiliser setTimeout pour éviter d'interrompre la navigation en cours
           setTimeout(() => {
             this.router.navigate(['/']);
           }, 0);
         } else {
           // Token valide, s'assurer que le statut est correct
-          const currentValue = this.isAuthenticatedSubject.value;
-          if (!currentValue) {
-            this.isAuthenticatedSubject.next(true);
-          }
+          this.emitAuthenticated(true);
         }
       } else {
         // Token expiré selon l'exp, nettoyer même si OAuthService ne l'a pas encore détecté
         console.warn('Token expiré détecté. Déconnexion automatique.');
         this.stopTokenCheck();
         this.cleanupTokens();
-        this.isAuthenticatedSubject.next(false);
-        this.accountContextService.setContext({ accountType: null, organizationEmail: null });
+        this.emitAuthenticated(false);
+        this.accountContextService.clear();
         setTimeout(() => {
           this.router.navigate(['/']);
         }, 0);
@@ -367,8 +394,8 @@ export class AuthService {
       console.warn('Token invalide détecté (impossible de décoder). Déconnexion automatique.');
       this.stopTokenCheck();
       this.cleanupTokens();
-      this.isAuthenticatedSubject.next(false);
-      this.accountContextService.setContext({ accountType: null, organizationEmail: null });
+      this.emitAuthenticated(false);
+      this.accountContextService.clear();
       // Utiliser setTimeout pour éviter d'interrompre la navigation en cours
       setTimeout(() => {
         this.router.navigate(['/']);
@@ -457,7 +484,7 @@ export class AuthService {
     this.stopTokenCheck();
     
     // Nettoyer l'état local immédiatement
-    this.isAuthenticatedSubject.next(false);
+    this.emitAuthenticated(false);
     this.accountContextService.clear();
     
     // Nettoyer les clés OAuth du localStorage et sessionStorage
@@ -523,14 +550,9 @@ export class AuthService {
     // On vérifie juste si le token est valide sans déclencher de redirection
     const token = this.oauthService.getAccessToken();
     if (token && this.isTokenValid()) {
-      // Si le token est valide, s'assurer que le statut est à jour
-      const currentValue = this.isAuthenticatedSubject.value;
-      if (!currentValue) {
-        // Si le statut n'est pas à jour mais que le token est valide, le mettre à jour
-        this.isAuthenticatedSubject.next(true);
-      }
+      this.emitAuthenticated(true);
     }
-    return this.isAuthenticatedSubject.asObservable();
+    return this.isAuthenticatedSubject.asObservable().pipe(distinctUntilChanged());
   }
 
   /**

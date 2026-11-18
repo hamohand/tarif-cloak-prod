@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { distinctUntilChanged, map } from 'rxjs/operators';
 import { AccountContext, AccountType } from '../models/account-context.model';
 
 @Injectable({
@@ -23,20 +23,26 @@ export class AccountContextService {
   }
 
   get accountType$(): Observable<AccountType> {
-    return this.context$.pipe(map(ctx => ctx.accountType));
+    return this.context$.pipe(map(ctx => ctx.accountType), distinctUntilChanged());
   }
 
   get organizationEmail$(): Observable<string | null> {
-    return this.context$.pipe(map(ctx => ctx.organizationEmail));
+    return this.context$.pipe(map(ctx => ctx.organizationEmail), distinctUntilChanged());
   }
 
   get isOrganizationAccount$(): Observable<boolean> {
-    return this.accountType$.pipe(map(type => type === 'ORGANIZATION'));
+    return this.accountType$.pipe(
+      map(type => type === 'ORGANIZATION'),
+      distinctUntilChanged()
+    );
   }
 
   get isCollaboratorAccount$(): Observable<boolean> {
     // Les utilisateurs ORGANISATION ont aussi accès aux fonctionnalités collaborateur
-    return this.accountType$.pipe(map(type => type === 'COLLABORATOR' || type === 'ORGANIZATION'));
+    return this.accountType$.pipe(
+      map(type => type === 'COLLABORATOR' || type === 'ORGANIZATION'),
+      distinctUntilChanged()
+    );
   }
 
   get currentAccountType(): AccountType {
@@ -44,8 +50,12 @@ export class AccountContextService {
   }
 
   setContext(context: AccountContext): void {
-    this.contextSubject.next(context);
+    const current = this.contextSubject.getValue();
     this.saveToStorage(context);
+    if (current.accountType === context.accountType && current.organizationEmail === context.organizationEmail) {
+      return;
+    }
+    this.contextSubject.next(context);
   }
 
   private loadFromStorage(): void {
@@ -70,7 +80,10 @@ export class AccountContextService {
 
   clear(): void {
     localStorage.removeItem(this.persistedKey);
-    this.contextSubject.next({ accountType: null, organizationEmail: null });
+    const current = this.contextSubject.getValue();
+    if (current.accountType !== null || current.organizationEmail !== null) {
+      this.contextSubject.next({ accountType: null, organizationEmail: null });
+    }
   }
 }
 

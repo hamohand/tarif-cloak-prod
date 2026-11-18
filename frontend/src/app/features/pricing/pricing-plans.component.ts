@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, Router } from '@angular/router';
 import { PricingPlanService, PricingPlan } from '../../core/services/pricing-plan.service';
@@ -9,8 +9,8 @@ import { CurrencyService, MarketCode } from '../../core/services/currency.servic
 import { OrganizationAccountService } from '../../core/services/organization-account.service';
 import { AccountContextService } from '../../core/services/account-context.service';
 import { PaymentService, PaymentProvidersStatus } from '../../core/services/payment.service';
-import { switchMap } from 'rxjs/operators';
-import { of } from 'rxjs';
+import { catchError, distinctUntilChanged, switchMap, takeUntil } from 'rxjs/operators';
+import { Subject, of } from 'rxjs';
 
 @Component({
   selector: 'app-pricing-plans',
@@ -665,7 +665,7 @@ import { of } from 'rxjs';
     }
   `]
 })
-export class PricingPlansComponent implements OnInit {
+export class PricingPlansComponent implements OnInit, OnDestroy {
   private pricingPlanService = inject(PricingPlanService);
   private authService = inject(AuthService);
   private currencyService = inject(CurrencyService);
@@ -673,6 +673,7 @@ export class PricingPlansComponent implements OnInit {
   private accountContextService = inject(AccountContextService);
   private paymentService = inject(PaymentService);
   private router = inject(Router);
+  private readonly destroy$ = new Subject<void>();
 
   plans: PricingPlan[] = [];
   selectedMarket: MarketCode = this.currencyService.getSelectedMarket();
@@ -686,36 +687,42 @@ export class PricingPlansComponent implements OnInit {
   isAuthenticated = false;
 
   ngOnInit() {
-    this.paymentService.getProvidersStatus().subscribe(status => {
+    this.paymentService.getProvidersStatus().pipe(takeUntil(this.destroy$)).subscribe(status => {
       this.providersStatus = status;
     });
-    this.authService.isAuthenticated().subscribe((isAuth: boolean) => {
-      this.isAuthenticated = isAuth;
-
-      if (isAuth) {
-        this.accountContextService.isOrganizationAccount$.pipe(
-          switchMap(isOrg => isOrg ? this.organizationAccountService.getMyOrganization() : of(null))
-        ).subscribe({
-          next: (org) => {
-            if (org?.trialPermanentlyExpired) {
-              this.router.navigate(['/organization/stats']);
-              return;
-            }
-            if (org?.marketVersion) {
-              const orgMarket: MarketCode = org.marketVersion.toUpperCase() === 'DZ' ? 'DZ' : 'DEFAULT';
-              this.selectedMarket = orgMarket;
-              this.currencyService.setSelectedMarket(orgMarket);
-            }
-            this.loadPricingPlans();
-          },
-          error: () => {
-            this.loadPricingPlans();
-          }
-        });
-      } else {
-        this.loadPricingPlans();
+    this.authService.isAuthenticated().pipe(
+      distinctUntilChanged(),
+      switchMap((isAuth: boolean) => {
+        this.isAuthenticated = isAuth;
+        if (!isAuth) {
+          return of(null);
+        }
+        return this.accountContextService.isOrganizationAccount$.pipe(
+          distinctUntilChanged(),
+          switchMap(isOrg => isOrg
+            ? this.organizationAccountService.getMyOrganization().pipe(catchError(() => of(null)))
+            : of(null)
+          )
+        );
+      }),
+      takeUntil(this.destroy$)
+    ).subscribe((org) => {
+      if (org?.trialPermanentlyExpired) {
+        this.router.navigate(['/organization/stats']);
+        return;
       }
+      if (org?.marketVersion) {
+        const orgMarket: MarketCode = org.marketVersion.toUpperCase() === 'DZ' ? 'DZ' : 'DEFAULT';
+        this.selectedMarket = orgMarket;
+        this.currencyService.setSelectedMarket(orgMarket);
+      }
+      this.loadPricingPlans();
     });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   selectMarket(market: MarketCode) {
