@@ -28,12 +28,14 @@ public class BatchService {
             @Value("${ai.provider:openai}") String activeProvider) {
         this.anthropicBatchProvider = anthropicBatchProvider;
         this.openAiBatchProvider = openAiBatchProvider;
-        this.activeProvider = activeProvider;
+        this.activeProvider = (activeProvider != null && !activeProvider.isBlank())
+                ? activeProvider.trim()
+                : "openai";
 
-        log.info("BatchService initialisé avec provider: {}", activeProvider);
+        log.info("BatchService initialisé avec provider: {}", this.activeProvider);
 
-        if (!getActiveProvider().supportsBatching()) {
-            log.warn("Provider {} ne supporte pas les opérations batch", activeProvider);
+        if (!isBatchSupportedProvider()) {
+            log.warn("Provider {} ne supporte pas les opérations batch", this.activeProvider);
         }
     }
 
@@ -55,6 +57,11 @@ public class BatchService {
     public boolean cancelBatch(String batchId) {
         validateBatchingSupport();
         return getActiveProvider().cancelBatch(batchId);
+    }
+
+    private boolean isBatchSupportedProvider() {
+        return "openai".equalsIgnoreCase(this.activeProvider)
+                || "anthropic".equalsIgnoreCase(this.activeProvider);
     }
 
     private BatchProvider getActiveProvider() {
