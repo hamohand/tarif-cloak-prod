@@ -85,7 +85,7 @@ jobs:
         working-directory: frontend
     env:
       KEYCLOAK_EXTERNAL_URL: https://auth.example.com
-      KEYCLOAK_REALM: hscode-realm
+      KEYCLOAK_REALM: tci-realm
       KEYCLOAK_FRONTEND_CLIENT: frontend-client
       API_URL: /api
       MARKET_VERSION: DZ

@@ -3,10 +3,12 @@
 # Orchestration unique : docker compose up -d --build
 # Configuration : copier .env.example vers .env
 #
+# Services inclus par défaut : PostgreSQL (app & keycloak), Keycloak,
+# RabbitMQ, Redis, Backend, Search-service, Frontend.
+#
 # Profils optionnels :
-#   --profile keycloak : déploie Keycloak + sa BDD dans cette pile
-#   --profile mailpit  : capture locale des emails sur 127.0.0.1:8025
-#   --profile proxy    : déploie Traefik si aucun reverse-proxy n'est actif
+#   --profile mailpit : capture locale des emails sur 127.0.0.1:8025
+#   --profile proxy   : déploie Traefik si aucun reverse-proxy n'est actif
 # ===============================================================
 
 name: tci
@@ -75,6 +77,83 @@ services:
       - internal
 
   # ===============================================================
+  # BASE DE DONNÉES KEYCLOAK (PostgreSQL 16)
+  # ===============================================================
+  keycloak-db:
+    image: "postgres:${POSTGRES_IMAGE_TAG:-16}"
+    container_name: "${PROJECT_NAME:-tci}-keycloak-db"
+    environment:
+      POSTGRES_DB: "${KEYCLOAK_DB:-keycloak}"
+      POSTGRES_USER: "${KEYCLOAK_DB_USER:-keycloak}"
+      POSTGRES_PASSWORD: "${KEYCLOAK_DB_PASSWORD:?KEYCLOAK_DB_PASSWORD doit être défini dans .env}"
+    volumes:
+      - keycloak-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-h", "localhost", "-U", "${KEYCLOAK_DB_USER:-keycloak}", "-d", "${KEYCLOAK_DB:-keycloak}" ]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+    restart: unless-stopped
+    networks:
+      - internal
+
+  # ===============================================================
+  # KEYCLOAK — Authentification dédiée (auth.tarif...)
+  # ===============================================================
+  keycloak:
+    image: "quay.io/keycloak/keycloak:${KEYCLOAK_IMAGE_TAG:-22.0.1}"
+    container_name: "${PROJECT_NAME:-tci}-keycloak"
+    init: true
+    depends_on:
+      keycloak-db:
+        condition: service_healthy
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: "jdbc:postgresql://keycloak-db:5432/${KEYCLOAK_DB:-keycloak}"
+      KC_DB_USERNAME: "${KEYCLOAK_DB_USER:-keycloak}"
+      KC_DB_PASSWORD: "${KEYCLOAK_DB_PASSWORD}"
+      KEYCLOAK_ADMIN: "${KEYCLOAK_ADMIN_USER:-admin}"
+      KEYCLOAK_ADMIN_PASSWORD: "${KEYCLOAK_ADMIN_PASSWORD:?KEYCLOAK_ADMIN_PASSWORD doit être défini dans .env}"
+      KC_PROXY: "edge"
+      KC_HOSTNAME: "${KEYCLOAK_DOMAIN:-auth.tarif.enclume-numerique.com}"
+      KC_HOSTNAME_STRICT_BACKCHANNEL: "false"
+      KC_HTTP_ENABLED: "true"
+      KC_HEALTH_ENABLED: "true"
+      KC_THEME_STATIC_MAX_AGE: "2592000"
+      KC_THEME_CACHE_THEMES: "true"
+      KC_THEME_CACHE_TEMPLATES: "true"
+    volumes:
+      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+      - ./keycloak/themes:/opt/keycloak/themes:ro
+    command: [ "start", "--import-realm" ]
+    healthcheck:
+      test: [ "CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080'" ]
+      interval: 10s
+      timeout: 5s
+      retries: 24
+      start_period: 30s
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: "${TRAEFIK_NETWORK:-webproxy}"
+      "traefik.http.middlewares.tci-keycloak-cors.headers.accessControlAllowMethods": "GET,POST,PUT,DELETE,OPTIONS,PATCH"
+      "traefik.http.middlewares.tci-keycloak-cors.headers.accessControlAllowOriginList": "https://${FRONTEND_DOMAIN},https://${WWW_FRONTEND_DOMAIN:-www.${FRONTEND_DOMAIN}}"
+      "traefik.http.middlewares.tci-keycloak-cors.headers.accessControlAllowHeaders": "*"
+      "traefik.http.middlewares.tci-keycloak-cors.headers.accessControlAllowCredentials": "true"
+      "traefik.http.middlewares.tci-keycloak-cors.headers.accessControlMaxAge": "3600"
+      "traefik.http.middlewares.tci-keycloak-cors.headers.addVaryHeader": "true"
+      "traefik.http.middlewares.tci-keycloak-cors.headers.customResponseHeaders.Content-Security-Policy": "frame-ancestors 'self' https://${FRONTEND_DOMAIN} https://${WWW_FRONTEND_DOMAIN:-www.${FRONTEND_DOMAIN}}"
+      "traefik.http.routers.tci-keycloak.rule": "Host(`${KEYCLOAK_DOMAIN:-auth.tarif.enclume-numerique.com}`)"
+      "traefik.http.routers.tci-keycloak.entrypoints": "websecure"
+      "traefik.http.routers.tci-keycloak.tls.certresolver": "${TRAEFIK_CERT_RESOLVER:-myresolver}"
+      "traefik.http.routers.tci-keycloak.middlewares": "tci-keycloak-cors"
+      "traefik.http.routers.tci-keycloak.service": "tci-keycloak-svc"
+      "traefik.http.services.tci-keycloak-svc.loadbalancer.server.port": "8080"
+    restart: unless-stopped
+    networks:
+      - internal
+      - webproxy
+
+  # ===============================================================
   # BACKEND — API Spring Boot 3.5 / Java 21
   # ===============================================================
   backend:
@@ -84,6 +163,8 @@ services:
     container_name: "${PROJECT_NAME:-tci}-backend"
     depends_on:
       app-db:
+        condition: service_healthy
+      keycloak:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
@@ -96,12 +177,12 @@ services:
       POSTGRES_DB: "${POSTGRES_DB:-tci_db}"
       POSTGRES_USER: "${POSTGRES_USER}"
       POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
-      # Keycloak (externe existant par défaut, ou conteneur interne si --profile keycloak)
-      KEYCLOAK_REALM: "${KEYCLOAK_REALM:-hscode-realm}"
+      # Keycloak (conteneur dédié par défaut sur http://keycloak:8080)
+      KEYCLOAK_REALM: "${KEYCLOAK_REALM:-tci-realm}"
       KEYCLOAK_BACKEND_CLIENT: "${KEYCLOAK_BACKEND_CLIENT:-backend-client}"
       KEYCLOAK_BACKEND_CLIENT_SECRET: "${KEYCLOAK_BACKEND_CLIENT_SECRET:?KEYCLOAK_BACKEND_CLIENT_SECRET doit être défini dans .env}"
-      KEYCLOAK_EXTERNAL_URL: "${KEYCLOAK_EXTERNAL_URL:?KEYCLOAK_EXTERNAL_URL doit être défini dans .env}"
-      KEYCLOAK_INTERNAL_URL: "${KEYCLOAK_INTERNAL_URL:-${KEYCLOAK_EXTERNAL_URL}}"
+      KEYCLOAK_EXTERNAL_URL: "${KEYCLOAK_EXTERNAL_URL:-https://${KEYCLOAK_DOMAIN:-auth.tarif.enclume-numerique.com}}"
+      KEYCLOAK_INTERNAL_URL: "${KEYCLOAK_INTERNAL_URL:-http://keycloak:8080}"
       # IA
       OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
       ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:-}"
@@ -191,8 +272,8 @@ services:
       REDIS_HOST: "redis"
       REDIS_PORT: "6379"
       BACKEND_URL: "http://backend:8081"
-      KEYCLOAK_ISSUER_URI: "${KEYCLOAK_EXTERNAL_URL}/realms/${KEYCLOAK_REALM:-hscode-realm}"
-      KEYCLOAK_JWK_SET_URI: "${KEYCLOAK_INTERNAL_URL:-${KEYCLOAK_EXTERNAL_URL}}/realms/${KEYCLOAK_REALM:-hscode-realm}/protocol/openid-connect/certs"
+      KEYCLOAK_ISSUER_URI: "${KEYCLOAK_EXTERNAL_URL:-https://${KEYCLOAK_DOMAIN:-auth.tarif.enclume-numerique.com}}/realms/${KEYCLOAK_REALM:-tci-realm}"
+      KEYCLOAK_JWK_SET_URI: "${KEYCLOAK_INTERNAL_URL:-http://keycloak:8080}/realms/${KEYCLOAK_REALM:-tci-realm}/protocol/openid-connect/certs"
       CORS_ALLOWED_ORIGINS: "${CORS_ALLOWED_ORIGINS:-https://${FRONTEND_DOMAIN}}"
       OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
       ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:-}"
@@ -234,8 +315,8 @@ services:
     build:
       context: ./frontend
       args:
-        KEYCLOAK_EXTERNAL_URL: "${KEYCLOAK_EXTERNAL_URL}"
-        KEYCLOAK_REALM: "${KEYCLOAK_REALM:-hscode-realm}"
+        KEYCLOAK_EXTERNAL_URL: "${KEYCLOAK_EXTERNAL_URL:-https://${KEYCLOAK_DOMAIN:-auth.tarif.enclume-numerique.com}}"
+        KEYCLOAK_REALM: "${KEYCLOAK_REALM:-tci-realm}"
         KEYCLOAK_FRONTEND_CLIENT: "${KEYCLOAK_FRONTEND_CLIENT:-frontend-client}"
         API_URL: "/api"
         MARKET_VERSION: "${MARKET_VERSION:-DZ}"
@@ -263,60 +344,6 @@ services:
   # ===============================================================
   # SERVICES OPTIONNELS (activés uniquement via --profile)
   # ===============================================================
-
-  keycloak-db:
-    profiles: [ "keycloak" ]
-    image: "postgres:${POSTGRES_IMAGE_TAG:-16}"
-    container_name: "${PROJECT_NAME:-tci}-keycloak-db"
-    environment:
-      POSTGRES_DB: "${KEYCLOAK_DB:-keycloak}"
-      POSTGRES_USER: "${KEYCLOAK_DB_USER:-keycloak}"
-      POSTGRES_PASSWORD: "${KEYCLOAK_DB_PASSWORD:-keycloak}"
-    volumes:
-      - keycloak-data:/var/lib/postgresql/data
-    healthcheck:
-      test: [ "CMD", "pg_isready", "-h", "localhost", "-U", "${KEYCLOAK_DB_USER:-keycloak}", "-d", "${KEYCLOAK_DB:-keycloak}" ]
-      interval: 10s
-      timeout: 10s
-      retries: 10
-    restart: unless-stopped
-    networks:
-      - internal
-
-  keycloak:
-    profiles: [ "keycloak" ]
-    image: "quay.io/keycloak/keycloak:${KEYCLOAK_IMAGE_TAG:-22.0.1}"
-    container_name: "${PROJECT_NAME:-tci}-keycloak"
-    depends_on:
-      keycloak-db:
-        condition: service_healthy
-    environment:
-      KC_DB: postgres
-      KC_DB_URL: "jdbc:postgresql://keycloak-db:5432/${KEYCLOAK_DB:-keycloak}"
-      KC_DB_USERNAME: "${KEYCLOAK_DB_USER:-keycloak}"
-      KC_DB_PASSWORD: "${KEYCLOAK_DB_PASSWORD:-keycloak}"
-      KEYCLOAK_ADMIN: "${KEYCLOAK_ADMIN_USER:-admin}"
-      KEYCLOAK_ADMIN_PASSWORD: "${KEYCLOAK_ADMIN_PASSWORD:-change_me}"
-      KC_PROXY: "edge"
-      KC_HOSTNAME: "${KEYCLOAK_DOMAIN:-auth.localhost}"
-      KC_HTTP_ENABLED: "true"
-      KC_HEALTH_ENABLED: "true"
-    volumes:
-      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
-      - ./keycloak/themes:/opt/keycloak/themes
-    command: [ "start", "--import-realm" ]
-    labels:
-      traefik.enable: "true"
-      traefik.docker.network: "${TRAEFIK_NETWORK:-webproxy}"
-      "traefik.http.routers.tci-keycloak.rule": "Host(`${KEYCLOAK_DOMAIN:-auth.localhost}`)"
-      "traefik.http.routers.tci-keycloak.entrypoints": "websecure"
-      "traefik.http.routers.tci-keycloak.tls.certresolver": "${TRAEFIK_CERT_RESOLVER:-myresolver}"
-      "traefik.http.routers.tci-keycloak.service": "tci-keycloak-svc"
-      "traefik.http.services.tci-keycloak-svc.loadbalancer.server.port": "8080"
-    restart: unless-stopped
-    networks:
-      - internal
-      - webproxy
 
   mailpit:
     profiles: [ "mailpit" ]
