@@ -1,5 +1,5 @@
 {
-  "realm": "hscode-realm",
+  "realm": "tci-realm",
   "displayName": "",
   "displayNameHtml": "",
   "notBefore": 0,
@@ -55,7 +55,7 @@
         "attributes": {}
       },
       {
-        "name": "default-roles-tarif-secur-realm",
+        "name": "default-roles-tci-realm",
         "description": "${role_default-roles}",
         "composite": true,
         "composites": {
@@ -80,6 +80,34 @@
         "composite": false,
         "clientRole": false,
         "containerId": "62881d26-93ca-413c-aca9-a3ff8487ca0a",
+        "attributes": {}
+      },
+      {
+        "name": "ADMIN",
+        "description": "Administrateur TCI",
+        "composite": false,
+        "clientRole": false,
+        "attributes": {}
+      },
+      {
+        "name": "USER",
+        "description": "Utilisateur standard TCI",
+        "composite": false,
+        "clientRole": false,
+        "attributes": {}
+      },
+      {
+        "name": "ORGANIZATION",
+        "description": "Compte organisation TCI",
+        "composite": false,
+        "clientRole": false,
+        "attributes": {}
+      },
+      {
+        "name": "COLLABORATOR",
+        "description": "Collaborateur d'organisation TCI",
+        "composite": false,
+        "clientRole": false,
         "attributes": {}
       }
     ],
@@ -409,7 +437,7 @@
     }
   ],
   "defaultRole": {
-    "name": "default-roles-tarif-secur-realm",
+    "name": "default-roles-tci-realm",
     "description": "${role_default-roles}",
     "composite": true,
     "clientRole": false,
@@ -456,17 +484,6 @@
   "webAuthnPolicyPasswordlessAcceptableAaguids": [],
   "users": [
     {
-      "username": "moh",
-      "enabled": true,
-      "email": "hamohand@gmail.com",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "mohmoh00"
-        }
-      ]
-    },
-    {
       "createdTimestamp": 1760410149717,
       "username": "service-account-backend-client",
       "enabled": true,
@@ -476,13 +493,15 @@
       "disableableCredentialTypes": [],
       "requiredActions": [],
       "realmRoles": [
-        "default-roles-tarif-secur-realm"
+        "default-roles-tci-realm"
       ],
       "clientRoles": {
         "realm-management": [
           "manage-realm",
           "manage-users",
-          "view-users"
+          "view-users",
+          "view-realm",
+          "realm-admin"
         ],
         "backend-client": [
           "uma_protection"
@@ -516,13 +535,13 @@
       "clientId": "account",
       "name": "${client_account}",
       "rootUrl": "${authBaseUrl}",
-      "baseUrl": "/realms/tarif-secur-realm/account/",
+      "baseUrl": "/realms/tci-realm/account/",
       "surrogateAuthRequired": false,
       "enabled": true,
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
       "redirectUris": [
-        "/realms/tarif-secur-realm/account/*"
+        "/realms/tci-realm/account/*"
       ],
       "webOrigins": [],
       "notBefore": 0,
@@ -559,13 +578,13 @@
       "clientId": "account-console",
       "name": "${client_account-console}",
       "rootUrl": "${authBaseUrl}",
-      "baseUrl": "/realms/tarif-secur-realm/account/",
+      "baseUrl": "/realms/tci-realm/account/",
       "surrogateAuthRequired": false,
       "enabled": true,
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
       "redirectUris": [
-        "/realms/tarif-secur-realm/account/*"
+        "/realms/tci-realm/account/*"
       ],
       "webOrigins": [],
       "notBefore": 0,
@@ -788,16 +807,15 @@
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
       "redirectUris": [
-        "https://hscode.enclume-numerique.com/*",
-        "https://www.hscode.enclume-numerique.com/*",
-        "http://localhost:4200/*",
-        "https://tarif.enclume-numerique.com/*"
+        "https://tarif.enclume-numerique.com/*",
+        "https://www.tarif.enclume-numerique.com/*",
+        "http://localhost:4200/*"
       ],
       "webOrigins": [
-        "https://hscode.enclume-numerique.com",
-        "https://www.hscode.enclume-numerique.com",
-        "http://localhost:4200",
-        "https://tarif.enclume-numerique.com"
+        "+",
+        "https://tarif.enclume-numerique.com",
+        "https://www.tarif.enclume-numerique.com",
+        "http://localhost:4200"
       ],
       "notBefore": 0,
       "bearerOnly": false,
@@ -815,7 +833,7 @@
         "oauth2.device.authorization.grant.enabled": "false",
         "backchannel.logout.session.required": "true",
         "backchannel.logout.revoke.offline.tokens": "false",
-        "post.logout.redirect.uris": "https://hscode.enclume-numerique.com/*,https://www.hscode.enclume-numerique.com/*"
+        "post.logout.redirect.uris": "+"
       },
       "authenticationFlowBindingOverrides": {},
       "fullScopeAllowed": true,
@@ -832,6 +850,36 @@
         "phone",
         "offline_access",
         "microprofile-jwt"
+      ],
+      "protocolMappers": [
+        {
+          "name": "organization_email",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "organization_email",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "organization_email",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "account_type",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "account_type",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "account_type",
+            "jsonType.label": "String"
+          }
+        }
       ]
     },
     {
@@ -875,13 +923,13 @@
       "clientId": "security-admin-console",
       "name": "${client_security-admin-console}",
       "rootUrl": "${authAdminUrl}",
-      "baseUrl": "/admin/tarif-secur-realm/console/",
+      "baseUrl": "/admin/tci-realm/console/",
       "surrogateAuthRequired": false,
       "enabled": true,
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
       "redirectUris": [
-        "/admin/tarif-secur-realm/console/*"
+        "/admin/tci-realm/console/*"
       ],
       "webOrigins": [
         "+"
