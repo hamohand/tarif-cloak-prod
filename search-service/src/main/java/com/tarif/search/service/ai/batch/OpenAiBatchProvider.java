@@ -3,6 +3,7 @@ package com.tarif.search.service.ai.batch;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tarif.search.service.ai.AiPrompts;
+import com.tarif.search.service.ai.OpenAiService;
 import com.tarif.search.service.ai.batch.models.BatchResult;
 import com.tarif.search.service.ai.batch.models.BatchStatus;
 import com.tarif.search.service.ai.batch.models.SearchRequest;
@@ -288,8 +289,12 @@ public class OpenAiBatchProvider implements BatchProvider {
                 Map.of("role", "system", "content", AiPrompts.getSystemMessage(true, null)),
                 Map.of("role", "user", "content", prompt)
             ));
-            body.put("max_tokens", maxTokens);
-            body.put("temperature", temperature);
+            if (OpenAiService.isReasoningModel(model)) {
+                body.put("max_completion_tokens", maxTokens);
+            } else {
+                body.put("max_tokens", maxTokens);
+                body.put("temperature", temperature);
+            }
 
             batchRequest.put("body", body);
 
