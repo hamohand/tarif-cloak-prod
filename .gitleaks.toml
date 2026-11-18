@@ -1,0 +1,10 @@
+title = "Configuration Gitleaks TCI"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Valeurs locales de démonstration sans clé privée dans .env.example"
+paths = [
+  '''^\.env\.example$'''
+]

@@ -48,7 +48,7 @@ public class OllamaService implements AiProvider {
             AiPrompts aiPrompts,
             RestTemplate restTemplate,
             @Value("${ai.ollama.base-url:http://localhost:11434}") String baseUrl,
-            @Value("${ai.ollama.model:qwen2.5:14b}") String model,
+            @Value("${ai.ollama.model:qwen2.5:7b}") String model,
             @Value("${ai.ollama.num-ctx:16384}") int numCtx,
             @Value("${ai.ollama.keep-alive:24h}") String keepAlive,
             @Value("${ai.ollama.json-mode:true}") boolean jsonMode) {

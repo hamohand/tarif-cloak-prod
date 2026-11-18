@@ -27,7 +27,7 @@
   "oauth2DeviceCodeLifespan": 600,
   "oauth2DevicePollingInterval": 5,
   "enabled": true,
-  "sslRequired": "external",
+  "sslRequired": "none",
   "registrationAllowed": true,
   "registrationEmailAsUsername": false,
   "rememberMe": true,
@@ -788,15 +788,24 @@
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
       "redirectUris": [
+        "http://localhost:8088/*",
+        "http://localhost/*",
+        "http://localhost:4200/*",
+        "http://127.0.0.1:8088/*",
+        "http://127.0.0.1/*",
         "https://hscode.enclume-numerique.com/*",
         "https://www.hscode.enclume-numerique.com/*",
-        "http://localhost:4200/*",
         "https://tarif.enclume-numerique.com/*"
       ],
       "webOrigins": [
+        "+",
+        "http://localhost:8088",
+        "http://localhost",
+        "http://localhost:4200",
+        "http://127.0.0.1:8088",
+        "http://127.0.0.1",
         "https://hscode.enclume-numerique.com",
         "https://www.hscode.enclume-numerique.com",
-        "http://localhost:4200",
         "https://tarif.enclume-numerique.com"
       ],
       "notBefore": 0,
@@ -815,7 +824,7 @@
         "oauth2.device.authorization.grant.enabled": "false",
         "backchannel.logout.session.required": "true",
         "backchannel.logout.revoke.offline.tokens": "false",
-        "post.logout.redirect.uris": "https://hscode.enclume-numerique.com/*,https://www.hscode.enclume-numerique.com/*"
+        "post.logout.redirect.uris": "+"
       },
       "authenticationFlowBindingOverrides": {},
       "fullScopeAllowed": true,

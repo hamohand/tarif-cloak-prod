@@ -33,14 +33,12 @@ jobs:
       POSTGRES_USER: ci-dummy
       POSTGRES_PASSWORD: ci-dummy
       RABBITMQ_PASSWORD: ci-dummy
-      KEYCLOAK_EXTERNAL_URL: https://auth.example.com
+      KEYCLOAK_EXTERNAL_URL: http://localhost:8085
       KEYCLOAK_BACKEND_CLIENT_SECRET: ci-dummy
       KEYCLOAK_ADMIN_PASSWORD: ci-dummy
       KEYCLOAK_DB_PASSWORD: ci-dummy
-      FRONTEND_DOMAIN: app.example.com
-      KEYCLOAK_DOMAIN: auth.example.com
+      FRONTEND_URL: http://localhost:8088
       LICENSE_PUBLIC_KEY: ci-dummy
-      CF_DNS_API_TOKEN: ci-dummy
       ORG_PASSWORD: ci-dummy
     steps:
       - uses: actions/checkout@v4
