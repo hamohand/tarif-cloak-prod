@@ -50,5 +50,9 @@ RUN chmod -R 755 /usr/share/nginx/html
 # Copier notre configuration de proxy Nginx personnalisée
 COPY ${NGINX_CONF} /etc/nginx/conf.d/default.conf
 
+# Générer /edition.json dynamiquement à chaque démarrage du conteneur selon APP_EDITION
+RUN printf '%s\n' '#!/bin/sh' 'printf "{\"edition\":\"%s\"}\n" "${APP_EDITION:-saas-conference}" > /usr/share/nginx/html/edition.json' > /docker-entrypoint.d/40-edition.sh \
+    && chmod +x /docker-entrypoint.d/40-edition.sh
+
 # Exposer le port 80 du conteneur
 EXPOSE 80
