@@ -293,7 +293,7 @@ services:
       GUEST_TRIAL_GLOBAL_DAILY_LIMIT: "${GUEST_TRIAL_GLOBAL_DAILY_LIMIT:-300}"
       JAVA_TOOL_OPTIONS: "${SEARCH_JAVA_OPTS:--Xms128m -Xmx512m}"
     healthcheck:
-      test: [ "CMD", "wget", "-q", "--spider", "http://localhost:8082/actuator/health" ]
+      test: [ "CMD", "wget", "-q", "--spider", "http://127.0.0.1:8082/actuator/health" ]
       interval: 30s
       timeout: 10s
       retries: 3

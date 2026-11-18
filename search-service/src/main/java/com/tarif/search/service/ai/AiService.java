@@ -29,8 +29,10 @@ public class AiService {
         this.openAiService = openAiService;
         this.anthropicService = anthropicService;
         this.ollamaService = ollamaService;
-        this.activeProvider = activeProvider;
-        log.info("AiService initialisé avec le provider: {}", activeProvider);
+        this.activeProvider = (activeProvider != null && !activeProvider.isBlank())
+                ? activeProvider.trim()
+                : "openai";
+        log.info("AiService initialisé avec le provider: {}", this.activeProvider);
     }
 
     /**

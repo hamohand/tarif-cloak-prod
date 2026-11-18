@@ -26,6 +26,9 @@ public class TariffPosition {
     @Column(nullable = false, length = 16)
     private String code = "";
 
+    @Column(name = "chapter_code", nullable = false, length = 4)
+    private String chapterCode = "";
+
     @Column(name = "pos4_code", nullable = false, length = 4)
     private String pos4Code = "";
 
@@ -43,4 +46,28 @@ public class TariffPosition {
 
     @Column(name = "row_order", nullable = false)
     private Integer rowOrder = 0;
+
+    public TariffPosition(
+            Long id,
+            String zoneCode,
+            String code,
+            String pos4Code,
+            String hs6Code,
+            String description,
+            Integer dashLevel,
+            Boolean isTitle,
+            Integer rowOrder) {
+        this(
+                id,
+                zoneCode,
+                code,
+                (pos4Code != null && pos4Code.length() >= 2) ? pos4Code.substring(0, 2) : "",
+                pos4Code,
+                hs6Code,
+                description,
+                dashLevel,
+                isTitle,
+                rowOrder
+        );
+    }
 }
