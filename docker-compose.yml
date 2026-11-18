@@ -370,6 +370,8 @@ services:
         APP_EDITION: "${APP_EDITION:-dz-localization}"
         NGINX_CONF: nginx.conf
     container_name: "${PROJECT_NAME:-box}-frontend"
+    environment:
+      APP_EDITION: "${APP_EDITION:-dz-localization}"
     depends_on:
       - backend
     labels:

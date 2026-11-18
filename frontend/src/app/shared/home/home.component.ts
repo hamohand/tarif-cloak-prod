@@ -5,6 +5,7 @@ import { combineLatest, of } from 'rxjs';
 import { catchError, distinctUntilChanged, map, switchMap } from 'rxjs/operators';
 import { AuthService } from '../../core/services/auth.service';
 import { OrganizationAccountService } from '../../core/services/organization-account.service';
+import { EditionService } from '../../core/services/edition.service';
 import { SearchStateService, TariffZone } from '../../tarif/services/search-state.service';
 import { environment } from '../../../environments/environment';
 
@@ -176,7 +177,7 @@ import { environment } from '../../../environments/environment';
       <footer class="home-footer">
         <p>Développement d'applications pour les entreprises — Auto-entreprise Hamroun<br>
         Contact : mohhamroun&#64;gmail.com · WhatsApp : +213 5 60 96 80 66</p>
-        <span class="edition-tag">TCI · {{ appEdition }}</span>
+        <span class="edition-tag">TCI · {{ appEdition() }}</span>
       </footer>
     </div>
   `,
@@ -558,7 +559,7 @@ export class HomeComponent {
   private router = inject(Router);
 
   isBetaMode = environment.betaMode === true;
-  appEdition = environment.appEdition || 'dz-localization';
+  appEdition = inject(EditionService).edition;
 
   isAuthenticated$ = this.authService.isAuthenticated();
   isOrganizationAccount$ = this.authService.isOrganizationAccount();
