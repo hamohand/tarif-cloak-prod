@@ -9,6 +9,7 @@ import { MarketProfileService } from '../../../core/services/market-profile.serv
 import { OrganizationAccountService, OrganizationInfo } from '../../../core/services/organization-account.service';
 import { PaymentService } from '../../../core/services/payment.service';
 import { UserService } from '../../../core/services/user.service';
+import { EditionService } from '../../../core/services/edition.service';
 import { environment } from '../../../../environments/environment';
 import { AsyncPipe, CommonModule } from '@angular/common';
 import { take, map, catchError, switchMap } from 'rxjs/operators';
@@ -148,7 +149,7 @@ import { of } from 'rxjs';
             <p>📱 <a href="https://wa.me/33622563841" target="_blank">WhatsApp : +213 5 60 96 80 66</a></p>
           </div>
           <p style="margin: 0.85rem 0 0; padding-top: 0.65rem; border-top: 1px solid rgba(255,255,255,0.08); font-family: var(--font-mono, monospace); font-size: 0.72rem; color: #64748B;">
-            Édition : {{ appEdition }}
+            Édition : {{ appEdition() }}
           </p>
         </div>
       </div>
@@ -889,7 +890,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
   }
 
   isBetaMode = environment.betaMode === true; // Pour basculer facilement plus tard
-  appEdition = environment.appEdition || 'saas-dz-ue';
+  appEdition = inject(EditionService).edition;
 
   orgPricingPlanId: number | null = null;
 

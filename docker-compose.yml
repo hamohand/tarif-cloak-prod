@@ -242,6 +242,8 @@ services:
         BETA_MODE: "${BETA_MODE:-false}"
         APP_EDITION: "${APP_EDITION:-saas-dz-ue}"
         NGINX_CONF: nginx.conf
+    environment:
+      APP_EDITION: "${APP_EDITION:-saas-dz-ue}"
     depends_on:
       - backend
     labels:
