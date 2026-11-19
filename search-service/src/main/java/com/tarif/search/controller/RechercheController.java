@@ -169,9 +169,12 @@ public class RechercheController {
             int tokens = usageInfo != null ? usageInfo.getTokens() : 0;
             String effectiveUserId = userId != null ? userId : "guest:" + clientIp;
             Long organizationId = (userId != null && quotaCheck != null) ? quotaCheck.getOrganizationId() : null;
-            Double cost = userId != null
-                    ? determineCost(quotaCheck, usageInfo)
-                    : (usageInfo != null ? usageInfo.getCostUsd() : 0.0);
+            Double cost;
+            if (userId != null) {
+                cost = determineCost(quotaCheck, usageInfo);
+            } else {
+                cost = usageInfo != null ? usageInfo.getCostUsd() : 0.0;
+            }
 
             eventPublisher.publishSearchCompleted(
                     effectiveUserId,

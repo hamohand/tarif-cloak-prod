@@ -31,6 +31,7 @@ public class AnthropicService implements AiProvider {
     private final double priceInputPerMillion;
     private final double priceOutputPerMillion;
     private final float temperature = 0.1F;
+    private volatile boolean fastModelDisabled = false;
 
     private static final ThreadLocal<UsageInfo> currentUsage = new ThreadLocal<>();
 
@@ -80,8 +81,10 @@ public class AnthropicService implements AiProvider {
         }
 
         boolean useFastModel = allowFastModel
+                && !fastModelDisabled
                 && ("SECTIONS".equals(niveau) || "CHAPITRES".equals(niveau))
-                && fastModel != null && !fastModel.isBlank();
+                && fastModel != null && !fastModel.isBlank()
+                && !fastModel.equals(model);
         String effectiveModel = useFastModel ? fastModel : model;
 
         HttpHeaders httpHeaders = new HttpHeaders();
@@ -158,12 +161,32 @@ public class AnthropicService implements AiProvider {
             return "";
 
         } catch (org.springframework.web.client.HttpClientErrorException e) {
+            if (useFastModel && isModelNotFoundError(e)) {
+                fastModelDisabled = true;
+                log.warn("Modèle rapide '{}' indisponible (404/déprécié) — désactivation automatique et repli immédiat sur '{}'",
+                        fastModel, model);
+                return demanderAiAide(titre, question, withJustification, niveau, false);
+            }
             log.error("Erreur HTTP API Anthropic - Status: {}, Body: {}", e.getStatusCode(), e.getResponseBodyAsString());
             throw new AiProviderException("Erreur HTTP Anthropic: " + e.getStatusCode(), e);
         } catch (Exception e) {
+            if (useFastModel && isModelNotFoundError(e)) {
+                fastModelDisabled = true;
+                log.warn("Modèle rapide '{}' indisponible (404/déprécié) — désactivation automatique et repli immédiat sur '{}'",
+                        fastModel, model);
+                return demanderAiAide(titre, question, withJustification, niveau, false);
+            }
             log.error("Erreur lors de la requête à l'API Anthropic: {}", e.getMessage(), e);
             throw new AiProviderException("Erreur Anthropic: " + e.getMessage(), e);
         }
+    }
+
+    private static boolean isModelNotFoundError(Exception e) {
+        if (e instanceof org.springframework.web.client.HttpClientErrorException.NotFound) {
+            return true;
+        }
+        String msg = e.getMessage();
+        return msg != null && (msg.contains("model_not_found") || msg.contains("deprecated"));
     }
 
     @Override

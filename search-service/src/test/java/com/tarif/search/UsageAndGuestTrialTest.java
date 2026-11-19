@@ -1,22 +1,44 @@
 package com.tarif.search;
 
+import com.tarif.search.client.BackendClient;
 import com.tarif.search.client.BackendFallback;
+import com.tarif.search.controller.RechercheController;
 import com.tarif.search.dto.QuotaCheckResponse;
+import com.tarif.search.event.SearchEventPublisher;
 import com.tarif.search.model.Position;
 import com.tarif.search.model.TariffPosition;
 import com.tarif.search.model.UsageInfo;
 import com.tarif.search.repository.TariffPositionRepository;
 import com.tarif.search.service.GuestTrialService;
+import com.tarif.search.service.SearchService;
 import com.tarif.search.service.TariffPositionService;
+import com.tarif.search.service.ai.AiPrompts;
+import com.tarif.search.service.ai.AiService;
+import com.tarif.search.service.ai.OpenAiService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestTemplate;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.*;
 
 class UsageAndGuestTrialTest {
 
@@ -122,5 +144,103 @@ class UsageAndGuestTrialTest {
         assertEquals("- - - Autres que de course :", context.get(2).getDescription());
         assertEquals("0101219100", context.get(3).getCode());
         assertEquals("- - - - De pur sang arabe", context.get(3).getDescription());
+    }
+
+    @Test
+    void authenticatedMonthlyPlanPublishesSearchEventWithNullCost() {
+        SearchService searchService = mock(SearchService.class);
+        AiService aiService = mock(AiService.class);
+        BackendClient backendClient = mock(BackendClient.class);
+        SearchEventPublisher eventPublisher = mock(SearchEventPublisher.class);
+        GuestTrialService guestTrialService = mock(GuestTrialService.class);
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        HttpServletResponse response = mock(HttpServletResponse.class);
+
+        Jwt jwt = Jwt.withTokenValue("test-jwt-token")
+                .header("alg", "none")
+                .subject("user-123")
+                .build();
+        SecurityContextHolder.getContext().setAuthentication(new JwtAuthenticationToken(jwt));
+
+        try {
+            QuotaCheckResponse quota = QuotaCheckResponse.builder()
+                    .canSearch(true)
+                    .quotaOk(true)
+                    .canUsePayPerRequest(false)
+                    .organizationId(42L)
+                    .currentUsage(1)
+                    .monthlyQuota(100)
+                    .build();
+            when(backendClient.checkQuota("Bearer test-jwt-token")).thenReturn(quota);
+            when(searchService.search("pommes", SearchService.SearchLevel.POSITIONS6, "DZ"))
+                    .thenReturn(List.of(new Position("080810", "Pommes")));
+            when(aiService.getCurrentUsage()).thenReturn(new UsageInfo(150, 0.01, 100, 50, 0.0005));
+
+            RechercheController controller = new RechercheController(
+                    searchService, aiService, backendClient, eventPublisher, guestTrialService);
+
+            List<Position> result = controller.reponsePositions6("pommes", "DZ", request, response);
+
+            assertEquals(1, result.size());
+            verify(eventPublisher, times(1)).publishSearchCompleted(
+                    eq("user-123"), eq(42L), eq("/recherche/positions6"), eq("pommes"), eq(150), isNull());
+            verify(aiService, times(1)).clearCurrentUsage();
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void openAiServiceDisablesDeprecatedFastModelOn404AndFallsBackImmediately() {
+        RestTemplate restTemplate = mock(RestTemplate.class);
+        AiPrompts aiPrompts = new AiPrompts();
+        OpenAiService openAiService = new OpenAiService(
+                aiPrompts, restTemplate, "sk-test", "https://api.openai.com/v1",
+                "gpt-4.1-mini", "gpt-4.1-nano",
+                0.01, 0.40, 1.60, 0.10, 0.40);
+
+        String successPayload = """
+                {
+                  "choices": [{"message": {"content": "{\\"items\\": [{\\"code\\": \\"08\\"}]}"}}],
+                  "usage": {"prompt_tokens": 50, "completion_tokens": 10, "total_tokens": 60}
+                }
+                """;
+
+        when(restTemplate.exchange(
+                eq("https://api.openai.com/v1/chat/completions"),
+                eq(HttpMethod.POST),
+                any(HttpEntity.class),
+                eq(String.class)))
+                .thenAnswer(invocation -> {
+                    HttpEntity<String> req = invocation.getArgument(2);
+                    String body = req.getBody();
+                    if (body != null && body.contains("\"gpt-4.1-nano\"")) {
+                        throw HttpClientErrorException.create(
+                                HttpStatus.NOT_FOUND,
+                                "Not Found",
+                                HttpHeaders.EMPTY,
+                                "{\"error\":{\"code\":\"model_not_found\"}}".getBytes(StandardCharsets.UTF_8),
+                                StandardCharsets.UTF_8);
+                    }
+                    return ResponseEntity.ok(successPayload);
+                });
+
+        try {
+            String first = openAiService.demanderAiAide("CHAPITRES", "Pommes", false, "CHAPITRES", true);
+            assertTrue(first.contains("08"));
+
+            String second = openAiService.demanderAiAide("CHAPITRES", "Pommes", false, "CHAPITRES", true);
+            assertTrue(second.contains("08"));
+
+            // Appel 1: fastModel 404 + repli mini ; Appel 2: mini direct (fastModel désactivé) -> 3 échanges HTTP
+            verify(restTemplate, times(3)).exchange(
+                    eq("https://api.openai.com/v1/chat/completions"),
+                    eq(HttpMethod.POST),
+                    any(HttpEntity.class),
+                    eq(String.class));
+        } finally {
+            openAiService.clearUsageInfo();
+        }
     }
 }

@@ -34,6 +34,7 @@ public class OpenAiService implements AiProvider {
     private final double fastPriceInputPerMillion;
     private final double fastPriceOutputPerMillion;
     private final float temperature = 0.0F;
+    private volatile boolean fastModelDisabled = false;
 
     private static final ThreadLocal<UsageInfo> currentUsage = new ThreadLocal<>();
 
@@ -44,7 +45,7 @@ public class OpenAiService implements AiProvider {
             @Value("${ai.openai.api-key:}") String apiKey,
             @Value("${ai.openai.base-url:https://api.openai.com/v1}") String baseUrl,
             @Value("${ai.openai.model:gpt-4.1-mini}") String model,
-            @Value("${ai.openai.fast-model:gpt-4.1-nano}") String fastModel,
+            @Value("${ai.openai.fast-model:}") String fastModel,
             @Value("${ai.base-request-price:0.01}") double baseRequestPrice,
             @Value("${ai.openai.price-input-per-million:0.40}") double priceInputPerMillion,
             @Value("${ai.openai.price-output-per-million:1.60}") double priceOutputPerMillion,
@@ -92,8 +93,10 @@ public class OpenAiService implements AiProvider {
         }
 
         boolean useFastModel = allowFastModel
+                && !fastModelDisabled
                 && ("SECTIONS".equals(niveau) || "CHAPITRES".equals(niveau))
-                && fastModel != null && !fastModel.isBlank();
+                && fastModel != null && !fastModel.isBlank()
+                && !fastModel.equals(model);
         String effectiveModel = useFastModel ? fastModel : model;
         double effectivePriceInput = useFastModel ? fastPriceInputPerMillion : priceInputPerMillion;
         double effectivePriceOutput = useFastModel ? fastPriceOutputPerMillion : priceOutputPerMillion;
@@ -172,9 +175,23 @@ public class OpenAiService implements AiProvider {
             return assistantMessage;
 
         } catch (Exception e) {
+            if (useFastModel && isModelNotFoundError(e)) {
+                fastModelDisabled = true;
+                log.warn("Modèle rapide '{}' indisponible (404/déprécié) — désactivation automatique et repli immédiat sur '{}'",
+                        fastModel, model);
+                return demanderAiAide(titre, question, withJustification, niveau, false);
+            }
             log.error("Erreur lors de la requête à l'API OpenAI: {}", e.getMessage());
             throw new AiProviderException("Erreur OpenAI: " + e.getMessage(), e);
         }
+    }
+
+    private static boolean isModelNotFoundError(Exception e) {
+        if (e instanceof org.springframework.web.client.HttpClientErrorException.NotFound) {
+            return true;
+        }
+        String msg = e.getMessage();
+        return msg != null && (msg.contains("model_not_found") || msg.contains("deprecated"));
     }
 
     /**
