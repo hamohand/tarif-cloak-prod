@@ -131,12 +131,40 @@ export class BatchSearchService {
 
   /**
    * Parse le contenu JSON d'un résultat de batch.
+   * Supporte aussi bien un tableau direct `[...]` qu'un objet `{"codes": [...]}`
+   * (avec ou sans blocs markdown).
    * @param content Le contenu JSON en string
    * @returns Les codes HS parsés ou null en cas d'erreur
    */
   parseResultContent(content: string): any[] | null {
     try {
-      return JSON.parse(content);
+      let cleaned = (content || '').trim();
+      if (cleaned.startsWith('```json')) {
+        cleaned = cleaned.slice(7);
+      } else if (cleaned.startsWith('```')) {
+        cleaned = cleaned.slice(3);
+      }
+      if (cleaned.endsWith('```')) {
+        cleaned = cleaned.slice(0, -3);
+      }
+      const parsed = JSON.parse(cleaned.trim());
+      if (Array.isArray(parsed)) {
+        return parsed;
+      }
+      if (parsed && typeof parsed === 'object') {
+        if (Array.isArray(parsed.codes)) {
+          return parsed.codes;
+        }
+        for (const val of Object.values(parsed)) {
+          if (Array.isArray(val)) {
+            return val;
+          }
+        }
+        if ('code' in parsed) {
+          return [parsed];
+        }
+      }
+      return null;
     } catch (e) {
       console.error('Erreur lors du parsing du contenu:', e);
       return null;

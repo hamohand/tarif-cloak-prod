@@ -197,13 +197,13 @@ Quand `BETA_MODE=true` :
 
 **Mode 1 — Recherche article unique (cascade niveau par niveau) :**
 - Endpoints : `GET /recherche/{niveau}?termeRecherche=...`
-- Niveaux : `sections` → `chapitres` → `positions4` → `positions6` → `positions10`
-- Chaque niveau appelle `AiService` → `OpenAiProvider` / `AnthropicProvider` / `OllamaProvider`
+- Niveaux : (`sections` →) `chapitres` → `positions4` → `positions6` → `positions10` (par défaut `DIRECT_CHAPTER_SEARCH=true` démarre directement à `chapitres`)
+- Chaque niveau appelle `AiService` → `OpenAiProvider` / `AnthropicProvider` / `OllamaProvider` (routage hybride : `OPENAI_FAST_MODEL=gpt-4.1-nano` sur les niveaux larges avec escalade vers `OPENAI_MODEL=gpt-4.1-mini` en cas de retry)
 - La justification n'est générée qu'au dernier niveau (`withJustification=true`)
 
 **Mode 2 — Recherche par liste :**
 - Route frontend : `/recherche/searchListLots`
-- Implémentation : le frontend boucle sur les endpoints unitaires du mode 1 en séquence
+- Implémentation : le frontend exécute les appels unitaires du mode 1 par paquets paramétrables (`LIST_BATCH_SIZE`, `LIST_BATCH_DELAY_SECONDS`)
 
 **Mode 3 — Recherche par lots asynchrone (Batch API) :**
 - `POST /batch-search/submit` — soumettre un lot (max 1 000 items)
@@ -297,7 +297,13 @@ Définies dans `.env` (uniquement sur VPS, ne jamais commiter) :
 ```
 AI_PROVIDER=openai|anthropic|ollama
 OPENAI_API_KEY=...
+OPENAI_MODEL=gpt-4.1-mini
+OPENAI_FAST_MODEL=gpt-4.1-nano
 ANTHROPIC_API_KEY=...
+ANTHROPIC_MODEL=claude-haiku-4-5-20251001
+DIRECT_CHAPTER_SEARCH=true
+LIST_BATCH_SIZE=5
+LIST_BATCH_DELAY_SECONDS=2
 MARKET_VERSION=DZ
 FRONTEND_DOMAIN=...
 WWW_FRONTEND_DOMAIN=...

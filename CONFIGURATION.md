@@ -164,17 +164,31 @@ AI_PROVIDER=OpenAi
 
 # OpenAI
 OPENAI_API_KEY=CHANGEZ_MOI
-OPENAI_MODEL=gpt-4.1-mini           # gpt-4.1-mini | gpt-4.1-nano | gpt-4o-mini
-OPENAI_PRICE_INPUT=0.40             # $ par million de tokens en entrée
-OPENAI_PRICE_OUTPUT=1.60            # $ par million de tokens en sortie
+OPENAI_MODEL=gpt-4.1-mini           # Modèle principal (POSITIONS4/6/10 et justifications)
+OPENAI_FAST_MODEL=gpt-4.1-nano      # Modèle rapide pour les niveaux larges (SECTIONS/CHAPITRES)
+OPENAI_PRICE_INPUT=0.40             # $ par million de tokens en entrée (modèle principal)
+OPENAI_PRICE_OUTPUT=1.60            # $ par million de tokens en sortie (modèle principal)
+OPENAI_FAST_PRICE_INPUT=0.10        # $ par million de tokens en entrée (modèle rapide)
+OPENAI_FAST_PRICE_OUTPUT=0.40       # $ par million de tokens en sortie (modèle rapide)
 
 # Anthropic (Claude)
 ANTHROPIC_API_KEY=CHANGEZ_MOI
-ANTHROPIC_MODEL=claude-3-sonnet-20240229
+ANTHROPIC_MODEL=claude-haiku-4-5-20251001
+ANTHROPIC_FAST_MODEL=claude-haiku-4-5-20251001
 
 # Ollama (optionnel, modèles locaux)
 OLLAMA_API_KEY=CHANGEZ_MOI
 OLLAMA_BASE_URL=http://host.docker.internal:11434
+
+# Optimisation cascade de recherche
+DIRECT_CHAPTER_SEARCH=true          # Saute l'appel IA SECTIONS pour démarrer directement aux chapitres
+```
+
+### Recherche par liste (Frontend — build-time)
+
+```env
+LIST_BATCH_SIZE=5                   # Nombre d'articles traités en parallèle par paquet (1 à 15)
+LIST_BATCH_DELAY_SECONDS=2          # Pause en secondes entre deux paquets (0 = sans pause)
 ```
 
 Coûts indicatifs pour référence :
@@ -417,11 +431,16 @@ SPRING_PROFILES_ACTIVE=prod
 # SERVICES IA
 # ===============================================================
 OPENAI_API_KEY=votre_cle_openai
-OPENAI_MODEL=gpt-4
+OPENAI_MODEL=gpt-4.1-mini
+OPENAI_FAST_MODEL=gpt-4.1-nano
 ANTHROPIC_API_KEY=votre_cle_anthropic
-ANTHROPIC_MODEL=claude-3-sonnet-20240229
+ANTHROPIC_MODEL=claude-haiku-4-5-20251001
+ANTHROPIC_FAST_MODEL=claude-haiku-4-5-20251001
 OLLAMA_API_KEY=votre_cle_ollama
 OLLAMA_BASE_URL=http://host.docker.internal:11434
+DIRECT_CHAPTER_SEARCH=true
+LIST_BATCH_SIZE=5
+LIST_BATCH_DELAY_SECONDS=2
 
 # ===============================================================
 # TARIFICATION

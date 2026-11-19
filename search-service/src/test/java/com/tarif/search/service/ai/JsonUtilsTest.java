@@ -141,4 +141,34 @@ class JsonUtilsTest {
         assertThat(positions.get(0).getCode()).isEqualTo("0808");
         assertThat(positions.get(0).getJustification()).isNull();
     }
+
+    @Test
+    @DisplayName("Objet JSON contenant le tableau 'codes' (format json_object) est converti correctement")
+    void conversionReponseIaToList_avecObjetCodes_doitExtraireTableau() throws JsonProcessingException {
+        String json = """
+                {
+                  "codes": [
+                    {"code": "0808 10", "justification": "Pommes fraîches"},
+                    {"code": "0808 30", "justification": "Poires"}
+                  ]
+                }
+                """;
+
+        List<Position> positions = JsonUtils.conversionReponseIaToList(json);
+
+        assertThat(positions).hasSize(2);
+        assertThat(positions.get(0).getCode()).isEqualTo("0808 10");
+        assertThat(positions.get(0).getJustification()).isEqualTo("Pommes fraîches");
+        assertThat(positions.get(1).getCode()).isEqualTo("0808 30");
+    }
+
+    @Test
+    @DisplayName("Objet JSON avec tableau 'codes' vide retourne une liste vide")
+    void conversionReponseIaToList_avecObjetCodesVide_doitRetournerListeVide() throws JsonProcessingException {
+        String json = "{\"codes\": []}";
+
+        List<Position> positions = JsonUtils.conversionReponseIaToList(json);
+
+        assertThat(positions).isEmpty();
+    }
 }

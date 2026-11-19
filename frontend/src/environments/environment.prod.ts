@@ -9,5 +9,7 @@ export const environment: Environment = {
     redirectUri: window.location.origin + '/'
   },
   apiUrl: '/api',
-  marketVersion: 'DZ' // DEFAULT, DZ, etc. - Configuré pour la version DZ
+  marketVersion: 'DZ', // DEFAULT, DZ, etc. - Configuré pour la version DZ
+  listBatchSize: 5,
+  listBatchDelaySeconds: 2
 } as Environment;

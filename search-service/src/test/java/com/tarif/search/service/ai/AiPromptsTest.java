@@ -121,6 +121,7 @@ class AiPromptsTest {
                 .doesNotContain("{instruction_details}")
                 .doesNotContain("{format_example}")
                 .doesNotContain("{json_keys}")
+                .doesNotContain("{numeric_rules}")
                 .doesNotContain("{examples}")
                 .doesNotContain("{level_context}");
 
@@ -128,7 +129,40 @@ class AiPromptsTest {
                 .doesNotContain("{instruction_details}")
                 .doesNotContain("{format_example}")
                 .doesNotContain("{json_keys}")
+                .doesNotContain("{numeric_rules}")
                 .doesNotContain("{examples}")
                 .doesNotContain("{level_context}");
+
+        assertThat(AiPrompts.getSystemMessage(false, "CHAPITRES"))
+                .doesNotContain("{instruction_details}")
+                .doesNotContain("{format_example}")
+                .doesNotContain("{json_keys}")
+                .doesNotContain("{numeric_rules}")
+                .doesNotContain("{examples}")
+                .doesNotContain("{level_context}");
+    }
+
+    @Test
+    @DisplayName("Le contexte RAG doit précéder le terme de recherche pour activer le Prompt Caching")
+    void buildUserPrompt_doitPlacer_codesDouaniersAvantTermePourPromptCaching() {
+        String prompt = AiPrompts.buildUserPrompt(RAG_POMMES, "pommes fraîches");
+
+        int finCodes = prompt.indexOf("</codes_douaniers>");
+        int debutTerme = prompt.indexOf("Produit recherché");
+        assertThat(finCodes).isGreaterThan(0);
+        assertThat(debutTerme).isGreaterThan(finCodes);
+    }
+
+    @Test
+    @DisplayName("Les niveaux larges sans justification allègent les règles numériques tout en gardant la Règle 3a")
+    void getSystemMessage_niveauxLargesSansJustification_doitAllegerReglesNumeriques() {
+        String msgChapitres = AiPrompts.getSystemMessage(false, "CHAPITRES");
+        String msgPositions4 = AiPrompts.getSystemMessage(false, "POSITIONS4");
+
+        assertThat(msgChapitres)
+                .doesNotContain("PARSER NUMÉRIQUE")
+                .contains("Discrimination sémantique")
+                .contains("FONCTION PRINCIPALE");
+        assertThat(msgPositions4).contains("PARSER NUMÉRIQUE");
     }
 }

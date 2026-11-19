@@ -6,7 +6,7 @@ import { SearchStateService, SearchResultItem } from '../services/search-state.s
 import { OAuthService } from 'angular-oauth2-oidc';
 import { ActivatedRoute } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
-import { catchError, map, retry } from 'rxjs/operators';
+import { catchError, map, retry, shareReplay } from 'rxjs/operators';
 
 interface GroupedP10 {
   code: string;
@@ -469,6 +469,8 @@ export class SearchComponent implements OnInit {
           return;
         }
 
+        const decodeCache = new Map<string, ReturnType<SearchService['decodeCode']>>();
+
         const decodeObservables = validResults.map((r: any) => {
           const aiCode = (r.code || '').replace(/\s/g, '');
           const justification: string | null = r.justification ?? null;
@@ -477,12 +479,20 @@ export class SearchComponent implements OnInit {
             ? aiCode.substring(0, 6)
             : aiCode;
 
-          const decode$ = this.endpoint === 'positions10'
-            ? this.searchService.decodeP10Code(codeToDecode, true)
-            : this.searchService.decodeCode(codeToDecode, true);
+          const cacheKey = `${this.endpoint}:${codeToDecode}`;
+          let decode$ = decodeCache.get(cacheKey);
+          if (!decode$) {
+            const request$ = this.endpoint === 'positions10'
+              ? this.searchService.decodeP10Code(codeToDecode, true)
+              : this.searchService.decodeCode(codeToDecode, true);
+            decode$ = request$.pipe(
+              retry(1),
+              shareReplay(1)
+            );
+            decodeCache.set(cacheKey, decode$);
+          }
 
           return decode$.pipe(
-            retry(1),
             catchError(() => of(null)),
             map(decoded => {
               if (!decoded || (!decoded.position4 && (!decoded.positions6 || decoded.positions6.length === 0))) {

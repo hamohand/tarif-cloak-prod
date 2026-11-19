@@ -10,6 +10,12 @@ const keycloakUrl = process.env.KEYCLOAK_EXTERNAL_URL || 'http://localhost:8080'
 const apiUrl = process.env.API_URL || '/api';
 const marketVersion = process.env.MARKET_VERSION || 'DEFAULT';
 const betaMode = process.env.BETA_MODE === 'true';
+const rawBatchSize = process.env.LIST_BATCH_SIZE;
+const parsedBatchSize = rawBatchSize !== undefined && rawBatchSize.trim() !== '' ? Number(rawBatchSize) : NaN;
+const listBatchSize = Number.isFinite(parsedBatchSize) && parsedBatchSize >= 1 ? Math.min(15, Math.floor(parsedBatchSize)) : 5;
+const rawDelay = process.env.LIST_BATCH_DELAY_SECONDS;
+const parsedDelay = rawDelay !== undefined && rawDelay.trim() !== '' ? Number(rawDelay) : NaN;
+const listBatchDelaySeconds = Number.isFinite(parsedDelay) && parsedDelay >= 0 ? parsedDelay : 2;
 
 // Affichage des valeurs pour debug
 console.log('📋 Variables de configuration :');
@@ -18,7 +24,9 @@ console.log(`   - KEYCLOAK_FRONTEND_CLIENT: ${keycloakClient}`);
 console.log(`   - KEYCLOAK_EXTERNAL_URL: ${keycloakUrl}`);
 console.log(`   - API_URL: ${apiUrl}`);
 console.log(`   - MARKET_VERSION: ${marketVersion}`);
-console.log(`   - BETA_MODE: ${betaMode}\n`);
+console.log(`   - BETA_MODE: ${betaMode}`);
+console.log(`   - LIST_BATCH_SIZE: ${listBatchSize}`);
+console.log(`   - LIST_BATCH_DELAY_SECONDS: ${listBatchDelaySeconds}\n`);
 
 // Validation basique
 if (!keycloakRealm || !keycloakClient || !keycloakUrl) {
@@ -43,7 +51,9 @@ export const environment: Environment = {
   },
   apiUrl: '${apiUrl}',
   marketVersion: '${marketVersion}', // DEFAULT, DZ, etc. - Configuré via MARKET_VERSION
-  betaMode: ${betaMode}
+  betaMode: ${betaMode},
+  listBatchSize: ${listBatchSize},
+  listBatchDelaySeconds: ${listBatchDelaySeconds}
 } as Environment;
 `;
 

@@ -19,19 +19,22 @@ public class AiPrompts {
     }
 
     public static String getSystemMessage(boolean withJustification, String niveau) {
+        boolean isBroadLevel = "SECTIONS".equals(niveau) || "CHAPITRES".equals(niveau);
         String template;
         if (withJustification) {
             template = SYSTEM_MESSAGE_TEMPLATE
                     .replace("{instruction_details}", INSTRUCTION_DETAILS_JUSTIFIED)
                     .replace("{format_example}", FORMAT_EXAMPLE_JUSTIFIED)
                     .replace("{json_keys}", JSON_KEYS_JUSTIFIED)
+                    .replace("{numeric_rules}", NUMERIC_RULES_BLOCK)
                     .replace("{examples}", EXAMPLES_JUSTIFIED);
         } else {
             template = SYSTEM_MESSAGE_TEMPLATE
                     .replace("{instruction_details}", INSTRUCTION_DETAILS_SIMPLE)
                     .replace("{format_example}", FORMAT_EXAMPLE_SIMPLE)
                     .replace("{json_keys}", JSON_KEYS_SIMPLE)
-                    .replace("{examples}", EXAMPLES_SIMPLE);
+                    .replace("{numeric_rules}", isBroadLevel ? "" : NUMERIC_RULES_BLOCK)
+                    .replace("{examples}", isBroadLevel ? EXAMPLES_SIMPLE_BROAD : EXAMPLES_SIMPLE);
         }
         return template.replace("{level_context}", getLevelContext(niveau));
     }
@@ -51,12 +54,12 @@ public class AiPrompts {
                     Les balises <note_section> contiennent les définitions légales de chaque section.
                     """;
             case "CHAPITRES" -> """
-                    [CONTEXTE NIVEAU] Vous analysez les CHAPITRES d'une section.
-                    Restez inclusif : sélectionnez tous les chapitres pouvant contenir le produit.
+                    [CONTEXTE NIVEAU] Vous analysez les CHAPITRES douaniers (regroupés par section).
+                    Restez inclusif sans sur-sélectionner : retenez les 1 à 3 chapitres les plus pertinents (jusqu'à 4 si le terme est très générique).
                     """;
             case "POSITIONS4" -> """
                     [CONTEXTE NIVEAU] Vous analysez les POSITIONS à 4 chiffres.
-                    Les balises <note_chapitre> contiennent les règles légales d'inclusion/exclusion.
+                    Les balises <note_section> et <note_chapitre> contiennent les règles légales d'inclusion/exclusion.
                     Respectez ces règles pour discriminer entre les positions.
                     """;
             case "POSITIONS6" -> """
@@ -74,21 +77,21 @@ public class AiPrompts {
 
     /**
      * Construit le prompt utilisateur de manière uniforme pour les modes standard ET batch.
-     * Point d'entrée unique pour garantir la cohérence des résultats quelle que soit la voie d'appel.
+     * Place le bloc statique <codes_douaniers> en début de message afin de favoriser le Prompt Caching.
      *
      * @param ragContext  Le contexte RAG déjà formaté (codes douaniers à analyser)
      * @param searchTerm  Le terme de recherche (produit)
      * @return Le prompt utilisateur complet
      */
     public static String buildUserPrompt(String ragContext, String searchTerm) {
-        return "Produit recherché : \"" + searchTerm + "\"\n\n" +
-               "Voici la liste complète des codes douaniers à analyser :\n" +
+        return "Voici la liste complète des codes douaniers à analyser :\n" +
                "<codes_douaniers>\n" +
                ragContext + "\n" +
                "</codes_douaniers>\n\n" +
+               "Produit recherché : \"" + searchTerm + "\"\n" +
                "À partir de cette liste, identifiez tous les codes dont la description correspond au produit \"" +
                searchTerm + "\".\n\n" +
-               "Répondez uniquement avec le tableau JSON, sans aucun texte avant ou après.";
+               "Répondez uniquement avec un objet contenant le tableau JSON {\"codes\": [...]}, sans aucun texte avant ou après.";
     }
 
     private static final String SYSTEM_MESSAGE_TEMPLATE = """
@@ -111,7 +114,7 @@ public class AiPrompts {
                - Sélectionne les codes dont la description correspond au produit recherché. En cas de doute, préfère inclure plutôt qu'exclure : il vaut mieux retourner un code approximatif qu'un tableau vide.
                - Pour chaque code sélectionné, fournis :{instruction_details}
 
-               Format de sortie : un tableau JSON uniquement, sans aucun texte avant ou après.
+               Format de sortie : un objet JSON contenant uniquement la clé `codes` avec un tableau JSON, sans aucun texte avant ou après.
                Exemples de sortie :
            {format_example}
 
@@ -120,24 +123,7 @@ public class AiPrompts {
                    Évite les codes clairement hors sujet, mais garde les codes dont le domaine thématique est proche.
                    Les justifications doivent toujours être en français.
                    Les balises <note_section> et <note_chapitre> contiennent des définitions légales. Utilise-les pour identifier les inclusions, exclusions et regroupements de produits. Ne sélectionne JAMAIS ces balises comme des codes.
-
-               PARSER NUMÉRIQUE — Format français :
-                   Tu es un parser numérique spécialisé dans les formats français.
-                   Avant toute comparaison numérique, convertis les nombres selon ces règles :
-                   - Espace simple, double ou insécable utilisé comme séparateur de milliers → retirer : "1 000" → 1000, "1  000" → 1000
-                   - Point utilisé comme séparateur de milliers → retirer : "1.000" → 1000, "2.500.000" → 2500000
-                   - Espace + point combinés → retirer tous les séparateurs : "1 000 000" → 1000000, "12 345" → 12345
-                   - Nombre sans séparateur → lire directement : "1000" → 1000, "2000" → 2000
-                   Applique cette conversion à TOUTES les valeurs numériques rencontrées dans les descriptions et dans la requête avant de les comparer.
-
-                RÈGLE — Cohérence des critères numériques (positions 4 à 10 chiffres uniquement) :
-                   Si la requête contient des critères numériques précis (cylindrée, poids, teneur, dimensions, température, etc.),
-                   rejette les codes dont la description contient des valeurs numériques CLAIREMENT CONTRADICTOIRES avec la requête.
-                   Exemples :
-                   - Requête "cylindrée supérieure à 2000 cm3" → rejeter les codes mentionnant "n'excédant pas X cm3" avec X ≤ 2000.
-                   - Requête "poids inférieur à 5 kg" → rejeter les codes mentionnant "d'un poids supérieur à 5 kg".
-                   Cette règle ne s'applique PAS aux sections et chapitres (codes à 2 chiffres) : toujours y sélectionner les codes thématiquement proches.
-
+            {numeric_rules}
                 RÈGLE — Discrimination sémantique (CRITIQUE) :
                    Ne te fie JAMAIS à un seul mot-clé commun entre la requête et une description.
                    Analyse le SENS COMPLET de chaque description candidate.
@@ -155,37 +141,61 @@ public class AiPrompts {
                    - Un aspirateur = MACHINE (ch. 85), PAS un appareil ménager au sens large.
                    La fonction qui donne au produit son CARACTÈRE ESSENTIEL prime sur les caractéristiques secondaires (mobilité, motorisation, etc.).
 
-                IMPORTANT : Réponds UNIQUEMENT avec le tableau JSON (clés {json_keys}), sans aucun texte explicatif.
-                Le tableau JSON doit contenir au moins un élément. Ne retourne un tableau vide [] qu'en dernier recours absolu si le produit est totalement hors nomenclature douanière.
+                IMPORTANT : Réponds UNIQUEMENT avec l'objet JSON `{"codes": [...]}` (chaque élément contenant {json_keys}), sans aucun texte explicatif.
+                Le tableau `codes` doit contenir au moins un élément. Ne retourne `{"codes": []}` qu'en dernier recours absolu si le produit est totalement hors nomenclature douanière.
                 Si tu ne trouves pas de correspondance exacte, sélectionne le code dont le DOMAINE FONCTIONNEL est le plus proche, pas celui qui partage un simple mot-clé.
 
                Voir exemples ci-dessous :
            {examples}
                """;
 
+    private static final String NUMERIC_RULES_BLOCK = """
+
+               PARSER NUMÉRIQUE — Format français :
+                   Tu es un parser numérique spécialisé dans les formats français.
+                   Avant toute comparaison numérique, convertis les nombres selon ces règles :
+                   - Espace simple, double ou insécable utilisé comme séparateur de milliers → retirer : "1 000" → 1000, "1  000" → 1000
+                   - Point utilisé comme séparateur de milliers → retirer : "1.000" → 1000, "2.500.000" → 2500000
+                   - Espace + point combinés → retirer tous les séparateurs : "1 000 000" → 1000000, "12 345" → 12345
+                   - Nombre sans séparateur → lire directement : "1000" → 1000, "2000" → 2000
+                   Applique cette conversion à TOUTES les valeurs numériques rencontrées dans les descriptions et dans la requête avant de les comparer.
+
+                RÈGLE — Cohérence des critères numériques (positions 4 à 10 chiffres uniquement) :
+                   Si la requête contient des critères numériques précis (cylindrée, poids, teneur, dimensions, température, etc.),
+                   rejette les codes dont la description contient des valeurs numériques CLAIREMENT CONTRADICTOIRES avec la requête.
+                   Exemples :
+                   - Requête "cylindrée supérieure à 2000 cm3" → rejeter les codes mentionnant "n'excédant pas X cm3" avec X ≤ 2000.
+                   - Requête "poids inférieur à 5 kg" → rejeter les codes mentionnant "d'un poids supérieur à 5 kg".
+                   Cette règle ne s'applique PAS aux sections et chapitres (codes à 2 chiffres) : toujours y sélectionner les codes thématiquement proches.
+            """;
+
     private static final String INSTRUCTION_DETAILS_JUSTIFIED = """
 
-                    -- Le code douanier (à 2, 4 ou 6 chiffres selon la liste).
-                    -- Une brève justification expliquant pourquoi ce code est pertinent.""";
+                    -- Le code douanier (à 2, 4, 6 ou 10 chiffres selon la liste).
+                    -- Une justification concise en français (1 phrase courte et précise, ~15-25 mots) expliquant pourquoi ce code est pertinent.""";
 
     private static final String FORMAT_EXAMPLE_JUSTIFIED = """
-                   [
-                       {
-                            "code": "...",
-                            "justification": "Correspond au produit car..."
-                       }
-                   ]
+                   {
+                       "codes": [
+                           {
+                               "code": "...",
+                               "justification": "Correspond au produit car..."
+                           }
+                       ]
+                   }
                    ou
-                   [
-                       {
-                            "code": "...",
-                            "justification": "Correspond au produit car..."
-                       },
-                       {
-                            "code": "...",
-                            "justification": "Correspond au produit car..."
-                       }
-                   ]""";
+                   {
+                       "codes": [
+                           {
+                               "code": "...",
+                               "justification": "Correspond au produit car..."
+                           },
+                           {
+                               "code": "...",
+                               "justification": "Correspond au produit car..."
+                           }
+                       ]
+                   }""";
 
     private static final String JSON_KEYS_JUSTIFIED = "`code` et `justification`";
 
@@ -193,191 +203,120 @@ public class AiPrompts {
                Exemple 1 (français — fruit simple) :
                     USER : Pommes.
                     ASSISTANT :\s
-                    [
-                       {
-                                "code": "08",
-                                "justification": "Chapitre des fruits comestibles"
-                       }
-                   ]
+                    {"codes": [{"code": "08", "justification": "Chapitre des fruits comestibles."}]}
 
                Exemple 2 (français — textile, matière dominante) :
                     USER : T-shirt à manches courtes, en coton 100%, destiné aux hommes.
                     ASSISTANT :\s
-                    [
-                       {
-                                "code": "6109 10",
-                                "justification": "T-shirts en bonneterie de coton."
-                       },
-                       {
-                                "code": "6109 90",
-                                "justification": "Alternative si mélange de fibres."
-                       }
-                    ]
+                    {"codes": [{"code": "6109 10", "justification": "T-shirts en bonneterie de coton."}, {"code": "6109 90", "justification": "Alternative en bonneterie d'autres matières textiles."}]}
 
                Exemple 3 (anglais → justification en français) :
                     USER : Frozen chicken wings.
                     ASSISTANT :\s
-                    [
-                       {
-                                "code": "0207",
-                                "justification": "Viandes et abats comestibles de volailles, congelés."
-                       }
-                    ]
+                    {"codes": [{"code": "0207", "justification": "Viandes et abats comestibles de volailles, congelés."}]}
 
                Exemple 4 (français — produit chimique à double usage, ambiguïté chimie/pharmacie) :
                     USER : Acide citrique en poudre, qualité alimentaire.
                     ASSISTANT :\s
-                    [
-                       {
-                                "code": "2918",
-                                "justification": "Acides carboxyliques à fonction alcool — l'acide citrique relève du 2918.14, même en qualité alimentaire."
-                       }
-                    ]
+                    {"codes": [{"code": "2918", "justification": "Acides carboxyliques à fonction alcool incluant l'acide citrique."}]}
 
                Exemple 5 (français — machine composite, ambiguïté mécanique/électronique) :
                     USER : Imprimante 3D industrielle à dépôt de fil fondu, avec contrôle numérique.
                     ASSISTANT :\s
-                    [
-                       {
-                                "code": "8477",
-                                "justification": "Machines pour le travail du caoutchouc ou des matières plastiques — l'impression 3D par dépôt de matière plastique fondue relève de ce chapitre."
-                       },
-                       {
-                                "code": "8485",
-                                "justification": "Machines pour la fabrication additive — position spécifique introduite pour l'impression 3D."
-                       }
-                    ]
+                    {"codes": [{"code": "8477", "justification": "Machines pour le travail des matières plastiques par dépôt fondu."}, {"code": "8485", "justification": "Machines pour la fabrication additive."}]}
 
                Exemple 6 (français — véhicule avec critère numérique) :
                     USER : Voiture diesel, cylindrée 2500 cm3, neuve.
                     ASSISTANT :\s
-                    [
-                       {
-                                "code": "8703 32",
-                                "justification": "Véhicules à moteur diesel, cylindrée > 1500 cm3 mais ≤ 2500 cm3."
-                       }
-                    ]
+                    {"codes": [{"code": "8703 32", "justification": "Véhicules diesel de cylindrée comprise entre 1500 et 2500 cm3."}]}
 
                Exemple 7 (arabe → justification en français) :
                     USER : زيت زيتون بكر ممتاز
                     ASSISTANT :\s
-                    [
-                       {
-                                "code": "1509",
-                                "justification": "Huile d'olive vierge extra — position spécifique pour l'huile d'olive."
-                       }
-                    ]
+                    {"codes": [{"code": "1509", "justification": "Huile d'olive vierge extra."}]}
 
                Exemple 8 (français — ambiguïté machine/véhicule, fonction principale = levage) :
                     USER : Chariot élévateur de marchandises.
                     ASSISTANT :\s
-                    [
-                       {
-                                "code": "8427",
-                                "justification": "Chariots-gerbeurs et chariots de manutention munis d'un dispositif de levage — la fonction principale est le LEVAGE, pas le transport."
-                       }
-                    ]
+                    {"codes": [{"code": "8427", "justification": "Chariots de manutention dont la fonction essentielle est le levage."}]}
                """;
 
     private static final String INSTRUCTION_DETAILS_SIMPLE = """
 
-                    le code douanier (à 2, 4 ou 6 chiffres selon la liste).""";
+                    le code douanier (à 2, 4, 6 ou 10 chiffres selon la liste).""";
 
     private static final String FORMAT_EXAMPLE_SIMPLE = """
-                   [
-                       {
-                            "code": "..."
-                       }
-                   ]
+                   {
+                       "codes": [
+                           {"code": "..."}
+                       ]
+                   }
                    ou
-                   [
-                       {
-                            "code": "..."
-                       },
-                       {
-                            "code": "..."
-                       }
-                   ]""";
+                   {
+                       "codes": [
+                           {"code": "..."},
+                           {"code": "..."}
+                       ]
+                   }""";
 
     private static final String JSON_KEYS_SIMPLE = "`code`";
+
+    private static final String EXAMPLES_SIMPLE_BROAD = """
+               Exemple 1 :
+                    USER : Pommes.
+                    ASSISTANT :\s
+                    {"codes": [{"code": "08"}]}
+
+               Exemple 2 (arabe) :
+                    USER : زيت زيتون بكر ممتاز
+                    ASSISTANT :\s
+                    {"codes": [{"code": "15"}]}
+
+               Exemple 3 (ambiguïté machine/véhicule) :
+                    USER : Chariot élévateur de marchandises.
+                    ASSISTANT :\s
+                    {"codes": [{"code": "84"}]}
+               """;
 
     private static final String EXAMPLES_SIMPLE = """
                Exemple 1 :
                     USER : Pommes.
                     ASSISTANT :\s
-                    [
-                       {
-                                "code": "08"
-                       }
-                   ]
+                    {"codes": [{"code": "08"}]}
 
                Exemple 2 :
                     USER : T-shirt à manches courtes, en coton 100%, destiné aux hommes.
                     ASSISTANT :\s
-                    [
-                       {
-                                "code": "6109 10"
-                       },
-                       {
-                                "code": "6109 90"
-                       }
-                    ]
+                    {"codes": [{"code": "6109 10"}, {"code": "6109 90"}]}
 
                Exemple 3 (anglais) :
                     USER : Frozen chicken wings.
                     ASSISTANT :\s
-                    [
-                       {
-                                "code": "0207"
-                       }
-                    ]
+                    {"codes": [{"code": "0207"}]}
 
                Exemple 4 (produit chimique) :
                     USER : Acide citrique en poudre, qualité alimentaire.
                     ASSISTANT :\s
-                    [
-                       {
-                                "code": "2918"
-                       }
-                    ]
+                    {"codes": [{"code": "2918"}]}
 
                Exemple 5 (machine composite) :
                     USER : Imprimante 3D industrielle à dépôt de fil fondu.
                     ASSISTANT :\s
-                    [
-                       {
-                                "code": "8477"
-                       },
-                       {
-                                "code": "8485"
-                       }
-                    ]
+                    {"codes": [{"code": "8477"}, {"code": "8485"}]}
 
                Exemple 6 (véhicule avec critère numérique) :
                     USER : Voiture diesel, cylindrée 2500 cm3, neuve.
                     ASSISTANT :\s
-                    [
-                       {
-                                "code": "8703 32"
-                       }
-                    ]
+                    {"codes": [{"code": "8703 32"}]}
 
                Exemple 7 (arabe) :
                     USER : زيت زيتون بكر ممتاز
                     ASSISTANT :\s
-                    [
-                       {
-                                "code": "1509"
-                       }
-                    ]
+                    {"codes": [{"code": "1509"}]}
 
                Exemple 8 (ambiguïté machine/véhicule) :
                     USER : Chariot élévateur de marchandises.
                     ASSISTANT :\s
-                    [
-                       {
-                                "code": "8427"
-                       }
-                    ]
+                    {"codes": [{"code": "8427"}]}
                """;
 }

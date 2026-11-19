@@ -26,6 +26,7 @@ public class OllamaService implements AiProvider {
     private final RestTemplate restTemplate;
     private final String baseUrl;
     private final String model;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     private static final ThreadLocal<UsageInfo> currentUsage = new ThreadLocal<>();
 
@@ -43,6 +44,11 @@ public class OllamaService implements AiProvider {
 
     @Override
     public String demanderAiAide(String titre, String question, boolean withJustification, String niveau) {
+        return demanderAiAide(titre, question, withJustification, niveau, true);
+    }
+
+    @Override
+    public String demanderAiAide(String titre, String question, boolean withJustification, String niveau, boolean allowFastModel) {
 
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.add("Content-Type", "application/json");
@@ -55,7 +61,6 @@ public class OllamaService implements AiProvider {
         requestBody.put("prompt", fullPrompt);
         requestBody.put("stream", false);
 
-        ObjectMapper objectMapper = new ObjectMapper();
         String body;
         try {
             body = objectMapper.writeValueAsString(requestBody);
@@ -65,6 +70,7 @@ public class OllamaService implements AiProvider {
         }
 
         HttpEntity<String> entity = new HttpEntity<>(body, httpHeaders);
+        long startMs = System.currentTimeMillis();
         try {
             ResponseEntity<String> response = restTemplate.exchange(
                     baseUrl + "/api/generate",
@@ -72,6 +78,7 @@ public class OllamaService implements AiProvider {
                     entity,
                     String.class
             );
+            long elapsedMs = System.currentTimeMillis() - startMs;
 
             if (!response.getStatusCode().is2xxSuccessful()) {
                 log.error("Erreur API Ollama - Status: {}", response.getStatusCode());
@@ -89,20 +96,16 @@ public class OllamaService implements AiProvider {
             int promptTokens = rootNode.path("prompt_eval_count").asInt(0);
             int completionTokens = rootNode.path("eval_count").asInt(0);
 
-            UsageInfo usageInfo = new UsageInfo(
-                    promptTokens + completionTokens,
-                    0.0, // Ollama est gratuit (local)
-                    promptTokens,
-                    completionTokens,
-                    0.0
-            );
-            currentUsage.set(usageInfo);
+            AiProvider.accumulateUsage(currentUsage, promptTokens, completionTokens, promptTokens + completionTokens, 0.0, 0.0);
+
+            log.info("[PERF] Ollama {} (model={}) en {} ms — tokens: prompt={}, completion={}",
+                    titre, model, elapsedMs, promptTokens, completionTokens);
 
             return assistantMessage;
 
         } catch (Exception e) {
-            log.error("Erreur lors de la requête à Ollama: {}", e.getMessage());
-            currentUsage.remove();
+            long elapsedMs = System.currentTimeMillis() - startMs;
+            log.error("Erreur lors de la requête à Ollama (model={}, {} ms): {}", model, elapsedMs, e.getMessage());
             return "";
         }
     }

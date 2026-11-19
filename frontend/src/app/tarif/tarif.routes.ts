@@ -11,7 +11,7 @@ export const TARIF_ROUTES: Routes = [
 //     { path: 'search', component: SearchComponent },
 //     { path: '**', redirectTo: 'search' }
 
-    //Liste d'articles: examine par lots de 5 articles il attend 61s après chaque lot pour 'soulager le LLM'.
+    // Liste d'articles: exécution par paquets de taille et pause paramétrables (défaut : 5 articles, pause 2 s).
     { path: '', redirectTo: 'search', pathMatch: 'full' },
     { path: 'search', component: SearchComponent },
     { path: 'search-position10', component: SearchComponent, data: { mode: 'position10' } },

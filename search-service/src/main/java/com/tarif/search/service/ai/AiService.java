@@ -37,9 +37,16 @@ public class AiService {
      * Recherche les positions pertinentes en utilisant l'IA.
      */
     public List<Position> promptEtReponse(String titre, String termeRecherche, List<Position> listePositions, boolean withJustification) {
+        return promptEtReponse(titre, termeRecherche, listePositions, withJustification, true);
+    }
+
+    /**
+     * Recherche les positions pertinentes en utilisant l'IA, en précisant si le modèle rapide est autorisé.
+     */
+    public List<Position> promptEtReponse(String titre, String termeRecherche, List<Position> listePositions, boolean withJustification, boolean allowFastModel) {
         StringBuilder leRAG = creerContexteRAG(titre, listePositions);
         // AiProviderException remonte librement pour permettre le retry dans executeWithRetry
-        String reponseIaJson = obtenirReponseJsonDeIA(titre, leRAG, termeRecherche, withJustification);
+        String reponseIaJson = obtenirReponseJsonDeIA(titre, leRAG, termeRecherche, withJustification, allowFastModel);
         String jsonNettoye = JsonUtils.cleanJsonString(reponseIaJson);
 
         if (!JsonUtils.isValidJson(jsonNettoye)) {
@@ -55,11 +62,11 @@ public class AiService {
         }
     }
 
-    private String obtenirReponseJsonDeIA(String titre, StringBuilder ragString, String termeRecherche, boolean withJustification) {
+    private String obtenirReponseJsonDeIA(String titre, StringBuilder ragString, String termeRecherche, boolean withJustification, boolean allowFastModel) {
         String prompt = AiPrompts.buildUserPrompt(ragString.toString(), termeRecherche);
         int maxTokens = AiPrompts.getMaxTokensForLevel(withJustification);
-        log.debug("{} - max_tokens={}, justification={}, prompt ({} chars):\n{}", titre, maxTokens, withJustification, prompt.length(), prompt);
-        return getActiveProvider().demanderAiAide(titre, prompt, withJustification, titre);
+        log.debug("{} - max_tokens={}, justification={}, allowFastModel={}, prompt ({} chars):\n{}", titre, maxTokens, withJustification, allowFastModel, prompt.length(), prompt);
+        return getActiveProvider().demanderAiAide(titre, prompt, withJustification, titre, allowFastModel);
     }
 
     private AiProvider getActiveProvider() {

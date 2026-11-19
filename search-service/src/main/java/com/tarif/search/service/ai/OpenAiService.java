@@ -26,10 +26,14 @@ public class OpenAiService implements AiProvider {
     private final String apiKey;
     private final String apiUrl;
     private final String model;
+    private final String fastModel;
     private final double baseRequestPrice;
     private final double priceInputPerMillion;
     private final double priceOutputPerMillion;
+    private final double fastPriceInputPerMillion;
+    private final double fastPriceOutputPerMillion;
     private final float temperature = 0.0F;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     private static final ThreadLocal<UsageInfo> currentUsage = new ThreadLocal<>();
 
@@ -39,45 +43,68 @@ public class OpenAiService implements AiProvider {
             @Value("${ai.openai.api-key:}") String apiKey,
             @Value("${ai.openai.base-url:https://api.openai.com/v1}") String baseUrl,
             @Value("${ai.openai.model:gpt-4.1-mini}") String model,
+            @Value("${ai.openai.fast-model:gpt-4.1-nano}") String fastModel,
             @Value("${ai.base-request-price:0.01}") double baseRequestPrice,
             @Value("${ai.openai.price-input-per-million:0.40}") double priceInputPerMillion,
-            @Value("${ai.openai.price-output-per-million:1.60}") double priceOutputPerMillion) {
+            @Value("${ai.openai.price-output-per-million:1.60}") double priceOutputPerMillion,
+            @Value("${ai.openai.fast-price-input-per-million:0.10}") double fastPriceInputPerMillion,
+            @Value("${ai.openai.fast-price-output-per-million:0.40}") double fastPriceOutputPerMillion) {
         this.aiPrompts = aiPrompts;
         this.restTemplate = restTemplate;
         this.apiKey = apiKey;
         this.apiUrl = baseUrl + "/chat/completions";
         this.model = model;
+        this.fastModel = fastModel;
         this.baseRequestPrice = baseRequestPrice;
         this.priceInputPerMillion = priceInputPerMillion;
         this.priceOutputPerMillion = priceOutputPerMillion;
-        log.info("OpenAiService initialisé avec le modèle: {} (tarifs: input=${}/M, output=${}/M)",
-                model, priceInputPerMillion, priceOutputPerMillion);
+        this.fastPriceInputPerMillion = fastPriceInputPerMillion;
+        this.fastPriceOutputPerMillion = fastPriceOutputPerMillion;
+        log.info("OpenAiService initialisé avec model={} (input=${}/M, output=${}/M) et fastModel={} (input=${}/M, output=${}/M)",
+                model, priceInputPerMillion, priceOutputPerMillion,
+                fastModel, fastPriceInputPerMillion, fastPriceOutputPerMillion);
     }
 
     @Override
     public String demanderAiAide(String titre, String question, boolean withJustification, String niveau) {
+        return demanderAiAide(titre, question, withJustification, niveau, true);
+    }
+
+    @Override
+    public String demanderAiAide(String titre, String question, boolean withJustification, String niveau, boolean allowFastModel) {
         if (apiKey == null || apiKey.isBlank()) {
             log.error("Clé API OpenAI non configurée");
             return "";
         }
 
+        boolean useFast = AiProvider.shouldUseFastModel(allowFastModel, withJustification, fastModel, niveau);
+        String selectedModel = useFast ? fastModel : model;
+        double inputPrice = useFast ? fastPriceInputPerMillion : priceInputPerMillion;
+        double outputPrice = useFast ? fastPriceOutputPerMillion : priceOutputPerMillion;
 
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.add("Authorization", "Bearer " + apiKey);
         httpHeaders.add("Content-Type", "application/json");
 
         Map<String, Object> requestBody = new HashMap<>();
-        requestBody.put("model", model);
+        requestBody.put("model", selectedModel);
         requestBody.put("messages", new Object[]{
                 Map.of("role", "system", "content", AiPrompts.getSystemMessage(withJustification, niveau)),
                 Map.of("role", "user", "content", question)
         });
         int maxTokens = AiPrompts.getMaxTokensForLevel(withJustification);
-        requestBody.put("max_tokens", maxTokens);
-        requestBody.put("temperature", temperature);
+        boolean isReasoningModel = selectedModel.startsWith("gpt-5")
+                || selectedModel.startsWith("o1")
+                || selectedModel.startsWith("o3")
+                || selectedModel.startsWith("o4");
+        if (isReasoningModel) {
+            requestBody.put("max_completion_tokens", maxTokens);
+        } else {
+            requestBody.put("max_tokens", maxTokens);
+            requestBody.put("temperature", temperature);
+        }
         requestBody.put("response_format", Map.of("type", "json_object"));
 
-        ObjectMapper objectMapper = new ObjectMapper();
         String body;
         try {
             body = objectMapper.writeValueAsString(requestBody);
@@ -87,6 +114,7 @@ public class OpenAiService implements AiProvider {
         }
 
         HttpEntity<String> entity = new HttpEntity<>(body, httpHeaders);
+        long startMs = System.currentTimeMillis();
         try {
             ResponseEntity<String> response = restTemplate.exchange(
                     apiUrl,
@@ -94,6 +122,7 @@ public class OpenAiService implements AiProvider {
                     entity,
                     String.class
             );
+            long elapsedMs = System.currentTimeMillis() - startMs;
 
             if (!response.getStatusCode().is2xxSuccessful()) {
                 log.error("Erreur API OpenAI - Status: {}, Body: {}", response.getStatusCode(), response.getBody());
@@ -117,24 +146,18 @@ public class OpenAiService implements AiProvider {
             int completionTokens = rootNode.path("usage").path("completion_tokens").asInt();
             int totalTokens = rootNode.path("usage").path("total_tokens").asInt();
 
-            double tokenCostUsd = (promptTokens * priceInputPerMillion + completionTokens * priceOutputPerMillion) / 1_000_000;
+            double tokenCostUsd = (promptTokens * inputPrice + completionTokens * outputPrice) / 1_000_000;
 
-            UsageInfo usageInfo = new UsageInfo(
-                    totalTokens,
-                    baseRequestPrice,
-                    promptTokens,
-                    completionTokens,
-                    tokenCostUsd
-            );
-            currentUsage.set(usageInfo);
+            AiProvider.accumulateUsage(currentUsage, promptTokens, completionTokens, totalTokens, baseRequestPrice, tokenCostUsd);
 
-            log.debug("Niveau: {}, Tokens: {}, Coût: {}", titre, totalTokens, tokenCostUsd);
+            log.info("[PERF] OpenAI {} (model={}) en {} ms — tokens: prompt={}, completion={}, total={}",
+                    titre, selectedModel, elapsedMs, promptTokens, completionTokens, totalTokens);
 
             return assistantMessage;
 
         } catch (Exception e) {
-            log.error("Erreur lors de la requête à l'API OpenAI: {}", e.getMessage());
-            currentUsage.remove();
+            long elapsedMs = System.currentTimeMillis() - startMs;
+            log.error("Erreur lors de la requête à l'API OpenAI (model={}, {} ms): {}", selectedModel, elapsedMs, e.getMessage());
             throw new AiProviderException("Erreur OpenAI: " + e.getMessage(), e);
         }
     }

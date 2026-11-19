@@ -59,6 +59,7 @@ public class RechercheController {
     private List<Position> executeSearch(String termeRecherche, SearchLevel level, String endpoint) {
         log.info("Requête {} pour '{}'", endpoint, termeRecherche);
         boolean searchExecuted = false;
+        boolean hasResults = false;
         QuotaCheckResponse quotaCheck = null;
 
         try {
@@ -68,6 +69,7 @@ public class RechercheController {
             // Exécuter la recherche
             List<Position> result = searchService.search(termeRecherche, level);
             searchExecuted = true;
+            hasResults = result != null && !result.isEmpty();
 
             return result != null ? result : new ArrayList<>();
 
@@ -79,7 +81,7 @@ public class RechercheController {
             return new ArrayList<>();
         } finally {
             if (searchExecuted) {
-                publishSearchEvent(endpoint, termeRecherche, quotaCheck);
+                publishSearchEvent(endpoint, termeRecherche, quotaCheck, hasResults);
             }
             aiService.clearCurrentUsage();
         }
@@ -104,21 +106,22 @@ public class RechercheController {
         return response;
     }
 
-    private void publishSearchEvent(String endpoint, String searchTerm, QuotaCheckResponse quotaCheck) {
+    private void publishSearchEvent(String endpoint, String searchTerm, QuotaCheckResponse quotaCheck, boolean hasResults) {
         try {
             String userId = getCurrentUserId();
             UsageInfo usageInfo = aiService.getCurrentUsage();
 
-            if (userId != null && usageInfo != null) {
+            if (userId != null && (usageInfo != null || hasResults)) {
                 Long organizationId = quotaCheck != null ? quotaCheck.getOrganizationId() : null;
-                Double cost = determineCost(quotaCheck, usageInfo);
+                Integer tokens = usageInfo != null ? usageInfo.getTokens() : 0;
+                Double cost = usageInfo != null ? determineCost(quotaCheck, usageInfo) : null;
 
                 eventPublisher.publishSearchCompleted(
                         userId,
                         organizationId,
                         endpoint,
                         searchTerm,
-                        usageInfo.getTokens(),
+                        tokens,
                         cost
                 );
             }

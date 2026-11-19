@@ -24,30 +24,42 @@ public class AnthropicService implements AiProvider {
     private final RestTemplate restTemplate;
     private final String apiKey;
     private final String model;
+    private final String fastModel;
     private final String apiUrl;
     private final float temperature = 0.1F;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     private static final ThreadLocal<UsageInfo> currentUsage = new ThreadLocal<>();
 
     public AnthropicService(
             RestTemplate restTemplate,
             @Value("${ai.anthropic.api-key:}") String apiKey,
-            @Value("${ai.anthropic.model:claude-haiku-4-5-20251001}") String model, // au lieu de claude-sonnet-4-5-20250929 trop cher
+            @Value("${ai.anthropic.model:claude-haiku-4-5-20251001}") String model,
+            @Value("${ai.anthropic.fast-model:claude-haiku-4-5-20251001}") String fastModel,
             @Value("${ai.anthropic.base-url:https://api.anthropic.com/v1}") String baseUrl) {
         this.restTemplate = restTemplate;
         this.apiKey = apiKey;
         this.model = model;
+        this.fastModel = fastModel;
         this.apiUrl = baseUrl + "/messages";
-        log.info("AnthropicService initialisé avec le modèle: {}", model);
+        log.info("AnthropicService initialisé avec model={} et fastModel={}", model, fastModel);
     }
 
     @Override
     public String demanderAiAide(String titre, String question, boolean withJustification, String niveau) {
+        return demanderAiAide(titre, question, withJustification, niveau, true);
+    }
+
+    @Override
+    public String demanderAiAide(String titre, String question, boolean withJustification, String niveau, boolean allowFastModel) {
         if (apiKey == null || apiKey.isBlank()) {
             log.error("Clé API Anthropic non configurée");
             return "";
         }
 
+        String selectedModel = AiProvider.shouldUseFastModel(allowFastModel, withJustification, fastModel, niveau)
+                ? fastModel
+                : model;
 
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.add("x-api-key", apiKey);
@@ -55,7 +67,7 @@ public class AnthropicService implements AiProvider {
         httpHeaders.add("anthropic-version", "2023-06-01");
 
         Map<String, Object> requestBody = new HashMap<>();
-        requestBody.put("model", model);
+        requestBody.put("model", selectedModel);
         requestBody.put("system", AiPrompts.getSystemMessage(withJustification, niveau));
         requestBody.put("messages", new Object[]{
                 Map.of("role", "user", "content", question)
@@ -64,7 +76,6 @@ public class AnthropicService implements AiProvider {
         requestBody.put("max_tokens", maxTokens);
         requestBody.put("temperature", temperature);
 
-        ObjectMapper objectMapper = new ObjectMapper();
         String body;
         try {
             body = objectMapper.writeValueAsString(requestBody);
@@ -74,6 +85,7 @@ public class AnthropicService implements AiProvider {
         }
 
         HttpEntity<String> entity = new HttpEntity<>(body, httpHeaders);
+        long startMs = System.currentTimeMillis();
         try {
             ResponseEntity<String> response = restTemplate.exchange(
                     apiUrl,
@@ -81,6 +93,7 @@ public class AnthropicService implements AiProvider {
                     entity,
                     String.class
             );
+            long elapsedMs = System.currentTimeMillis() - startMs;
 
             if (!response.getStatusCode().is2xxSuccessful()) {
                 log.error("Erreur API Anthropic - Status: {}, Body: {}", response.getStatusCode(), response.getBody());
@@ -106,14 +119,10 @@ public class AnthropicService implements AiProvider {
                     int inputTokens = rootNode.path("usage").path("input_tokens").asInt(0);
                     int outputTokens = rootNode.path("usage").path("output_tokens").asInt(0);
 
-                    UsageInfo usageInfo = new UsageInfo(
-                            inputTokens + outputTokens,
-                            0.01,
-                            inputTokens,
-                            outputTokens,
-                            0.0
-                    );
-                    currentUsage.set(usageInfo);
+                    AiProvider.accumulateUsage(currentUsage, inputTokens, outputTokens, inputTokens + outputTokens, 0.01, 0.0);
+
+                    log.info("[PERF] Anthropic {} (model={}) en {} ms — tokens: input={}, output={}",
+                            titre, selectedModel, elapsedMs, inputTokens, outputTokens);
 
                     return cleanedMessage;
                 }
@@ -123,12 +132,12 @@ public class AnthropicService implements AiProvider {
             return "";
 
         } catch (org.springframework.web.client.HttpClientErrorException e) {
-            log.error("Erreur HTTP API Anthropic - Status: {}, Body: {}", e.getStatusCode(), e.getResponseBodyAsString());
-            currentUsage.remove();
+            long elapsedMs = System.currentTimeMillis() - startMs;
+            log.error("Erreur HTTP API Anthropic (model={}, {} ms) - Status: {}, Body: {}", selectedModel, elapsedMs, e.getStatusCode(), e.getResponseBodyAsString());
             throw new AiProviderException("Erreur HTTP Anthropic: " + e.getStatusCode(), e);
         } catch (Exception e) {
-            log.error("Erreur lors de la requête à l'API Anthropic: {}", e.getMessage(), e);
-            currentUsage.remove();
+            long elapsedMs = System.currentTimeMillis() - startMs;
+            log.error("Erreur lors de la requête à l'API Anthropic (model={}, {} ms): {}", selectedModel, elapsedMs, e.getMessage(), e);
             throw new AiProviderException("Erreur Anthropic: " + e.getMessage(), e);
         }
     }

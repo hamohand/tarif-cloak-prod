@@ -16,16 +16,18 @@ public class SectionService {
 
     private final SectionRepository sectionRepository;
 
-    /** Cache des notes de section (ne changent jamais pendant le runtime). */
-    private final Map<String, String> notesCache = new ConcurrentHashMap<>();
-    private volatile boolean notesCacheLoaded = false;
+    /** Caches en mémoire des sections (données de référence statiques en lecture seule). */
+    private volatile List<Section> allSectionsCache = List.of();
+    private final Map<String, Section> byCodeCache = new ConcurrentHashMap<>();
+    private volatile boolean cacheLoaded = false;
 
     public SectionService(SectionRepository sectionRepository) {
         this.sectionRepository = sectionRepository;
     }
 
     public List<Section> getAllSections() {
-        return sectionRepository.findAll();
+        ensureCacheLoaded();
+        return cacheLoaded ? allSectionsCache : List.of();
     }
 
     public Optional<Section> getSectionById(Long id) {
@@ -33,41 +35,70 @@ public class SectionService {
     }
 
     public Optional<Section> getSectionByCode(String code) {
-        return sectionRepository.findByCode(code);
+        if (code == null || code.isBlank()) {
+            return Optional.empty();
+        }
+        ensureCacheLoaded();
+        if (!cacheLoaded) {
+            return sectionRepository.findByCode(code.trim());
+        }
+        String trimmed = code.trim();
+        Section found = byCodeCache.get(trimmed);
+        if (found == null) {
+            String stripped = trimmed.replaceFirst("^0+", "");
+            if (!stripped.isEmpty()) {
+                found = byCodeCache.get(stripped);
+            }
+        }
+        return Optional.ofNullable(found);
     }
 
     public String getDescription(String code) {
-        return sectionRepository.findByCode(code.trim())
+        return getSectionByCode(code)
                 .map(Section::getDescription)
                 .orElse(null);
     }
 
     /**
      * Retourne la note explicative de la section (extrait du tarif DGD).
-     * Utilise un cache en mémoire : les notes sont chargées une seule fois
-     * depuis la base, puis servies directement.
+     * Utilise un cache en mémoire : les sections sont chargées une seule fois
+     * depuis la base, puis servies directement en O(1).
      * Retourne null si aucune note n'a été saisie pour cette section.
      */
     public String getNote(String code) {
-        if (!notesCacheLoaded) {
-            loadNotesCache();
-        }
-        return notesCache.get(code.trim());
+        return getSectionByCode(code)
+                .map(Section::getNote)
+                .filter(n -> !n.isBlank())
+                .orElse(null);
     }
 
-    private synchronized void loadNotesCache() {
-        if (notesCacheLoaded) return; // double-check
+    private synchronized void ensureCacheLoaded() {
+        if (cacheLoaded) {
+            return;
+        }
         List<Section> sections = sectionRepository.findAll();
+        if (sections == null || sections.isEmpty()) {
+            return;
+        }
+        Map<String, Section> map = new ConcurrentHashMap<>();
         for (Section s : sections) {
-            if (s.getNote() != null && !s.getNote().isBlank()) {
-                notesCache.put(s.getCode().trim(), s.getNote());
+            if (s.getCode() != null) {
+                String trimmed = s.getCode().trim();
+                map.put(trimmed, s);
+                String stripped = trimmed.replaceFirst("^0+", "");
+                if (!stripped.isEmpty()) {
+                    map.putIfAbsent(stripped, s);
+                }
             }
         }
-        log.info("Cache notes de section chargé : {} entrée(s)", notesCache.size());
-        notesCacheLoaded = true;
+        byCodeCache.clear();
+        byCodeCache.putAll(map);
+        allSectionsCache = List.copyOf(sections);
+        cacheLoaded = true;
+        log.info("Cache sections chargé : {} entrée(s)", allSectionsCache.size());
     }
 
     public boolean existsByCode(String code) {
-        return sectionRepository.findByCode(code).isPresent();
+        return getSectionByCode(code).isPresent();
     }
 }

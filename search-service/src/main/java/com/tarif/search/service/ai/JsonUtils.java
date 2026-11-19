@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tarif.search.model.Position;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -24,27 +25,27 @@ public class JsonUtils {
 
         // Cas 1 : tableau direct [...]
         if (jsonPourListe.startsWith("[")) {
-            return objectMapper.readValue(jsonPourListe, new TypeReference<List<Position>>() {});
+            return new ArrayList<>(objectMapper.readValue(jsonPourListe, new TypeReference<List<Position>>() {}));
         }
 
         // Cas 2 : objet contenant un tableau (ex: {"codes": [...]} ou {"results": [...]})
-        // → fréquent quand response_format=json_object est activé
+        // → format standard avec response_format=json_object
         if (jsonPourListe.startsWith("{")) {
             var tree = objectMapper.readTree(jsonPourListe);
-            // Chercher la première valeur qui est un tableau
-            var fields = tree.fields();
-            while (fields.hasNext()) {
-                var field = fields.next();
-                if (field.getValue().isArray()) {
-                    return objectMapper.readValue(
-                            field.getValue().toString(),
+            for (var entry : tree.properties()) {
+                if (entry.getValue().isArray()) {
+                    List<Position> list = objectMapper.convertValue(
+                            entry.getValue(),
                             new TypeReference<List<Position>>() {}
                     );
+                    return list != null ? new ArrayList<>(list) : new ArrayList<>();
                 }
             }
             // Aucun tableau trouvé → traiter l'objet racine comme un seul élément
-            Position single = objectMapper.readValue(jsonPourListe, Position.class);
-            return List.of(single);
+            Position single = objectMapper.treeToValue(tree, Position.class);
+            List<Position> result = new ArrayList<>(1);
+            result.add(single);
+            return result;
         }
 
         throw new RuntimeException("Format JSON inattendu : " + jsonPourListe.substring(0, Math.min(100, jsonPourListe.length())));

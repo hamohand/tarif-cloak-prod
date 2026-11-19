@@ -45,7 +45,7 @@ public class OpenAiBatchProvider implements BatchProvider {
     public OpenAiBatchProvider(
             RestTemplate restTemplate,
             @Value("${ai.openai.api-key:}") String apiKey,
-            @Value("${ai.openai.model:gpt-4o-mini}") String model,
+            @Value("${ai.openai.model:gpt-4.1-mini}") String model,
             @Value("${ai.openai.base-url:https://api.openai.com/v1}") String baseUrl) {
         this.restTemplate = restTemplate;
         this.apiKey = apiKey;
@@ -288,8 +288,19 @@ public class OpenAiBatchProvider implements BatchProvider {
                 Map.of("role", "system", "content", AiPrompts.getSystemMessage(true, null)),
                 Map.of("role", "user", "content", prompt)
             ));
-            body.put("max_tokens", maxTokens);
-            body.put("temperature", temperature);
+            boolean isReasoningModel = model != null && (
+                model.startsWith("gpt-5")
+                || model.startsWith("o1")
+                || model.startsWith("o3")
+                || model.startsWith("o4")
+            );
+            if (isReasoningModel) {
+                body.put("max_completion_tokens", maxTokens);
+            } else {
+                body.put("max_tokens", maxTokens);
+                body.put("temperature", temperature);
+            }
+            body.put("response_format", Map.of("type", "json_object"));
 
             batchRequest.put("body", body);
 

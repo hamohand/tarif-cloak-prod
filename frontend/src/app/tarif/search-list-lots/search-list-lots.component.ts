@@ -1,7 +1,9 @@
 import {Component, inject} from '@angular/core';
 import {CommonModule} from '@angular/common';
+import {FormsModule} from '@angular/forms';
 import {Article} from "../shared/model/articles";
 import {SearchService} from "../services/search.service";
+import {environment} from "../../../environments/environment";
 import * as Papa from "papaparse";
 import {
     bufferCount,
@@ -14,14 +16,16 @@ import {
     map,
     Observable,
     of,
-    tap
+    switchMap,
+    tap,
+    timer
 } from "rxjs";
 import {OAuthService} from 'angular-oauth2-oidc';
 
 @Component({
   selector: 'app-search-list-lots',
   standalone: true,
-    imports: [CommonModule],
+    imports: [CommonModule, FormsModule],
   templateUrl: './search-list-lots.component.html',
   styleUrl: './search-list-lots.component.css'
 })
@@ -37,9 +41,10 @@ export class SearchListLotsComponent {
     completedCount: number = 0;
     totalCount: number = 0;
 
-    // Réglages basés sur votre analyse : 5 requêtes par minute
-    private readonly BATCH_SIZE = 5; // Liste par lots de 5 d'articles
-    private readonly DELAY_BETWEEN_BATCHES = 61000; // 61 secondes entre les recherches Ai de 2 lots de 5 d'articles
+    // Paramètres configurables (valeurs initiales issues de l'environnement, modifiables avant lancement)
+    batchSize: number = environment.listBatchSize ?? 5;
+    delaySeconds: number = environment.listBatchDelaySeconds ?? 2;
+    isWaitingBetweenBatches: boolean = false;
 
     //constructor(private searchService: SearchService) {}
   private searchService = inject(SearchService);
@@ -131,70 +136,78 @@ export class SearchListLotsComponent {
     }
 
     /**
-     * Lance la recherche en respectant une limite de 5 requêtes par minute.
+     * Lance la recherche par paquets avec taille et pause paramétrables.
      */
     search(): void {
-      // Vérifier l'authentification
-      console.log('Vérification de l\'authentification...');
-      console.log('Token valide:', this.oauthService.hasValidAccessToken());
-      console.log('Token:', this.oauthService.getAccessToken());
-
       if (!this.oauthService.hasValidAccessToken()) {
         this.error = 'Vous devez être connecté pour effectuer une recherche.';
         console.log('Utilisateur non authentifié');
         return;
       }
-      //
-        if (!this.lesarticles?.length) return;
+      if (!this.lesarticles?.length) return;
 
-        this.isLoading = true;
-        this.error = null;
-        this.isSearchComplete = false;
-        this.completedCount = 0;
+      const effectiveBatchSize = Math.max(1, Math.min(15, Math.floor(Number(this.batchSize) || 5)));
+      const rawDelay = Number(this.delaySeconds);
+      const effectiveDelayMs = Number.isFinite(rawDelay) && rawDelay >= 0 ? rawDelay * 1000 : 2000;
+      this.batchSize = effectiveBatchSize;
+      this.delaySeconds = effectiveDelayMs / 1000;
 
-        from(this.lesarticles).pipe(
-            // 1. Crée des paquets de 5 articles
-            bufferCount(this.BATCH_SIZE),
+      this.isLoading = true;
+      this.isWaitingBetweenBatches = false;
+      this.error = null;
+      this.isSearchComplete = false;
+      this.completedCount = 0;
 
-            // 2. Traite chaque paquet l'un après l'autre
-            concatMap((batchOfArticles: Article[], index: number) => {
-                console.log(`Traitement du paquet n°${index + 1} (${batchOfArticles.length} articles)...`);
+      from(this.lesarticles).pipe(
+          // 1. Crée des paquets de taille paramétrable (1 à 15 pour respecter le burst Traefik)
+          bufferCount(effectiveBatchSize),
 
-                // Chaque observable mute directement l'article (référence vers lesarticles[i])
-                const searchRequests$ = batchOfArticles.map(article =>
-                    this.createArticleSearchObservable(article).pipe(
-                        tap((results: {code: string, description: string}[]) => {
-                            article.code = results[0]?.code || '';
-                            article.description = results[0]?.description || '';
-                            article.options = results.length > 1 ? results : undefined;
-                            this.completedCount++;
-                        })
-                    )
-                );
+          // 2. Traite chaque paquet l'un après l'autre
+          concatMap((batchOfArticles: Article[], index: number) => {
+              console.log(`Traitement du paquet n°${index + 1} (${batchOfArticles.length} articles)...`);
 
-                return forkJoin(searchRequests$).pipe(
-                    tap(() => {
-                        if ((index + 1) * this.BATCH_SIZE < this.totalCount) {
-                            console.log(`Paquet n°${index + 1} traité. Pause de 61 secondes avant le prochain...`);
-                        }
-                    }),
-                    delay(this.DELAY_BETWEEN_BATCHES)
-                );
-            }),
+              // Chaque observable mute directement l'article (référence vers lesarticles[i])
+              const searchRequests$ = batchOfArticles.map(article =>
+                  this.createArticleSearchObservable(article).pipe(
+                      tap((results: {code: string, description: string}[]) => {
+                          article.code = results[0]?.code || '';
+                          article.description = results[0]?.description || '';
+                          article.options = results.length > 1 ? results : undefined;
+                          this.completedCount++;
+                      })
+                  )
+              );
 
-            // 3. Se déclenche quand TOUT est terminé
-            finalize(() => {
-                this.isLoading = false;
-                this.isSearchComplete = true;
-                console.log("Traitement de tous les paquets terminé.", this.lesarticles);
-            })
-        ).subscribe({
-            next: () => {},
-            error: (err: any) => {
-                this.error = err?.message || 'Une erreur majeure est survenue pendant le traitement des paquets.';
-                console.error(err);
-            }
-        });
+              const hasMoreBatches = (index + 1) * effectiveBatchSize < this.totalCount;
+              return forkJoin(searchRequests$).pipe(
+                  switchMap(res => {
+                      if (hasMoreBatches && effectiveDelayMs > 0) {
+                          this.isWaitingBetweenBatches = true;
+                          console.log(`Paquet n°${index + 1} traité. Pause de ${this.delaySeconds} seconde(s) avant le prochain...`);
+                          return timer(effectiveDelayMs).pipe(
+                              tap(() => { this.isWaitingBetweenBatches = false; }),
+                              map(() => res)
+                          );
+                      }
+                      return of(res);
+                  })
+              );
+          }),
+
+          // 3. Se déclenche quand TOUT est terminé
+          finalize(() => {
+              this.isWaitingBetweenBatches = false;
+              this.isLoading = false;
+              this.isSearchComplete = true;
+              console.log("Traitement de tous les paquets terminé.", this.lesarticles);
+          })
+      ).subscribe({
+          next: () => {},
+          error: (err: any) => {
+              this.error = err?.message || 'Une erreur majeure est survenue pendant le traitement des paquets.';
+              console.error(err);
+          }
+      });
     }
 
     private createArticleSearchObservable(article: Article): Observable<{code: string, description: string}[]> {
