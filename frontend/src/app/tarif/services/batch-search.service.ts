@@ -36,6 +36,11 @@ export interface BatchStatusResponse {
   message: string;
 }
 
+export interface ParsedHsCode {
+  code: string;
+  justification: string;
+}
+
 export interface BatchResult {
   customId: string;
   resultType: string; // 'succeeded' | 'errored' | 'canceled' | 'expired'
@@ -44,6 +49,7 @@ export interface BatchResult {
   outputTokens?: number;
   errorType?: string;
   errorMessage?: string;
+  parsedCodes?: ParsedHsCode[];
 }
 
 export interface BatchResultsResponse {
@@ -136,9 +142,12 @@ export class BatchSearchService {
    * @param content Le contenu JSON en string
    * @returns Les codes HS parsés ou null en cas d'erreur
    */
-  parseResultContent(content: string): any[] | null {
+  parseResultContent(content: string): ParsedHsCode[] | null {
     try {
       let cleaned = (content || '').trim();
+      if (!cleaned) {
+        return null;
+      }
       if (cleaned.startsWith('```json')) {
         cleaned = cleaned.slice(7);
       } else if (cleaned.startsWith('```')) {
@@ -148,23 +157,49 @@ export class BatchSearchService {
         cleaned = cleaned.slice(0, -3);
       }
       const parsed = JSON.parse(cleaned.trim());
+      let rawItems: any[] | null = null;
+
       if (Array.isArray(parsed)) {
-        return parsed;
-      }
-      if (parsed && typeof parsed === 'object') {
+        rawItems = parsed;
+      } else if (parsed && typeof parsed === 'object') {
         if (Array.isArray(parsed.codes)) {
-          return parsed.codes;
-        }
-        for (const val of Object.values(parsed)) {
-          if (Array.isArray(val)) {
-            return val;
+          rawItems = parsed.codes;
+        } else {
+          for (const val of Object.values(parsed)) {
+            if (Array.isArray(val)) {
+              rawItems = val;
+              break;
+            }
+          }
+          if (!rawItems && 'code' in parsed) {
+            rawItems = [parsed];
           }
         }
-        if ('code' in parsed) {
-          return [parsed];
-        }
       }
-      return null;
+
+      if (!rawItems) {
+        return null;
+      }
+
+      return rawItems
+        .filter(item => item !== null && item !== undefined)
+        .map(item => {
+          if (typeof item === 'string' || typeof item === 'number') {
+            return { code: String(item).trim(), justification: '' };
+          }
+          if (typeof item === 'object') {
+            const codeVal = item.code ?? item.hsCode ?? item.hs_code ?? '';
+            const justifVal = item.justification ?? item.description ?? '';
+            return {
+              code: typeof codeVal === 'string' ? codeVal.trim() : String(codeVal ?? ''),
+              justification: Array.isArray(justifVal)
+                ? justifVal.map(v => String(v ?? '')).join(' ')
+                : (typeof justifVal === 'string' ? justifVal : String(justifVal ?? ''))
+            };
+          }
+          return { code: String(item), justification: '' };
+        })
+        .filter(item => item.code.length > 0 || item.justification.length > 0);
     } catch (e) {
       console.error('Erreur lors du parsing du contenu:', e);
       return null;

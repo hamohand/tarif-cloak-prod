@@ -249,16 +249,21 @@ export class SearchListLotsComponent {
         }
 
         const tsvContent = Papa.unparse(data, { delimiter: "\t", header: true });
-        const blob = new Blob([tsvContent], { type: 'text/tab-separated-values;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
+        const blob = new Blob(['\uFEFF' + tsvContent], { type: 'text/tab-separated-values;charset=utf-8;' });
+        const url = window.URL.createObjectURL(blob);
         const link = document.createElement("a");
-        const baseFileName = this.fileName.substring(0, this.fileName.lastIndexOf('.')) || this.fileName;
-        link.setAttribute("href", url);
-        link.setAttribute("download", `resultat-all-${baseFileName}.tsv`);
+        const baseFileName = this.fileName.substring(0, this.fileName.lastIndexOf('.')) || this.fileName || 'export';
+        link.href = url;
+        link.download = `resultat-all-${baseFileName}.tsv`;
+        link.style.display = 'none';
         document.body.appendChild(link);
         link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+        setTimeout(() => {
+            if (link.parentNode) {
+                link.parentNode.removeChild(link);
+            }
+            window.URL.revokeObjectURL(url);
+        }, 1000);
         this.isSaved = true;
     }
 
@@ -282,19 +287,24 @@ export class SearchListLotsComponent {
             header: true,
         });
 
-        const blob = new Blob([tsvContent], { type: 'text/tab-separated-values;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
+        const blob = new Blob(['\uFEFF' + tsvContent], { type: 'text/tab-separated-values;charset=utf-8;' });
+        const url = window.URL.createObjectURL(blob);
         const link = document.createElement("a");
 
         // On s'assure que le nom du fichier de sortie a TOUJOURS l'extension .tsv
-        const baseFileName = this.fileName.substring(0, this.fileName.lastIndexOf('.')) || this.fileName;
-        link.setAttribute("href", url);
-        link.setAttribute("download", `resultat-${baseFileName}.tsv`);
+        const baseFileName = this.fileName.substring(0, this.fileName.lastIndexOf('.')) || this.fileName || 'export';
+        link.href = url;
+        link.download = `resultat-${baseFileName}.tsv`;
+        link.style.display = 'none';
 
         document.body.appendChild(link);
         link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+        setTimeout(() => {
+            if (link.parentNode) {
+                link.parentNode.removeChild(link);
+            }
+            window.URL.revokeObjectURL(url);
+        }, 1000);
         this.isSaved = true;
     }
 
