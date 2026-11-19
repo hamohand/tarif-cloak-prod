@@ -6,7 +6,9 @@ import { AlertService } from '../../../core/services/alert.service';
 import { InvoiceService } from '../../../core/services/invoice.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { MarketProfileService } from '../../../core/services/market-profile.service';
-import { OrganizationAccountService, OrganizationInfo } from '../../../core/services/organization-account.service';
+import { OrganizationAccountService } from '../../../core/services/organization-account.service';
+import { LayoutService } from '../../../core/services/layout.service';
+import { OrganizationCreditsService } from '../../../core/services/organization-credits.service';
 import { PaymentService } from '../../../core/services/payment.service';
 import { UserService } from '../../../core/services/user.service';
 import { EditionService } from '../../../core/services/edition.service';
@@ -22,6 +24,19 @@ import { of } from 'rxjs';
   template: `
     <nav class="navbar">
       <div class="nav-brand">
+        @if ((isAuthenticated$ | async) && (isOrganizationAccount$ | async)) {
+          <button
+            type="button"
+            class="sidebar-mobile-trigger"
+            (click)="layout.toggleMobileSidebar()"
+            [attr.aria-label]="layout.mobileSidebarOpen() ? 'Fermer le menu organisation' : 'Ouvrir le menu organisation'"
+            title="Menu organisation">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <path d="M9 3v18"/>
+            </svg>
+          </button>
+        }
         <a routerLink="/">
           Enclume-Numérique
           @if (countryCode$ | async; as countryCode) {
@@ -85,6 +100,23 @@ import { of } from 'rxjs';
         <!-- Auth buttons inside mobile menu -->
         <div class="nav-auth-mobile">
           @if (isAuthenticated$ | async) {
+            @if (orgCredits.credits(); as cred) {
+              <a
+                [routerLink]="(isOrganizationAccount$ | async) ? '/organization/stats' : '/dashboard'"
+                (click)="closeMobileMenu()"
+                class="nav-credits-pill nav-credits-pill-mobile"
+                [class.credits-medium]="!cred.isUnlimited && cred.ratioRemaining > 0.2 && cred.ratioRemaining <= 0.5"
+                [class.credits-low]="!cred.isUnlimited && cred.ratioRemaining <= 0.2"
+                [class.credits-pulse]="orgCredits.justUpdated()"
+                title="Crédits disponibles en temps réel">
+                <span class="credits-dot"></span>
+                @if (cred.isUnlimited) {
+                  <span>∞ crédits</span>
+                } @else {
+                  <span>{{ cred.remaining | number }} / {{ cred.monthlyQuota | number }} cr</span>
+                }
+              </a>
+            }
             <span class="user-info">
               Bienvenue {{ getUserInfo()?.preferred_username }}
             </span>
@@ -98,6 +130,22 @@ import { of } from 'rxjs';
 
       <div class="nav-auth">
         @if (isAuthenticated$ | async) {
+          @if (orgCredits.credits(); as cred) {
+            <a
+              [routerLink]="(isOrganizationAccount$ | async) ? '/organization/stats' : '/dashboard'"
+              class="nav-credits-pill"
+              [class.credits-medium]="!cred.isUnlimited && cred.ratioRemaining > 0.2 && cred.ratioRemaining <= 0.5"
+              [class.credits-low]="!cred.isUnlimited && cred.ratioRemaining <= 0.2"
+              [class.credits-pulse]="orgCredits.justUpdated()"
+              [title]="cred.isUnlimited ? 'Crédits illimités' : ('Crédits disponibles : ' + cred.remaining + ' / ' + cred.monthlyQuota + ' (' + cred.currentUsage + ' consommés)')">
+              <span class="credits-dot"></span>
+              @if (cred.isUnlimited) {
+                <span>∞ crédits</span>
+              } @else {
+                <span>{{ cred.remaining | number }} / {{ cred.monthlyQuota | number }} cr</span>
+              }
+            </a>
+          }
           <span class="user-info">
             Bienvenue {{ getUserInfo()?.preferred_username }}
           </span>
@@ -176,49 +224,102 @@ import { of } from 'rxjs';
           }
         </div>
       }
-      <nav class="organization-navbar">
+      @if (layout.mobileSidebarOpen()) {
+        <div class="sidebar-backdrop" (click)="layout.closeMobileSidebar()"></div>
+      }
+      <nav
+        class="organization-navbar"
+        [class.collapsed]="layout.sidebarCollapsed()"
+        [class.mobile-open]="layout.mobileSidebarOpen()">
+        <div class="sidebar-header">
+          <button
+            type="button"
+            class="sidebar-toggle-btn"
+            (click)="layout.toggleSidebar()"
+            [attr.aria-expanded]="!layout.sidebarCollapsed()"
+            [attr.aria-label]="layout.sidebarCollapsed() ? 'Déplier le volet latéral' : 'Réduire le volet latéral'"
+            [title]="layout.sidebarCollapsed() ? 'Déplier le menu' : 'Réduire le menu'">
+            <svg class="toggle-chevrons" [class.flipped]="layout.sidebarCollapsed()" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="11 17 6 12 11 7"/>
+              <polyline points="18 17 13 12 18 7"/>
+            </svg>
+            @if (!layout.sidebarCollapsed()) {
+              <span>Réduire</span>
+            }
+          </button>
+        </div>
+
         <div class="org-nav-links">
-          <a routerLink="/dashboard" routerLinkActive="router-link-active" class="org-nav-link">
+          <a routerLink="/dashboard" routerLinkActive="router-link-active" class="org-nav-link" title="Tableau de bord" (click)="layout.closeMobileSidebar()">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12L12 3l9 9"/><path d="M5 10v11h5v-6h4v6h5V10"/></svg>
-            <span>Tableau de bord</span>
+            <span class="org-link-label">Tableau de bord</span>
           </a>
-          <a routerLink="/organization/account" routerLinkActive="router-link-active" class="org-nav-link">
+          <a routerLink="/organization/account" routerLinkActive="router-link-active" class="org-nav-link" title="Mon organisation" (click)="layout.closeMobileSidebar()">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-            <span>Mon organisation</span>
+            <span class="org-link-label">Mon organisation</span>
           </a>
-          <a routerLink="/organization/stats" routerLinkActive="router-link-active" class="org-nav-link">
+          <a routerLink="/organization/stats" routerLinkActive="router-link-active" class="org-nav-link" title="Crédits et statistiques" (click)="layout.closeMobileSidebar()">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/></svg>
-            <span>Crédits</span>
+            <span class="org-link-label">Crédits</span>
           </a>
-          @if (orgQuota !== null && isBetaMode) {
-            <div class="credits-counter" [class.credits-low]="creditsRatio <= 0.2" [class.credits-medium]="creditsRatio > 0.2 && creditsRatio <= 0.5">
+          @if (orgCredits.credits(); as cred) {
+            <a
+              routerLink="/organization/stats"
+              (click)="layout.closeMobileSidebar()"
+              class="credits-counter"
+              [class.credits-low]="!cred.isUnlimited && cred.ratioRemaining <= 0.2"
+              [class.credits-medium]="!cred.isUnlimited && cred.ratioRemaining > 0.2 && cred.ratioRemaining <= 0.5"
+              [class.credits-pulse]="orgCredits.justUpdated()"
+              title="Voir le détail des crédits">
               <div class="credits-label">
-                <span>Crédits restants</span>
-                <span class="credits-numbers">{{ creditsRemaining }} / {{ orgQuota }}</span>
+                <span>Crédits disponibles</span>
+                <span class="credits-numbers">
+                  @if (cred.isUnlimited) {
+                    Illimité
+                  } @else {
+                    {{ cred.remaining | number }} / {{ cred.monthlyQuota | number }}
+                  }
+                </span>
               </div>
-              <div class="credits-bar-track">
-                <div class="credits-bar-fill" [style.width.%]="creditsRatio * 100"></div>
-              </div>
-            </div>
+              @if (!cred.isUnlimited) {
+                <div class="credits-bar-track">
+                  <div class="credits-bar-fill" [style.width.%]="cred.ratioRemaining * 100"></div>
+                </div>
+                <div class="credits-sub">
+                  <span>{{ cred.currentUsage | number }} consommés</span>
+                </div>
+              }
+            </a>
+            <a
+              routerLink="/organization/stats"
+              (click)="layout.closeMobileSidebar()"
+              class="credits-rail-badge"
+              [class.credits-low]="!cred.isUnlimited && cred.ratioRemaining <= 0.2"
+              [class.credits-medium]="!cred.isUnlimited && cred.ratioRemaining > 0.2 && cred.ratioRemaining <= 0.5"
+              [class.credits-pulse]="orgCredits.justUpdated()"
+              [title]="cred.isUnlimited ? 'Crédits illimités' : ('Crédits disponibles : ' + cred.remaining + ' / ' + cred.monthlyQuota + ' (' + cred.currentUsage + ' consommés)')">
+              <span class="credits-dot"></span>
+              <span class="credits-rail-value">{{ cred.isUnlimited ? '∞' : (cred.remaining | number) }}</span>
+            </a>
           }
           @if (!isBetaMode) {
-            <a routerLink="/organization/invoices" routerLinkActive="router-link-active" class="org-nav-link invoices-link">
+            <a routerLink="/organization/invoices" routerLinkActive="router-link-active" class="org-nav-link invoices-link" title="Factures" (click)="layout.closeMobileSidebar()">
               <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
-              <span>Factures</span>
+              <span class="org-link-label">Factures</span>
               @if (newInvoicesCount > 0 || overdueInvoicesCount > 0) {
                 <span class="invoice-badge" [class.overdue-badge]="overdueInvoicesCount > 0">
                   {{ overdueInvoicesCount > 0 ? overdueInvoicesCount : newInvoicesCount }}
                 </span>
               }
             </a>
-            <a routerLink="/organization/quote-requests" routerLinkActive="router-link-active" class="org-nav-link">
+            <a routerLink="/organization/quote-requests" routerLinkActive="router-link-active" class="org-nav-link" title="Demandes de devis" (click)="layout.closeMobileSidebar()">
               <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2M12 12v3M10.5 13.5h3"/></svg>
-              <span>Demandes de devis</span>
+              <span class="org-link-label">Demandes de devis</span>
             </a>
           }
-          <a routerLink="/aide" routerLinkActive="router-link-active" class="org-nav-link">
+          <a routerLink="/aide" routerLinkActive="router-link-active" class="org-nav-link" title="Aide" (click)="layout.closeMobileSidebar()">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/><path d="M12 6v6M12 15h.01"/></svg>
-            <span>Aide</span>
+            <span class="org-link-label">Aide</span>
           </a>
         </div>
       </nav>
@@ -268,6 +369,32 @@ import { of } from 'rxjs';
       position: sticky;
       top: 0;
       z-index: 1000;
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+    }
+
+    .sidebar-mobile-trigger {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      width: 38px;
+      height: 38px;
+      padding: 0;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--neu-text-primary, #CBD5E1);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .sidebar-mobile-trigger:hover {
+      color: var(--neu-accent, #F59E0B);
+      border-color: rgba(245, 158, 11, 0.4);
     }
 
     .nav-brand a {
@@ -455,6 +582,68 @@ import { of } from 'rxjs';
 
     .nav-auth-mobile { display: none; }
 
+    /* ─── Pastille crédits temps réel (navbar) ─── */
+    .nav-credits-pill {
+      --cc: var(--neu-accent-success, #10B981);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.4rem 0.85rem;
+      border-radius: var(--neu-radius-pill, 9999px);
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      color: var(--neu-text-heading, #F1F5F9);
+      text-decoration: none;
+      font-family: var(--font-display, 'Space Grotesk', sans-serif);
+      font-size: 0.8rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+
+    .nav-credits-pill:hover {
+      transform: translateY(-1px);
+      border-color: var(--cc);
+      box-shadow: 0 0 14px rgba(16, 185, 129, 0.2);
+    }
+
+    .nav-credits-pill.credits-medium {
+      --cc: var(--neu-accent-warning, #F59E0B);
+      background: rgba(245, 158, 11, 0.12);
+      border-color: rgba(245, 158, 11, 0.4);
+    }
+
+    .nav-credits-pill.credits-low {
+      --cc: var(--neu-accent-danger, #EF4444);
+      background: rgba(239, 68, 68, 0.12);
+      border-color: rgba(239, 68, 68, 0.45);
+    }
+
+    .nav-credits-pill-mobile {
+      justify-content: center;
+      padding: 0.55rem 1rem;
+    }
+
+    .credits-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--cc);
+      box-shadow: 0 0 8px var(--cc);
+      flex-shrink: 0;
+    }
+
+    .credits-pulse {
+      animation: creditsFlash 0.65s ease;
+    }
+
+    @keyframes creditsFlash {
+      0% { transform: scale(1); }
+      40% { transform: scale(1.06); box-shadow: 0 0 18px var(--cc); }
+      100% { transform: scale(1); }
+    }
+
     .user-info {
       font-weight: 500;
       font-size: 0.85rem;
@@ -615,6 +804,10 @@ import { of } from 'rxjs';
     }
 
     /* ═══ ORGANIZATION SIDEBAR ═══ */
+    .sidebar-backdrop {
+      display: none;
+    }
+
     .organization-navbar {
       position: fixed;
       left: 0;
@@ -627,8 +820,59 @@ import { of } from 'rxjs';
       box-shadow: 4px 0 24px rgba(0,0,0,0.5);
       z-index: 998;
       overflow-y: auto;
-      padding-top: calc(var(--navbar-height, 64px) + 12px);
+      overflow-x: hidden;
+      padding-top: calc(var(--navbar-height, 64px) + 10px);
       box-sizing: border-box;
+      transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .sidebar-header {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 0 0.75rem 0.65rem;
+      margin-bottom: 0.35rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .sidebar-toggle-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.35rem 0.65rem;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--neu-text-muted, #64748B);
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .sidebar-toggle-btn:hover {
+      color: var(--neu-accent, #F59E0B);
+      border-color: rgba(245, 158, 11, 0.4);
+      background: rgba(245, 158, 11, 0.08);
+    }
+
+    .toggle-chevrons {
+      width: 16px;
+      height: 16px;
+      transition: transform 0.25s ease;
+    }
+
+    .toggle-chevrons.flipped {
+      transform: rotate(180deg);
+    }
+
+    .organization-navbar.collapsed {
+      width: var(--sidebar-collapsed-width, 68px);
+    }
+
+    .organization-navbar.collapsed .sidebar-header {
+      justify-content: center;
+      padding: 0 0.5rem 0.65rem;
     }
 
     .org-nav-links {
@@ -636,6 +880,11 @@ import { of } from 'rxjs';
       flex-direction: column;
       gap: 0.5rem;
       padding: 0 0.75rem;
+    }
+
+    .organization-navbar.collapsed .org-nav-links {
+      padding: 0 0.5rem;
+      align-items: center;
     }
 
     .nav-icon {
@@ -664,6 +913,24 @@ import { of } from 'rxjs';
       width: 100%;
       box-sizing: border-box;
       min-height: var(--touch-target, 44px);
+      white-space: nowrap;
+    }
+
+    .organization-navbar.collapsed .org-nav-link {
+      justify-content: center;
+      padding: 0.7rem;
+    }
+
+    .organization-navbar.collapsed .org-link-label {
+      display: none;
+    }
+
+    .organization-navbar.collapsed .invoice-badge {
+      top: 4px;
+      right: 4px;
+      width: 17px;
+      height: 17px;
+      font-size: 0.6rem;
     }
 
     .org-nav-link:hover {
@@ -685,22 +952,62 @@ import { of } from 'rxjs';
       font-weight: 600;
     }
 
+    .organization-navbar.collapsed .org-nav-link.router-link-active {
+      padding-left: calc(0.7rem - 3px);
+    }
+
     /* ─── Credits counter (sidebar) ─── */
     .credits-counter {
-      margin: 0.5rem 0.75rem;
-      padding: 0.75rem 1rem;
-      background: var(--neu-bg, #E0E5EC);
-      border-radius: var(--neu-radius-inner, 12px);
-      box-shadow: var(--neu-inset, inset 6px 6px 10px rgba(163,177,198,0.6), inset -6px -6px 10px rgba(255,255,255,0.5));
+      display: block;
+      text-decoration: none;
+      margin: 0.35rem 0;
+      padding: 0.75rem 0.9rem;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--neu-radius-inner, 10px);
       box-sizing: border-box;
-      --cc: var(--neu-accent-secondary, #38B2AC);
+      width: 100%;
+      --cc: var(--neu-accent-success, #10B981);
+      transition: border-color 0.2s ease, background 0.2s ease;
     }
-    .credits-counter.credits-medium { --cc: var(--neu-accent-warning, #ED8936); }
-    .credits-counter.credits-low { --cc: var(--neu-accent-danger, #E53E3E); }
-    .credits-label { display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; color: var(--neu-text-muted, #6B7280); margin-bottom: 0.4rem; }
-    .credits-numbers { font-weight: 700; font-size: 0.8rem; color: var(--cc); font-family: var(--font-display, 'Plus Jakarta Sans', sans-serif); }
-    .credits-bar-track { height: 6px; background: var(--neu-bg-dark, #D1D9E6); border-radius: var(--neu-radius-pill, 9999px); overflow: hidden; box-shadow: var(--neu-inset-sm); }
-    .credits-bar-fill { height: 100%; background: var(--cc); border-radius: var(--neu-radius-pill, 9999px); transition: width 0.4s ease-out; }
+    .credits-counter:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: var(--cc);
+    }
+    .credits-counter.credits-medium { --cc: var(--neu-accent-warning, #F59E0B); }
+    .credits-counter.credits-low { --cc: var(--neu-accent-danger, #EF4444); }
+    .credits-label { display: flex; justify-content: space-between; align-items: center; gap: 0.35rem; font-size: 0.72rem; color: var(--neu-text-muted, #94A3B8); margin-bottom: 0.45rem; }
+    .credits-numbers { font-weight: 700; font-size: 0.8rem; color: var(--cc); font-family: var(--font-display, 'Space Grotesk', sans-serif); font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .credits-bar-track { height: 6px; background: rgba(255, 255, 255, 0.08); border-radius: var(--neu-radius-pill, 9999px); overflow: hidden; }
+    .credits-bar-fill { height: 100%; background: var(--cc); border-radius: var(--neu-radius-pill, 9999px); transition: width 0.35s ease-out; }
+    .credits-sub { margin-top: 0.35rem; font-size: 0.69rem; color: var(--neu-text-muted, #64748B); font-variant-numeric: tabular-nums; }
+
+    .credits-rail-badge {
+      --cc: var(--neu-accent-success, #10B981);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.2rem;
+      width: 100%;
+      padding: 0.5rem 0.25rem;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      text-decoration: none;
+      color: var(--cc);
+      font-family: var(--font-display, 'Space Grotesk', sans-serif);
+      font-size: 0.72rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      box-sizing: border-box;
+    }
+    .credits-rail-badge.credits-medium { --cc: var(--neu-accent-warning, #F59E0B); }
+    .credits-rail-badge.credits-low { --cc: var(--neu-accent-danger, #EF4444); }
+    .credits-rail-value { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .organization-navbar.collapsed .credits-counter { display: none; }
+    .organization-navbar.collapsed .credits-rail-badge { display: flex; }
 
     /* ═══ MODALS ═══ */
     .renewal-modal-overlay, .contact-overlay {
@@ -837,12 +1144,66 @@ import { of } from 'rxjs';
         padding: 0.85rem;
       }
 
-      .organization-navbar {
+      .sidebar-mobile-trigger {
+        display: inline-flex;
+      }
+
+      .sidebar-backdrop {
+        display: block;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(2px);
+        z-index: 999;
+      }
+
+      .sidebar-header {
+        display: none;
+      }
+
+      .organization-navbar,
+      .organization-navbar.collapsed {
         position: fixed;
         left: -100%;
         width: 280px;
-        transition: left var(--neu-transition, 0.3s ease-out);
-        padding-top: calc(var(--navbar-height, 60px) + 12px);
+        transition: left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        padding-top: calc(var(--navbar-height, 56px) + 12px);
+        z-index: 1000;
+      }
+
+      .organization-navbar.mobile-open,
+      .organization-navbar.collapsed.mobile-open {
+        left: 0;
+      }
+
+      .organization-navbar.collapsed .org-nav-links {
+        padding: 0 0.75rem;
+        align-items: stretch;
+      }
+
+      .organization-navbar.collapsed .org-nav-link {
+        justify-content: flex-start;
+        padding: 0.7rem 1rem;
+      }
+
+      .organization-navbar.collapsed .org-link-label {
+        display: inline;
+      }
+
+      .organization-navbar.collapsed .credits-counter {
+        display: block;
+      }
+
+      .organization-navbar.collapsed .credits-rail-badge {
+        display: none;
+      }
+
+      .organization-navbar.collapsed .invoice-badge {
+        top: -4px;
+        right: -4px;
+        width: 20px;
+        height: 20px;
+        font-size: 0.65rem;
       }
 
       .admin-navbar { padding: 0.5rem 1rem; }
@@ -871,6 +1232,8 @@ export class NavbarComponent implements OnInit, OnDestroy {
   private organizationAccountService = inject(OrganizationAccountService);
   private paymentService = inject(PaymentService);
   private userService = inject(UserService);
+  public readonly layout = inject(LayoutService);
+  public readonly orgCredits = inject(OrganizationCreditsService);
 
   showRenewalModal = false;
   isRenewing = false;
@@ -902,9 +1265,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
   alertCount = 0;
   newInvoicesCount = 0;
   overdueInvoicesCount = 0;
-  orgQuota: number | null = null;
-  creditsRemaining = 0;
-  creditsRatio = 1;
   private previousInvoicesCount: number | null = null;
   private previousOverdueInvoicesCount: number | null = null;
   private refreshSubscription?: Subscription;
@@ -914,8 +1274,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
     this.isOrganizationAccount$ = this.authService.isOrganizationAccount();
     this.isCollaboratorAccount$ = this.authService.isCollaboratorAccount();
 
-    // Vérifier si l'organisation peut faire des requêtes (essai non expiré)
-    // Par défaut, on suppose que les requêtes sont autorisées
+    // Vérifier si l'organisation peut faire des requêtes (temps réel via orgCredits + statut initial)
     this.canMakeRequests$ = combineLatest([
       this.isOrganizationAccount$,
       this.isCollaboratorAccount$
@@ -926,14 +1285,15 @@ export class NavbarComponent implements OnInit, OnDestroy {
           // Pas d'organisation, donc pas de restriction
           return of(true);
         }
-        // Vérifier l'état de l'organisation
-        return this.organizationAccountService.getOrganizationStatus().pipe(
+        const initialStatus$ = this.organizationAccountService.getOrganizationStatus().pipe(
           map(status => status.canMakeRequests),
           catchError(err => {
             console.error('Erreur lors de la vérification de l\'état de l\'organisation:', err);
-            // En cas d'erreur, autoriser par défaut pour ne pas bloquer l'interface
             return of(true);
           })
+        );
+        return combineLatest([initialStatus$, this.orgCredits.credits$]).pipe(
+          map(([statusAllowed, cred]) => (cred !== null ? cred.canMakeRequests : statusAllowed))
         );
       })
     );
@@ -955,13 +1315,11 @@ export class NavbarComponent implements OnInit, OnDestroy {
     this.loadAlertCount();
     this.loadNewInvoicesCount();
     this.loadOverdueInvoicesCount();
-    this.loadOrgQuota();
-    // Rafraîchir les compteurs toutes les 30 secondes
+    // Rafraîchir les compteurs d'alertes et factures toutes les 30 secondes
     this.refreshSubscription = interval(30000).subscribe(() => {
       this.loadAlertCount();
       this.loadNewInvoicesCount();
       this.loadOverdueInvoicesCount();
-      this.loadOrgQuota();
     });
   }
 
@@ -1002,25 +1360,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
           }
         });
       }
-    });
-  }
-
-  loadOrgQuota() {
-    this.isOrganizationAccount$.pipe(take(1)).subscribe(isOrganization => {
-      if (!isOrganization) return;
-      this.organizationAccountService.getMyOrganization().subscribe({
-        next: (org: OrganizationInfo) => {
-          if (org.monthlyQuota != null) {
-            this.orgQuota = org.monthlyQuota;
-            const used = org.currentMonthUsage ?? 0;
-            this.creditsRemaining = Math.max(0, this.orgQuota - used);
-            this.creditsRatio = this.orgQuota > 0 ? this.creditsRemaining / this.orgQuota : 0;
-          } else {
-            this.orgQuota = null;
-          }
-        },
-        error: () => { this.orgQuota = null; }
-      });
     });
   }
 
