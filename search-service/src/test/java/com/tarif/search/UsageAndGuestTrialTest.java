@@ -243,4 +243,51 @@ class UsageAndGuestTrialTest {
             openAiService.clearUsageInfo();
         }
     }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void openAiServiceSupportsGpt6LunaWithLowReasoningEffort() {
+        assertTrue(OpenAiService.isReasoningModel("gpt-6-luna"));
+        assertTrue(OpenAiService.isReasoningModel("gpt-5-nano"));
+        assertFalse(OpenAiService.isReasoningModel("gpt-4.1-mini"));
+
+        RestTemplate restTemplate = mock(RestTemplate.class);
+        AiPrompts aiPrompts = new AiPrompts();
+        OpenAiService openAiService = new OpenAiService(
+                aiPrompts, restTemplate, "sk-test", "https://api.openai.com/v1",
+                "gpt-4.1-mini", "", "gpt-6-luna", "low",
+                0.01, 0.40, 1.60, 0.10, 0.50);
+
+        String successPayload = """
+                {
+                  "choices": [{"message": {"content": "{\\"items\\": [{\\"code\\": \\"08\\"}]}"}}],
+                  "usage": {"prompt_tokens": 50, "completion_tokens": 10, "total_tokens": 60}
+                }
+                """;
+
+        StringBuilder capturedBody = new StringBuilder();
+        when(restTemplate.exchange(
+                eq("https://api.openai.com/v1/chat/completions"),
+                eq(HttpMethod.POST),
+                any(HttpEntity.class),
+                eq(String.class)))
+                .thenAnswer(invocation -> {
+                    HttpEntity<String> req = invocation.getArgument(2);
+                    capturedBody.append(req.getBody());
+                    return ResponseEntity.ok(successPayload);
+                });
+
+        try {
+            String result = openAiService.demanderAiAide("CHAPITRES", "Pommes", false, "CHAPITRES", true);
+            assertTrue(result.contains("08"));
+            String payload = capturedBody.toString();
+            assertTrue(payload.contains("\"model\":\"gpt-6-luna\""));
+            assertTrue(payload.contains("\"reasoning_effort\":\"low\""));
+            assertTrue(payload.contains("\"max_completion_tokens\":2048"));
+            assertFalse(payload.contains("\"max_tokens\""));
+            assertFalse(payload.contains("\"temperature\""));
+        } finally {
+            openAiService.clearUsageInfo();
+        }
+    }
 }

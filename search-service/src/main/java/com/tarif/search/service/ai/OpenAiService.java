@@ -27,7 +27,9 @@ public class OpenAiService implements AiProvider {
     private final String apiKey;
     private final String apiUrl;
     private final String model;
+    private final String reasoningEffort;
     private final String fastModel;
+    private final String fastReasoningEffort;
     private final double baseRequestPrice;
     private final double priceInputPerMillion;
     private final double priceOutputPerMillion;
@@ -45,25 +47,46 @@ public class OpenAiService implements AiProvider {
             @Value("${ai.openai.api-key:}") String apiKey,
             @Value("${ai.openai.base-url:https://api.openai.com/v1}") String baseUrl,
             @Value("${ai.openai.model:gpt-4.1-mini}") String model,
-            @Value("${ai.openai.fast-model:}") String fastModel,
+            @Value("${ai.openai.reasoning-effort:}") String reasoningEffort,
+            @Value("${ai.openai.fast-model:gpt-6-luna}") String fastModel,
+            @Value("${ai.openai.fast-reasoning-effort:low}") String fastReasoningEffort,
             @Value("${ai.base-request-price:0.01}") double baseRequestPrice,
             @Value("${ai.openai.price-input-per-million:0.40}") double priceInputPerMillion,
             @Value("${ai.openai.price-output-per-million:1.60}") double priceOutputPerMillion,
             @Value("${ai.openai.fast-price-input-per-million:0.10}") double fastPriceInputPerMillion,
-            @Value("${ai.openai.fast-price-output-per-million:0.40}") double fastPriceOutputPerMillion) {
+            @Value("${ai.openai.fast-price-output-per-million:0.50}") double fastPriceOutputPerMillion) {
         this.aiPrompts = aiPrompts;
         this.restTemplate = restTemplate;
         this.apiKey = apiKey;
         this.apiUrl = baseUrl + "/chat/completions";
         this.model = model;
+        this.reasoningEffort = reasoningEffort != null ? reasoningEffort.trim() : "";
         this.fastModel = (fastModel != null && !fastModel.isBlank()) ? fastModel.trim() : model;
+        this.fastReasoningEffort = fastReasoningEffort != null ? fastReasoningEffort.trim() : "";
         this.baseRequestPrice = baseRequestPrice;
         this.priceInputPerMillion = priceInputPerMillion;
         this.priceOutputPerMillion = priceOutputPerMillion;
         this.fastPriceInputPerMillion = fastPriceInputPerMillion;
         this.fastPriceOutputPerMillion = fastPriceOutputPerMillion;
-        log.info("OpenAiService initialisé avec le modèle: {} (fastModel: {}, tarifs: input=${}/M, output=${}/M)",
-                model, this.fastModel, priceInputPerMillion, priceOutputPerMillion);
+        log.info("OpenAiService initialisé avec le modèle: {} (fastModel: {}, fastReasoningEffort: {}, tarifs: input=${}/M, output=${}/M)",
+                model, this.fastModel, this.fastReasoningEffort, priceInputPerMillion, priceOutputPerMillion);
+    }
+
+    public OpenAiService(
+            AiPrompts aiPrompts,
+            RestTemplate restTemplate,
+            String apiKey,
+            String baseUrl,
+            String model,
+            String fastModel,
+            double baseRequestPrice,
+            double priceInputPerMillion,
+            double priceOutputPerMillion,
+            double fastPriceInputPerMillion,
+            double fastPriceOutputPerMillion) {
+        this(aiPrompts, restTemplate, apiKey, baseUrl, model, "", fastModel, "low",
+                baseRequestPrice, priceInputPerMillion, priceOutputPerMillion,
+                fastPriceInputPerMillion, fastPriceOutputPerMillion);
     }
 
     public OpenAiService(
@@ -75,7 +98,7 @@ public class OpenAiService implements AiProvider {
             double baseRequestPrice,
             double priceInputPerMillion,
             double priceOutputPerMillion) {
-        this(aiPrompts, restTemplate, apiKey, baseUrl, model, model,
+        this(aiPrompts, restTemplate, apiKey, baseUrl, model, "", model, "",
                 baseRequestPrice, priceInputPerMillion, priceOutputPerMillion,
                 priceInputPerMillion, priceOutputPerMillion);
     }
@@ -114,6 +137,10 @@ public class OpenAiService implements AiProvider {
         int maxTokens = AiPrompts.getMaxTokensForLevel(withJustification);
         if (isReasoningModel(effectiveModel)) {
             requestBody.put("max_completion_tokens", Math.max(maxTokens * 4, 2048));
+            String effectiveEffort = useFastModel ? fastReasoningEffort : reasoningEffort;
+            if (effectiveEffort != null && !effectiveEffort.isBlank()) {
+                requestBody.put("reasoning_effort", effectiveEffort.toLowerCase());
+            }
         } else {
             requestBody.put("max_tokens", maxTokens);
             requestBody.put("temperature", temperature);
@@ -191,11 +218,13 @@ public class OpenAiService implements AiProvider {
             return true;
         }
         String msg = e.getMessage();
-        return msg != null && (msg.contains("model_not_found") || msg.contains("deprecated"));
+        return msg != null && (msg.contains("model_not_found")
+                || msg.contains("deprecated")
+                || msg.contains("does not have access to model"));
     }
 
     /**
-     * Les modèles de raisonnement OpenAI (gpt-5*, o1*, o3*, o4*) exigent
+     * Les modèles de raisonnement OpenAI (gpt-5*, gpt-6*, o1*, o3*, o4*) exigent
      * max_completion_tokens à la place de max_tokens et refusent temperature=0.
      */
     public static boolean isReasoningModel(String model) {
@@ -203,7 +232,7 @@ public class OpenAiService implements AiProvider {
             return false;
         }
         String normalized = model.trim().toLowerCase();
-        return normalized.startsWith("gpt-5")
+        return normalized.matches("^gpt-([5-9]|\\d{2,})([.-]|$).*")
                 || normalized.startsWith("o1")
                 || normalized.startsWith("o3")
                 || normalized.startsWith("o4");
