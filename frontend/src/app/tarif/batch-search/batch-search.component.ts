@@ -202,7 +202,7 @@ export class BatchSearchComponent implements OnInit, OnDestroy {
   selectBatch(batch: BatchInfo): void {
     this.selectedBatch = batch;
 
-    if (!batch.status) {
+    if (!batch.status || (batch.status.status === 'ended' && !batch.status.resultsAvailable && !batch.results)) {
       this.refreshBatchStatus(batch.batchId);
     } else if (batch.status.status === 'ended' && batch.status.resultsAvailable && !batch.results) {
       this.loadBatchResults(batch.batchId);
@@ -426,15 +426,17 @@ export class BatchSearchComponent implements OnInit, OnDestroy {
         this.batches = JSON.parse(saved).map((b: any) => {
           let restoredMap: Map<string, string> | undefined;
           if (Array.isArray(b.searchTermsMap)) {
-            restoredMap = new Map(
-              b.searchTermsMap
-                .filter((entry: any) => Array.isArray(entry) && entry.length >= 2)
-                .map((entry: any) => [String(entry[0]), String(entry[1] ?? '')])
-            );
+            restoredMap = new Map<string, string>();
+            for (const entry of b.searchTermsMap) {
+              if (Array.isArray(entry) && entry.length >= 2) {
+                restoredMap.set(String(entry[0]), String(entry[1] ?? ''));
+              }
+            }
           } else if (b.searchTermsMap && typeof b.searchTermsMap === 'object') {
-            restoredMap = new Map(
-              Object.entries(b.searchTermsMap).map(([k, v]) => [k, String(v ?? '')])
-            );
+            restoredMap = new Map<string, string>();
+            for (const [k, v] of Object.entries(b.searchTermsMap as Record<string, unknown>)) {
+              restoredMap.set(k, String(v ?? ''));
+            }
           }
           return {
             ...b,
@@ -583,7 +585,7 @@ export class BatchSearchComponent implements OnInit, OnDestroy {
           link.parentNode.removeChild(link);
         }
         window.URL.revokeObjectURL(url);
-      }, 1000);
+      }, 5000);
 
       this.notificationService.success(`Export CSV téléchargé (${filename})`);
     } catch (err) {

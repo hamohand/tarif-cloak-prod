@@ -182,8 +182,8 @@ export class BatchSearchService {
       }
 
       return rawItems
-        .filter(item => item !== null && item !== undefined)
-        .map(item => {
+        .filter((item: any) => item !== null && item !== undefined)
+        .map((item: any): ParsedHsCode => {
           if (typeof item === 'string' || typeof item === 'number') {
             return { code: String(item).trim(), justification: '' };
           }
@@ -193,13 +193,13 @@ export class BatchSearchService {
             return {
               code: typeof codeVal === 'string' ? codeVal.trim() : String(codeVal ?? ''),
               justification: Array.isArray(justifVal)
-                ? justifVal.map(v => String(v ?? '')).join(' ')
+                ? justifVal.map((v: unknown) => String(v ?? '')).join(' ')
                 : (typeof justifVal === 'string' ? justifVal : String(justifVal ?? ''))
             };
           }
           return { code: String(item), justification: '' };
         })
-        .filter(item => item.code.length > 0 || item.justification.length > 0);
+        .filter((item: ParsedHsCode) => item.code.length > 0 || item.justification.length > 0);
     } catch (e) {
       console.error('Erreur lors du parsing du contenu:', e);
       return null;
