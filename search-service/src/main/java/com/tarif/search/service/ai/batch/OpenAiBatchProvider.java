@@ -39,21 +39,33 @@ public class OpenAiBatchProvider implements BatchProvider {
     private final String apiKey;
     private final String model;
     private final String baseUrl;
+    private final String reasoningEffort;
     private final ObjectMapper objectMapper;
     private final int maxTokens = 4096;
     private final float temperature = 0.0F;
 
+    @org.springframework.beans.factory.annotation.Autowired
     public OpenAiBatchProvider(
             RestTemplate restTemplate,
             @Value("${ai.openai.api-key:}") String apiKey,
             @Value("${ai.openai.model:gpt-4.1-mini}") String model,
-            @Value("${ai.openai.base-url:https://api.openai.com/v1}") String baseUrl) {
+            @Value("${ai.openai.base-url:https://api.openai.com/v1}") String baseUrl,
+            @Value("${ai.openai.reasoning-effort:}") String reasoningEffort) {
         this.restTemplate = restTemplate;
         this.apiKey = apiKey;
         this.model = model;
         this.baseUrl = baseUrl;
+        this.reasoningEffort = reasoningEffort != null ? reasoningEffort.trim() : "";
         this.objectMapper = new ObjectMapper();
         log.info("OpenAiBatchProvider initialisé avec le modèle: {}", model);
+    }
+
+    public OpenAiBatchProvider(
+            RestTemplate restTemplate,
+            String apiKey,
+            String model,
+            String baseUrl) {
+        this(restTemplate, apiKey, model, baseUrl, "");
     }
 
     /**
@@ -307,6 +319,9 @@ public class OpenAiBatchProvider implements BatchProvider {
             ));
             if (OpenAiService.isReasoningModel(model)) {
                 body.put("max_completion_tokens", maxTokens);
+                if (reasoningEffort != null && !reasoningEffort.isBlank()) {
+                    body.put("reasoning_effort", reasoningEffort.toLowerCase());
+                }
             } else {
                 body.put("max_tokens", maxTokens);
                 body.put("temperature", temperature);
