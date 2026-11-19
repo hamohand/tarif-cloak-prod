@@ -166,21 +166,19 @@ public class RechercheController {
                                     String userId, String clientIp) {
         try {
             UsageInfo usageInfo = aiService.getCurrentUsage();
-            if (usageInfo == null) {
-                return;
-            }
+            int tokens = usageInfo != null ? usageInfo.getTokens() : 0;
             String effectiveUserId = userId != null ? userId : "guest:" + clientIp;
             Long organizationId = (userId != null && quotaCheck != null) ? quotaCheck.getOrganizationId() : null;
             Double cost = userId != null
                     ? determineCost(quotaCheck, usageInfo)
-                    : usageInfo.getCostUsd();
+                    : (usageInfo != null ? usageInfo.getCostUsd() : 0.0);
 
             eventPublisher.publishSearchCompleted(
                     effectiveUserId,
                     organizationId,
                     endpoint,
                     searchTerm,
-                    usageInfo.getTokens(),
+                    tokens,
                     cost
             );
         } catch (Exception e) {
@@ -197,7 +195,7 @@ public class RechercheController {
         if (!quotaCheck.isQuotaOk() && quotaCheck.isCanUsePayPerRequest()) {
             return quotaCheck.getPayPerRequestPrice() != null
                     ? quotaCheck.getPayPerRequestPrice().doubleValue()
-                    : usageInfo.getCostUsd();
+                    : (usageInfo != null ? usageInfo.getCostUsd() : 0.0);
         }
 
         // Plan mensuel standard : pas de facturation par requête

@@ -23,57 +23,93 @@ public class OpenAiService implements AiProvider {
 
     private final AiPrompts aiPrompts;
     private final RestTemplate restTemplate;
+    private final ObjectMapper objectMapper = new ObjectMapper();
     private final String apiKey;
     private final String apiUrl;
     private final String model;
+    private final String fastModel;
     private final double baseRequestPrice;
     private final double priceInputPerMillion;
     private final double priceOutputPerMillion;
+    private final double fastPriceInputPerMillion;
+    private final double fastPriceOutputPerMillion;
     private final float temperature = 0.0F;
 
     private static final ThreadLocal<UsageInfo> currentUsage = new ThreadLocal<>();
 
+    @org.springframework.beans.factory.annotation.Autowired
     public OpenAiService(
             AiPrompts aiPrompts,
             RestTemplate restTemplate,
             @Value("${ai.openai.api-key:}") String apiKey,
             @Value("${ai.openai.base-url:https://api.openai.com/v1}") String baseUrl,
             @Value("${ai.openai.model:gpt-4.1-mini}") String model,
+            @Value("${ai.openai.fast-model:gpt-4.1-nano}") String fastModel,
             @Value("${ai.base-request-price:0.01}") double baseRequestPrice,
             @Value("${ai.openai.price-input-per-million:0.40}") double priceInputPerMillion,
-            @Value("${ai.openai.price-output-per-million:1.60}") double priceOutputPerMillion) {
+            @Value("${ai.openai.price-output-per-million:1.60}") double priceOutputPerMillion,
+            @Value("${ai.openai.fast-price-input-per-million:0.10}") double fastPriceInputPerMillion,
+            @Value("${ai.openai.fast-price-output-per-million:0.40}") double fastPriceOutputPerMillion) {
         this.aiPrompts = aiPrompts;
         this.restTemplate = restTemplate;
         this.apiKey = apiKey;
         this.apiUrl = baseUrl + "/chat/completions";
         this.model = model;
+        this.fastModel = (fastModel != null && !fastModel.isBlank()) ? fastModel.trim() : model;
         this.baseRequestPrice = baseRequestPrice;
         this.priceInputPerMillion = priceInputPerMillion;
         this.priceOutputPerMillion = priceOutputPerMillion;
-        log.info("OpenAiService initialisé avec le modèle: {} (tarifs: input=${}/M, output=${}/M)",
-                model, priceInputPerMillion, priceOutputPerMillion);
+        this.fastPriceInputPerMillion = fastPriceInputPerMillion;
+        this.fastPriceOutputPerMillion = fastPriceOutputPerMillion;
+        log.info("OpenAiService initialisé avec le modèle: {} (fastModel: {}, tarifs: input=${}/M, output=${}/M)",
+                model, this.fastModel, priceInputPerMillion, priceOutputPerMillion);
+    }
+
+    public OpenAiService(
+            AiPrompts aiPrompts,
+            RestTemplate restTemplate,
+            String apiKey,
+            String baseUrl,
+            String model,
+            double baseRequestPrice,
+            double priceInputPerMillion,
+            double priceOutputPerMillion) {
+        this(aiPrompts, restTemplate, apiKey, baseUrl, model, model,
+                baseRequestPrice, priceInputPerMillion, priceOutputPerMillion,
+                priceInputPerMillion, priceOutputPerMillion);
     }
 
     @Override
     public String demanderAiAide(String titre, String question, boolean withJustification, String niveau) {
+        return demanderAiAide(titre, question, withJustification, niveau, false);
+    }
+
+    @Override
+    public String demanderAiAide(String titre, String question, boolean withJustification, String niveau, boolean allowFastModel) {
         if (apiKey == null || apiKey.isBlank()) {
             log.error("Clé API OpenAI non configurée");
             return "";
         }
 
+        boolean useFastModel = allowFastModel
+                && ("SECTIONS".equals(niveau) || "CHAPITRES".equals(niveau))
+                && fastModel != null && !fastModel.isBlank();
+        String effectiveModel = useFastModel ? fastModel : model;
+        double effectivePriceInput = useFastModel ? fastPriceInputPerMillion : priceInputPerMillion;
+        double effectivePriceOutput = useFastModel ? fastPriceOutputPerMillion : priceOutputPerMillion;
 
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.add("Authorization", "Bearer " + apiKey);
         httpHeaders.add("Content-Type", "application/json");
 
         Map<String, Object> requestBody = new HashMap<>();
-        requestBody.put("model", model);
+        requestBody.put("model", effectiveModel);
         requestBody.put("messages", new Object[]{
                 Map.of("role", "system", "content", AiPrompts.getSystemMessage(withJustification, niveau)),
                 Map.of("role", "user", "content", question)
         });
         int maxTokens = AiPrompts.getMaxTokensForLevel(withJustification);
-        if (isReasoningModel(model)) {
+        if (isReasoningModel(effectiveModel)) {
             requestBody.put("max_completion_tokens", Math.max(maxTokens * 4, 2048));
         } else {
             requestBody.put("max_tokens", maxTokens);
@@ -81,7 +117,6 @@ public class OpenAiService implements AiProvider {
         }
         requestBody.put("response_format", Map.of("type", "json_object"));
 
-        ObjectMapper objectMapper = new ObjectMapper();
         String body;
         try {
             body = objectMapper.writeValueAsString(requestBody);
@@ -121,7 +156,7 @@ public class OpenAiService implements AiProvider {
             int completionTokens = rootNode.path("usage").path("completion_tokens").asInt();
             int totalTokens = rootNode.path("usage").path("total_tokens").asInt();
 
-            double tokenCostUsd = (promptTokens * priceInputPerMillion + completionTokens * priceOutputPerMillion) / 1_000_000;
+            double tokenCostUsd = (promptTokens * effectivePriceInput + completionTokens * effectivePriceOutput) / 1_000_000;
 
             UsageInfo usageInfo = new UsageInfo(
                     totalTokens,
@@ -132,7 +167,7 @@ public class OpenAiService implements AiProvider {
             );
             currentUsage.set(UsageInfo.accumulate(currentUsage.get(), usageInfo));
 
-            log.debug("Niveau: {}, Tokens: {}, Coût: {}", titre, totalTokens, tokenCostUsd);
+            log.debug("Niveau: {}, Modèle: {}, Tokens: {}, Coût: {}", titre, effectiveModel, totalTokens, tokenCostUsd);
 
             return assistantMessage;
 

@@ -7,6 +7,8 @@ import com.tarif.search.service.ai.AiPrompts;
 import com.tarif.search.service.ai.AiService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.text.Normalizer;
@@ -32,6 +34,7 @@ public class SearchService {
     private final Position6DzService position6DzService;
     private final Position10DzService position10DzService;
     private final TariffPositionService tariffPositionService;
+    private final boolean directChapterSearch;
 
     @Autowired
     public SearchService(
@@ -42,7 +45,8 @@ public class SearchService {
             Position4Service position4Service,
             Position6DzService position6DzService,
             Position10DzService position10DzService,
-            TariffPositionService tariffPositionService) {
+            TariffPositionService tariffPositionService,
+            @Value("${ai.search.direct-chapter-search:true}") boolean directChapterSearch) {
         this.aiService = aiService;
         this.aiPrompts = aiPrompts;
         this.sectionService = sectionService;
@@ -51,6 +55,21 @@ public class SearchService {
         this.position6DzService = position6DzService;
         this.position10DzService = position10DzService;
         this.tariffPositionService = tariffPositionService;
+        this.directChapterSearch = directChapterSearch;
+        log.info("SearchService initialisé (directChapterSearch={})", directChapterSearch);
+    }
+
+    public SearchService(
+            AiService aiService,
+            AiPrompts aiPrompts,
+            SectionService sectionService,
+            ChapitreService chapitreService,
+            Position4Service position4Service,
+            Position6DzService position6DzService,
+            Position10DzService position10DzService,
+            TariffPositionService tariffPositionService) {
+        this(aiService, aiPrompts, sectionService, chapitreService,
+                position4Service, position6DzService, position10DzService, tariffPositionService, false);
     }
 
     public SearchService(
@@ -62,7 +81,7 @@ public class SearchService {
             Position6DzService position6DzService,
             Position10DzService position10DzService) {
         this(aiService, aiPrompts, sectionService, chapitreService,
-                position4Service, position6DzService, position10DzService, null);
+                position4Service, position6DzService, position10DzService, null, false);
     }
 
     public enum SearchLevel {
@@ -73,59 +92,79 @@ public class SearchService {
         return search(termeRecherche, maxLevel, "DZ");
     }
 
+    @Cacheable(
+            value = "aiSearchResults",
+            key = "(#zone == null || #zone.isBlank() ? 'DZ' : #zone.trim().toUpperCase()) + ':' + #maxLevel.name() + ':' + (#termeRecherche == null ? '' : #termeRecherche.trim().toLowerCase().replaceAll('\\s+', ' '))",
+            unless = "#result == null || #result.isEmpty()"
+    )
     public List<Position> search(String termeRecherche, SearchLevel maxLevel, String zone) {
+        long startMs = System.currentTimeMillis();
         String normZone = (zone == null || zone.isBlank()) ? "DZ" : zone.trim().toUpperCase(Locale.ROOT);
-        log.info("Recherche cascade pour '{}' (niveau max: {}, zone: {})", termeRecherche, maxLevel, normZone);
+        log.info("Recherche cascade pour '{}' (niveau max: {}, zone: {}, directChapter={})",
+                termeRecherche, maxLevel, normZone, directChapterSearch);
 
+        boolean withCascade = aiPrompts.getDefTheme().isWithCascade();
         List<Position> reponseList = new ArrayList<>();
         List<Position> reponseListLevel = new ArrayList<>();
-        List<Position> positions;
+        List<Position> positions = null;
         List<Position> ragNiveau;
         int tentativesMax = 2;
 
-        // Level 0 : Sections — 3 tentatives car c'est le point d'entrée critique
-        ragNiveau = ragSections();
-        log.info("[DIAG] Level 0 (Sections) - RAG size: {}", ragNiveau.size());
+        boolean useSectionsStep = (maxLevel == SearchLevel.SECTIONS) || withCascade || !directChapterSearch;
 
-        positions = executeWithRetry(SearchLevel.SECTIONS.toString(), termeRecherche, ragNiveau, 3, maxLevel == SearchLevel.SECTIONS, normZone);
+        if (useSectionsStep) {
+            // Level 0 : Sections — 3 tentatives car c'est le point d'entrée critique
+            ragNiveau = ragSections();
+            log.info("[DIAG] Level 0 (Sections) - RAG size: {}", ragNiveau.size());
 
-        if (positions == null || positions.isEmpty()) {
-            log.info("Level 0 - Aucun résultat après 3 tentatives, arrêt cascade");
-            return new ArrayList<>();
-        }
+            positions = executeWithRetry(SearchLevel.SECTIONS.toString(), termeRecherche, ragNiveau, 3, maxLevel == SearchLevel.SECTIONS, normZone);
 
-        enrichWithDescriptions(positions, SearchLevel.SECTIONS, normZone);
-        reponseListLevel.addAll(positions);
+            if (positions == null || positions.isEmpty()) {
+                log.info("Level 0 - Aucun résultat après 3 tentatives, arrêt cascade");
+                return finishSearch(startMs, maxLevel, normZone, new ArrayList<>());
+            }
 
-        if (aiPrompts.getDefTheme().isWithCascade()) {
-            reponseList.addAll(reponseListLevel);
-        }
+            enrichWithDescriptions(positions, SearchLevel.SECTIONS, normZone);
+            reponseListLevel.addAll(positions);
 
-        if (maxLevel == SearchLevel.SECTIONS) {
-            return aiPrompts.getDefTheme().isWithCascade() ? reponseList : reponseListLevel;
+            if (withCascade) {
+                reponseList.addAll(reponseListLevel);
+            }
+
+            if (maxLevel == SearchLevel.SECTIONS) {
+                return finishSearch(startMs, maxLevel, normZone, withCascade ? reponseList : reponseListLevel);
+            }
+
+            ragNiveau = ragChapitres(positions);
+        } else {
+            // Entrée directe au Level 1 (Chapitres regroupés par section) : supprime l'appel IA Sections
+            ragNiveau = ragAllChapitresGroupedBySection();
+            log.info("[PERF] Entrée directe Level 1 (Chapitres) - RAG size: {}", ragNiveau.size());
         }
 
         // Level 1 : Chapitres
         reponseListLevel.clear();
-        ragNiveau = ragChapitres(positions);
-        log.info("[DIAG] Level 1 (Chapitres) - RAG size: {} - sections choisies: {}", ragNiveau.size(), positions.stream().map(p -> p.getCode()+":"+p.getDescription()).toList());
+        int chapTentatives = useSectionsStep ? tentativesMax : 3;
+        log.info("[DIAG] Level 1 (Chapitres) - RAG size: {} - sections choisies: {}",
+                ragNiveau.size(),
+                positions != null ? positions.stream().map(p -> p.getCode() + ":" + p.getDescription()).toList() : "direct");
 
-        positions = executeWithRetry(SearchLevel.CHAPITRES.toString(), termeRecherche, ragNiveau, tentativesMax, maxLevel == SearchLevel.CHAPITRES, normZone);
+        positions = executeWithRetry(SearchLevel.CHAPITRES.toString(), termeRecherche, ragNiveau, chapTentatives, maxLevel == SearchLevel.CHAPITRES, normZone);
 
         if (positions == null || positions.isEmpty()) {
             log.info("Level 1 - Aucun résultat, arrêt cascade");
-            return new ArrayList<>();
+            return finishSearch(startMs, maxLevel, normZone, new ArrayList<>());
         }
 
         enrichWithDescriptions(positions, SearchLevel.CHAPITRES, normZone);
         reponseListLevel.addAll(positions);
 
-        if (aiPrompts.getDefTheme().isWithCascade()) {
+        if (withCascade) {
             reponseList.addAll(reponseListLevel);
         }
 
         if (maxLevel == SearchLevel.CHAPITRES) {
-            return aiPrompts.getDefTheme().isWithCascade() ? reponseList : reponseListLevel;
+            return finishSearch(startMs, maxLevel, normZone, withCascade ? reponseList : reponseListLevel);
         }
 
         // Level 2 : Positions 4
@@ -195,14 +234,20 @@ public class SearchService {
         // on retourne les résultats Level 2 plutôt que de risquer un timeout IA
         if (ragNiveau.size() > 80) {
             log.info("Level 3 - RAG trop volumineux ({} items), retour des résultats Level 2", ragNiveau.size());
-            return aiPrompts.getDefTheme().isWithCascade() ? reponseList : reponseListLevel.isEmpty() ? new ArrayList<>(positionsLevel2) : reponseListLevel;
+            return finishSearch(startMs, maxLevel, normZone,
+                    withCascade ? reponseList : reponseListLevel.isEmpty() ? new ArrayList<>(positionsLevel2) : reponseListLevel);
         }
 
-        positions = executeWithRetry(SearchLevel.POSITIONS6.toString(), termeRecherche, ragNiveau, tentativesMax, maxLevel == SearchLevel.POSITIONS6, normZone);
+        List<Position> shortCircuitedPos6 = tryShortCircuitNonSubdividedPos6(ragNiveau, maxLevel);
+        if (shortCircuitedPos6 != null) {
+            positions = shortCircuitedPos6;
+        } else {
+            positions = executeWithRetry(SearchLevel.POSITIONS6.toString(), termeRecherche, ragNiveau, tentativesMax, maxLevel == SearchLevel.POSITIONS6, normZone);
 
-        if (positions == null || positions.isEmpty()) {
-            log.info("Level 3 - Aucun résultat, utilisation Level 2");
-            positions = positionsLevel2;
+            if (positions == null || positions.isEmpty()) {
+                log.info("Level 3 - Aucun résultat, utilisation Level 2");
+                positions = positionsLevel2;
+            }
         }
 
         positions = expandPosition4CodesToPosition6(positions, normZone);
@@ -211,12 +256,12 @@ public class SearchService {
         reponseListLevel.addAll(positions);
         List<Position> positionsLevel3 = new ArrayList<>(reponseListLevel);
 
-        if (aiPrompts.getDefTheme().isWithCascade()) {
+        if (withCascade) {
             reponseList.addAll(reponseListLevel);
         }
 
         if (maxLevel == SearchLevel.POSITIONS6) {
-            return aiPrompts.getDefTheme().isWithCascade() ? reponseList : reponseListLevel;
+            return finishSearch(startMs, maxLevel, normZone, withCascade ? reponseList : reponseListLevel);
         }
 
         // Level 4 : Positions nationales (P10 DZ / NC8 EU)
@@ -274,7 +319,34 @@ public class SearchService {
             reponseListLevel.addAll(positionsLevel3);
         }
 
-        return aiPrompts.getDefTheme().isWithCascade() ? reponseList : reponseListLevel;
+        return finishSearch(startMs, maxLevel, normZone, withCascade ? reponseList : reponseListLevel);
+    }
+
+    private List<Position> finishSearch(long startMs, SearchLevel maxLevel, String zone, List<Position> result) {
+        long elapsedMs = System.currentTimeMillis() - startMs;
+        List<Position> copy = result != null ? new ArrayList<>(result) : new ArrayList<>();
+        log.info("[PERF] Recherche terminée (zone={}, maxLevel={}) en {} ms -> {} résultat(s)",
+                zone, maxLevel, elapsedMs, copy.size());
+        return copy;
+    }
+
+    private List<Position> tryShortCircuitNonSubdividedPos6(List<Position> ragNiveau, SearchLevel maxLevel) {
+        if (maxLevel == SearchLevel.POSITIONS6 || ragNiveau == null || ragNiveau.isEmpty()) {
+            return null;
+        }
+        List<Position> selectable = ragNiveau.stream()
+                .filter(p -> p.getCode() != null && !p.getCode().isBlank())
+                .toList();
+        if (selectable.size() != 1) {
+            return null;
+        }
+        Position onlyPos = selectable.get(0);
+        String digits = onlyPos.getCode().replaceAll("[^0-9]", "");
+        if (digits.length() == 6 && digits.endsWith("00")) {
+            log.info("[PERF] Level 3 - Sous-position unique non subdivisée '{}', saut de l'appel IA POSITIONS6", onlyPos.getCode());
+            return new ArrayList<>(List.of(new Position(onlyPos.getCode(), onlyPos.getDescription())));
+        }
+        return null;
     }
 
     private List<Position> executeWithRetry(String niveau, String terme, List<Position> rag, int maxTentatives, boolean withJustification, String zone) {
@@ -283,9 +355,12 @@ public class SearchService {
 
         while (tentatives < maxTentatives) {
             tentatives++;
-            log.info("[DIAG] {} - Tentative {}/{}", niveau, tentatives, maxTentatives);
+            boolean allowFastModel = (tentatives == 1) && ("SECTIONS".equals(niveau) || "CHAPITRES".equals(niveau));
+            log.info("[DIAG] {} - Tentative {}/{} (allowFastModel={})", niveau, tentatives, maxTentatives, allowFastModel);
             try {
-                List<Position> rawResult = aiService.promptEtReponse(niveau, terme, rag, withJustification);
+                List<Position> rawResult = allowFastModel
+                        ? aiService.promptEtReponse(niveau, terme, rag, withJustification, true)
+                        : aiService.promptEtReponse(niveau, terme, rag, withJustification);
                 List<Position> result = sanitizePositions(rawResult, niveau, zone);
                 if (!result.isEmpty()) {
                     return result;
@@ -519,6 +594,50 @@ public class SearchService {
                 log.debug("Level 0 - Note section {} injectée ({} chars)", section.getCode(), note.length());
             }
             rag.add(new Position(section.getCode(), section.getDescription()));
+        }
+
+        return rag;
+    }
+
+    private List<Position> ragAllChapitresGroupedBySection() {
+        List<Section> sections = sectionService.getAllSections();
+        List<Chapitre> allChapitres = chapitreService.getAllChapitres();
+        List<Position> rag = new ArrayList<>();
+        Set<String> addedChapterCodes = new HashSet<>();
+
+        if (sections != null && !sections.isEmpty()) {
+            for (Section sec : sections) {
+                List<Chapitre> secChapitres = chapitreService.getChapitresBySection(sec.getCode());
+                if (secChapitres != null && !secChapitres.isEmpty()) {
+                    rag.add(new Position(null, "Section " + sec.getCode() + " - " + sec.getDescription()));
+                    for (Chapitre c : secChapitres) {
+                        rag.add(new Position(c.getCode(), c.getDescription()));
+                        if (c.getCode() != null) {
+                            addedChapterCodes.add(c.getCode().trim());
+                        }
+                    }
+                }
+            }
+        }
+
+        if (allChapitres != null && !allChapitres.isEmpty()) {
+            String lastSection = null;
+            for (Chapitre c : allChapitres) {
+                String code = c.getCode() != null ? c.getCode().trim() : "";
+                if (!addedChapterCodes.contains(code)) {
+                    String sec = c.getSection() != null ? c.getSection().trim() : "";
+                    if (!sec.isEmpty() && !sec.equals(lastSection)) {
+                        String secDesc = sectionService.getDescription(sec);
+                        String header = secDesc != null
+                                ? "Section " + sec + " - " + secDesc
+                                : "Section " + sec;
+                        rag.add(new Position(null, header));
+                        lastSection = sec;
+                    }
+                    rag.add(new Position(c.getCode(), c.getDescription()));
+                    addedChapterCodes.add(code);
+                }
+            }
         }
 
         return rag;

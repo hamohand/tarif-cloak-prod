@@ -254,6 +254,70 @@
   font-size: 1.05rem;
 }
 
+/* ---- Batch Settings ---- */
+.batch-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  text-align: left;
+}
+
+.batch-settings-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.batch-settings-header strong {
+  color: var(--neu-text-heading, #2D3748);
+  font-size: 1rem;
+}
+
+.batch-settings-hint {
+  font-size: 0.85rem;
+  color: var(--neu-text-muted, #6B7280);
+}
+
+.batch-settings-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.batch-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  color: var(--neu-text-primary, #3D4852);
+  font-weight: 500;
+}
+
+.batch-field input {
+  padding: 0.6rem 0.8rem;
+  border-radius: 10px;
+  border: 1px solid rgba(163, 177, 198, 0.45);
+  background: var(--neu-card-bg, #E8ECF2);
+  color: var(--neu-text-heading, #2D3748);
+  font-size: 0.95rem;
+  font-weight: 600;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.batch-field input:focus {
+  border-color: var(--neu-accent, #6C63FF);
+}
+
+.batch-wait-indicator {
+  margin-top: 0.75rem;
+  font-size: 0.9rem;
+  color: var(--neu-text-muted, #6B7280);
+  font-style: italic;
+}
+
 /* ---- Tables ---- */
 .preview-section {
   margin-top: 1.5rem;

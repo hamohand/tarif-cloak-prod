@@ -19,19 +19,22 @@ public class AiPrompts {
     }
 
     public static String getSystemMessage(boolean withJustification, String niveau) {
+        boolean isBroadLevel = "SECTIONS".equals(niveau) || "CHAPITRES".equals(niveau);
         String template;
         if (withJustification) {
             template = SYSTEM_MESSAGE_TEMPLATE
                     .replace("{instruction_details}", INSTRUCTION_DETAILS_JUSTIFIED)
                     .replace("{format_example}", FORMAT_EXAMPLE_JUSTIFIED)
                     .replace("{json_keys}", JSON_KEYS_JUSTIFIED)
+                    .replace("{numeric_rules}", isBroadLevel ? "" : NUMERIC_RULES_BLOCK)
                     .replace("{examples}", EXAMPLES_JUSTIFIED);
         } else {
             template = SYSTEM_MESSAGE_TEMPLATE
                     .replace("{instruction_details}", INSTRUCTION_DETAILS_SIMPLE)
                     .replace("{format_example}", FORMAT_EXAMPLE_SIMPLE)
                     .replace("{json_keys}", JSON_KEYS_SIMPLE)
-                    .replace("{examples}", EXAMPLES_SIMPLE);
+                    .replace("{numeric_rules}", isBroadLevel ? "" : NUMERIC_RULES_BLOCK)
+                    .replace("{examples}", isBroadLevel ? EXAMPLES_SIMPLE_BROAD : EXAMPLES_SIMPLE);
         }
         return template.replace("{level_context}", getLevelContext(niveau));
     }
@@ -88,11 +91,11 @@ public class AiPrompts {
      * @return Le prompt utilisateur complet
      */
     public static String buildUserPrompt(String ragContext, String searchTerm) {
-        return "Produit recherché : \"" + searchTerm + "\"\n\n" +
-               "Voici la liste complète des codes douaniers à analyser :\n" +
+        return "Voici la liste complète des codes douaniers à analyser :\n" +
                "<codes_douaniers>\n" +
                ragContext + "\n" +
                "</codes_douaniers>\n\n" +
+               "Produit recherché : \"" + searchTerm + "\"\n" +
                "À partir de cette liste, identifiez tous les codes dont la description correspond au produit \"" +
                searchTerm + "\".\n\n" +
                "Répondez uniquement avec un objet JSON de la forme {\"items\": [...]}, sans aucun texte avant ou après.";
@@ -127,24 +130,7 @@ public class AiPrompts {
                    Évite les codes clairement hors sujet, mais garde les codes dont le domaine thématique est proche.
                    Les justifications doivent toujours être en français.
                    Les balises <note_section> et <note_chapitre> contiennent des définitions légales. Utilise-les pour identifier les inclusions, exclusions et regroupements de produits. Ne sélectionne JAMAIS ces balises comme des codes.
-
-               PARSER NUMÉRIQUE — Format français :
-                   Tu es un parser numérique spécialisé dans les formats français.
-                   Avant toute comparaison numérique, convertis les nombres selon ces règles :
-                   - Espace simple, double ou insécable utilisé comme séparateur de milliers → retirer : "1 000" → 1000, "1  000" → 1000
-                   - Point utilisé comme séparateur de milliers → retirer : "1.000" → 1000, "2.500.000" → 2500000
-                   - Espace + point combinés → retirer tous les séparateurs : "1 000 000" → 1000000, "12 345" → 12345
-                   - Nombre sans séparateur → lire directement : "1000" → 1000, "2000" → 2000
-                   Applique cette conversion à TOUTES les valeurs numériques rencontrées dans les descriptions et dans la requête avant de les comparer.
-
-                RÈGLE — Cohérence des critères numériques (positions 4 à 10 chiffres uniquement) :
-                   Si la requête contient des critères numériques précis (cylindrée, poids, teneur, dimensions, température, etc.),
-                   rejette les codes dont la description contient des valeurs numériques CLAIREMENT CONTRADICTOIRES avec la requête.
-                   Exemples :
-                   - Requête "cylindrée supérieure à 2000 cm3" → rejeter les codes mentionnant "n'excédant pas X cm3" avec X ≤ 2000.
-                   - Requête "poids inférieur à 5 kg" → rejeter les codes mentionnant "d'un poids supérieur à 5 kg".
-                   Cette règle ne s'applique PAS aux sections et chapitres (codes à 2 chiffres) : toujours y sélectionner les codes thématiquement proches.
-
+           {numeric_rules}
                 RÈGLE — Discrimination sémantique (CRITIQUE) :
                    Ne te fie JAMAIS à un seul mot-clé commun entre la requête et une description.
                    Analyse le SENS COMPLET de chaque description candidate.
@@ -168,6 +154,43 @@ public class AiPrompts {
 
                Voir exemples ci-dessous :
            {examples}
+               """;
+
+    private static final String NUMERIC_RULES_BLOCK = """
+
+               PARSER NUMÉRIQUE — Format français :
+                   Tu es un parser numérique spécialisé dans les formats français.
+                   Avant toute comparaison numérique, convertis les nombres selon ces règles :
+                   - Espace simple, double ou insécable utilisé comme séparateur de milliers → retirer : "1 000" → 1000, "1  000" → 1000
+                   - Point utilisé comme séparateur de milliers → retirer : "1.000" → 1000, "2.500.000" → 2500000
+                   - Espace + point combinés → retirer tous les séparateurs : "1 000 000" → 1000000, "12 345" → 12345
+                   - Nombre sans séparateur → lire directement : "1000" → 1000, "2000" → 2000
+                   Applique cette conversion à TOUTES les valeurs numériques rencontrées dans les descriptions et dans la requête avant de les comparer.
+
+                RÈGLE — Cohérence des critères numériques (positions 4 à 10 chiffres uniquement) :
+                   Si la requête contient des critères numériques précis (cylindrée, poids, teneur, dimensions, température, etc.),
+                   rejette les codes dont la description contient des valeurs numériques CLAIREMENT CONTRADICTOIRES avec la requête.
+                   Exemples :
+                   - Requête "cylindrée supérieure à 2000 cm3" → rejeter les codes mentionnant "n'excédant pas X cm3" avec X ≤ 2000.
+                   - Requête "poids inférieur à 5 kg" → rejeter les codes mentionnant "d'un poids supérieur à 5 kg".
+                   Cette règle ne s'applique PAS aux sections et chapitres (codes à 2 chiffres) : toujours y sélectionner les codes thématiquement proches.
+            """;
+
+    private static final String EXAMPLES_SIMPLE_BROAD = """
+               Exemple 1 :
+                    USER : Pommes.
+                    ASSISTANT :\s
+                    {"items": [{"code": "08"}]}
+
+               Exemple 2 (arabe) :
+                    USER : زيت زيتون بكر ممتاز
+                    ASSISTANT :\s
+                    {"items": [{"code": "15"}]}
+
+               Exemple 3 (ambiguïté machine/véhicule) :
+                    USER : Chariot élévateur de marchandises.
+                    ASSISTANT :\s
+                    {"items": [{"code": "84"}]}
                """;
 
     private static final String INSTRUCTION_DETAILS_JUSTIFIED = """

@@ -71,12 +71,16 @@ ai:
   openai:
     api-key: ${OPENAI_API_KEY:}
     model: ${OPENAI_MODEL:gpt-4.1-mini}
+    fast-model: ${OPENAI_FAST_MODEL:gpt-4.1-nano}
     base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
     price-input-per-million: ${OPENAI_PRICE_INPUT:0.40}    # GPT-4.1-mini: 0.40 | GPT-4.1-nano: 0.10 | GPT-5-nano: à vérifier
     price-output-per-million: ${OPENAI_PRICE_OUTPUT:1.60}  # GPT-4.1-mini: 1.60 | GPT-4.1-nano: 0.40 | GPT-5-nano: à vérifier
+    fast-price-input-per-million: ${OPENAI_FAST_PRICE_INPUT:0.10}
+    fast-price-output-per-million: ${OPENAI_FAST_PRICE_OUTPUT:0.40}
   anthropic:
     api-key: ${ANTHROPIC_API_KEY:}
     model: ${ANTHROPIC_MODEL:claude-sonnet-4-5-20250929}
+    fast-model: ${ANTHROPIC_FAST_MODEL:claude-haiku-4-5-20251001}
     base-url: ${ANTHROPIC_BASE_URL:https://api.anthropic.com/v1}
     price-input-per-million: ${ANTHROPIC_PRICE_INPUT:3.00}
     price-output-per-million: ${ANTHROPIC_PRICE_OUTPUT:15.00}
@@ -87,6 +91,8 @@ ai:
   # Valeurs supportées pour batch : openai, anthropic
   # Note : ollama ne supporte pas les opérations batch
   provider: ${AI_PROVIDER:openai}
+  search:
+    direct-chapter-search: ${DIRECT_CHAPTER_SEARCH:true}
 
   # Configuration des Batches (Message Batches API)
   # Les batches permettent de traiter plusieurs requêtes de manière asynchrone avec une réduction de 50% du coût

@@ -17,6 +17,8 @@ ARG API_URL
 ARG MARKET_VERSION=DEFAULT
 ARG BETA_MODE=false
 ARG APP_EDITION=saas-conference
+ARG LIST_BATCH_SIZE=5
+ARG LIST_BATCH_DELAY_SECONDS=2
 
 # Les rendre disponibles comme variables d'environnement pour le script generate-env.js
 ENV KEYCLOAK_EXTERNAL_URL=${KEYCLOAK_EXTERNAL_URL}
@@ -26,6 +28,8 @@ ENV API_URL=${API_URL}
 ENV MARKET_VERSION=${MARKET_VERSION}
 ENV BETA_MODE=${BETA_MODE}
 ENV APP_EDITION=${APP_EDITION}
+ENV LIST_BATCH_SIZE=${LIST_BATCH_SIZE}
+ENV LIST_BATCH_DELAY_SECONDS=${LIST_BATCH_DELAY_SECONDS}
 
 # Construire l'application en mode production
 # Le résultat sera dans /app/dist/frontend... (ou un nom similaire)

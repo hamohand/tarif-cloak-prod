@@ -22,8 +22,10 @@ import lombok.extern.slf4j.Slf4j;
 public class AnthropicService implements AiProvider {
 
     private final RestTemplate restTemplate;
+    private final ObjectMapper objectMapper = new ObjectMapper();
     private final String apiKey;
     private final String model;
+    private final String fastModel;
     private final String apiUrl;
     private final double baseRequestPrice;
     private final double priceInputPerMillion;
@@ -32,10 +34,12 @@ public class AnthropicService implements AiProvider {
 
     private static final ThreadLocal<UsageInfo> currentUsage = new ThreadLocal<>();
 
+    @org.springframework.beans.factory.annotation.Autowired
     public AnthropicService(
             RestTemplate restTemplate,
             @Value("${ai.anthropic.api-key:}") String apiKey,
-            @Value("${ai.anthropic.model:claude-haiku-4-5-20251001}") String model, // au lieu de claude-sonnet-4-5-20250929 trop cher
+            @Value("${ai.anthropic.model:claude-haiku-4-5-20251001}") String model,
+            @Value("${ai.anthropic.fast-model:claude-haiku-4-5-20251001}") String fastModel,
             @Value("${ai.anthropic.base-url:https://api.anthropic.com/v1}") String baseUrl,
             @Value("${ai.base-request-price:0.01}") double baseRequestPrice,
             @Value("${ai.anthropic.price-input-per-million:3.00}") double priceInputPerMillion,
@@ -43,21 +47,42 @@ public class AnthropicService implements AiProvider {
         this.restTemplate = restTemplate;
         this.apiKey = apiKey;
         this.model = model;
+        this.fastModel = (fastModel != null && !fastModel.isBlank()) ? fastModel.trim() : model;
         this.apiUrl = baseUrl + "/messages";
         this.baseRequestPrice = baseRequestPrice;
         this.priceInputPerMillion = priceInputPerMillion;
         this.priceOutputPerMillion = priceOutputPerMillion;
-        log.info("AnthropicService initialisé avec le modèle: {} (tarifs: input=${}/M, output=${}/M)",
-                model, priceInputPerMillion, priceOutputPerMillion);
+        log.info("AnthropicService initialisé avec le modèle: {} (fastModel: {}, tarifs: input=${}/M, output=${}/M)",
+                model, this.fastModel, priceInputPerMillion, priceOutputPerMillion);
+    }
+
+    public AnthropicService(
+            RestTemplate restTemplate,
+            String apiKey,
+            String model,
+            String baseUrl,
+            double baseRequestPrice,
+            double priceInputPerMillion,
+            double priceOutputPerMillion) {
+        this(restTemplate, apiKey, model, model, baseUrl, baseRequestPrice, priceInputPerMillion, priceOutputPerMillion);
     }
 
     @Override
     public String demanderAiAide(String titre, String question, boolean withJustification, String niveau) {
+        return demanderAiAide(titre, question, withJustification, niveau, false);
+    }
+
+    @Override
+    public String demanderAiAide(String titre, String question, boolean withJustification, String niveau, boolean allowFastModel) {
         if (apiKey == null || apiKey.isBlank()) {
             log.error("Clé API Anthropic non configurée");
             return "";
         }
 
+        boolean useFastModel = allowFastModel
+                && ("SECTIONS".equals(niveau) || "CHAPITRES".equals(niveau))
+                && fastModel != null && !fastModel.isBlank();
+        String effectiveModel = useFastModel ? fastModel : model;
 
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.add("x-api-key", apiKey);
@@ -65,7 +90,7 @@ public class AnthropicService implements AiProvider {
         httpHeaders.add("anthropic-version", "2023-06-01");
 
         Map<String, Object> requestBody = new HashMap<>();
-        requestBody.put("model", model);
+        requestBody.put("model", effectiveModel);
         requestBody.put("system", AiPrompts.getSystemMessage(withJustification, niveau));
         requestBody.put("messages", new Object[]{
                 Map.of("role", "user", "content", question)
@@ -74,7 +99,6 @@ public class AnthropicService implements AiProvider {
         requestBody.put("max_tokens", maxTokens);
         requestBody.put("temperature", temperature);
 
-        ObjectMapper objectMapper = new ObjectMapper();
         String body;
         try {
             body = objectMapper.writeValueAsString(requestBody);

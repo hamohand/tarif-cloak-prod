@@ -10,6 +10,8 @@ export const environment: Environment = {
   },
   apiUrl: 'http://localhost:8081/api',
   marketVersion: 'DEFAULT',
-  appEdition: 'saas-conference'
+  appEdition: 'saas-conference',
+  listBatchSize: 5,
+  listBatchDelaySeconds: 2
 };
 

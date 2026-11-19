@@ -10,5 +10,7 @@ export interface Environment {
   marketVersion: string; // DEFAULT, DZ, etc.
   betaMode?: boolean;
   appEdition?: string;
+  listBatchSize?: number;
+  listBatchDelaySeconds?: number;
 }
 

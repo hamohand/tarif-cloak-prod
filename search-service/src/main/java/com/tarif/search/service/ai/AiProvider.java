@@ -19,6 +19,14 @@ public interface AiProvider {
     String demanderAiAide(String titre, String question, boolean withJustification, String niveau);
 
     /**
+     * Variante permettant au provider d'utiliser un modèle rapide/économique sur les niveaux
+     * larges (SECTIONS / CHAPITRES) en première tentative, puis d'escalader vers le modèle principal.
+     */
+    default String demanderAiAide(String titre, String question, boolean withJustification, String niveau, boolean allowFastModel) {
+        return demanderAiAide(titre, question, withJustification, niveau);
+    }
+
+    /**
      * Récupère les informations d'utilisation de la dernière requête.
      */
     UsageInfo getLastUsageInfo();

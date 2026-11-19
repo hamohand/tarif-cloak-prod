@@ -5,8 +5,10 @@ import {
   BatchSearchService,
   SearchItem,
   BatchStatusResponse,
-  BatchResultsResponse
+  BatchResultsResponse,
+  ParsedHsCode
 } from '../services/batch-search.service';
+import { NotificationService } from '../../core/services/notification.service';
 import { Subscription } from 'rxjs';
 import * as XLSX from 'xlsx';
 
@@ -47,7 +49,10 @@ export class BatchSearchComponent implements OnInit, OnDestroy {
   // Subscriptions pour le polling
   private pollingSubscriptions: Map<string, Subscription> = new Map();
 
-  constructor(private batchSearchService: BatchSearchService) {}
+  constructor(
+    private batchSearchService: BatchSearchService,
+    private notificationService: NotificationService
+  ) {}
 
   ngOnInit(): void {
     // Charger les batches depuis localStorage si disponible
@@ -197,8 +202,9 @@ export class BatchSearchComponent implements OnInit, OnDestroy {
   selectBatch(batch: BatchInfo): void {
     this.selectedBatch = batch;
 
-    // Si le batch est terminé mais n'a pas de résultats, les charger
-    if (batch.status?.status === 'ended' && batch.status.resultsAvailable && !batch.results) {
+    if (!batch.status || (batch.status.status === 'ended' && !batch.status.resultsAvailable && !batch.results)) {
+      this.refreshBatchStatus(batch.batchId);
+    } else if (batch.status.status === 'ended' && batch.status.resultsAvailable && !batch.results) {
       this.loadBatchResults(batch.batchId);
     }
   }
@@ -211,9 +217,14 @@ export class BatchSearchComponent implements OnInit, OnDestroy {
 
     this.batchSearchService.getBatchResults(batchId).subscribe({
       next: (results) => {
+        const hydrated = this.hydrateResults(results);
         const batch = this.batches.find(b => b.batchId === batchId);
         if (batch) {
-          batch.results = results;
+          batch.results = hydrated;
+          batch.error = undefined;
+          if (this.selectedBatch?.batchId === batchId) {
+            this.selectedBatch = batch;
+          }
           this.saveBatchesToStorage();
         }
         this.isLoadingResults = false;
@@ -227,6 +238,21 @@ export class BatchSearchComponent implements OnInit, OnDestroy {
         this.isLoadingResults = false;
       }
     });
+  }
+
+  /**
+   * Pré-parse une seule fois le contenu JSON des résultats pour l'affichage et l'export CSV.
+   */
+  private hydrateResults(results: BatchResultsResponse): BatchResultsResponse {
+    if (results && Array.isArray(results.results)) {
+      results.results = results.results.map(r => ({
+        ...r,
+        parsedCodes: r.resultType === 'succeeded' && r.content
+          ? this.parseResultContent(r.content)
+          : []
+      }));
+    }
+    return results;
   }
 
   /**
@@ -261,7 +287,17 @@ export class BatchSearchComponent implements OnInit, OnDestroy {
         const batch = this.batches.find(b => b.batchId === batchId);
         if (batch) {
           batch.status = status;
+          if (this.selectedBatch?.batchId === batchId) {
+            this.selectedBatch = batch;
+          }
           this.saveBatchesToStorage();
+
+          if (status.status === 'ended') {
+            this.stopPollingForBatch(batchId);
+            if (status.resultsAvailable && !batch.results) {
+              this.loadBatchResults(batchId);
+            }
+          }
         }
       },
       error: (error) => {
@@ -284,6 +320,9 @@ export class BatchSearchComponent implements OnInit, OnDestroy {
         const batch = this.batches.find(b => b.batchId === batchId);
         if (batch) {
           batch.status = status;
+          if (this.selectedBatch?.batchId === batchId) {
+            this.selectedBatch = batch;
+          }
           this.saveBatchesToStorage();
 
           // Si terminé, arrêter le polling et charger les résultats
@@ -316,19 +355,39 @@ export class BatchSearchComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Reprend le polling pour les batches en cours.
+   * Reprend le polling pour les batches en cours ou sans statut initial.
    */
   private resumePollingForInProgressBatches(): void {
     this.batches
-      .filter(b => b.status?.status === 'in_progress')
+      .filter(b => !b.status || b.status.status === 'in_progress')
       .forEach(b => this.startPollingForBatch(b.batchId));
   }
 
   /**
    * Parse le contenu d'un résultat JSON.
    */
-  parseResultContent(content: string): any[] {
+  parseResultContent(content: string): ParsedHsCode[] {
     return this.batchSearchService.parseResultContent(content) || [];
+  }
+
+  /**
+   * Récupère le terme de recherche associé à un customId en gérant Map et objet désérialisé.
+   */
+  getSearchTerm(batch: BatchInfo | null | undefined, customId: string): string {
+    if (!batch?.searchTermsMap || !customId) {
+      return '';
+    }
+    const mapOrObj: unknown = batch.searchTermsMap;
+    if (mapOrObj instanceof Map) {
+      const val = mapOrObj.get(customId);
+      return val !== undefined && val !== null ? String(val) : '';
+    }
+    if (typeof mapOrObj === 'object' && mapOrObj !== null) {
+      const record = mapOrObj as Record<string, unknown>;
+      const val = record[customId];
+      return val !== undefined && val !== null ? String(val) : '';
+    }
+    return '';
   }
 
   /**
@@ -337,13 +396,20 @@ export class BatchSearchComponent implements OnInit, OnDestroy {
   private saveBatchesToStorage(): void {
     try {
       // Ne sauvegarder que les métadonnées essentielles (pas les résultats complets)
-      const batchesToSave = this.batches.map(b => ({
-        batchId: b.batchId,
-        submittedAt: b.submittedAt,
-        status: b.status,
-        // Convertir Map en objet pour la sérialisation JSON
-        searchTermsMap: b.searchTermsMap ? Object.fromEntries(b.searchTermsMap) : undefined
-      }));
+      const batchesToSave = this.batches.map(b => {
+        let serializedMap: Record<string, string> | undefined;
+        if (b.searchTermsMap instanceof Map) {
+          serializedMap = Object.fromEntries(b.searchTermsMap);
+        } else if (b.searchTermsMap && typeof b.searchTermsMap === 'object') {
+          serializedMap = b.searchTermsMap as unknown as Record<string, string>;
+        }
+        return {
+          batchId: b.batchId,
+          submittedAt: b.submittedAt,
+          status: b.status,
+          searchTermsMap: serializedMap
+        };
+      });
       localStorage.setItem('batches', JSON.stringify(batchesToSave));
     } catch (e) {
       console.warn('Impossible de sauvegarder les batches dans localStorage:', e);
@@ -357,12 +423,27 @@ export class BatchSearchComponent implements OnInit, OnDestroy {
     try {
       const saved = localStorage.getItem('batches');
       if (saved) {
-        this.batches = JSON.parse(saved).map((b: any) => ({
-          ...b,
-          submittedAt: new Date(b.submittedAt),
-          // Reconvertir l'objet en Map
-          searchTermsMap: b.searchTermsMap ? new Map(Object.entries(b.searchTermsMap)) : undefined
-        }));
+        this.batches = JSON.parse(saved).map((b: any) => {
+          let restoredMap: Map<string, string> | undefined;
+          if (Array.isArray(b.searchTermsMap)) {
+            restoredMap = new Map<string, string>();
+            for (const entry of b.searchTermsMap) {
+              if (Array.isArray(entry) && entry.length >= 2) {
+                restoredMap.set(String(entry[0]), String(entry[1] ?? ''));
+              }
+            }
+          } else if (b.searchTermsMap && typeof b.searchTermsMap === 'object') {
+            restoredMap = new Map<string, string>();
+            for (const [k, v] of Object.entries(b.searchTermsMap as Record<string, unknown>)) {
+              restoredMap.set(k, String(v ?? ''));
+            }
+          }
+          return {
+            ...b,
+            submittedAt: new Date(b.submittedAt),
+            searchTermsMap: restoredMap
+          };
+        });
       }
     } catch (e) {
       console.warn('Impossible de charger les batches depuis localStorage:', e);
@@ -416,56 +497,100 @@ export class BatchSearchComponent implements OnInit, OnDestroy {
     return 'RAG pour la recherche des : POSITIONS6\n\n';
   }
 
+  private escapeCsvField(value: unknown): string {
+    if (value === null || value === undefined) {
+      return '""';
+    }
+    const str = String(value).replace(/\r?\n/g, ' ').replace(/"/g, '""');
+    return `"${str}"`;
+  }
+
   /**
-   * Télécharge les résultats en CSV.
+   * Télécharge les résultats en CSV (UTF-8 avec BOM pour compatibilité Excel).
    */
-  downloadResultsAsCsv(batch: BatchInfo): void {
-    if (!batch.results) return;
+  downloadResultsAsCsv(batch: BatchInfo | null): void {
+    if (!batch || !batch.results || !Array.isArray(batch.results.results)) {
+      this.notificationService.error('Aucun résultat disponible à télécharger pour ce batch.');
+      return;
+    }
 
-    const csvLines: string[] = [
-      'ID,Terme de recherche,Statut,Code HS,Justification,Input Tokens,Output Tokens'
-    ];
+    if (batch.results.results.length === 0) {
+      this.notificationService.warning('Le batch ne contient aucune ligne de résultat.');
+      return;
+    }
 
-    batch.results.results.forEach(result => {
-      // Récupérer le terme de recherche original depuis le mapping
-      const searchTerm = batch.searchTermsMap?.get(result.customId) || '';
+    try {
+      const csvLines: string[] = [
+        'ID,Terme de recherche,Statut,Code HS,Justification,Input Tokens,Output Tokens'
+      ];
 
-      if (result.resultType === 'succeeded' && result.content) {
-        const codes = this.parseResultContent(result.content);
-        codes.forEach(code => {
+      batch.results.results.forEach(result => {
+        const customId = result.customId || '';
+        const searchTerm = this.getSearchTerm(batch, customId);
+
+        if (result.resultType === 'succeeded' && result.content) {
+          const codes = result.parsedCodes ?? this.parseResultContent(result.content);
+          if (codes.length > 0) {
+            codes.forEach(code => {
+              csvLines.push([
+                this.escapeCsvField(customId),
+                this.escapeCsvField(searchTerm),
+                this.escapeCsvField('Succès'),
+                this.escapeCsvField(code?.code ?? ''),
+                this.escapeCsvField(code?.justification ?? ''),
+                String(result.inputTokens ?? 0),
+                String(result.outputTokens ?? 0)
+              ].join(','));
+            });
+          } else {
+            csvLines.push([
+              this.escapeCsvField(customId),
+              this.escapeCsvField(searchTerm),
+              this.escapeCsvField('Aucun code trouvé'),
+              '""',
+              this.escapeCsvField(result.content),
+              String(result.inputTokens ?? 0),
+              String(result.outputTokens ?? 0)
+            ].join(','));
+          }
+        } else {
           csvLines.push([
-            result.customId,
-            `"${searchTerm.replace(/"/g, '""')}"`, // Échapper les guillemets pour CSV
-            'Succès',
-            code.code || '',
-            `"${(code.justification || '').replace(/"/g, '""')}"`, // Échapper les guillemets
-            result.inputTokens || 0,
-            result.outputTokens || 0
+            this.escapeCsvField(customId),
+            this.escapeCsvField(searchTerm),
+            this.escapeCsvField('Erreur'),
+            '""',
+            this.escapeCsvField(result.errorMessage || result.errorType || 'Erreur lors du traitement'),
+            '0',
+            '0'
           ].join(','));
-        });
-      } else {
-        csvLines.push([
-          result.customId,
-          `"${searchTerm.replace(/"/g, '""')}"`, // Terme de recherche aussi pour les erreurs
-          'Erreur',
-          '',
-          `"${(result.errorMessage || '').replace(/"/g, '""')}"`, // Échapper les guillemets
-          0,
-          0
-        ].join(','));
-      }
-    });
+        }
+      });
 
-    const csvContent = csvLines.join('\n');
-    // Ajouter le BOM UTF-8 pour que les accents s'affichent correctement dans Excel
-    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `batch-${batch.batchId}-results.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      // BOM UTF-8 + CRLF (RFC 4180) pour ouverture directe dans Excel
+      const csvContent = '\uFEFF' + csvLines.join('\r\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const safeBatchId = String(batch.batchId || 'export').replace(/[^a-zA-Z0-9_-]/g, '_');
+      const filename = `batch-${safeBatchId}-results.csv`;
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+
+      setTimeout(() => {
+        if (link.parentNode) {
+          link.parentNode.removeChild(link);
+        }
+        window.URL.revokeObjectURL(url);
+      }, 5000);
+
+      this.notificationService.success(`Export CSV téléchargé (${filename})`);
+    } catch (err) {
+      console.error('Erreur lors de la génération du CSV batch:', err);
+      this.notificationService.error('Erreur lors de la génération du fichier CSV.');
+    }
   }
 }

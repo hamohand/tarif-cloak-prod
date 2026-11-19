@@ -3,9 +3,9 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { OAuthService } from 'angular-oauth2-oidc';
-import { defer, forkJoin, of, Subscription } from 'rxjs';
-import { catchError, map, retry, switchMap } from 'rxjs/operators';
-import { RegulatoryData, SearchService } from '../services/search.service';
+import { defer, forkJoin, Observable, of, Subscription } from 'rxjs';
+import { catchError, map, retry, shareReplay, switchMap } from 'rxjs/operators';
+import { DecodeResult, RegulatoryData, SearchService } from '../services/search.service';
 import { SearchResultItem, SearchStateService, TariffZone } from '../services/search-state.service';
 import { CustomsCardComponent } from '../components/customs-card/customs-card.component';
 
@@ -726,6 +726,25 @@ export class SearchComponent implements OnInit, OnDestroy {
           return;
         }
 
+        const decodeCache = new Map<string, Observable<DecodeResult | null>>();
+        const getDecoded = (code: string, useP10: boolean): Observable<DecodeResult | null> => {
+          const cacheKey = `${useP10 ? 'p10' : 'p6'}:${this.zone}:${code}`;
+          const cached = decodeCache.get(cacheKey);
+          if (cached) {
+            return cached;
+          }
+          const req$ = (useP10
+            ? defer(() => this.searchService.decodeP10Code(code, this.zone, true))
+            : defer(() => this.searchService.decodeCode(code, this.zone, true))
+          ).pipe(
+            retry(1),
+            catchError(() => of(null)),
+            shareReplay(1)
+          );
+          decodeCache.set(cacheKey, req$);
+          return req$;
+        };
+
         const decodeObservables = validResults.map((r: any) => {
           const rawDigits = (r.code || '').replace(/[^0-9]/g, '');
           const targetLeafLen = this.zone === 'EU' ? 8 : 10;
@@ -735,9 +754,7 @@ export class SearchComponent implements OnInit, OnDestroy {
           const justification: string | null = r.justification ?? null;
 
           if (this.endpoint === 'positions10' && aiCode.length === 4) {
-            return defer(() => this.searchService.decodeP10Code(aiCode, this.zone, true)).pipe(
-              retry(1),
-              catchError(() => of(null)),
+            return getDecoded(aiCode, true).pipe(
               switchMap(p4Decoded => {
                 if (!p4Decoded || !p4Decoded.position4) {
                   return of([] as SearchResultItem[]);
@@ -747,9 +764,7 @@ export class SearchComponent implements OnInit, OnDestroy {
                   return of([{ decoded: p4Decoded, justification, aiCode } as SearchResultItem]);
                 }
                 const childCalls = hs6List.map(p6 =>
-                  defer(() => this.searchService.decodeP10Code(p6.code.replace(/[^0-9]/g, ''), this.zone, true)).pipe(
-                    retry(1),
-                    catchError(() => of(null)),
+                  getDecoded(p6.code.replace(/[^0-9]/g, ''), true).pipe(
                     map(p6Decoded => {
                       if (!p6Decoded || (!p6Decoded.position4 && (!p6Decoded.positions6 || p6Decoded.positions6.length === 0))) {
                         return null;
@@ -774,13 +789,7 @@ export class SearchComponent implements OnInit, OnDestroy {
             ? aiCode.substring(0, 6)
             : aiCode;
 
-          const decode$ = this.endpoint === 'positions10'
-            ? defer(() => this.searchService.decodeP10Code(codeToDecode, this.zone, true))
-            : defer(() => this.searchService.decodeCode(codeToDecode, this.zone, true));
-
-          return decode$.pipe(
-            retry(1),
-            catchError(() => of(null)),
+          return getDecoded(codeToDecode, this.endpoint === 'positions10').pipe(
             map(decoded => {
               if (!decoded || (!decoded.position4 && (!decoded.positions6 || decoded.positions6.length === 0))) {
                 return [] as SearchResultItem[];

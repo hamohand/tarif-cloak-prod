@@ -78,6 +78,23 @@
           <div class="file-count"><strong>Articles détectés :</strong> {{ totalCount }}</div>
         </div>
 
+        <div class="batch-settings neumorphic-inset">
+          <div class="batch-settings-header">
+            <strong>Paramètres d'exécution</strong>
+            <span class="batch-settings-hint">0 à 2 s recommandé avec GPT-4.1, augmenter en cas de limite API</span>
+          </div>
+          <div class="batch-settings-fields">
+            <label class="batch-field">
+              <span>Articles par paquet (1–15)</span>
+              <input type="number" [(ngModel)]="batchSize" min="1" max="15" />
+            </label>
+            <label class="batch-field">
+              <span>Pause entre paquets (s)</span>
+              <input type="number" [(ngModel)]="delaySeconds" min="0" max="120" />
+            </label>
+          </div>
+        </div>
+
         <div class="preview-section">
           <button class="btn-ghost" (click)="toggleAfficheDonnees()">
             {{ showMoreDonnees ? 'Masquer l\'aperçu des données' : 'Voir un aperçu des données' }}
@@ -143,6 +160,9 @@
             ({{ ((completedCount / totalCount) * 100) | number:'1.0-0' }}%)
           }
         </div>
+        @if(isWaitingBetweenBatches) {
+          <p class="batch-wait-indicator">Pause de {{ delaySeconds }} s avant le paquet suivant...</p>
+        }
       </div>
     }
 
