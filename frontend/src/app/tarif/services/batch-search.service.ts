@@ -36,6 +36,11 @@ export interface BatchStatusResponse {
   message: string;
 }
 
+export interface ParsedHsCode {
+  code: string;
+  justification: string;
+}
+
 export interface BatchResult {
   customId: string;
   resultType: string; // 'succeeded' | 'errored' | 'canceled' | 'expired'
@@ -44,6 +49,7 @@ export interface BatchResult {
   outputTokens?: number;
   errorType?: string;
   errorMessage?: string;
+  parsedCodes?: ParsedHsCode[];
 }
 
 export interface BatchResultsResponse {
@@ -131,12 +137,69 @@ export class BatchSearchService {
 
   /**
    * Parse le contenu JSON d'un résultat de batch.
+   * Supporte aussi bien un tableau direct `[...]` qu'un objet `{"codes": [...]}`
+   * (avec ou sans blocs markdown).
    * @param content Le contenu JSON en string
    * @returns Les codes HS parsés ou null en cas d'erreur
    */
-  parseResultContent(content: string): any[] | null {
+  parseResultContent(content: string): ParsedHsCode[] | null {
     try {
-      return JSON.parse(content);
+      let cleaned = (content || '').trim();
+      if (!cleaned) {
+        return null;
+      }
+      if (cleaned.startsWith('```json')) {
+        cleaned = cleaned.slice(7);
+      } else if (cleaned.startsWith('```')) {
+        cleaned = cleaned.slice(3);
+      }
+      if (cleaned.endsWith('```')) {
+        cleaned = cleaned.slice(0, -3);
+      }
+      const parsed = JSON.parse(cleaned.trim());
+      let rawItems: any[] | null = null;
+
+      if (Array.isArray(parsed)) {
+        rawItems = parsed;
+      } else if (parsed && typeof parsed === 'object') {
+        if (Array.isArray(parsed.codes)) {
+          rawItems = parsed.codes;
+        } else {
+          for (const val of Object.values(parsed)) {
+            if (Array.isArray(val)) {
+              rawItems = val;
+              break;
+            }
+          }
+          if (!rawItems && 'code' in parsed) {
+            rawItems = [parsed];
+          }
+        }
+      }
+
+      if (!rawItems) {
+        return null;
+      }
+
+      return rawItems
+        .filter((item: any) => item !== null && item !== undefined)
+        .map((item: any): ParsedHsCode => {
+          if (typeof item === 'string' || typeof item === 'number') {
+            return { code: String(item).trim(), justification: '' };
+          }
+          if (typeof item === 'object') {
+            const codeVal = item.code ?? item.hsCode ?? item.hs_code ?? '';
+            const justifVal = item.justification ?? item.description ?? '';
+            return {
+              code: typeof codeVal === 'string' ? codeVal.trim() : String(codeVal ?? ''),
+              justification: Array.isArray(justifVal)
+                ? justifVal.map((v: unknown) => String(v ?? '')).join(' ')
+                : (typeof justifVal === 'string' ? justifVal : String(justifVal ?? ''))
+            };
+          }
+          return { code: String(item), justification: '' };
+        })
+        .filter((item: ParsedHsCode) => item.code.length > 0 || item.justification.length > 0);
     } catch (e) {
       console.error('Erreur lors du parsing du contenu:', e);
       return null;

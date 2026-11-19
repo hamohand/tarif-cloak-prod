@@ -24,6 +24,7 @@ public class OllamaService implements AiProvider {
 
     private final AiPrompts aiPrompts;
     private final RestTemplate restTemplate;
+    private final ObjectMapper objectMapper = new ObjectMapper();
     private final String baseUrl;
     private final String model;
 
@@ -60,7 +61,6 @@ public class OllamaService implements AiProvider {
         ));
         requestBody.put("stream", false);
 
-        ObjectMapper objectMapper = new ObjectMapper();
         String body;
         try {
             body = objectMapper.writeValueAsString(requestBody);

@@ -10,5 +10,7 @@ export const environment: Environment = {
   },
   apiUrl: 'http://localhost:8081/api',
   marketVersion: 'DEFAULT',
-  appEdition: 'saas-dz-ue'
+  appEdition: 'saas-dz-ue',
+  listBatchSize: 5,
+  listBatchDelaySeconds: 2
 } as Environment;

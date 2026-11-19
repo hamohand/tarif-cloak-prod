@@ -46,7 +46,7 @@ public class OpenAiBatchProvider implements BatchProvider {
     public OpenAiBatchProvider(
             RestTemplate restTemplate,
             @Value("${ai.openai.api-key:}") String apiKey,
-            @Value("${ai.openai.model:gpt-4o-mini}") String model,
+            @Value("${ai.openai.model:gpt-4.1-mini}") String model,
             @Value("${ai.openai.base-url:https://api.openai.com/v1}") String baseUrl) {
         this.restTemplate = restTemplate;
         this.apiKey = apiKey;
@@ -166,11 +166,21 @@ public class OpenAiBatchProvider implements BatchProvider {
                     endedAt = root.path("completed_at").asText();
                 }
 
-                // Stocker output_file_id dans resultsUrl pour le téléchargement ultérieur
-                String outputFileId = null;
+                // Stocker output_file_id (et éventuellement error_file_id) dans resultsUrl pour le téléchargement
+                List<String> fileIds = new ArrayList<>();
                 if (root.has("output_file_id") && !root.path("output_file_id").isNull()) {
-                    outputFileId = root.path("output_file_id").asText();
+                    String outId = root.path("output_file_id").asText("").trim();
+                    if (!outId.isEmpty()) {
+                        fileIds.add(outId);
+                    }
                 }
+                if (root.has("error_file_id") && !root.path("error_file_id").isNull()) {
+                    String errId = root.path("error_file_id").asText("").trim();
+                    if (!errId.isEmpty()) {
+                        fileIds.add(errId);
+                    }
+                }
+                String combinedFileIds = fileIds.isEmpty() ? null : String.join(",", fileIds);
 
                 BatchStatus status = BatchStatus.builder()
                     .id(batchId)
@@ -178,7 +188,7 @@ public class OpenAiBatchProvider implements BatchProvider {
                     .requestCounts(counts)
                     .createdAt(createdAt)
                     .endedAt(endedAt)
-                    .resultsUrl(outputFileId) // output_file_id stocké ici
+                    .resultsUrl(combinedFileIds) // output_file_id[,error_file_id] stocké ici
                     .provider("openai")
                     .build();
 
@@ -212,8 +222,14 @@ public class OpenAiBatchProvider implements BatchProvider {
             return Collections.emptyList();
         }
 
-        String outputFileId = status.getResultsUrl();
-        return downloadAndParseResults(outputFileId);
+        List<BatchResult> allResults = new ArrayList<>();
+        for (String fileId : status.getResultsUrl().split(",")) {
+            String trimmedId = fileId.trim();
+            if (!trimmedId.isEmpty()) {
+                allResults.addAll(downloadAndParseResults(trimmedId));
+            }
+        }
+        return allResults;
     }
 
     /**
@@ -295,6 +311,7 @@ public class OpenAiBatchProvider implements BatchProvider {
                 body.put("max_tokens", maxTokens);
                 body.put("temperature", temperature);
             }
+            body.put("response_format", Map.of("type", "json_object"));
 
             batchRequest.put("body", body);
 

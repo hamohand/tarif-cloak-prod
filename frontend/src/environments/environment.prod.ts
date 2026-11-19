@@ -10,5 +10,7 @@ export const environment: Environment = {
   },
   apiUrl: '/api',
   marketVersion: 'DZ',
-  appEdition: 'saas-dz-ue'
+  appEdition: 'saas-dz-ue',
+  listBatchSize: 5,
+  listBatchDelaySeconds: 2
 } as Environment;

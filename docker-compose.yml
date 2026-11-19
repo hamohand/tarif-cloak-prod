@@ -22,6 +22,7 @@ services:
   app-db:
     image: "postgres:${POSTGRES_IMAGE_TAG:-16}"
     container_name: "${PROJECT_NAME:-tci}-app-db"
+    init: true
     environment:
       POSTGRES_DB: "${POSTGRES_DB:-tci_db}"
       POSTGRES_USER: "${POSTGRES_USER:?POSTGRES_USER doit être défini dans .env}"
@@ -43,6 +44,7 @@ services:
   rabbitmq:
     image: rabbitmq:3.12-management-alpine
     container_name: "${PROJECT_NAME:-tci}-rabbitmq"
+    init: true
     environment:
       RABBITMQ_DEFAULT_USER: "${RABBITMQ_USER:-admin}"
       RABBITMQ_DEFAULT_PASS: "${RABBITMQ_PASSWORD:?RABBITMQ_PASSWORD doit être défini dans .env}"
@@ -64,6 +66,7 @@ services:
   redis:
     image: redis:7-alpine
     container_name: "${PROJECT_NAME:-tci}-redis"
+    init: true
     command: redis-server --appendonly yes
     volumes:
       - redis-data:/data
@@ -82,6 +85,7 @@ services:
   keycloak-db:
     image: "postgres:${POSTGRES_IMAGE_TAG:-16}"
     container_name: "${PROJECT_NAME:-tci}-keycloak-db"
+    init: true
     environment:
       POSTGRES_DB: "${KEYCLOAK_DB:-keycloak}"
       POSTGRES_USER: "${KEYCLOAK_DB_USER:-keycloak}"
@@ -161,6 +165,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: "${PROJECT_NAME:-tci}-backend"
+    init: true
     depends_on:
       app-db:
         condition: service_healthy
@@ -251,6 +256,7 @@ services:
       context: ./search-service
       dockerfile: Dockerfile
     container_name: "${PROJECT_NAME:-tci}-search-service"
+    init: true
     depends_on:
       app-db:
         condition: service_healthy
@@ -278,16 +284,21 @@ services:
       AI_PROVIDER: "${AI_PROVIDER:-openai}"
       OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
       OPENAI_MODEL: "${OPENAI_MODEL:-gpt-4.1-mini}"
+      OPENAI_FAST_MODEL: "${OPENAI_FAST_MODEL:-gpt-4.1-nano}"
       OPENAI_BASE_URL: "${OPENAI_BASE_URL:-https://api.openai.com/v1}"
       OPENAI_PRICE_INPUT: "${OPENAI_PRICE_INPUT:-0.40}"
       OPENAI_PRICE_OUTPUT: "${OPENAI_PRICE_OUTPUT:-1.60}"
+      OPENAI_FAST_PRICE_INPUT: "${OPENAI_FAST_PRICE_INPUT:-0.10}"
+      OPENAI_FAST_PRICE_OUTPUT: "${OPENAI_FAST_PRICE_OUTPUT:-0.40}"
       ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:-}"
       ANTHROPIC_MODEL: "${ANTHROPIC_MODEL:-claude-sonnet-4-5-20250929}"
+      ANTHROPIC_FAST_MODEL: "${ANTHROPIC_FAST_MODEL:-claude-haiku-4-5-20251001}"
       ANTHROPIC_BASE_URL: "${ANTHROPIC_BASE_URL:-https://api.anthropic.com/v1}"
       ANTHROPIC_PRICE_INPUT: "${ANTHROPIC_PRICE_INPUT:-3.00}"
       ANTHROPIC_PRICE_OUTPUT: "${ANTHROPIC_PRICE_OUTPUT:-15.00}"
       OLLAMA_BASE_URL: "${OLLAMA_BASE_URL:-http://host.docker.internal:11434}"
       OLLAMA_MODEL: "${OLLAMA_MODEL:-llama3}"
+      DIRECT_CHAPTER_SEARCH: "${DIRECT_CHAPTER_SEARCH:-true}"
       # Quotas découverte visiteurs anonymes (mode SaaS Internet standard)
       GUEST_TRIAL_MAX_PER_IP_PER_DAY: "${GUEST_TRIAL_MAX_PER_IP_PER_DAY:-1}"
       GUEST_TRIAL_GLOBAL_DAILY_LIMIT: "${GUEST_TRIAL_GLOBAL_DAILY_LIMIT:-50}"
@@ -321,6 +332,7 @@ services:
   # ===============================================================
   frontend:
     container_name: "${PROJECT_NAME:-tci}-frontend"
+    init: true
     build:
       context: ./frontend
       args:
@@ -331,6 +343,8 @@ services:
         MARKET_VERSION: "${MARKET_VERSION:-DZ}"
         BETA_MODE: "${BETA_MODE:-false}"
         APP_EDITION: "${APP_EDITION:-saas-dz-ue}"
+        LIST_BATCH_SIZE: "${LIST_BATCH_SIZE:-5}"
+        LIST_BATCH_DELAY_SECONDS: "${LIST_BATCH_DELAY_SECONDS:-2}"
         NGINX_CONF: nginx.conf
     environment:
       APP_EDITION: "${APP_EDITION:-saas-dz-ue}"
@@ -358,6 +372,7 @@ services:
     profiles: [ "mailpit" ]
     image: axllent/mailpit:v1.21
     container_name: "${PROJECT_NAME:-tci}-mailpit"
+    init: true
     ports:
       - "127.0.0.1:${MAILPIT_UI_PORT:-8025}:8025"
     restart: unless-stopped
@@ -368,6 +383,7 @@ services:
     profiles: [ "proxy" ]
     image: traefik:v3.6
     container_name: traefik
+    init: true
     restart: unless-stopped
     ports:
       - "80:80"

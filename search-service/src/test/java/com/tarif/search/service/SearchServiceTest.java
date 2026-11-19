@@ -97,8 +97,10 @@ class SearchServiceTest {
         @Test
         @DisplayName("Level 0 vide → résultat vide immédiat, aucun niveau suivant appelé")
         void search_sectionVideApresTroisTentatives_doitRetournerListeVide() {
-            // given — L'IA ne trouve aucune section (3 tentatives toutes vides)
+            // given — L'IA ne trouve aucune section (tentative 1 fast-model + tentatives 2-3 modèle principal)
             when(sectionService.getAllSections()).thenReturn(List.of(sectionII));
+            when(aiService.promptEtReponse(eq("SECTIONS"), any(), any(), anyBoolean(), eq(true)))
+                    .thenReturn(Collections.emptyList());
             when(aiService.promptEtReponse(eq("SECTIONS"), any(), any(), anyBoolean()))
                     .thenReturn(Collections.emptyList());
 
@@ -116,9 +118,11 @@ class SearchServiceTest {
         void search_chapitreVide_doitRetournerListeVide() {
             // given
             when(sectionService.getAllSections()).thenReturn(List.of(sectionII));
-            when(aiService.promptEtReponse(eq("SECTIONS"), any(), any(), anyBoolean()))
+            when(aiService.promptEtReponse(eq("SECTIONS"), any(), any(), anyBoolean(), eq(true)))
                     .thenReturn(ia_sections);
             when(chapitreService.getChapitresBySection("II")).thenReturn(List.of(chapitre08));
+            when(aiService.promptEtReponse(eq("CHAPITRES"), any(), any(), anyBoolean(), eq(true)))
+                    .thenReturn(Collections.emptyList());
             when(aiService.promptEtReponse(eq("CHAPITRES"), any(), any(), anyBoolean()))
                     .thenReturn(Collections.emptyList());
 
@@ -161,7 +165,7 @@ class SearchServiceTest {
         void search_avecMaxLevelSections_doitSArreterAuLevel0() {
             // given
             when(sectionService.getAllSections()).thenReturn(List.of(sectionII));
-            when(aiService.promptEtReponse(eq("SECTIONS"), any(), any(), anyBoolean()))
+            when(aiService.promptEtReponse(eq("SECTIONS"), any(), any(), anyBoolean(), eq(true)))
                     .thenReturn(ia_sections);
 
             // when
@@ -260,27 +264,32 @@ class SearchServiceTest {
     class RetryTest {
 
         @Test
-        @DisplayName("Réussite à la 2ème tentative → la méthode IA est appelée exactement 2 fois")
+        @DisplayName("Réussite à la 2ème tentative → tentative 1 fast-model + tentative 2 modèle principal")
         void executeWithRetry_reussiteALaDeuxiemeTentative_doitSArreterImmediatement() {
             // given
             when(sectionService.getAllSections()).thenReturn(List.of(sectionII));
+            when(aiService.promptEtReponse(eq("SECTIONS"), any(), any(), anyBoolean(), eq(true)))
+                    .thenReturn(Collections.emptyList()); // 1ère tentative (modèle rapide) : vide
             when(aiService.promptEtReponse(eq("SECTIONS"), any(), any(), anyBoolean()))
-                    .thenReturn(Collections.emptyList())  // 1ère tentative : vide
-                    .thenReturn(ia_sections);             // 2ème tentative : succès
+                    .thenReturn(ia_sections);             // 2ème tentative (modèle principal) : succès
 
             // when — maxLevel=SECTIONS pour tester uniquement le retry du level 0
             searchService.search(TERME, SearchService.SearchLevel.SECTIONS);
 
-            // then — 2 appels exacts (pas 3)
-            verify(aiService, times(2))
+            // then — 2 appels exacts (1 fast-model + 1 modèle principal)
+            verify(aiService, times(1))
+                    .promptEtReponse(eq("SECTIONS"), any(), any(), anyBoolean(), eq(true));
+            verify(aiService, times(1))
                     .promptEtReponse(eq("SECTIONS"), any(), any(), anyBoolean());
         }
 
         @Test
-        @DisplayName("Exception IA au level 0 → absorbée, 3 tentatives, résultat vide")
+        @DisplayName("Exception IA au level 0 → absorbée, 3 tentatives (1 fast + 2 principal), résultat vide")
         void executeWithRetry_exceptionTechnique_doitEtreAbsorbeeEtRetenterTroisFois() {
             // given
             when(sectionService.getAllSections()).thenReturn(List.of(sectionII));
+            when(aiService.promptEtReponse(eq("SECTIONS"), any(), any(), anyBoolean(), eq(true)))
+                    .thenThrow(new RuntimeException("Timeout réseau"));
             when(aiService.promptEtReponse(eq("SECTIONS"), any(), any(), anyBoolean()))
                     .thenThrow(new RuntimeException("Timeout réseau"));
 
@@ -289,8 +298,10 @@ class SearchServiceTest {
                     () -> searchService.search(TERME, SearchService.SearchLevel.POSITIONS10)
             ).doesNotThrowAnyException();
 
-            // then — 3 tentatives épuisées
-            verify(aiService, times(3))
+            // then — 3 tentatives épuisées (1 fast-model + 2 modèle principal)
+            verify(aiService, times(1))
+                    .promptEtReponse(eq("SECTIONS"), any(), any(), anyBoolean(), eq(true));
+            verify(aiService, times(2))
                     .promptEtReponse(eq("SECTIONS"), any(), any(), anyBoolean());
         }
     }
@@ -396,8 +407,8 @@ class SearchServiceTest {
             searchService.search(TERME, SearchService.SearchLevel.POSITIONS10);
 
             // then — chaque niveau IA est appelé exactement une fois
-            verify(aiService, atLeastOnce()).promptEtReponse(eq("SECTIONS"),   any(), any(), anyBoolean());
-            verify(aiService, atLeastOnce()).promptEtReponse(eq("CHAPITRES"),  any(), any(), anyBoolean());
+            verify(aiService, atLeastOnce()).promptEtReponse(eq("SECTIONS"),   any(), any(), anyBoolean(), eq(true));
+            verify(aiService, atLeastOnce()).promptEtReponse(eq("CHAPITRES"),  any(), any(), anyBoolean(), eq(true));
             verify(aiService, atLeastOnce()).promptEtReponse(eq("POSITIONS4"), any(), any(), anyBoolean());
             verify(aiService, atLeastOnce()).promptEtReponse(eq("POSITIONS6"), any(), any(), anyBoolean());
             verify(aiService, atLeastOnce()).promptEtReponse(eq("POSITIONS10"),any(), any(), anyBoolean());
@@ -434,9 +445,9 @@ class SearchServiceTest {
             when(position4Service.getPosition4sByPrefix("18%")).thenReturn(List.of(pos1806));
             when(position4Service.getDescription("1806")).thenReturn(pos1806.getDescription());
 
-            when(aiService.promptEtReponse(eq("SECTIONS"), any(), any(), anyBoolean()))
+            when(aiService.promptEtReponse(eq("SECTIONS"), any(), any(), anyBoolean(), eq(true)))
                     .thenReturn(List.of(new Position("04", null)));
-            when(aiService.promptEtReponse(eq("CHAPITRES"), any(), any(), anyBoolean()))
+            when(aiService.promptEtReponse(eq("CHAPITRES"), any(), any(), anyBoolean(), eq(true)))
                     .thenReturn(List.of(new Position("18", null)));
             when(aiService.promptEtReponse(eq("POSITIONS4"), any(), any(), anyBoolean()))
                     .thenReturn(List.of(new Position("1806", null)));
@@ -483,10 +494,10 @@ class SearchServiceTest {
             when(aiPrompts.getDefTheme()).thenReturn(DefTheme.builder().withDescription(true).build());
 
             when(sectionService.getAllSections()).thenReturn(List.of(sectionII));
-            when(aiService.promptEtReponse(eq("SECTIONS"), any(), any(), anyBoolean())).thenReturn(ia_sections);
+            when(aiService.promptEtReponse(eq("SECTIONS"), any(), any(), anyBoolean(), eq(true))).thenReturn(ia_sections);
 
             when(chapitreService.getChapitresBySection("II")).thenReturn(List.of(chapitre08));
-            when(aiService.promptEtReponse(eq("CHAPITRES"), any(), any(), anyBoolean())).thenReturn(ia_chapitres);
+            when(aiService.promptEtReponse(eq("CHAPITRES"), any(), any(), anyBoolean(), eq(true))).thenReturn(ia_chapitres);
 
             when(position4Service.getPosition4sByPrefix("08%")).thenReturn(List.of(pos4_0808));
             when(position4Service.getDescription("0808")).thenReturn("Pommes, poires et coings, frais");
@@ -515,6 +526,59 @@ class SearchServiceTest {
         }
     }
 
+    @Nested
+    @DisplayName("Optimisations latence (accès direct chapitres & court-circuit .00)")
+    class OptimisationsLatenceTest {
+
+        @Test
+        @DisplayName("directChapterSearch=true → saute l'appel IA SECTIONS et appelle CHAPITRES directement")
+        void search_directChapterSearchActive_sauteAppelIaSections() {
+            SearchService fastSearchService = new SearchService(
+                    aiService, aiPrompts,
+                    sectionService, chapitreService,
+                    position4Service, position6DzService, position10DzService,
+                    tariffPositionService,
+                    true
+            );
+
+            when(sectionService.getAllSections()).thenReturn(List.of(sectionII));
+            when(chapitreService.getAllChapitres()).thenReturn(List.of(chapitre08));
+            when(chapitreService.getChapitresBySection("II")).thenReturn(List.of(chapitre08));
+            when(aiService.promptEtReponse(eq("CHAPITRES"), any(), any(), anyBoolean(), eq(true)))
+                    .thenReturn(ia_chapitres);
+
+            List<Position> result = fastSearchService.search(TERME, SearchService.SearchLevel.CHAPITRES);
+
+            assertThat(result).extracting(Position::getCode).containsExactly("08");
+            verify(aiService, never()).promptEtReponse(eq("SECTIONS"), any(), any(), anyBoolean(), anyBoolean());
+            verify(aiService, never()).promptEtReponse(eq("SECTIONS"), any(), any(), anyBoolean());
+            verify(aiService, times(1)).promptEtReponse(eq("CHAPITRES"), any(), any(), anyBoolean(), eq(true));
+        }
+
+        @Test
+        @DisplayName("Sous-position unique .00 en mode POSITIONS10 → court-circuite l'appel IA POSITIONS6")
+        void search_sousPositionUniqueTermineePar00_courtCircuitePositions6() {
+            Position4 pos4_1206 = new Position4(1206L, "1206", "Graines de tournesol");
+            Position6Dz pos6_120600 = new Position6Dz(1L, "120600", "Graines de tournesol");
+            Position10Dz pos10_1206001000 = new Position10Dz(1L, "1206001000", "De semence");
+
+            configurerJusquauNiveau1();
+            when(position4Service.getPosition4sByPrefix("08%")).thenReturn(List.of(pos4_1206));
+            when(aiService.promptEtReponse(eq("POSITIONS4"), any(), any(), anyBoolean()))
+                    .thenReturn(List.of(new Position("1206", null)));
+            when(position6DzService.getPosition6DzsByPrefix("1206%")).thenReturn(List.of(pos6_120600));
+            when(position10DzService.getPosition10DzsWithContextByPrefix("120600%"))
+                    .thenReturn(List.of(pos10_1206001000));
+            when(aiService.promptEtReponse(eq("POSITIONS10"), any(), any(), anyBoolean()))
+                    .thenReturn(List.of(new Position("1206001000", null)));
+
+            List<Position> result = searchService.search("graines de tournesol de semence", SearchService.SearchLevel.POSITIONS10);
+
+            assertThat(result).extracting(Position::getCode).containsExactly("1206001000");
+            verify(aiService, never()).promptEtReponse(eq("POSITIONS6"), any(), any(), anyBoolean());
+        }
+    }
+
     // ══════════════════════════════════════════════════════════════════════════
     // Helpers : configuration progressive de la cascade
     // ══════════════════════════════════════════════════════════════════════════
@@ -522,10 +586,10 @@ class SearchServiceTest {
     /** Configure les mocks jusqu'au Level 1 (Chapitres) inclus. */
     private void configurerJusquauNiveau1() {
         when(sectionService.getAllSections()).thenReturn(List.of(sectionII));
-        when(aiService.promptEtReponse(eq("SECTIONS"), any(), any(), anyBoolean()))
+        when(aiService.promptEtReponse(eq("SECTIONS"), any(), any(), anyBoolean(), eq(true)))
                 .thenReturn(ia_sections);
         when(chapitreService.getChapitresBySection("II")).thenReturn(List.of(chapitre08));
-        when(aiService.promptEtReponse(eq("CHAPITRES"), any(), any(), anyBoolean()))
+        when(aiService.promptEtReponse(eq("CHAPITRES"), any(), any(), anyBoolean(), eq(true)))
                 .thenReturn(ia_chapitres);
     }
 

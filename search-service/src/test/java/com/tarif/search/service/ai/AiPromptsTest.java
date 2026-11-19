@@ -123,13 +123,25 @@ class AiPromptsTest {
                 .doesNotContain("{format_example}")
                 .doesNotContain("{json_keys}")
                 .doesNotContain("{examples}")
-                .doesNotContain("{level_context}");
+                .doesNotContain("{level_context}")
+                .doesNotContain("{numeric_rules}")
+                .doesNotContain("PARSER NUMÉRIQUE");
 
         assertThat(AiPrompts.getSystemMessage(false, "POSITIONS4"))
                 .doesNotContain("{instruction_details}")
                 .doesNotContain("{format_example}")
                 .doesNotContain("{json_keys}")
                 .doesNotContain("{examples}")
-                .doesNotContain("{level_context}");
+                .doesNotContain("{level_context}")
+                .doesNotContain("{numeric_rules}")
+                .contains("PARSER NUMÉRIQUE");
+    }
+
+    @Test
+    @DisplayName("buildUserPrompt place le contexte statique <codes_douaniers> avant la requête utilisateur (prompt caching)")
+    void buildUserPrompt_placeContexteStatiqueAvantRequete() {
+        String prompt = AiPrompts.buildUserPrompt(RAG_POMMES, "pommes fraîches");
+        assertThat(prompt.indexOf("<codes_douaniers>"))
+                .isLessThan(prompt.indexOf("Produit recherché"));
     }
 }
