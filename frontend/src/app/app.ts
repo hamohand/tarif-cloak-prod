@@ -3,6 +3,7 @@ import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
 import { NavbarComponent } from './shared/components/navbar/navbar.component';
 import { NotificationsComponent } from './shared/components/notifications/notifications.component';
 import { AuthService } from './core/services/auth.service';
+import { LayoutService } from './core/services/layout.service';
 import { AsyncPipe, CommonModule } from '@angular/common';
 import { combineLatest } from 'rxjs';
 import { filter, map } from 'rxjs/operators';
@@ -17,6 +18,7 @@ export class App implements OnInit {
   protected readonly title = signal('saas-frontend');
   private authService = inject(AuthService);
   private router = inject(Router);
+  protected readonly layout = inject(LayoutService);
 
   hasOrganizationSidebar$ = combineLatest([
     this.authService.isAuthenticated(),

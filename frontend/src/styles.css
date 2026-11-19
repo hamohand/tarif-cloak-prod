@@ -75,6 +75,7 @@
 
   /* Layout */
   --sidebar-width: 240px;
+  --sidebar-collapsed-width: 68px;
   --navbar-height: 64px;
   --touch-target: 44px;
 }
@@ -229,6 +230,7 @@ textarea[disabled] {
     --neu-radius-container: 12px;
     --neu-radius-button: 8px;
     --sidebar-width: 0px;
+    --sidebar-collapsed-width: 0px;
     --navbar-height: 56px;
   }
 }

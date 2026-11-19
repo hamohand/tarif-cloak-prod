@@ -1,8 +1,9 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpResponse } from '@angular/common/http';
 import { BehaviorSubject, Observable, throwError } from 'rxjs';
 import { catchError, map, shareReplay, tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
+import { OrganizationCreditsService } from '../../core/services/organization-credits.service';
 
 export interface RegulatoryData {
   dd?: string;
@@ -77,6 +78,7 @@ export class SearchService {
   private decodeCache = new Map<string, Observable<DecodeResult>>();
   private decodeP10Cache = new Map<string, Observable<DecodeResult>>();
   private compareCache = new Map<string, Observable<Hs6ComparisonResult>>();
+  private orgCredits = inject(OrganizationCreditsService);
 
   constructor(private http: HttpClient) { }
 
@@ -203,6 +205,7 @@ export class SearchService {
             expiresAtMs: Date.now() + 115_000
           };
         }
+        this.orgCredits.consumeOptimistic(endpoint);
       }),
       map((resp: HttpResponse<any[]>) => {
         const body = resp.body;
@@ -263,6 +266,7 @@ export class SearchService {
     } else if (error.status === 403) {
       errorMessage = 'Accès refusé. Vous n\'avez pas les permissions nécessaires.';
     } else if (error.status === 429) {
+      this.orgCredits.refreshNow();
       if (backendMessage && backendMessage.includes('Essai gratuit')) {
         this.guestTrialsRemaining$.next(0);
         errorMessage = backendMessage;

@@ -7,6 +7,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { PricingPlanService, PricingPlan } from '../../core/services/pricing-plan.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { OrganizationAccountService, OrganizationUsageLog } from '../../core/services/organization-account.service';
+import { OrganizationCreditsService } from '../../core/services/organization-credits.service';
 import { CurrencyService } from '../../core/services/currency.service';
 import { PaymentService, PaymentProvidersStatus } from '../../core/services/payment.service';
 import { Chart, ChartConfiguration, registerables } from 'chart.js';
@@ -445,6 +446,7 @@ export class OrganizationStatsComponent implements OnInit {
   private currencyService = inject(CurrencyService);
   private paymentService = inject(PaymentService);
   private router = inject(Router);
+  private orgCredits = inject(OrganizationCreditsService);
 
   providersStatus: PaymentProvidersStatus = { chargilyConfigured: true, stripeConfigured: false };
 
@@ -507,6 +509,7 @@ export class OrganizationStatsComponent implements OnInit {
     });
     // Charger les logs d'utilisation qui recalculeront automatiquement les stats
     this.loadOrganizationUsageLogs();
+    this.orgCredits.refreshNow();
   }
 
   loadOrganization() {
@@ -899,6 +902,7 @@ export class OrganizationStatsComponent implements OnInit {
           this.showConfirmModal = false;
           this.notificationService.success('Plan tarifaire changé avec succès');
           this.loadQuota();
+          this.orgCredits.refreshNow();
           this.loadPricingPlans();
         },
         error: (err) => {
