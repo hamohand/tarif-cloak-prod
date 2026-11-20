@@ -146,4 +146,69 @@ class OpenAiBatchProviderTest {
         assertTrue(enrichedJson.contains("\"08081080\""));
         assertTrue(enrichedJson.contains("- - Autres"));
     }
+
+    @Test
+    @DisplayName("Isolation stricte des batches par utilisateur (403 pour un autre utilisateur ou un ancien batch)")
+    void batchController_isoleStrictementLesBatchesParUtilisateur() {
+        BatchService batchService = org.mockito.Mockito.mock(BatchService.class);
+        BatchOwnershipService ownershipService = new BatchOwnershipService(null);
+        BatchSearchController controller = new BatchSearchController(
+                batchService, null, null, null, ownershipService);
+
+        when(batchService.createBatch(anyList())).thenReturn("batch_user_a");
+        BatchStatus inProgress = BatchStatus.builder()
+                .id("batch_user_a")
+                .processingStatus("in_progress")
+                .requestCounts(java.util.Map.of("processing", 1, "succeeded", 0, "errored", 0))
+                .build();
+        when(batchService.getBatchStatus("batch_user_a")).thenReturn(inProgress);
+
+        try {
+            // 1. User A soumet un batch
+            setJwtUser("user-a-sub");
+            BatchSearchController.SearchItem item = new BatchSearchController.SearchItem();
+            item.setCustomId("s-1");
+            item.setSearchTerm("Pommes fraîches");
+            item.setRagContext("");
+            BatchSearchController.BatchSearchRequest submitReq = new BatchSearchController.BatchSearchRequest();
+            submitReq.setSearches(List.of(item));
+            submitReq.setEndpoint("positions10");
+            submitReq.setZone("DZ");
+
+            var submitResp = controller.submitBatchSearch(submitReq);
+            assertEquals(200, submitResp.getStatusCode().value());
+
+            var myBatchesUserA = controller.getMyBatches();
+            assertNotNull(myBatchesUserA.getBody());
+            assertEquals(1, myBatchesUserA.getBody().size());
+            assertEquals("batch_user_a", myBatchesUserA.getBody().get(0).getBatchId());
+            assertEquals(200, controller.getBatchStatus("batch_user_a").getStatusCode().value());
+
+            // 2. User B se connecte : ne voit aucun batch de User A et reçoit 403 sur statut/résultats/cancel
+            setJwtUser("user-b-sub");
+            var myBatchesUserB = controller.getMyBatches();
+            assertNotNull(myBatchesUserB.getBody());
+            assertTrue(myBatchesUserB.getBody().isEmpty());
+
+            assertEquals(403, controller.getBatchStatus("batch_user_a").getStatusCode().value());
+            assertEquals(403, controller.getBatchResults("batch_user_a", "positions10", "DZ").getStatusCode().value());
+            assertEquals(403, controller.cancelBatch("batch_user_a").getStatusCode().value());
+
+            // 3. Un ancien batch sans propriétaire enregistré est également bloqué (403)
+            assertEquals(403, controller.getBatchStatus("batch_legacy_sans_proprietaire").getStatusCode().value());
+        } finally {
+            org.springframework.security.core.context.SecurityContextHolder.clearContext();
+        }
+    }
+
+    private void setJwtUser(String subject) {
+        org.springframework.security.oauth2.jwt.Jwt jwt = org.springframework.security.oauth2.jwt.Jwt
+                .withTokenValue("mock-token-" + subject)
+                .header("alg", "none")
+                .claim("sub", subject)
+                .build();
+        var auth = new org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken(
+                jwt, java.util.Collections.emptyList(), subject);
+        org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(auth);
+    }
 }

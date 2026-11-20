@@ -6,15 +6,19 @@ import {
   SearchItem,
   BatchStatusResponse,
   BatchResultsResponse,
-  ParsedHsCode
+  ParsedHsCode,
+  UserBatchSummary,
+  BatchApiError
 } from '../services/batch-search.service';
 import { SearchStateService, TariffSearchEndpoint, TariffZone } from '../services/search-state.service';
+import { AuthService } from '../../core/services/auth.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { Subscription } from 'rxjs';
 import * as XLSX from 'xlsx';
 
 interface BatchInfo {
   batchId: string;
+  ownerUserId?: string;
   submittedAt: Date;
   endpoint?: TariffSearchEndpoint;
   zone?: TariffZone;
@@ -49,36 +53,143 @@ export class BatchSearchComponent implements OnInit, OnDestroy {
   isSubmitting: boolean = false;
   isLoadingResults: boolean = false;
 
-  // Subscriptions pour le polling et la zone active
+  // Subscriptions pour le polling, la zone active et l'utilisateur connecté
   private pollingSubscriptions: Map<string, Subscription> = new Map();
   private zoneSub?: Subscription;
+  private authSub?: Subscription;
+  private currentUserId: string | null = null;
   currentZone: TariffZone = 'DZ';
 
   constructor(
     private batchSearchService: BatchSearchService,
     private notificationService: NotificationService,
+    private authService: AuthService,
     public state: SearchStateService
   ) {
     this.currentZone = this.state.zone;
   }
 
   ngOnInit(): void {
+    // Supprimer définitivement l'ancienne clé globale partagée non rattachée à un utilisateur
+    this.purgeLegacySharedStorage();
+
     this.zoneSub = this.state.selectedZone$.subscribe(zone => {
       this.currentZone = zone;
     });
 
-    // Charger les batches depuis localStorage si disponible
-    this.loadBatchesFromStorage();
+    this.switchActiveUser(this.authService.getCurrentUserId());
 
-    // Reprendre le polling pour les batches en cours
-    this.resumePollingForInProgressBatches();
+    this.authSub = this.authService.isAuthenticated().subscribe(isAuth => {
+      const uid = isAuth ? this.authService.getCurrentUserId() : null;
+      if (uid !== this.currentUserId) {
+        this.switchActiveUser(uid);
+      }
+    });
   }
 
   ngOnDestroy(): void {
     this.zoneSub?.unsubscribe();
-    // Nettoyer toutes les subscriptions de polling
+    this.authSub?.unsubscribe();
+    this.stopAllPolling();
+  }
+
+  private purgeLegacySharedStorage(): void {
+    try {
+      localStorage.removeItem('batches');
+    } catch {
+      // Ignorer erreurs localStorage
+    }
+  }
+
+  private getUserStorageKey(userId: string | null): string | null {
+    if (!userId || !userId.trim()) {
+      return null;
+    }
+    return `tci_batches_u_${userId.trim()}`;
+  }
+
+  private stopAllPolling(): void {
     this.pollingSubscriptions.forEach(sub => sub.unsubscribe());
     this.pollingSubscriptions.clear();
+  }
+
+  private switchActiveUser(userId: string | null): void {
+    this.purgeLegacySharedStorage();
+    this.stopAllPolling();
+    this.currentUserId = userId;
+    this.batches = [];
+    this.selectedBatch = null;
+
+    if (!userId) {
+      return;
+    }
+
+    this.loadBatchesFromStorage(userId);
+    this.resumePollingForInProgressBatches();
+    this.syncMyBatchesFromServer(userId);
+  }
+
+  private syncMyBatchesFromServer(userId: string): void {
+    this.batchSearchService.getMyBatches().subscribe({
+      next: (serverBatches: UserBatchSummary[]) => {
+        if (this.currentUserId !== userId || !Array.isArray(serverBatches)) {
+          return;
+        }
+        const byId = new Map<string, BatchInfo>();
+        for (const existing of this.batches) {
+          byId.set(existing.batchId, existing);
+        }
+
+        for (const sb of serverBatches) {
+          if (!sb?.batchId) continue;
+          let termsMap: Map<string, string> | undefined;
+          if (sb.searchTerms && typeof sb.searchTerms === 'object') {
+            termsMap = new Map<string, string>();
+            for (const [k, v] of Object.entries(sb.searchTerms)) {
+              termsMap.set(k, String(v ?? ''));
+            }
+          }
+          const endpoint: TariffSearchEndpoint = sb.endpoint === 'positions10' ? 'positions10' : 'positions6';
+          const zone: TariffZone = sb.zone === 'EU' ? 'EU' : 'DZ';
+          const local = byId.get(sb.batchId);
+          if (local) {
+            local.ownerUserId = userId;
+            local.endpoint = local.endpoint || endpoint;
+            local.zone = local.zone || zone;
+            if ((!local.searchTermsMap || local.searchTermsMap.size === 0) && termsMap) {
+              local.searchTermsMap = termsMap;
+            }
+          } else {
+            byId.set(sb.batchId, {
+              batchId: sb.batchId,
+              ownerUserId: userId,
+              submittedAt: sb.submittedAt ? new Date(sb.submittedAt) : new Date(),
+              endpoint,
+              zone,
+              searchTermsMap: termsMap
+            });
+          }
+        }
+
+        this.batches = Array.from(byId.values()).sort(
+          (a, b) => b.submittedAt.getTime() - a.submittedAt.getTime()
+        );
+        this.saveBatchesToStorage();
+        this.resumePollingForInProgressBatches();
+      },
+      error: (err) => {
+        console.debug('Synchronisation serveur des batches ignorée:', err?.message || err);
+      }
+    });
+  }
+
+  private evictForbiddenBatch(batchId: string): void {
+    this.stopPollingForBatch(batchId);
+    this.batches = this.batches.filter(b => b.batchId !== batchId);
+    if (this.selectedBatch?.batchId === batchId) {
+      this.selectedBatch = null;
+    }
+    this.saveBatchesToStorage();
   }
 
   get searchEndpoint(): TariffSearchEndpoint {
@@ -213,6 +324,15 @@ export class BatchSearchComponent implements OnInit, OnDestroy {
       return;
     }
 
+    const ownerUserId = this.authService.getCurrentUserId();
+    if (!ownerUserId) {
+      this.notificationService.error('Veuillez vous connecter pour soumettre un batch.');
+      return;
+    }
+    if (this.currentUserId !== ownerUserId) {
+      this.switchActiveUser(ownerUserId);
+    }
+
     const endpoint: TariffSearchEndpoint = this.searchEndpoint;
     const zone: TariffZone = this.currentZone;
 
@@ -235,9 +355,10 @@ export class BatchSearchComponent implements OnInit, OnDestroy {
       next: (response) => {
         console.log('Batch soumis avec succès:', response);
 
-        // Créer une entrée de batch avec le mapping des termes de recherche et le mode choisi
+        // Créer une entrée de batch rattachée strictement à l'utilisateur connecté
         const batchInfo: BatchInfo = {
           batchId: response.batchId,
+          ownerUserId: ownerUserId,
           submittedAt: new Date(),
           endpoint: endpoint,
           zone: zone,
@@ -304,6 +425,11 @@ export class BatchSearchComponent implements OnInit, OnDestroy {
       },
       error: (error) => {
         console.error('Erreur lors du chargement des résultats:', error);
+        if (error instanceof BatchApiError && error.status === 403) {
+          this.evictForbiddenBatch(batchId);
+          this.isLoadingResults = false;
+          return;
+        }
         const batch = this.batches.find(b => b.batchId === batchId);
         if (batch) {
           batch.error = error.message;
@@ -375,6 +501,9 @@ export class BatchSearchComponent implements OnInit, OnDestroy {
       },
       error: (error) => {
         console.error('Erreur lors du rafraîchissement du statut:', error);
+        if (error instanceof BatchApiError && error.status === 403) {
+          this.evictForbiddenBatch(batchId);
+        }
       }
     });
   }
@@ -409,6 +538,10 @@ export class BatchSearchComponent implements OnInit, OnDestroy {
       },
       error: (error) => {
         console.error('Erreur lors du polling:', error);
+        if (error instanceof BatchApiError && error.status === 403) {
+          this.evictForbiddenBatch(batchId);
+          return;
+        }
         this.stopPollingForBatch(batchId);
       }
     });
@@ -464,65 +597,81 @@ export class BatchSearchComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Sauvegarde les batches dans localStorage.
+   * Sauvegarde les batches dans localStorage sous une clé propre à l'utilisateur connecté.
    */
   private saveBatchesToStorage(): void {
     try {
-      // Ne sauvegarder que les métadonnées essentielles (pas les résultats complets)
-      const batchesToSave = this.batches.map(b => {
-        let serializedMap: Record<string, string> | undefined;
-        if (b.searchTermsMap instanceof Map) {
-          serializedMap = Object.fromEntries(b.searchTermsMap);
-        } else if (b.searchTermsMap && typeof b.searchTermsMap === 'object') {
-          serializedMap = b.searchTermsMap as unknown as Record<string, string>;
-        }
-        return {
-          batchId: b.batchId,
-          submittedAt: b.submittedAt,
-          endpoint: b.endpoint || 'positions6',
-          zone: b.zone || 'DZ',
-          status: b.status,
-          searchTermsMap: serializedMap
-        };
-      });
-      localStorage.setItem('batches', JSON.stringify(batchesToSave));
+      const storageKey = this.getUserStorageKey(this.currentUserId);
+      if (!storageKey || !this.currentUserId) {
+        return;
+      }
+      const ownerId = this.currentUserId;
+      // Ne sauvegarder que les métadonnées essentielles appartenant à cet utilisateur
+      const batchesToSave = this.batches
+        .filter(b => !b.ownerUserId || b.ownerUserId === ownerId)
+        .map(b => {
+          let serializedMap: Record<string, string> | undefined;
+          if (b.searchTermsMap instanceof Map) {
+            serializedMap = Object.fromEntries(b.searchTermsMap);
+          } else if (b.searchTermsMap && typeof b.searchTermsMap === 'object') {
+            serializedMap = b.searchTermsMap as unknown as Record<string, string>;
+          }
+          return {
+            batchId: b.batchId,
+            ownerUserId: ownerId,
+            submittedAt: b.submittedAt,
+            endpoint: b.endpoint || 'positions6',
+            zone: b.zone || 'DZ',
+            status: b.status,
+            searchTermsMap: serializedMap
+          };
+        });
+      localStorage.setItem(storageKey, JSON.stringify(batchesToSave));
     } catch (e) {
       console.warn('Impossible de sauvegarder les batches dans localStorage:', e);
     }
   }
 
   /**
-   * Charge les batches depuis localStorage.
+   * Charge uniquement les batches appartenant à l'utilisateur donné depuis localStorage.
    */
-  private loadBatchesFromStorage(): void {
+  private loadBatchesFromStorage(userId: string): void {
     try {
-      const saved = localStorage.getItem('batches');
+      const storageKey = this.getUserStorageKey(userId);
+      if (!storageKey) {
+        this.batches = [];
+        return;
+      }
+      const saved = localStorage.getItem(storageKey);
       if (saved) {
-        this.batches = JSON.parse(saved).map((b: any): BatchInfo => {
-          let restoredMap: Map<string, string> | undefined;
-          if (Array.isArray(b.searchTermsMap)) {
-            restoredMap = new Map<string, string>();
-            for (const entry of b.searchTermsMap) {
-              if (Array.isArray(entry) && entry.length >= 2) {
-                restoredMap.set(String(entry[0]), String(entry[1] ?? ''));
+        this.batches = JSON.parse(saved)
+          .filter((b: any) => b && b.ownerUserId === userId)
+          .map((b: any): BatchInfo => {
+            let restoredMap: Map<string, string> | undefined;
+            if (Array.isArray(b.searchTermsMap)) {
+              restoredMap = new Map<string, string>();
+              for (const entry of b.searchTermsMap) {
+                if (Array.isArray(entry) && entry.length >= 2) {
+                  restoredMap.set(String(entry[0]), String(entry[1] ?? ''));
+                }
+              }
+            } else if (b.searchTermsMap && typeof b.searchTermsMap === 'object') {
+              restoredMap = new Map<string, string>();
+              for (const [k, v] of Object.entries(b.searchTermsMap as Record<string, unknown>)) {
+                restoredMap.set(k, String(v ?? ''));
               }
             }
-          } else if (b.searchTermsMap && typeof b.searchTermsMap === 'object') {
-            restoredMap = new Map<string, string>();
-            for (const [k, v] of Object.entries(b.searchTermsMap as Record<string, unknown>)) {
-              restoredMap.set(k, String(v ?? ''));
-            }
-          }
-          const endpoint: TariffSearchEndpoint = b.endpoint === 'positions10' ? 'positions10' : 'positions6';
-          const zone: TariffZone = b.zone === 'EU' ? 'EU' : 'DZ';
-          return {
-            ...b,
-            endpoint,
-            zone,
-            submittedAt: new Date(b.submittedAt),
-            searchTermsMap: restoredMap
-          };
-        });
+            const endpoint: TariffSearchEndpoint = b.endpoint === 'positions10' ? 'positions10' : 'positions6';
+            const zone: TariffZone = b.zone === 'EU' ? 'EU' : 'DZ';
+            return {
+              ...b,
+              ownerUserId: userId,
+              endpoint,
+              zone,
+              submittedAt: new Date(b.submittedAt),
+              searchTermsMap: restoredMap
+            };
+          });
       }
     } catch (e) {
       console.warn('Impossible de charger les batches depuis localStorage:', e);

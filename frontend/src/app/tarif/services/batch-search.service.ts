@@ -65,6 +65,21 @@ export interface BatchResultsResponse {
   errorCount: number;
 }
 
+export interface UserBatchSummary {
+  batchId: string;
+  submittedAt: string;
+  endpoint?: TariffSearchEndpoint;
+  zone?: TariffZone;
+  searchTerms?: Record<string, string>;
+}
+
+export class BatchApiError extends Error {
+  constructor(message: string, public readonly status: number) {
+    super(message);
+    this.name = 'BatchApiError';
+  }
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -88,6 +103,15 @@ export class BatchSearchService {
     const request: BatchSearchRequest = { searches, endpoint, zone };
 
     return this.http.post<BatchSubmitResponse>(`${this.apiUrl}/submit`, request).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  /**
+   * Récupère uniquement la liste des batches soumis par l'utilisateur connecté.
+   */
+  getMyBatches(): Observable<UserBatchSummary[]> {
+    return this.http.get<UserBatchSummary[]>(`${this.apiUrl}/my-batches`).pipe(
       catchError(this.handleError)
     );
   }
@@ -288,6 +312,6 @@ export class BatchSearchService {
       error: error
     });
 
-    return throwError(() => new Error(errorMessage));
+    return throwError(() => new BatchApiError(errorMessage, error.status));
   }
 }
