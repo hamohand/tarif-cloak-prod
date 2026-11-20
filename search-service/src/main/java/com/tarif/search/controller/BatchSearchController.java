@@ -1,20 +1,26 @@
 package com.tarif.search.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tarif.search.model.Position;
+import com.tarif.search.model.Position10Dz;
+import com.tarif.search.service.Position10DzService;
+import com.tarif.search.service.Position6DzService;
+import com.tarif.search.service.TariffPositionService;
+import com.tarif.search.service.ai.JsonUtils;
 import com.tarif.search.service.ai.batch.BatchService;
 import com.tarif.search.service.ai.batch.models.BatchResult;
 import com.tarif.search.service.ai.batch.models.BatchStatus;
 import com.tarif.search.service.ai.batch.models.SearchRequest;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.text.Normalizer;
+import java.util.*;
 
 /**
  * Contrôleur REST pour gérer les recherches de codes HS par lots (batch).
@@ -32,9 +38,25 @@ import java.util.Map;
 public class BatchSearchController {
 
     private final BatchService batchService;
+    private final Position6DzService position6DzService;
+    private final Position10DzService position10DzService;
+    private final TariffPositionService tariffPositionService;
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    @Autowired
+    public BatchSearchController(
+            BatchService batchService,
+            Position6DzService position6DzService,
+            Position10DzService position10DzService,
+            TariffPositionService tariffPositionService) {
+        this.batchService = batchService;
+        this.position6DzService = position6DzService;
+        this.position10DzService = position10DzService;
+        this.tariffPositionService = tariffPositionService;
+    }
 
     public BatchSearchController(BatchService batchService) {
-        this.batchService = batchService;
+        this(batchService, null, null, null);
     }
 
     /**
@@ -72,6 +94,11 @@ public class BatchSearchController {
                 .body(new BatchSubmitResponse(null, "Erreur: Maximum 1000 recherches par batch", HttpStatus.BAD_REQUEST.value()));
         }
 
+        String normZone = "EU".equalsIgnoreCase(request.getZone()) ? "EU" : "DZ";
+        String targetLevel = "positions10".equalsIgnoreCase(request.getEndpoint())
+                ? "POSITIONS10"
+                : "POSITIONS6";
+
         // Convertir les requêtes en format attendu par le service
         List<SearchRequest> searchRequests = new ArrayList<>();
         for (SearchItem item : request.getSearches()) {
@@ -79,6 +106,8 @@ public class BatchSearchController {
                 .customId(item.getCustomId())
                 .searchTerm(item.getSearchTerm())
                 .ragContext(item.getRagContext())
+                .targetLevel(targetLevel)
+                .zone(normZone)
                 .build();
             searchRequests.add(searchRequest);
         }
@@ -88,7 +117,8 @@ public class BatchSearchController {
             String batchId = batchService.createBatch(searchRequests);
 
             if (batchId != null) {
-                log.info("Batch créé avec succès: {} (provider: {})", batchId, batchService.getActiveProviderName());
+                log.info("Batch créé avec succès: {} (provider: {}, targetLevel: {}, zone: {})",
+                        batchId, batchService.getActiveProviderName(), targetLevel, normZone);
                 return ResponseEntity.ok(new BatchSubmitResponse(
                     batchId,
                     "Batch créé avec succès. Utilisez l'ID pour suivre le statut.",
@@ -154,8 +184,11 @@ public class BatchSearchController {
      */
     @GetMapping("/results/{batchId}")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<BatchResultsResponse> getBatchResults(@PathVariable String batchId) {
-        log.debug("Demande de résultats pour le batch: {}", batchId);
+    public ResponseEntity<BatchResultsResponse> getBatchResults(
+            @PathVariable String batchId,
+            @RequestParam(required = false, defaultValue = "positions6") String endpoint,
+            @RequestParam(required = false, defaultValue = "DZ") String zone) {
+        log.debug("Demande de résultats pour le batch: {} (endpoint={}, zone={})", batchId, endpoint, zone);
 
         try {
             // Récupérer d'abord le statut pour vérifier que le batch est terminé
@@ -184,6 +217,8 @@ public class BatchSearchController {
             List<BatchResult> results = batchService.getBatchResults(batchId);
 
             if (results != null) {
+                enrichAndNormalizeResults(results, endpoint, zone);
+
                 BatchResultsResponse response = new BatchResultsResponse(
                     batchId,
                     results,
@@ -261,6 +296,213 @@ public class BatchSearchController {
         }
     }
 
+    private void enrichAndNormalizeResults(List<BatchResult> results, String endpoint, String zone) {
+        if (results == null || results.isEmpty()) {
+            return;
+        }
+        boolean isPos10 = "positions10".equalsIgnoreCase(endpoint);
+        String normZone = "EU".equalsIgnoreCase(zone) ? "EU" : "DZ";
+
+        for (BatchResult res : results) {
+            if (res == null || !res.isSuccess() || res.getContent() == null || res.getContent().isBlank()) {
+                continue;
+            }
+            try {
+                String cleaned = JsonUtils.cleanJsonString(res.getContent());
+                List<Position> parsed = JsonUtils.conversionReponseIaToList(cleaned);
+                if (parsed == null || parsed.isEmpty()) {
+                    continue;
+                }
+                List<Position> normalized = new ArrayList<>();
+                Set<String> seen = new LinkedHashSet<>();
+
+                for (Position p : parsed) {
+                    if (p == null || p.getCode() == null) {
+                        continue;
+                    }
+                    Position resolved = resolveBatchPosition(p, isPos10, normZone);
+                    if (resolved != null && resolved.getCode() != null && !resolved.getCode().isBlank()
+                            && seen.add(resolved.getCode())) {
+                        normalized.add(resolved);
+                    }
+                }
+
+                if (!normalized.isEmpty()) {
+                    res.setContent(objectMapper.writeValueAsString(Map.of("items", normalized)));
+                }
+            } catch (Exception e) {
+                log.debug("Enrichissement batch ignoré pour customId={}: {}", res.getCustomId(), e.getMessage());
+            }
+        }
+    }
+
+    private Position resolveBatchPosition(Position raw, boolean isPos10, String zone) {
+        String digits = raw.getCode() != null ? raw.getCode().replaceAll("[^0-9]", "") : "";
+        if (digits.isEmpty()) {
+            return null;
+        }
+        String justif = raw.getJustification();
+
+        if (!isPos10) {
+            String hs6 = digits.length() > 6 ? digits.substring(0, 6) : digits;
+            String desc = lookupHs6Description(zone, hs6);
+            return new Position(hs6, desc, justif);
+        }
+
+        // Mode POSITIONS10 : NC8 (8 chiffres en EU) ou P10 (10 chiffres en DZ)
+        boolean isEu = "EU".equals(zone);
+        int targetLen = isEu ? 8 : 10;
+
+        if (digits.length() == targetLen) {
+            String exactDesc = lookupLeafDescription(zone, digits);
+            if (exactDesc != null && !exactDesc.isBlank()) {
+                return new Position(digits, exactDesc, justif);
+            }
+        }
+
+        if (!isEu && digits.length() == 8) {
+            String padded10 = digits + "00";
+            String paddedDesc = lookupLeafDescription("DZ", padded10);
+            if (paddedDesc != null && !paddedDesc.isBlank()) {
+                return new Position(padded10, paddedDesc, justif);
+            }
+        }
+
+        if (digits.length() >= 6) {
+            String hs6 = digits.substring(0, 6);
+            List<Position> leaves = getSelectableLeavesForHs6(zone, hs6, targetLen);
+            if (leaves.size() == 1) {
+                Position only = leaves.get(0);
+                return new Position(only.getCode(), only.getDescription(), justif);
+            }
+            if (leaves.size() > 1) {
+                Position matched = matchBestLeaf(leaves, justif);
+                if (matched != null) {
+                    return new Position(matched.getCode(), matched.getDescription(), justif);
+                }
+            }
+            String hs6Desc = lookupHs6Description(zone, hs6);
+            if (hs6Desc != null && !hs6Desc.isBlank()) {
+                return new Position(hs6, hs6Desc, justif);
+            }
+        }
+
+        String fallbackDesc = raw.getDescription();
+        return new Position(digits, fallbackDesc, justif);
+    }
+
+    private String lookupHs6Description(String zone, String hs6) {
+        if (hs6 == null || hs6.length() < 6) {
+            return null;
+        }
+        String desc = position6DzService != null ? position6DzService.getDescription(hs6) : null;
+        if ((desc == null || desc.isBlank()) && tariffPositionService != null) {
+            desc = tariffPositionService.getHs6Description(zone, hs6);
+        }
+        return desc;
+    }
+
+    private String lookupLeafDescription(String zone, String code) {
+        String desc = tariffPositionService != null ? tariffPositionService.getDescription(zone, code) : null;
+        if ((desc == null || desc.isBlank()) && "DZ".equals(zone) && position10DzService != null) {
+            desc = position10DzService.getDescription(code);
+        }
+        return desc;
+    }
+
+    private List<Position> getSelectableLeavesForHs6(String zone, String hs6, int targetLen) {
+        List<Position> rawRows = new ArrayList<>();
+        if (tariffPositionService != null) {
+            rawRows = tariffPositionService.getContextPositionsForHs6(zone, hs6);
+        }
+        if (rawRows.isEmpty() && "DZ".equals(zone) && position10DzService != null) {
+            for (Position10Dz p10 : position10DzService.getPosition10DzsWithContextByPrefix(hs6 + "%")) {
+                rawRows.add(new Position(p10.getCode(), p10.getDescription()));
+            }
+        }
+        List<Position> leaves = new ArrayList<>();
+        for (Position row : rawRows) {
+            if (row == null || row.getCode() == null) continue;
+            String clean = row.getCode().replaceAll("[^0-9]", "");
+            if (clean.length() == targetLen) {
+                leaves.add(new Position(clean, row.getDescription()));
+            }
+        }
+        return leaves;
+    }
+
+    private Position matchBestLeaf(List<Position> leaves, String contextText) {
+        Set<String> queryTokens = tokenizeForMatch(contextText);
+        Position best = null;
+        int bestScore = 0;
+        int secondBest = 0;
+
+        for (Position leaf : leaves) {
+            Set<String> leafTokens = tokenizeForMatch(leaf.getDescription());
+            int score = 0;
+            for (String token : queryTokens) {
+                if (leafTokens.contains(token)) {
+                    score++;
+                }
+            }
+            if (score > bestScore) {
+                secondBest = bestScore;
+                bestScore = score;
+                best = leaf;
+            } else if (score > secondBest) {
+                secondBest = score;
+            }
+        }
+
+        if (bestScore >= 1 && bestScore > secondBest) {
+            return best;
+        }
+
+        // Si exactement 2 subdivisions dont une résiduelle "Autres" et aucun mot-clé spécifique ne matche l'autre
+        if (leaves.size() == 2 && bestScore == 0) {
+            Position autresLeaf = null;
+            int autresCount = 0;
+            for (Position leaf : leaves) {
+                String cleanedDesc = normalizeText(leaf.getDescription());
+                if ("autres".equals(cleanedDesc)) {
+                    autresLeaf = leaf;
+                    autresCount++;
+                }
+            }
+            if (autresCount == 1) {
+                return autresLeaf;
+            }
+        }
+
+        return null;
+    }
+
+    private Set<String> tokenizeForMatch(String text) {
+        String norm = normalizeText(text);
+        if (norm.isEmpty()) {
+            return Collections.emptySet();
+        }
+        Set<String> stopWords = Set.of("les", "des", "aux", "dans", "pour", "par", "sur", "avec", "sans", "autres", "autre", "que", "qui", "une", "son", "ses", "code", "chapitre", "position", "sous");
+        Set<String> tokens = new HashSet<>();
+        for (String part : norm.split("\\s+")) {
+            if (part.length() >= 4 && !stopWords.contains(part)) {
+                tokens.add(part);
+            }
+        }
+        return tokens;
+    }
+
+    private String normalizeText(String text) {
+        if (text == null) {
+            return "";
+        }
+        return Normalizer.normalize(text, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}+", "")
+                .replaceAll("[^\\p{L}\\p{N}]+", " ")
+                .trim()
+                .toLowerCase(Locale.ROOT);
+    }
+
     // ========================================================================================
     // DTOs (Data Transfer Objects)
     // ========================================================================================
@@ -271,6 +513,8 @@ public class BatchSearchController {
     @Data
     public static class BatchSearchRequest {
         private List<SearchItem> searches;
+        private String endpoint; // "positions6" ou "positions10"
+        private String zone;     // "DZ" ou "EU"
     }
 
     /**

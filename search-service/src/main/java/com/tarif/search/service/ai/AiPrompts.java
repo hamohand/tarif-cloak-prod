@@ -101,6 +101,71 @@ public class AiPrompts {
                "Répondez uniquement avec un objet JSON de la forme {\"items\": [...]}, sans aucun texte avant ou après.";
     }
 
+    /**
+     * Message système dédié au mode Batch asynchrone (avec ou sans contexte RAG).
+     */
+    public static String getBatchSystemMessage(String niveau, String zone) {
+        String normLevel = (niveau != null && !niveau.isBlank()) ? niveau.trim().toUpperCase() : "POSITIONS6";
+        String normZone = "EU".equalsIgnoreCase(zone) ? "EU" : "DZ";
+
+        if ("POSITIONS10".equals(normLevel)) {
+            if ("EU".equals(normZone)) {
+                return """
+                        Classification douanière experte — Nomenclature Combinée de l'Union Européenne (NC8 / TARIC 2026).
+                        Vous êtes un expert en classement tarifaire douanier européen multilingue (français, anglais, arabe, espagnol, etc.).
+                        Pour le produit demandé :
+                        1. Déterminez d'abord la sous-position SH à 6 chiffres exacte (Système Harmonisé OMD 2022) selon la fonction principale du produit (Règle Générale d'Interprétation 1 et 3a).
+                        2. Déterminez ensuite le code NC8 à 8 chiffres de l'Union Européenne correspondant (8 chiffres consécutifs sans points ni espaces, ex: "08081080", "84713000"). Si la sous-position SH6 n'est pas subdivisée en NC8, complétez par "00" (8 chiffres).
+                        3. Fournissez une justification factuelle concise en français (15 mots maximum).
+                        Répondez UNIQUEMENT avec un objet JSON valide de la forme {"items": [{"code": "XXXXXXXX", "justification": "..."}]}, sans aucun texte autour.
+                        """;
+            }
+            return """
+                    Classification douanière experte — Tarif douanier national algérien (DGD Algérie — P10 à 10 chiffres).
+                    Vous êtes un expert en classement tarifaire douanier algérien et international multilingue (français, anglais, arabe, espagnol, etc.).
+                    Pour le produit demandé :
+                    1. Déterminez d'abord la sous-position SH à 6 chiffres exacte (Système Harmonisé OMD 2022) selon la fonction principale du produit (Règle Générale d'Interprétation 1 et 3a).
+                    2. Déterminez ensuite la position tarifaire algérienne P10 à 10 chiffres correspondante (10 chiffres consécutifs sans points ni espaces, ex: "0808101000", "8471309000"). Si vous n'êtes certain que de la sous-position SH à 6 chiffres, indiquez les 6 chiffres exacts du SH6 afin que le système résolve la sous-position nationale officielle.
+                    3. Fournissez une justification factuelle concise en français (15 mots maximum).
+                    Répondez UNIQUEMENT avec un objet JSON valide de la forme {"items": [{"code": "XXXXXXXXXX", "justification": "..."}]}, sans aucun texte autour.
+                    """;
+        }
+
+        return """
+                Classification douanière experte — Système Harmonisé International (SH6 / HS-06 à 6 chiffres, OMD 2022).
+                Vous êtes un expert en classement tarifaire douanier international multilingue (français, anglais, arabe, espagnol, etc.).
+                Pour le produit demandé :
+                1. Déterminez le ou les codes SH à 6 chiffres exacts (6 chiffres consécutifs sans points ni espaces, ex: "080810", "847130", "842720") selon la fonction principale et la nature essentielle du produit (Règle Générale d'Interprétation 1 et 3a).
+                2. Respectez strictement les critères numériques éventuels (poids, cylindrée, puissance, teneur).
+                3. Fournissez une justification factuelle concise en français (15 mots maximum).
+                Répondez UNIQUEMENT avec un objet JSON valide de la forme {"items": [{"code": "XXXXXX", "justification": "..."}]}, sans aucun texte autour.
+                """;
+    }
+
+    /**
+     * Construit le prompt utilisateur en mode Batch :
+     * - Si un vrai contexte RAG (<codes_douaniers> contenant des codes) est fourni, réutilise buildUserPrompt.
+     * - Sinon, formule une requête directe adaptée à la granularité cible (HS-06, P10 DZ ou NC8 UE).
+     */
+    public static String buildBatchUserPrompt(String ragContext, String searchTerm, String niveau, String zone) {
+        if (ragContext != null && ragContext.contains("Code =")) {
+            return buildUserPrompt(ragContext, searchTerm);
+        }
+        String normLevel = (niveau != null && !niveau.isBlank()) ? niveau.trim().toUpperCase() : "POSITIONS6";
+        String normZone = "EU".equalsIgnoreCase(zone) ? "EU" : "DZ";
+        String targetLabel;
+        if ("POSITIONS10".equals(normLevel)) {
+            targetLabel = "EU".equals(normZone)
+                    ? "le code NC8 européen à 8 chiffres"
+                    : "le code tarifaire algérien P10 à 10 chiffres (ou SH6 à 6 chiffres si la subdivision nationale est incertaine)";
+        } else {
+            targetLabel = "le code SH international HS-06 à 6 chiffres";
+        }
+        return "Produit à classer : \"" + searchTerm + "\"\n\n" +
+               "Déterminez " + targetLabel + " correspondant à ce produit.\n" +
+               "Répondez uniquement avec un objet JSON de la forme {\"items\": [{\"code\": \"...\", \"justification\": \"...\"}]}, sans aucun texte avant ou après.";
+    }
+
     private static final String SYSTEM_MESSAGE_TEMPLATE = """
             Extraction intelligente de codes douaniers / Intelligent customs code extraction
 

@@ -76,11 +76,16 @@ public class AnthropicBatchProvider implements BatchProvider {
                     ? searchRequest.getCustomId()
                     : "search-" + i;
 
-                // Construction du prompt avec le RAG
-                String prompt = AiPrompts.buildUserPrompt(
-                    searchRequest.getRagContext() != null ? searchRequest.getRagContext() : "",
-                    searchRequest.getSearchTerm()
+                // Construction du prompt adapté à la granularité (HS-06, P10 DZ ou NC8 UE)
+                String prompt = AiPrompts.buildBatchUserPrompt(
+                    searchRequest.getRagContext(),
+                    searchRequest.getSearchTerm(),
+                    searchRequest.getTargetLevel(),
+                    searchRequest.getZone()
                 );
+                String systemMsg = (searchRequest.getRagContext() != null && searchRequest.getRagContext().contains("Code ="))
+                        ? AiPrompts.getSystemMessage(true, searchRequest.getTargetLevel())
+                        : AiPrompts.getBatchSystemMessage(searchRequest.getTargetLevel(), searchRequest.getZone());
 
                 Map<String, Object> request = new HashMap<>();
                 request.put("custom_id", customId);
@@ -89,7 +94,7 @@ public class AnthropicBatchProvider implements BatchProvider {
                 params.put("model", model);
                 params.put("max_tokens", maxTokens);
                 params.put("temperature", temperature);
-                params.put("system", AiPrompts.getSystemMessage(true, null));
+                params.put("system", systemMsg);
                 params.put("messages", List.of(
                     Map.of("role", "user", "content", prompt)
                 ));

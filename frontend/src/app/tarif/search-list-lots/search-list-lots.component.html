@@ -35,6 +35,55 @@
         <h3>Importez votre fichier de données</h3>
         <p class="subtitle">Un produit par ligne, une seule colonne — aucun en-tête requis.</p>
 
+        <div class="search-mode-panel neumorphic-inset">
+          <div class="search-mode-header">
+            <span class="search-mode-title">Type de recherche</span>
+            <div class="zone-inline-switch" role="group" aria-label="Zone tarifaire">
+              <button type="button"
+                      class="zone-mini-btn"
+                      [class.active]="currentZone !== 'EU'"
+                      (click)="state.setZone('DZ')">
+                DZ · Algérie
+              </button>
+              <button type="button"
+                      class="zone-mini-btn eu"
+                      [class.active]="currentZone === 'EU'"
+                      (click)="state.setZone('EU')">
+                UE · Europe
+              </button>
+            </div>
+          </div>
+
+          <div class="search-mode-grid" role="radiogroup" aria-label="Type de recherche douanière">
+            <button type="button"
+                    role="radio"
+                    [attr.aria-checked]="searchEndpoint === 'positions10'"
+                    class="mode-option-card"
+                    [class.selected]="searchEndpoint === 'positions10'"
+                    [class.eu-mode]="currentZone === 'EU'"
+                    (click)="setSearchEndpoint('positions10')">
+              <div class="mode-option-top">
+                <span class="mode-option-name">{{ nationalCodeShortLabel }}</span>
+                <span class="mode-cost-pill">15 cr / art.</span>
+              </div>
+              <span class="mode-option-desc">{{ nationalCodeDigitsLabel }}</span>
+            </button>
+
+            <button type="button"
+                    role="radio"
+                    [attr.aria-checked]="searchEndpoint === 'positions6'"
+                    class="mode-option-card"
+                    [class.selected]="searchEndpoint === 'positions6'"
+                    (click)="setSearchEndpoint('positions6')">
+              <div class="mode-option-top">
+                <span class="mode-option-name">HS-06 International</span>
+                <span class="mode-cost-pill">10 cr / art.</span>
+              </div>
+              <span class="mode-option-desc">6 chiffres · Système Harmonisé OMD</span>
+            </button>
+          </div>
+        </div>
+
         <div class="upload-area">
            <label for="file-upload" class="upload-label">
              <div class="upload-icon">
@@ -76,6 +125,56 @@
         <div class="file-summary neumorphic-inset">
           <div class="file-name"><strong>Fichier :</strong> {{ fileName }}</div>
           <div class="file-count"><strong>Articles détectés :</strong> {{ totalCount }}</div>
+          <div class="file-count"><strong>Coût estimé :</strong> {{ estimatedTotalCredits | number }} crédits</div>
+        </div>
+
+        <div class="search-mode-panel neumorphic-inset">
+          <div class="search-mode-header">
+            <span class="search-mode-title">Type de recherche</span>
+            <div class="zone-inline-switch" role="group" aria-label="Zone tarifaire">
+              <button type="button"
+                      class="zone-mini-btn"
+                      [class.active]="currentZone !== 'EU'"
+                      (click)="state.setZone('DZ')">
+                DZ · Algérie
+              </button>
+              <button type="button"
+                      class="zone-mini-btn eu"
+                      [class.active]="currentZone === 'EU'"
+                      (click)="state.setZone('EU')">
+                UE · Europe
+              </button>
+            </div>
+          </div>
+
+          <div class="search-mode-grid" role="radiogroup" aria-label="Type de recherche douanière">
+            <button type="button"
+                    role="radio"
+                    [attr.aria-checked]="searchEndpoint === 'positions10'"
+                    class="mode-option-card"
+                    [class.selected]="searchEndpoint === 'positions10'"
+                    [class.eu-mode]="currentZone === 'EU'"
+                    (click)="setSearchEndpoint('positions10')">
+              <div class="mode-option-top">
+                <span class="mode-option-name">{{ nationalCodeShortLabel }}</span>
+                <span class="mode-cost-pill">15 cr / art.</span>
+              </div>
+              <span class="mode-option-desc">{{ nationalCodeDigitsLabel }}</span>
+            </button>
+
+            <button type="button"
+                    role="radio"
+                    [attr.aria-checked]="searchEndpoint === 'positions6'"
+                    class="mode-option-card"
+                    [class.selected]="searchEndpoint === 'positions6'"
+                    (click)="setSearchEndpoint('positions6')">
+              <div class="mode-option-top">
+                <span class="mode-option-name">HS-06 International</span>
+                <span class="mode-cost-pill">10 cr / art.</span>
+              </div>
+              <span class="mode-option-desc">6 chiffres · Système Harmonisé OMD</span>
+            </button>
+          </div>
         </div>
 
         <div class="batch-settings neumorphic-inset">
@@ -145,7 +244,7 @@
     @if(isLoading && !isSearchComplete) {
       <div class="step-content text-center processing-step">
         <h3>Traitement en cours...</h3>
-        <p class="subtitle">L'IA analyse vos articles. Cela peut prendre un certain temps selon la taille du lot.</p>
+        <p class="subtitle">Recherche <strong>{{ executedModeSummary }}</strong> en cours sur vos articles.</p>
         
         <div class="loader-container">
           <div class="spinner"></div>
@@ -174,7 +273,7 @@
             <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#2DD4BF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
           </div>
           <h3>Recherche terminée avec succès !</h3>
-          <p>Tous les articles ont été analysés et les codes ont été générés.</p>
+          <p>Tous les articles ont été analysés en mode <strong>{{ executedModeSummary }}</strong>.</p>
         </div>
 
         @if(selectionCount > 0) {
@@ -195,7 +294,7 @@
                 <thead>
                   <tr>
                     <th>Article</th>
-                    <th>Code HS</th>
+                    <th>{{ executedCodeColumnHeader }}</th>
                     <th>Description</th>
                   </tr>
                 </thead>
@@ -239,12 +338,12 @@
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             Télécharger toutes les réponses
           </button>
-          <button class="btn-secondary" (click)="lesarticles = []; fileName = ''; isSearchComplete = false; isSaved = false; completedCount = 0;">Nouveau fichier</button>
+          <button class="btn-secondary" (click)="lesarticles = []; fileName = ''; lastSavedFileName = ''; isSearchComplete = false; isSaved = false; completedCount = 0;">Nouveau fichier</button>
         </div>
 
         @if(isSaved) {
           <div class="success-alert mt-4">
-            ✅ Le fichier a été téléchargé sous le nom <strong>{{ 'resultat-' + fileName.split('.')[0] + '.tsv' }}</strong>.
+            ✅ Le fichier a été téléchargé sous le nom <strong>{{ lastSavedFileName }}</strong>.
           </div>
         }
 

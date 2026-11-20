@@ -8,6 +8,7 @@ import {
   BatchResultsResponse,
   ParsedHsCode
 } from '../services/batch-search.service';
+import { SearchStateService, TariffSearchEndpoint, TariffZone } from '../services/search-state.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { Subscription } from 'rxjs';
 import * as XLSX from 'xlsx';
@@ -15,6 +16,8 @@ import * as XLSX from 'xlsx';
 interface BatchInfo {
   batchId: string;
   submittedAt: Date;
+  endpoint?: TariffSearchEndpoint;
+  zone?: TariffZone;
   status?: BatchStatusResponse;
   results?: BatchResultsResponse;
   error?: string;
@@ -46,15 +49,24 @@ export class BatchSearchComponent implements OnInit, OnDestroy {
   isSubmitting: boolean = false;
   isLoadingResults: boolean = false;
 
-  // Subscriptions pour le polling
+  // Subscriptions pour le polling et la zone active
   private pollingSubscriptions: Map<string, Subscription> = new Map();
+  private zoneSub?: Subscription;
+  currentZone: TariffZone = 'DZ';
 
   constructor(
     private batchSearchService: BatchSearchService,
-    private notificationService: NotificationService
-  ) {}
+    private notificationService: NotificationService,
+    public state: SearchStateService
+  ) {
+    this.currentZone = this.state.zone;
+  }
 
   ngOnInit(): void {
+    this.zoneSub = this.state.selectedZone$.subscribe(zone => {
+      this.currentZone = zone;
+    });
+
     // Charger les batches depuis localStorage si disponible
     this.loadBatchesFromStorage();
 
@@ -63,9 +75,62 @@ export class BatchSearchComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.zoneSub?.unsubscribe();
     // Nettoyer toutes les subscriptions de polling
     this.pollingSubscriptions.forEach(sub => sub.unsubscribe());
     this.pollingSubscriptions.clear();
+  }
+
+  get searchEndpoint(): TariffSearchEndpoint {
+    return this.state.batchSearchEndpoint;
+  }
+
+  set searchEndpoint(val: TariffSearchEndpoint) {
+    this.state.batchSearchEndpoint = val;
+  }
+
+  setSearchEndpoint(endpoint: TariffSearchEndpoint): void {
+    if (this.isSubmitting) {
+      return;
+    }
+    this.searchEndpoint = endpoint;
+  }
+
+  get nationalCodeShortLabel(): string {
+    return this.currentZone === 'EU' ? 'NC8 (UE)' : 'P10 (DZ)';
+  }
+
+  get nationalCodeDigitsLabel(): string {
+    return this.currentZone === 'EU'
+      ? '8 chiffres · Nomenclature Combinée UE'
+      : '10 chiffres · Tarif douanier algérien';
+  }
+
+  getBatchModeBadge(batch: BatchInfo | null | undefined): string {
+    const ep = batch?.endpoint || 'positions6';
+    const zn = batch?.zone || 'DZ';
+    if (ep === 'positions10') {
+      return zn === 'EU' ? 'NC8 · UE' : 'P10 · DZ';
+    }
+    return 'HS-06';
+  }
+
+  getBatchCodeLabel(batch: BatchInfo | null | undefined): string {
+    const ep = batch?.endpoint || 'positions6';
+    const zn = batch?.zone || 'DZ';
+    if (ep === 'positions10') {
+      return zn === 'EU' ? 'Code NC8 (UE)' : 'Code P10 (DZ)';
+    }
+    return 'Code HS-06';
+  }
+
+  private getBatchModeSlug(batch: BatchInfo): string {
+    const ep = batch.endpoint || 'positions6';
+    const zn = batch.zone || 'DZ';
+    if (ep === 'positions10') {
+      return zn === 'EU' ? 'nc8-ue' : 'p10-dz';
+    }
+    return 'hs6';
   }
 
   /**
@@ -148,6 +213,9 @@ export class BatchSearchComponent implements OnInit, OnDestroy {
       return;
     }
 
+    const endpoint: TariffSearchEndpoint = this.searchEndpoint;
+    const zone: TariffZone = this.currentZone;
+
     // Créer les items de recherche et le mapping customId -> searchTerm
     const searchTermsMap = new Map<string, string>();
     const searches: SearchItem[] = searchTerms.map((term, index) => {
@@ -156,21 +224,23 @@ export class BatchSearchComponent implements OnInit, OnDestroy {
       return {
         customId: customId,
         searchTerm: term,
-        ragContext: this.buildDefaultRagContext() // RAG simplifié pour l'exemple
+        ragContext: this.buildDefaultRagContext(endpoint, zone)
       };
     });
 
     // Soumettre le batch
     this.isSubmitting = true;
 
-    this.batchSearchService.submitBatch(searches).subscribe({
+    this.batchSearchService.submitBatch(searches, endpoint, zone).subscribe({
       next: (response) => {
         console.log('Batch soumis avec succès:', response);
 
-        // Créer une entrée de batch avec le mapping des termes de recherche
+        // Créer une entrée de batch avec le mapping des termes de recherche et le mode choisi
         const batchInfo: BatchInfo = {
           batchId: response.batchId,
           submittedAt: new Date(),
+          endpoint: endpoint,
+          zone: zone,
           searchTermsMap: searchTermsMap
         };
 
@@ -214,8 +284,11 @@ export class BatchSearchComponent implements OnInit, OnDestroy {
    */
   loadBatchResults(batchId: string): void {
     this.isLoadingResults = true;
+    const existingBatch = this.batches.find(b => b.batchId === batchId);
+    const endpoint: TariffSearchEndpoint = existingBatch?.endpoint || 'positions6';
+    const zone: TariffZone = existingBatch?.zone || 'DZ';
 
-    this.batchSearchService.getBatchResults(batchId).subscribe({
+    this.batchSearchService.getBatchResults(batchId, endpoint, zone).subscribe({
       next: (results) => {
         const hydrated = this.hydrateResults(results);
         const batch = this.batches.find(b => b.batchId === batchId);
@@ -406,6 +479,8 @@ export class BatchSearchComponent implements OnInit, OnDestroy {
         return {
           batchId: b.batchId,
           submittedAt: b.submittedAt,
+          endpoint: b.endpoint || 'positions6',
+          zone: b.zone || 'DZ',
           status: b.status,
           searchTermsMap: serializedMap
         };
@@ -423,7 +498,7 @@ export class BatchSearchComponent implements OnInit, OnDestroy {
     try {
       const saved = localStorage.getItem('batches');
       if (saved) {
-        this.batches = JSON.parse(saved).map((b: any) => {
+        this.batches = JSON.parse(saved).map((b: any): BatchInfo => {
           let restoredMap: Map<string, string> | undefined;
           if (Array.isArray(b.searchTermsMap)) {
             restoredMap = new Map<string, string>();
@@ -438,8 +513,12 @@ export class BatchSearchComponent implements OnInit, OnDestroy {
               restoredMap.set(k, String(v ?? ''));
             }
           }
+          const endpoint: TariffSearchEndpoint = b.endpoint === 'positions10' ? 'positions10' : 'positions6';
+          const zone: TariffZone = b.zone === 'EU' ? 'EU' : 'DZ';
           return {
             ...b,
+            endpoint,
+            zone,
             submittedAt: new Date(b.submittedAt),
             searchTermsMap: restoredMap
           };
@@ -457,43 +536,49 @@ export class BatchSearchComponent implements OnInit, OnDestroy {
   private parseFileContent(content: string, fileName: string): string[] {
     const extension = fileName.split('.').pop()?.toLowerCase();
 
+    let parsedTerms: string[];
     // Excel et ODS sont convertis en TSV dans readFile(), donc on les traite comme TSV
     if (extension === 'tsv' || extension === 'xls' || extension === 'xlsx' || extension === 'ods') {
-      // Fichier TSV/Excel/ODS : extraire la première colonne de chaque ligne
-      return content
-        .split('\n')
+      parsedTerms = content
+        .split(/\r?\n/)
         .map(line => {
           const columns = line.split('\t');
-          // Prendre la première colonne (ou toute la ligne si pas de tabulation)
           return columns[0].trim();
         })
         .filter(term => term.length > 0);
     } else if (extension === 'csv') {
-      // Fichier CSV : extraire la première colonne de chaque ligne
-      // Note: pour un parsing CSV plus robuste (avec guillemets, etc.),
-      // utilisez une bibliothèque comme PapaParse
-      return content
-        .split('\n')
+      parsedTerms = content
+        .split(/\r?\n/)
         .map(line => {
-          // Simple parsing CSV : split par virgule
           const columns = line.split(',');
-          return columns[0].trim().replace(/^["']|["']$/g, ''); // Enlever les guillemets
+          return columns[0].trim().replace(/^["']|["']$/g, '');
         })
         .filter(term => term.length > 0);
     } else {
-      // Fichier TXT ou autre : une ligne = un terme
-      return content
-        .split('\n')
+      parsedTerms = content
+        .split(/\r?\n/)
         .map(term => term.trim())
         .filter(term => term.length > 0);
     }
+
+    if (parsedTerms.length > 1) {
+      const firstHeader = parsedTerms[0].toLowerCase();
+      if (firstHeader === 'article' || firstHeader === 'articles') {
+        parsedTerms = parsedTerms.slice(1);
+      }
+    }
+    return parsedTerms;
   }
 
   /**
-   * Construit un contexte RAG par défaut simplifié.
-   * En production, vous devriez récupérer le vrai RAG depuis le backend.
+   * Construit un marqueur de contexte indiquant le type et la zone du batch.
    */
-  private buildDefaultRagContext(): string {
+  private buildDefaultRagContext(endpoint: TariffSearchEndpoint, zone: TariffZone): string {
+    if (endpoint === 'positions10') {
+      return zone === 'EU'
+        ? 'RAG pour la recherche des : POSITIONS10 (NC8 UE)\n\n'
+        : 'RAG pour la recherche des : POSITIONS10 (P10 DZ)\n\n';
+    }
     return 'RAG pour la recherche des : POSITIONS6\n\n';
   }
 
@@ -520,8 +605,10 @@ export class BatchSearchComponent implements OnInit, OnDestroy {
     }
 
     try {
+      const modeBadge = this.getBatchModeBadge(batch);
+      const zoneLabel = (batch.zone || 'DZ') === 'EU' ? 'UE' : 'DZ';
       const csvLines: string[] = [
-        'ID,Terme de recherche,Statut,Code HS,Justification,Input Tokens,Output Tokens'
+        'ID,Terme de recherche,Type,Zone,Statut,Code douanier,Description officielle,Justification,Input Tokens,Output Tokens'
       ];
 
       batch.results.results.forEach(result => {
@@ -535,8 +622,11 @@ export class BatchSearchComponent implements OnInit, OnDestroy {
               csvLines.push([
                 this.escapeCsvField(customId),
                 this.escapeCsvField(searchTerm),
+                this.escapeCsvField(modeBadge),
+                this.escapeCsvField(zoneLabel),
                 this.escapeCsvField('Succès'),
                 this.escapeCsvField(code?.code ?? ''),
+                this.escapeCsvField(code?.description ?? ''),
                 this.escapeCsvField(code?.justification ?? ''),
                 String(result.inputTokens ?? 0),
                 String(result.outputTokens ?? 0)
@@ -546,7 +636,10 @@ export class BatchSearchComponent implements OnInit, OnDestroy {
             csvLines.push([
               this.escapeCsvField(customId),
               this.escapeCsvField(searchTerm),
+              this.escapeCsvField(modeBadge),
+              this.escapeCsvField(zoneLabel),
               this.escapeCsvField('Aucun code trouvé'),
+              '""',
               '""',
               this.escapeCsvField(result.content),
               String(result.inputTokens ?? 0),
@@ -557,7 +650,10 @@ export class BatchSearchComponent implements OnInit, OnDestroy {
           csvLines.push([
             this.escapeCsvField(customId),
             this.escapeCsvField(searchTerm),
+            this.escapeCsvField(modeBadge),
+            this.escapeCsvField(zoneLabel),
             this.escapeCsvField('Erreur'),
+            '""',
             '""',
             this.escapeCsvField(result.errorMessage || result.errorType || 'Erreur lors du traitement'),
             '0',
@@ -570,7 +666,8 @@ export class BatchSearchComponent implements OnInit, OnDestroy {
       const csvContent = '\uFEFF' + csvLines.join('\r\n');
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const safeBatchId = String(batch.batchId || 'export').replace(/[^a-zA-Z0-9_-]/g, '_');
-      const filename = `batch-${safeBatchId}-results.csv`;
+      const slug = this.getBatchModeSlug(batch);
+      const filename = `batch-${slug}-${safeBatchId}-results.csv`;
 
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');

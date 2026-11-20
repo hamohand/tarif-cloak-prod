@@ -22,8 +22,8 @@ Application SaaS de recherche et de décodage de codes de nomenclature douanièr
 - **Recherche Position10** : descente jusqu'au niveau sous-position avec titres hiérarchiques (15 crédits)
 - **Décodage inverse HS** : à partir d'un code 2, 4 ou 6 chiffres, retourne la hiérarchie section → chapitre → position6 (2 crédits)
 - **Décodage inverse P10** : à partir d'un code 2, 4, 6 ou 10 chiffres, retourne la hiérarchie complète avec titres (5 crédits)
-- **Recherche par liste** : traitement simultané de plusieurs produits
-- **Recherche par lots** : jusqu'à 1 000 articles en traitement asynchrone (API batch OpenAI / Anthropic)
+- **Recherche par liste** : traitement simultané de plusieurs produits en mode HS-06, P10 (DZ) ou NC8 (UE)
+- **Recherche par lots** : jusqu'à 1 000 articles en traitement asynchrone (API batch OpenAI / Anthropic) en mode HS-06, P10 (DZ) ou NC8 (UE)
 - **Gestion multi-organisations** : invitation de collaborateurs, suivi de l'utilisation par organisation
 - **Plans tarifaires** : essai gratuit, plans mensuels avec quotas en crédits, paiement Chargily Pay (DZD)
 - **Facturation** : factures, historique, alertes de quota

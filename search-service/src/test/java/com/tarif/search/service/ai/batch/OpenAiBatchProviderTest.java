@@ -1,5 +1,11 @@
 package com.tarif.search.service.ai.batch;
 
+import com.tarif.search.controller.BatchSearchController;
+import com.tarif.search.model.Position;
+import com.tarif.search.service.Position10DzService;
+import com.tarif.search.service.Position6DzService;
+import com.tarif.search.service.TariffPositionService;
+import com.tarif.search.service.ai.AiPrompts;
 import com.tarif.search.service.ai.batch.models.BatchResult;
 import com.tarif.search.service.ai.batch.models.BatchStatus;
 import org.junit.jupiter.api.DisplayName;
@@ -83,5 +89,61 @@ class OpenAiBatchProviderTest {
         assertTrue(results.get(0).getContent().contains("0808 10"));
         assertEquals("errored", results.get(1).getResultType());
         assertEquals("Limite atteinte", results.get(1).getErrorMessage());
+    }
+
+    @Test
+    @DisplayName("Prompts batch adaptés selon HS-06, P10 (DZ) et NC8 (EU)")
+    void batchPrompts_doiventRefleterLeModeEtLaZone() {
+        String sysHs6 = AiPrompts.getBatchSystemMessage("POSITIONS6", "DZ");
+        assertTrue(sysHs6.contains("HS-06"));
+
+        String sysP10Dz = AiPrompts.getBatchSystemMessage("POSITIONS10", "DZ");
+        assertTrue(sysP10Dz.contains("P10 à 10 chiffres"));
+
+        String sysNc8Eu = AiPrompts.getBatchSystemMessage("POSITIONS10", "EU");
+        assertTrue(sysNc8Eu.contains("NC8 à 8 chiffres"));
+
+        String userPromptEu = AiPrompts.buildBatchUserPrompt("", "Pommes fraîches", "POSITIONS10", "EU");
+        assertTrue(userPromptEu.contains("NC8 européen à 8 chiffres"));
+        assertFalse(userPromptEu.contains("<codes_douaniers>"));
+    }
+
+    @Test
+    @DisplayName("BatchSearchController normalise et enrichit P10 (DZ), NC8 (EU) et HS-06")
+    void batchController_enrichitSelonModeEtZone() {
+        BatchService batchService = org.mockito.Mockito.mock(BatchService.class);
+        Position6DzService pos6Service = org.mockito.Mockito.mock(Position6DzService.class);
+        Position10DzService pos10Service = org.mockito.Mockito.mock(Position10DzService.class);
+        TariffPositionService tariffService = org.mockito.Mockito.mock(TariffPositionService.class);
+
+        BatchStatus endedStatus = BatchStatus.builder()
+                .id("batch_eu")
+                .processingStatus("ended")
+                .resultsUrl("file-1")
+                .requestCounts(java.util.Map.of("succeeded", 1, "processing", 0, "errored", 0))
+                .build();
+        when(batchService.getBatchStatus("batch_eu")).thenReturn(endedStatus);
+
+        // L'IA retourne un code SH6 080810 en mode NC8 (EU) -> résolu vers la feuille officielle 08081080
+        when(batchService.getBatchResults("batch_eu")).thenReturn(List.of(
+                BatchResult.builder()
+                        .customId("item-1")
+                        .resultType("succeeded")
+                        .content("{\"items\":[{\"code\":\"0808 10\",\"justification\":\"Pommes de table.\"}]}")
+                        .build()
+        ));
+        when(tariffService.getContextPositionsForHs6("EU", "080810")).thenReturn(List.of(
+                new Position("08081010", "- - À cidre, en vrac"),
+                new Position("08081080", "- - Autres")
+        ));
+
+        BatchSearchController controller = new BatchSearchController(
+                batchService, pos6Service, pos10Service, tariffService);
+
+        var response = controller.getBatchResults("batch_eu", "positions10", "EU");
+        assertNotNull(response.getBody());
+        String enrichedJson = response.getBody().getResults().get(0).getContent();
+        assertTrue(enrichedJson.contains("\"08081080\""));
+        assertTrue(enrichedJson.contains("- - Autres"));
     }
 }

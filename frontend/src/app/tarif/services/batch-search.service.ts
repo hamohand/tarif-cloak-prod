@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError, interval } from 'rxjs';
-import { catchError, map, switchMap, takeWhile, startWith } from 'rxjs/operators';
+import { catchError, switchMap, takeWhile, startWith } from 'rxjs/operators';
+import { TariffSearchEndpoint, TariffZone } from './search-state.service';
 
 // Modèles TypeScript pour les batches
 export interface SearchItem {
@@ -12,6 +13,8 @@ export interface SearchItem {
 
 export interface BatchSearchRequest {
   searches: SearchItem[];
+  endpoint?: TariffSearchEndpoint;
+  zone?: TariffZone;
 }
 
 export interface BatchSubmitResponse {
@@ -38,6 +41,7 @@ export interface BatchStatusResponse {
 
 export interface ParsedHsCode {
   code: string;
+  description?: string;
   justification: string;
 }
 
@@ -70,12 +74,18 @@ export class BatchSearchService {
   constructor(private http: HttpClient) {}
 
   /**
-   * Soumet un batch de recherches de codes HS.
+   * Soumet un batch de recherches de codes douaniers (HS-06, P10 DZ ou NC8 UE).
    * @param searches Liste des recherches à traiter
+   * @param endpoint Type de recherche ('positions6' | 'positions10')
+   * @param zone Zone tarifaire ('DZ' | 'EU')
    * @returns Observable avec l'ID du batch créé
    */
-  submitBatch(searches: SearchItem[]): Observable<BatchSubmitResponse> {
-    const request: BatchSearchRequest = { searches };
+  submitBatch(
+    searches: SearchItem[],
+    endpoint: TariffSearchEndpoint = 'positions6',
+    zone: TariffZone = 'DZ'
+  ): Observable<BatchSubmitResponse> {
+    const request: BatchSearchRequest = { searches, endpoint, zone };
 
     return this.http.post<BatchSubmitResponse>(`${this.apiUrl}/submit`, request).pipe(
       catchError(this.handleError)
@@ -94,12 +104,20 @@ export class BatchSearchService {
   }
 
   /**
-   * Récupère les résultats d'un batch terminé.
+   * Récupère les résultats d'un batch terminé et les normalise selon le type / la zone.
    * @param batchId L'ID du batch
+   * @param endpoint Type de recherche ('positions6' | 'positions10')
+   * @param zone Zone tarifaire ('DZ' | 'EU')
    * @returns Observable avec les résultats du batch
    */
-  getBatchResults(batchId: string): Observable<BatchResultsResponse> {
-    return this.http.get<BatchResultsResponse>(`${this.apiUrl}/results/${batchId}`).pipe(
+  getBatchResults(
+    batchId: string,
+    endpoint: TariffSearchEndpoint = 'positions6',
+    zone: TariffZone = 'DZ'
+  ): Observable<BatchResultsResponse> {
+    return this.http.get<BatchResultsResponse>(`${this.apiUrl}/results/${batchId}`, {
+      params: { endpoint, zone }
+    }).pipe(
       catchError(this.handleError)
     );
   }
@@ -162,7 +180,9 @@ export class BatchSearchService {
       if (Array.isArray(parsed)) {
         rawItems = parsed;
       } else if (parsed && typeof parsed === 'object') {
-        if (Array.isArray(parsed.codes)) {
+        if (Array.isArray(parsed.items)) {
+          rawItems = parsed.items;
+        } else if (Array.isArray(parsed.codes)) {
           rawItems = parsed.codes;
         } else {
           for (const val of Object.values(parsed)) {
@@ -189,17 +209,22 @@ export class BatchSearchService {
           }
           if (typeof item === 'object') {
             const codeVal = item.code ?? item.hsCode ?? item.hs_code ?? '';
-            const justifVal = item.justification ?? item.description ?? '';
+            const descVal = typeof item.description === 'string' ? item.description.trim() : '';
+            const rawJustif = item.justification ?? '';
+            const justifStr = Array.isArray(rawJustif)
+              ? rawJustif.map((v: unknown) => String(v ?? '')).join(' ')
+              : (typeof rawJustif === 'string' ? rawJustif : String(rawJustif ?? ''));
             return {
               code: typeof codeVal === 'string' ? codeVal.trim() : String(codeVal ?? ''),
-              justification: Array.isArray(justifVal)
-                ? justifVal.map((v: unknown) => String(v ?? '')).join(' ')
-                : (typeof justifVal === 'string' ? justifVal : String(justifVal ?? ''))
+              ...(descVal ? { description: descVal } : {}),
+              justification: justifStr
             };
           }
           return { code: String(item), justification: '' };
         })
-        .filter((item: ParsedHsCode) => item.code.length > 0 || item.justification.length > 0);
+        .filter((item: ParsedHsCode) =>
+          item.code.length > 0 || (item.description?.length ?? 0) > 0 || item.justification.length > 0
+        );
     } catch (e) {
       console.error('Erreur lors du parsing du contenu:', e);
       return null;
