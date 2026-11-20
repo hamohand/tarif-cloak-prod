@@ -1,11 +1,13 @@
-import {Component, inject} from '@angular/core';
+import {Component, OnDestroy, OnInit, inject} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import {Article} from "../shared/model/articles";
 import {SearchService} from "../services/search.service";
+import {SearchStateService, TariffSearchEndpoint, TariffZone} from "../services/search-state.service";
 import {environment} from "../../../environments/environment";
 import * as Papa from "papaparse";
 import {
+    Subscription,
     bufferCount,
     catchError,
     concatMap,
@@ -29,9 +31,10 @@ import {OAuthService} from 'angular-oauth2-oidc';
   templateUrl: './search-list-lots.component.html',
   styleUrl: './search-list-lots.component.css'
 })
-export class SearchListLotsComponent {
+export class SearchListLotsComponent implements OnInit, OnDestroy {
     lesarticles: Article[] = [];
     fileName: string = '';
+    lastSavedFileName: string = '';
     reponse: string = ''
     isLoading: boolean = false;
     error: string | null = null;
@@ -46,9 +49,89 @@ export class SearchListLotsComponent {
     delaySeconds: number = environment.listBatchDelaySeconds ?? 2;
     isWaitingBetweenBatches: boolean = false;
 
-    //constructor(private searchService: SearchService) {}
-  private searchService = inject(SearchService);
-  private oauthService = inject(OAuthService);
+    public state = inject(SearchStateService);
+    private searchService = inject(SearchService);
+    private oauthService = inject(OAuthService);
+    private zoneSub?: Subscription;
+
+    currentZone: TariffZone = this.state.zone;
+    executedEndpoint: TariffSearchEndpoint = this.state.listSearchEndpoint;
+    executedZone: TariffZone = this.state.zone;
+
+    ngOnInit(): void {
+        this.zoneSub = this.state.selectedZone$.subscribe(zone => {
+            this.currentZone = zone;
+        });
+    }
+
+    ngOnDestroy(): void {
+        this.zoneSub?.unsubscribe();
+    }
+
+    get searchEndpoint(): TariffSearchEndpoint {
+        return this.state.listSearchEndpoint;
+    }
+
+    set searchEndpoint(val: TariffSearchEndpoint) {
+        this.state.listSearchEndpoint = val;
+    }
+
+    setSearchEndpoint(endpoint: TariffSearchEndpoint): void {
+        if (this.isLoading) {
+            return;
+        }
+        this.searchEndpoint = endpoint;
+    }
+
+    get nationalCodeShortLabel(): string {
+        return this.currentZone === 'EU' ? 'NC8 (UE)' : 'P10 (DZ)';
+    }
+
+    get nationalCodeDigitsLabel(): string {
+        return this.currentZone === 'EU'
+            ? '8 chiffres · Nomenclature Combinée UE'
+            : '10 chiffres · Tarif douanier algérien';
+    }
+
+    get selectedModeSummary(): string {
+        if (this.searchEndpoint === 'positions10') {
+            return this.currentZone === 'EU'
+                ? 'NC8 (UE) — 8 chiffres'
+                : 'P10 (DZ) — 10 chiffres';
+        }
+        return 'HS-06 International — 6 chiffres';
+    }
+
+    get creditsPerArticle(): number {
+        return this.searchEndpoint === 'positions10' ? 15 : 10;
+    }
+
+    get estimatedTotalCredits(): number {
+        return this.totalCount * this.creditsPerArticle;
+    }
+
+    get executedCodeColumnHeader(): string {
+        if (this.executedEndpoint === 'positions10') {
+            return this.executedZone === 'EU' ? 'Code NC8 (UE)' : 'Code P10 (DZ)';
+        }
+        return 'Code HS-06';
+    }
+
+    get executedModeSummary(): string {
+        if (this.executedEndpoint === 'positions10') {
+            return this.executedZone === 'EU'
+                ? 'NC8 (UE) · 8 chiffres'
+                : 'P10 (DZ) · 10 chiffres';
+        }
+        return 'HS-06 International · 6 chiffres';
+    }
+
+    private getExportModeSlug(): string {
+        if (this.executedEndpoint === 'positions10') {
+            return this.executedZone === 'EU' ? 'nc8-ue' : 'p10-dz';
+        }
+        return 'hs6';
+    }
 
     onFileSelected(event: Event): void {
         const input = event.target as HTMLInputElement;
@@ -152,10 +235,16 @@ export class SearchListLotsComponent {
       this.batchSize = effectiveBatchSize;
       this.delaySeconds = effectiveDelayMs / 1000;
 
+      const endpointToRun: TariffSearchEndpoint = this.searchEndpoint;
+      const zoneToRun: TariffZone = this.currentZone;
+      this.executedEndpoint = endpointToRun;
+      this.executedZone = zoneToRun;
+
       this.isLoading = true;
       this.isWaitingBetweenBatches = false;
       this.error = null;
       this.isSearchComplete = false;
+      this.isSaved = false;
       this.completedCount = 0;
 
       from(this.lesarticles).pipe(
@@ -164,11 +253,11 @@ export class SearchListLotsComponent {
 
           // 2. Traite chaque paquet l'un après l'autre
           concatMap((batchOfArticles: Article[], index: number) => {
-              console.log(`Traitement du paquet n°${index + 1} (${batchOfArticles.length} articles)...`);
+              console.log(`Traitement du paquet n°${index + 1} (${batchOfArticles.length} articles, mode=${endpointToRun}, zone=${zoneToRun})...`);
 
               // Chaque observable mute directement l'article (référence vers lesarticles[i])
               const searchRequests$ = batchOfArticles.map(article =>
-                  this.createArticleSearchObservable(article).pipe(
+                  this.createArticleSearchObservable(article, endpointToRun, zoneToRun).pipe(
                       tap((results: {code: string, description: string}[]) => {
                           article.code = results[0]?.code || '';
                           article.description = results[0]?.description || '';
@@ -210,11 +299,15 @@ export class SearchListLotsComponent {
       });
     }
 
-    private createArticleSearchObservable(article: Article): Observable<{code: string, description: string}[]> {
+    private createArticleSearchObservable(
+        article: Article,
+        endpoint: TariffSearchEndpoint,
+        zone: TariffZone
+    ): Observable<{code: string, description: string}[]> {
         if (!article.article || !article.article.trim()) {
             return of([{code: article.code || '', description: article.description || ''}]).pipe(delay(0));
         }
-        return this.searchService.searchCodes(article.article).pipe(
+        return this.searchService.searchCodes(article.article, endpoint, zone).pipe(
             map((results: any[]) => {
                 if (Array.isArray(results) && results.length > 0) {
                     const valid = results
@@ -227,7 +320,7 @@ export class SearchListLotsComponent {
             catchError((err: any) => {
                 console.error(err);
                 if (!this.error) {
-                    this.error = 'Certaines requêtes ont échoué. Les codes originaux sont conservés.';
+                    this.error = err?.message || 'Certaines requêtes ont échoué. Les codes originaux sont conservés.';
                 }
                 return of([{code: article.code || '', description: article.description || ''}]);
             })
@@ -253,8 +346,10 @@ export class SearchListLotsComponent {
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement("a");
         const baseFileName = this.fileName.substring(0, this.fileName.lastIndexOf('.')) || this.fileName || 'export';
+        const slug = this.getExportModeSlug();
+        const outName = `resultat-all-${slug}-${baseFileName}.tsv`;
         link.href = url;
-        link.download = `resultat-all-${baseFileName}.tsv`;
+        link.download = outName;
         link.style.display = 'none';
         document.body.appendChild(link);
         link.click();
@@ -264,6 +359,7 @@ export class SearchListLotsComponent {
             }
             window.URL.revokeObjectURL(url);
         }, 1000);
+        this.lastSavedFileName = outName;
         this.isSaved = true;
     }
 
@@ -293,8 +389,10 @@ export class SearchListLotsComponent {
 
         // On s'assure que le nom du fichier de sortie a TOUJOURS l'extension .tsv
         const baseFileName = this.fileName.substring(0, this.fileName.lastIndexOf('.')) || this.fileName || 'export';
+        const slug = this.getExportModeSlug();
+        const outName = `resultat-${slug}-${baseFileName}.tsv`;
         link.href = url;
-        link.download = `resultat-${baseFileName}.tsv`;
+        link.download = outName;
         link.style.display = 'none';
 
         document.body.appendChild(link);
@@ -305,23 +403,33 @@ export class SearchListLotsComponent {
             }
             window.URL.revokeObjectURL(url);
         }, 1000);
+        this.lastSavedFileName = outName;
         this.isSaved = true;
     }
 
   // ---- TEST TEMPORAIRE — à supprimer après validation ----
   loadTestData(): void {
+    this.executedEndpoint = this.searchEndpoint;
+    this.executedZone = this.currentZone;
+    const isPos10 = this.executedEndpoint === 'positions10';
+    const isEu = this.executedZone === 'EU';
+    const fmt = (hs6: string, euSuffix: string, dzSuffix: string): string => {
+      if (!isPos10) return hs6;
+      return isEu ? `${hs6}${euSuffix}` : `${hs6}${dzSuffix}`;
+    };
+
     this.lesarticles = [
-      { article: 'câble électrique', code: '8544.42', description: 'Conducteurs électriques pour tension ≤ 1000V', options: [
-          { code: '8544.42', description: 'Conducteurs électriques pour tension ≤ 1000V' },
-          { code: '8544.49', description: 'Autres conducteurs électriques' },
-          { code: '7312.10', description: 'Torons et câbles en acier inoxydable' }
+      { article: 'câble électrique', code: fmt('8544.42', '.90', '.10.00'), description: 'Conducteurs électriques pour tension ≤ 1000V', options: [
+          { code: fmt('8544.42', '.90', '.10.00'), description: 'Conducteurs électriques pour tension ≤ 1000V' },
+          { code: fmt('8544.49', '.95', '.91.00'), description: 'Autres conducteurs électriques' },
+          { code: fmt('7312.10', '.20', '.10.00'), description: 'Torons et câbles en acier inoxydable' }
       ]},
-      { article: 'huile', code: '1509.10', description: "Huile d'olive vierge", options: [
-          { code: '1509.10', description: "Huile d'olive vierge" },
-          { code: '2710.19', description: 'Huiles minérales légères' }
+      { article: 'huile', code: fmt('1509.20', '.00', '.00.00'), description: "Huile d'olive vierge extra", options: [
+          { code: fmt('1509.20', '.00', '.00.00'), description: "Huile d'olive vierge extra" },
+          { code: fmt('2710.19', '.81', '.31.00'), description: 'Huiles minérales lubrifiantes' }
       ]},
-      { article: 'sel', code: '2501.00', description: 'Sel, y compris le sel préparé pour la table' },
-      { article: 'voitures diesel', code: '8703.23', description: 'Véhicules à moteur diesel, cylindrée > 1500 cm³' },
+      { article: 'sel', code: fmt('2501.00', '.91', '.10.00'), description: 'Sel destiné à la consommation humaine' },
+      { article: 'voitures diesel', code: fmt('8703.32', '.19', '.11.00'), description: 'Véhicules à moteur diesel, cylindrée > 1500 cm³' },
     ] as Article[];
     this.fileName = 'test-demo.tsv';
     this.totalCount = this.lesarticles.length;
@@ -330,6 +438,7 @@ export class SearchListLotsComponent {
     this.isLoading = false;
     this.error = null;
     this.isSaved = false;
+    this.lastSavedFileName = '';
   }
   // ---- FIN TEST ----
 

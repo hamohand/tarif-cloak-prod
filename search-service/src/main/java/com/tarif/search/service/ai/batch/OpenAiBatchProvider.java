@@ -301,9 +301,11 @@ public class OpenAiBatchProvider implements BatchProvider {
                 ? request.getCustomId()
                 : "search-" + i;
 
-            String prompt = AiPrompts.buildUserPrompt(
-                request.getRagContext() != null ? request.getRagContext() : "",
-                request.getSearchTerm()
+            String prompt = AiPrompts.buildBatchUserPrompt(
+                request.getRagContext(),
+                request.getSearchTerm(),
+                request.getTargetLevel(),
+                request.getZone()
             );
 
             Map<String, Object> batchRequest = new LinkedHashMap<>();
@@ -311,10 +313,14 @@ public class OpenAiBatchProvider implements BatchProvider {
             batchRequest.put("method", "POST");
             batchRequest.put("url", "/v1/chat/completions");
 
+            String systemMsg = (request.getRagContext() != null && request.getRagContext().contains("Code ="))
+                    ? AiPrompts.getSystemMessage(true, request.getTargetLevel())
+                    : AiPrompts.getBatchSystemMessage(request.getTargetLevel(), request.getZone());
+
             Map<String, Object> body = new LinkedHashMap<>();
             body.put("model", model);
             body.put("messages", List.of(
-                Map.of("role", "system", "content", AiPrompts.getSystemMessage(true, null)),
+                Map.of("role", "system", "content", systemMsg),
                 Map.of("role", "user", "content", prompt)
             ));
             if (OpenAiService.isReasoningModel(model)) {

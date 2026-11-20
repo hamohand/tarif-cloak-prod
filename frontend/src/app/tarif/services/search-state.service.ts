@@ -3,6 +3,7 @@ import { BehaviorSubject } from 'rxjs';
 import { DecodeResult, Hs6ComparisonResult } from './search.service';
 
 export type TariffZone = 'DZ' | 'EU';
+export type TariffSearchEndpoint = 'positions6' | 'positions10';
 
 export interface SearchResultItem {
   decoded: DecodeResult;
@@ -43,6 +44,10 @@ export class SearchStateService {
 
   compareHs6Input: string = '';
   compareResult: Hs6ComparisonResult | null = null;
+
+  // Recherche par liste & Batch — type de recherche ('positions10' = P10 DZ / NC8 UE, 'positions6' = HS-06)
+  listSearchEndpoint: TariffSearchEndpoint = 'positions10';
+  batchSearchEndpoint: TariffSearchEndpoint = 'positions10';
 
   get zone(): TariffZone {
     return this.selectedZone$.value;

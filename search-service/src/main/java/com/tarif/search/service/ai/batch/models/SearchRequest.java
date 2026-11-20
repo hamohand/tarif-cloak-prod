@@ -12,5 +12,7 @@ public class SearchRequest {
     private String customId;
     private String searchTerm;
     private String ragContext;
+    private String targetLevel; // POSITIONS6 ou POSITIONS10
+    private String zone;        // DZ ou EU
     private String provider; // Pour tracking du provider utilisé
 }

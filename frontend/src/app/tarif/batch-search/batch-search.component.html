@@ -2,7 +2,7 @@
   <div class="page-header">
     <h1>🔍 Recherche par Lots (Batch)</h1>
     <p class="subtitle">
-      Recherchez des codes HS pour plusieurs produits simultanément avec une réduction de 50% sur les coûts
+      Recherchez des codes douaniers ({{ nationalCodeShortLabel }} ou HS-06) pour plusieurs produits simultanément avec une réduction de 50% sur les coûts API
     </p>
   </div>
 
@@ -11,6 +11,68 @@
     <div class="submission-panel">
       <div class="card">
         <h2>📤 Soumettre un nouveau batch</h2>
+
+        <!-- Type de recherche (P10 DZ / NC8 UE vs HS-06) -->
+        <div class="search-mode-panel">
+          <div class="search-mode-header">
+            <span class="search-mode-title">Type de recherche</span>
+            <div class="zone-inline-switch" role="group" aria-label="Zone tarifaire">
+              <button
+                type="button"
+                class="zone-mini-btn"
+                [class.active]="currentZone !== 'EU'"
+                [disabled]="isSubmitting"
+                (click)="state.setZone('DZ')"
+              >
+                DZ · Algérie
+              </button>
+              <button
+                type="button"
+                class="zone-mini-btn eu"
+                [class.active]="currentZone === 'EU'"
+                [disabled]="isSubmitting"
+                (click)="state.setZone('EU')"
+              >
+                UE · Europe
+              </button>
+            </div>
+          </div>
+
+          <div class="search-mode-grid" role="radiogroup" aria-label="Type de recherche douanière">
+            <button
+              type="button"
+              role="radio"
+              [attr.aria-checked]="searchEndpoint === 'positions10'"
+              class="mode-option-card"
+              [class.selected]="searchEndpoint === 'positions10'"
+              [class.eu-mode]="currentZone === 'EU'"
+              [disabled]="isSubmitting"
+              (click)="setSearchEndpoint('positions10')"
+            >
+              <div class="mode-option-top">
+                <span class="mode-option-name">{{ nationalCodeShortLabel }}</span>
+                <span class="mode-cost-pill">{{ currentZone === 'EU' ? '8 chiffres' : '10 chiffres' }}</span>
+              </div>
+              <span class="mode-option-desc">{{ nationalCodeDigitsLabel }}</span>
+            </button>
+
+            <button
+              type="button"
+              role="radio"
+              [attr.aria-checked]="searchEndpoint === 'positions6'"
+              class="mode-option-card"
+              [class.selected]="searchEndpoint === 'positions6'"
+              [disabled]="isSubmitting"
+              (click)="setSearchEndpoint('positions6')"
+            >
+              <div class="mode-option-top">
+                <span class="mode-option-name">HS-06 International</span>
+                <span class="mode-cost-pill">6 chiffres</span>
+              </div>
+              <span class="mode-option-desc">6 chiffres · Système Harmonisé OMD</span>
+            </button>
+          </div>
+        </div>
 
         <!-- Option 1 : Saisie manuelle -->
         <div class="input-section">
@@ -92,7 +154,16 @@
             (click)="selectBatch(batch)"
           >
             <div class="batch-header">
-              <span class="batch-id">{{ batch.batchId }}</span>
+              <div class="batch-header-left">
+                <span
+                  class="batch-mode-badge"
+                  [class.mode-p10]="batch.endpoint === 'positions10' && batch.zone !== 'EU'"
+                  [class.mode-eu]="batch.endpoint === 'positions10' && batch.zone === 'EU'"
+                >
+                  {{ getBatchModeBadge(batch) }}
+                </span>
+                <span class="batch-id">{{ batch.batchId }}</span>
+              </div>
               <span
                 class="batch-status"
                 [class.status-in-progress]="!batch.status || batch.status.status === 'in_progress'"
@@ -161,6 +232,16 @@
             <code>{{ selectedBatch.batchId }}</code>
           </div>
           <div class="metadata-item">
+            <strong>Type:</strong>
+            <span
+              class="batch-mode-badge"
+              [class.mode-p10]="selectedBatch.endpoint === 'positions10' && selectedBatch.zone !== 'EU'"
+              [class.mode-eu]="selectedBatch.endpoint === 'positions10' && selectedBatch.zone === 'EU'"
+            >
+              {{ getBatchModeBadge(selectedBatch) }}
+            </span>
+          </div>
+          <div class="metadata-item">
             <strong>Soumis le:</strong>
             {{ selectedBatch.submittedAt | date:'dd/MM/yyyy à HH:mm:ss' }}
           </div>
@@ -216,7 +297,11 @@
               <div *ngIf="result.resultType === 'succeeded' && result.content" class="result-content">
                 <div *ngFor="let code of (result.parsedCodes || [])" class="hs-code">
                   <div class="code-value">
-                    <strong>Code HS:</strong> {{ code.code }}
+                    <strong>{{ getBatchCodeLabel(selectedBatch) }}:</strong>
+                    <span class="code-mono">{{ code.code }}</span>
+                  </div>
+                  <div *ngIf="code.description" class="code-description">
+                    <strong>Libellé officiel:</strong> {{ code.description }}
                   </div>
                   <div *ngIf="code.justification" class="code-justification">
                     <strong>Justification:</strong> {{ code.justification }}
