@@ -37,6 +37,11 @@ export class AuthService {
     }
     
     this.configured = true;
+    try {
+      localStorage.removeItem('batches');
+    } catch {
+      // Ignorer erreurs localStorage
+    }
     
     // Forcer requireHttps à false dans la configuration pour éviter les erreurs HTTPS
     const config = {
@@ -424,6 +429,11 @@ export class AuthService {
         console.debug('Erreur lors du nettoyage de localStorage:', e);
       }
     });
+    try {
+      localStorage.removeItem('batches');
+    } catch {
+      // Ignorer erreurs localStorage
+    }
     
     // Nettoyer sessionStorage
     const oauthSessionKeys = Object.keys(sessionStorage).filter(key => 
@@ -492,6 +502,11 @@ export class AuthService {
       key.startsWith('oauth') || key.startsWith('angular-oauth2-oidc')
     );
     oauthKeys.forEach(key => localStorage.removeItem(key));
+    try {
+      localStorage.removeItem('batches');
+    } catch {
+      // Ignorer erreurs localStorage
+    }
     
     const oauthSessionKeys = Object.keys(sessionStorage).filter(key => 
       key.startsWith('oauth') || key.startsWith('angular-oauth2-oidc')
@@ -580,6 +595,26 @@ export class AuthService {
 
   public getUserInfo(): any {
     return this.oauthService.getIdentityClaims();
+  }
+
+  public getCurrentUserId(): string | null {
+    const claims: any = this.oauthService.getIdentityClaims();
+    if (claims && typeof claims.sub === 'string' && claims.sub.trim().length > 0) {
+      return claims.sub.trim();
+    }
+    const token = this.oauthService.getAccessToken();
+    if (!token) {
+      return null;
+    }
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      if (typeof payload?.sub === 'string' && payload.sub.trim().length > 0) {
+        return payload.sub.trim();
+      }
+    } catch {
+      // Ignorer si le token n'est pas décodable
+    }
+    return null;
   }
 
   public isOrganizationAccount(): Observable<boolean> {

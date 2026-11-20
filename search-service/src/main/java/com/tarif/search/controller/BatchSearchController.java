@@ -7,6 +7,7 @@ import com.tarif.search.service.Position10DzService;
 import com.tarif.search.service.Position6DzService;
 import com.tarif.search.service.TariffPositionService;
 import com.tarif.search.service.ai.JsonUtils;
+import com.tarif.search.service.ai.batch.BatchOwnershipService;
 import com.tarif.search.service.ai.batch.BatchService;
 import com.tarif.search.service.ai.batch.models.BatchResult;
 import com.tarif.search.service.ai.batch.models.BatchStatus;
@@ -17,6 +18,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.text.Normalizer;
@@ -41,6 +45,7 @@ public class BatchSearchController {
     private final Position6DzService position6DzService;
     private final Position10DzService position10DzService;
     private final TariffPositionService tariffPositionService;
+    private final BatchOwnershipService batchOwnershipService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Autowired
@@ -48,15 +53,25 @@ public class BatchSearchController {
             BatchService batchService,
             Position6DzService position6DzService,
             Position10DzService position10DzService,
-            TariffPositionService tariffPositionService) {
+            TariffPositionService tariffPositionService,
+            BatchOwnershipService batchOwnershipService) {
         this.batchService = batchService;
         this.position6DzService = position6DzService;
         this.position10DzService = position10DzService;
         this.tariffPositionService = tariffPositionService;
+        this.batchOwnershipService = batchOwnershipService;
+    }
+
+    public BatchSearchController(
+            BatchService batchService,
+            Position6DzService position6DzService,
+            Position10DzService position10DzService,
+            TariffPositionService tariffPositionService) {
+        this(batchService, position6DzService, position10DzService, tariffPositionService, null);
     }
 
     public BatchSearchController(BatchService batchService) {
-        this(batchService, null, null, null);
+        this(batchService, null, null, null, null);
     }
 
     /**
@@ -95,12 +110,14 @@ public class BatchSearchController {
         }
 
         String normZone = "EU".equalsIgnoreCase(request.getZone()) ? "EU" : "DZ";
-        String targetLevel = "positions10".equalsIgnoreCase(request.getEndpoint())
+        String normEndpoint = "positions10".equalsIgnoreCase(request.getEndpoint()) ? "positions10" : "positions6";
+        String targetLevel = "positions10".equals(normEndpoint)
                 ? "POSITIONS10"
                 : "POSITIONS6";
 
         // Convertir les requêtes en format attendu par le service
         List<SearchRequest> searchRequests = new ArrayList<>();
+        Map<String, String> searchTermsMap = new LinkedHashMap<>();
         for (SearchItem item : request.getSearches()) {
             SearchRequest searchRequest = SearchRequest.builder()
                 .customId(item.getCustomId())
@@ -110,6 +127,9 @@ public class BatchSearchController {
                 .zone(normZone)
                 .build();
             searchRequests.add(searchRequest);
+            if (item.getCustomId() != null && item.getSearchTerm() != null) {
+                searchTermsMap.put(item.getCustomId(), item.getSearchTerm());
+            }
         }
 
         // Créer le batch via le provider actif
@@ -117,8 +137,12 @@ public class BatchSearchController {
             String batchId = batchService.createBatch(searchRequests);
 
             if (batchId != null) {
-                log.info("Batch créé avec succès: {} (provider: {}, targetLevel: {}, zone: {})",
-                        batchId, batchService.getActiveProviderName(), targetLevel, normZone);
+                String currentUserId = getCurrentUserId();
+                if (batchOwnershipService != null && currentUserId != null) {
+                    batchOwnershipService.registerBatch(batchId, currentUserId, normEndpoint, normZone, searchTermsMap);
+                }
+                log.info("Batch créé avec succès: {} (user: {}, provider: {}, targetLevel: {}, zone: {})",
+                        batchId, currentUserId, batchService.getActiveProviderName(), targetLevel, normZone);
                 return ResponseEntity.ok(new BatchSubmitResponse(
                     batchId,
                     "Batch créé avec succès. Utilisez l'ID pour suivre le statut.",
@@ -140,6 +164,29 @@ public class BatchSearchController {
     }
 
     /**
+     * Retourne uniquement la liste des batches soumis par l'utilisateur connecté.
+     */
+    @GetMapping("/my-batches")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<UserBatchSummary>> getMyBatches() {
+        String currentUserId = getCurrentUserId();
+        if (currentUserId == null || batchOwnershipService == null) {
+            return ResponseEntity.ok(Collections.emptyList());
+        }
+        List<UserBatchSummary> summaries = batchOwnershipService.listUserBatches(currentUserId)
+                .stream()
+                .map(r -> new UserBatchSummary(
+                        r.batchId(),
+                        r.submittedAt(),
+                        r.endpoint(),
+                        r.zone(),
+                        r.searchTerms()
+                ))
+                .toList();
+        return ResponseEntity.ok(summaries);
+    }
+
+    /**
      * Récupère le statut d'un batch.
      *
      * @param batchId L'ID du batch
@@ -149,6 +196,10 @@ public class BatchSearchController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<BatchStatusResponse> getBatchStatus(@PathVariable String batchId) {
         log.debug("Demande de statut pour le batch: {}", batchId);
+
+        if (!isAuthorizedForBatch(batchId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
 
         try {
             BatchStatus status = batchService.getBatchStatus(batchId);
@@ -186,9 +237,23 @@ public class BatchSearchController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<BatchResultsResponse> getBatchResults(
             @PathVariable String batchId,
-            @RequestParam(required = false, defaultValue = "positions6") String endpoint,
-            @RequestParam(required = false, defaultValue = "DZ") String zone) {
+            @RequestParam(required = false) String endpoint,
+            @RequestParam(required = false) String zone) {
         log.debug("Demande de résultats pour le batch: {} (endpoint={}, zone={})", batchId, endpoint, zone);
+
+        if (!isAuthorizedForBatch(batchId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(new BatchResultsResponse(batchId, null, "Accès refusé à ce batch"));
+        }
+
+        BatchOwnershipService.BatchOwnerRecord ownerRecord =
+                batchOwnershipService != null ? batchOwnershipService.findBatch(batchId) : null;
+        String effectiveEndpoint = (endpoint != null && !endpoint.isBlank())
+                ? endpoint
+                : (ownerRecord != null && ownerRecord.endpoint() != null ? ownerRecord.endpoint() : "positions6");
+        String effectiveZone = (zone != null && !zone.isBlank())
+                ? zone
+                : (ownerRecord != null && ownerRecord.zone() != null ? ownerRecord.zone() : "DZ");
 
         try {
             // Récupérer d'abord le statut pour vérifier que le batch est terminé
@@ -217,7 +282,7 @@ public class BatchSearchController {
             List<BatchResult> results = batchService.getBatchResults(batchId);
 
             if (results != null) {
-                enrichAndNormalizeResults(results, endpoint, zone);
+                enrichAndNormalizeResults(results, effectiveEndpoint, effectiveZone);
 
                 BatchResultsResponse response = new BatchResultsResponse(
                     batchId,
@@ -253,6 +318,15 @@ public class BatchSearchController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Map<String, Object>> cancelBatch(@PathVariable String batchId) {
         log.info("Demande d'annulation du batch: {}", batchId);
+
+        if (!isAuthorizedForBatch(batchId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of(
+                            "batchId", batchId,
+                            "canceled", false,
+                            "message", "Accès refusé à ce batch"
+                    ));
+        }
 
         try {
             boolean success = batchService.cancelBatch(batchId);
@@ -503,9 +577,64 @@ public class BatchSearchController {
                 .toLowerCase(Locale.ROOT);
     }
 
+    private boolean isAuthorizedForBatch(String batchId) {
+        if (batchOwnershipService == null) {
+            return true;
+        }
+        String currentUserId = getCurrentUserId();
+        if (currentUserId == null || !batchOwnershipService.isOwnedBy(batchId, currentUserId)) {
+            log.warn("Accès refusé au batch {} pour l'utilisateur {}", batchId, currentUserId);
+            return false;
+        }
+        return true;
+    }
+
+    private String getCurrentUserId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) {
+            return null;
+        }
+        if (auth.getPrincipal() instanceof Jwt jwt) {
+            String sub = jwt.getClaimAsString("sub");
+            if (sub != null && !sub.isBlank()) {
+                return sub.trim();
+            }
+        }
+        String name = auth.getName();
+        if (name != null && !name.isBlank() && !"anonymousUser".equalsIgnoreCase(name)) {
+            return name.trim();
+        }
+        return null;
+    }
+
     // ========================================================================================
     // DTOs (Data Transfer Objects)
     // ========================================================================================
+
+    /**
+     * Résumé d'un batch appartenant à l'utilisateur connecté.
+     */
+    @Data
+    public static class UserBatchSummary {
+        private String batchId;
+        private String submittedAt;
+        private String endpoint;
+        private String zone;
+        private Map<String, String> searchTerms;
+
+        public UserBatchSummary(
+                String batchId,
+                String submittedAt,
+                String endpoint,
+                String zone,
+                Map<String, String> searchTerms) {
+            this.batchId = batchId;
+            this.submittedAt = submittedAt;
+            this.endpoint = endpoint;
+            this.zone = zone;
+            this.searchTerms = searchTerms;
+        }
+    }
 
     /**
      * Requête pour soumettre un batch de recherches.
